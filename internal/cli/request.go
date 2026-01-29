@@ -17,12 +17,27 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+type RequestOptions struct {
+	Method   string
+	URL      string
+	Data     string
+	Headers  []string
+	Queries  []string
+	Captures []string
+	Asserts  []string
+	Verbose  bool
+	Stream   bool
+	NoRecord bool
+}
+
 var (
 	reqData     string
 	reqHeaders  []string
 	reqQueries  []string
 	reqCaptures []string
 	reqAsserts  []string
+	reqVerbose  bool
+	reqStream   bool
 	reqNoRec    bool
 )
 
@@ -40,7 +55,18 @@ func createRequestCmd(method string) *cobra.Command {
 		Short: fmt.Sprintf("Send a %s request", strings.ToUpper(method)),
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runRequest(method, args[0])
+			return ExecuteRequest(RequestOptions{
+				Method:   method,
+				URL:      args[0],
+				Data:     reqData,
+				Headers:  reqHeaders,
+				Queries:  reqQueries,
+				Captures: reqCaptures,
+				Asserts:  reqAsserts,
+				Verbose:  reqVerbose,
+				Stream:   reqStream,
+				NoRecord: reqNoRec,
+			})
 		},
 	}
 
@@ -49,14 +75,20 @@ func createRequestCmd(method string) *cobra.Command {
 	cmd.Flags().StringSliceVarP(&reqQueries, "query", "q", []string{}, "Query parameters")
 	cmd.Flags().StringSliceVarP(&reqCaptures, "capture", "c", []string{}, "Capture values from response (e.g. token=$.auth.token)")
 	cmd.Flags().StringSliceVarP(&reqAsserts, "assert", "a", []string{}, "Assert response (e.g. status=200, body.id=1)")
+	cmd.Flags().BoolVarP(&reqVerbose, "verbose", "v", false, "Show detailed request/response info")
+	cmd.Flags().BoolVarP(&reqStream, "stream", "S", false, "Handle streaming response")
 	cmd.Flags().BoolVar(&reqNoRec, "no-record", false, "Do not record this request")
 
 	return cmd
 }
 
-func runRequest(method, targetURL string) error {
+func ExecuteRequest(opts RequestOptions) error {
+	method := opts.Method
+	targetURL := opts.URL
+
 	conf, _ := config.LoadConfig()
 	env := conf.GetActiveEnv()
+	fmt.Printf("DEBUG: ActiveEnv=%s, BaseURL=%s\n", conf.ActiveEnv, env.BaseURL)
 	store, _ := storage.NewStore()
 
 	// Load variables
@@ -75,13 +107,13 @@ func runRequest(method, targetURL string) error {
 	finalURL := variable.Interpolate(processedURL, vars)
 
 	// Handle query params
-	if len(reqQueries) > 0 {
+	if len(opts.Queries) > 0 {
 		u, err := url.Parse(finalURL)
 		if err != nil {
 			return err
 		}
 		q := u.Query()
-		for _, param := range reqQueries {
+		for _, param := range opts.Queries {
 			processedParam := variable.Interpolate(param, vars)
 			parts := strings.SplitN(processedParam, "=", 2)
 			if len(parts) == 2 {
@@ -101,7 +133,7 @@ func runRequest(method, targetURL string) error {
 		}
 	}
 	// Command line headers
-	for _, h := range reqHeaders {
+	for _, h := range opts.Headers {
 		processedHeader := variable.Interpolate(h, vars)
 		parts := strings.SplitN(processedHeader, ":", 2)
 		if len(parts) == 2 {
@@ -111,8 +143,8 @@ func runRequest(method, targetURL string) error {
 
 	// Handle body
 	var body []byte
-	if reqData != "" {
-		processedData := variable.Interpolate(reqData, vars)
+	if opts.Data != "" {
+		processedData := variable.Interpolate(opts.Data, vars)
 		if strings.HasPrefix(processedData, "@") {
 			content, err := os.ReadFile(processedData[1:])
 			if err != nil {
@@ -130,16 +162,35 @@ func runRequest(method, targetURL string) error {
 		Headers: headers,
 		Body:    body,
 		Timeout: time.Duration(30) * time.Second,
+		Stream:  opts.Stream,
 	})
 	if err != nil {
+		fmt.Printf("❌ Request Failed: %v\n", err)
 		return err
+	}
+
+	if opts.Verbose || resp.Status >= 400 {
+		fmt.Printf("\n--- Debug Info ---\n")
+		fmt.Printf("Request: %s %s\n", method, finalURL)
+		fmt.Printf("Request Headers:\n")
+		for k, v := range headers {
+			fmt.Printf("  %s: %s\n", k, v)
+		}
+		if len(body) > 0 {
+			fmt.Printf("Request Body: %s\n", string(body))
+		}
+		fmt.Printf("\nResponse Status: %d\n", resp.Status)
+		fmt.Printf("Response Headers:\n")
+		for k, v := range resp.Headers {
+			fmt.Printf("  %s: %s\n", k, v)
+		}
 	}
 
 	var recordID int64
 
 	// Handle captures
-	if store != nil && len(reqCaptures) > 0 {
-		for _, capExpr := range reqCaptures {
+	if store != nil && len(opts.Captures) > 0 {
+		for _, capExpr := range opts.Captures {
 			parts := strings.SplitN(capExpr, "=", 2)
 			if len(parts) == 2 {
 				varName := strings.TrimSpace(parts[0])
@@ -161,10 +212,10 @@ func runRequest(method, targetURL string) error {
 	}
 
 	// Handle assertions
-	if len(reqAsserts) > 0 {
+	if len(opts.Asserts) > 0 {
 		fmt.Println("\nAssertions:")
 		allPassed := true
-		for _, assertion := range reqAsserts {
+		for _, assertion := range opts.Asserts {
 			passed, msg := variable.Assert(resp.Status, resp.Body, assertion)
 			if passed {
 				fmt.Printf("  ✅ %s\n", assertion)
@@ -178,7 +229,7 @@ func runRequest(method, targetURL string) error {
 		}
 	}
 
-	if !reqNoRec && store != nil {
+	if !opts.NoRecord && store != nil {
 		headerJSON, _ := json.Marshal(headers)
 		respHeaderJSON, _ := json.Marshal(resp.Headers)
 

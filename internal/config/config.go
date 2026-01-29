@@ -8,47 +8,47 @@ import (
 )
 
 type Config struct {
-	Version      int                    `yaml:"version"`
-	Defaults     Defaults               `yaml:"defaults"`
-	Environments map[string]Environment `yaml:"environments"`
-	ActiveEnv    string                 `yaml:"active_env"`
+	Version      int                    `yaml:"version" mapstructure:"version"`
+	Defaults     Defaults               `yaml:"defaults" mapstructure:"defaults"`
+	Environments map[string]Environment `yaml:"environments" mapstructure:"environments"`
+	ActiveEnv    string                 `yaml:"active_env" mapstructure:"active_env"`
 	ProjectID    string                 // Relative or absolute path used as ID
 	ProjectPath  string                 // Absolute path to the project root
 }
 
 type Defaults struct {
-	Timeout int               `yaml:"timeout"`
-	Headers map[string]string `yaml:"headers"`
+	Timeout int               `yaml:"timeout" mapstructure:"timeout"`
+	Headers map[string]string `yaml:"headers" mapstructure:"headers"`
 }
 
 type Environment struct {
-	BaseURL   string            `yaml:"base_url"`
-	Variables map[string]string `yaml:"variables"`
+	BaseURL   string            `yaml:"base_url" mapstructure:"base_url"`
+	Variables map[string]string `yaml:"variables" mapstructure:"variables"`
 }
 
 func LoadConfig() (*Config, error) {
-	viper.Reset()
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
+	v := viper.New()
+	v.SetConfigName("config")
+	v.SetConfigType("yaml")
 
 	// Global config
 	home, _ := os.UserHomeDir()
-	viper.AddConfigPath(filepath.Join(home, ".kest"))
+	v.AddConfigPath(filepath.Join(home, ".kest"))
 
 	// Project detection
 	projectRoot, _ := findProjectRoot()
 	if projectRoot != "" {
-		viper.AddConfigPath(filepath.Join(projectRoot, ".kest"))
+		v.AddConfigPath(filepath.Join(projectRoot, ".kest"))
 	}
 
-	if err := viper.ReadInConfig(); err != nil {
+	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, err
 		}
 	}
 
 	var conf Config
-	if err := viper.Unmarshal(&conf); err != nil {
+	if err := v.Unmarshal(&conf); err != nil {
 		return nil, err
 	}
 
