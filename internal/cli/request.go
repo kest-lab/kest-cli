@@ -88,7 +88,6 @@ func ExecuteRequest(opts RequestOptions) error {
 
 	conf, _ := config.LoadConfig()
 	env := conf.GetActiveEnv()
-	fmt.Printf("DEBUG: ActiveEnv=%s, BaseURL=%s\n", conf.ActiveEnv, env.BaseURL)
 	store, _ := storage.NewStore()
 
 	// Load variables

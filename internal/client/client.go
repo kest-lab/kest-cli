@@ -6,7 +6,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/charmbracelet/lipgloss"
+)
+
+var (
+	infoStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#888888"))
 )
 
 type RequestOptions struct {
@@ -65,7 +72,7 @@ func Execute(opt RequestOptions) (*Response, error) {
 }
 
 func handleStream(resp *http.Response, duration time.Duration) (*Response, error) {
-	fmt.Println("\n--- Stream Response ---")
+	fmt.Println(infoStyle.Render("● Streaming response started..."))
 	reader := bufio.NewReader(resp.Body)
 	var fullBody bytes.Buffer
 
@@ -78,11 +85,13 @@ func handleStream(resp *http.Response, duration time.Duration) (*Response, error
 			return nil, err
 		}
 
-		if line != "" {
-			fmt.Print(line)
+		cleanLine := strings.TrimSpace(line)
+		if cleanLine != "" {
+			fmt.Printf("  %s %s\n", infoStyle.Render("┃"), cleanLine)
 			fullBody.WriteString(line)
 		}
 	}
+	fmt.Println(infoStyle.Render("● Stream finished."))
 
 	return &Response{
 		Status:   resp.StatusCode,

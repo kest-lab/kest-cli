@@ -45,6 +45,9 @@ func PrintResponse(method, url string, status int, duration string, body []byte,
 	statusText := sStyle.Render(statusStr)
 	durationText := infoStyle.Render(duration)
 
+	// Constrain width to terminal width or 100 characters
+	maxWidth := 100
+
 	var formattedBody string
 	var obj interface{}
 	if err := json.Unmarshal(body, &obj); err == nil {
@@ -54,14 +57,27 @@ func PrintResponse(method, url string, status int, duration string, body []byte,
 			formattedBody = string(body)
 		}
 	} else {
+		// If it's a stream (starts with data:), don't try to pretty print as single JSON
 		formattedBody = string(body)
 	}
 
-	content := fmt.Sprintf("Status: %s    Duration: %s\n\n%s", statusText, durationText, formattedBody)
+	// Truncate or wrap long lines if not JSON
+	lines := strings.Split(formattedBody, "\n")
+	for i, line := range lines {
+		if len(line) > maxWidth-4 {
+			lines[i] = line[:maxWidth-7] + "..."
+		}
+	}
+	formattedBody = strings.Join(lines, "\n")
+
+	content := fmt.Sprintf("Status: %s    Duration: %s\n\n%s", statusText, durationText, strings.TrimSpace(formattedBody))
 
 	doc := strings.Builder{}
 	doc.WriteString(titleStyle.Render(headerText) + "\n")
-	doc.WriteString(borderStyle.Render(content) + "\n")
+
+	// Apply width constraint to the box and handle wrapping
+	styledContent := borderStyle.Width(maxWidth).Render(content)
+	doc.WriteString(styledContent + "\n")
 
 	if recordID > 0 {
 		doc.WriteString(fmt.Sprintf(" ✓ Recorded as #%d\n", recordID))
