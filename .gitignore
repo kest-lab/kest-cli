@@ -1,0 +1,7 @@
+kest
+.kest/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+bin/

@@ -1,0 +1,58 @@
+package client
+
+import (
+	"bytes"
+	"io"
+	"net/http"
+	"time"
+)
+
+type RequestOptions struct {
+	Method  string
+	URL     string
+	Headers map[string]string
+	Body    []byte
+	Timeout time.Duration
+}
+
+type Response struct {
+	Status   int
+	Headers  http.Header
+	Body     []byte
+	Duration time.Duration
+}
+
+func Execute(opt RequestOptions) (*Response, error) {
+	client := &http.Client{
+		Timeout: opt.Timeout,
+	}
+
+	req, err := http.NewRequest(opt.Method, opt.URL, bytes.NewBuffer(opt.Body))
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range opt.Headers {
+		req.Header.Set(k, v)
+	}
+
+	start := time.Now()
+	resp, err := client.Do(req)
+	duration := time.Since(start)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Response{
+		Status:   resp.StatusCode,
+		Headers:  resp.Header,
+		Body:     body,
+		Duration: duration,
+	}, nil
+}
