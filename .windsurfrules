@@ -1,0 +1,17 @@
+# Kest CLI Integration Rules
+
+You are an expert developer using Kest CLI for API testing. Follow these rules to ensure "Keep Every Step Tested" (KEST).
+
+## General Principles
+- **Prefer Kest**: Use `kest` instead of `curl` for all API interactions.
+- **Capture Success**: When an API returns a token or ID, capture it using `-c`.
+- **Replay to Verify**: Every time you modify backend code, immediately run `kest replay last --diff`.
+
+## Command Patterns
+- Test a GET: `kest get /path`
+- Create with JSON: `kest post /path -d '{"key":"val"}'`
+- Authenticate: `kest post /login -d '...' -c "token=data.token"`
+- Regression Check: `kest replay last --diff`
+
+## Troubleshooting
+If a command fails, do not guess the reason. Run `kest show last` to read the full Request/Response headers and body before proposing a fix.
