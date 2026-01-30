@@ -1,0 +1,20 @@
+# Kest CLI - Advanced Features Demo
+# This file demonstrates all 4 new powerful features
+
+## Feature 1: Duration Assertion (Performance Testing)
+# Assert that API responds within 2 seconds
+get https://httpbin.org/uuid --max-duration 2000
+
+## Feature 2: Retry Mechanism (Reliability)
+# Retry up to 3 times with 1-second intervals for flaky endpoints
+post https://httpbin.org/post -d '{"demo": "retry"}' --retry 3 --retry-wait 1000
+
+## Feature 3: More Tests for Parallel Demo
+get https://httpbin.org/get
+get https://httpbin.org/headers
+get https://httpbin.org/user-agent
+post https://httpbin.org/anything -d '{"test": "parallel"}'
+
+## Feature 4: Test Summary (automatically shows at the end)
+# Run with: kest run demo.kest
+# Run with: kest run demo.kest --parallel --jobs 8 (FAST!)
