@@ -6,12 +6,15 @@ You are an expert developer using Kest CLI for API testing. Follow these rules t
 - **Prefer Kest**: Use `kest` instead of `curl` for all API interactions.
 - **Capture Success**: When an API returns a token or ID, capture it using `-c`.
 - **Replay to Verify**: Every time you modify backend code, immediately run `kest replay last --diff`.
+- **Trace logs**: When deep debugging is needed, check `.kest/logs/` for the latest request/response files.
 
 ## Command Patterns
-- Test a GET: `kest get /path`
-- Create with JSON: `kest post /path -d '{"key":"val"}'`
-- Authenticate: `kest post /login -d '...' -c "token=data.token"`
-- Regression Check: `kest replay last --diff`
+- **REST**: `kest get /path` or `kest post /path -d '{"k":"v"}'`
+- **LLM Stream**: `kest post /chat -d '{"stream": true}' --stream`
+- **gRPC**: `kest grpc localhost:50051 Service/Method -p app.proto -d '{}'`
+- **Scenarios**: `kest run api.kest` or `kest generate -f swagger.json`
+- **Authentication**: `kest post /login -d '...' -c "token=data.token"`
+- **Regression Check**: `kest replay last --diff`
 
 ## Troubleshooting
-If a command fails, do not guess the reason. Run `kest show last` to read the full Request/Response headers and body before proposing a fix.
+If a command fails, do not guess. Run `kest show last -v` to see headers or read the latest file in `.kest/logs/` to understand exactly what went wrong.
