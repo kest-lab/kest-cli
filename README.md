@@ -19,12 +19,23 @@ It combines the simplicity of `curl` with the power of **variable capturing** an
 
 ## ✨ Key Features
 
+### 🎯 Core Capabilities
 - 🏎 **Zero-Config Workflow**: Just `kest get /path` and go. No collection setup needed.
 - 📜 **Automatic History**: Every request and response is automatically saved to a local SQLite database.
 - 🔗 **Variable Chaining**: Capture fields from JSON responses (`-c token=auth.key`) and use them in subsequent requests (`{{token}}`).
 - ✅ **Instant Assertions**: Verify status codes and body content on the fly (`-a status=200`).
 - 🔄 **Visual Replay & Diff**: Replay any historical request and see a visual diff if the response has changed.
 - 🌍 **Environment Aware**: Easily switch between `dev`, `staging`, and `prod` with inherited base URLs.
+
+### 🚀 Advanced Features (NEW!)
+- ⚡ **Performance Testing**: Assert response time with `--max-duration 1000` (fail if slower than 1000ms)
+- 🔄 **Smart Retry**: Handle flaky APIs with `--retry 3 --retry-wait 1000` (retry 3 times, 1s interval)
+- 🏃 **Parallel Execution**: Run test suites blazing fast with `kest run --parallel --jobs 8` (8 concurrent workers)
+- 📊 **Beautiful Test Reports**: Automatic summary with pass/fail stats, durations, and error details
+- 🌐 **gRPC Support**: Full gRPC testing with `kest grpc` command
+- 📡 **Streaming Support**: Handle LLM and server-sent events with `--stream` flag
+- 📝 **Detailed Logging**: Per-request log files in `.kest/logs/` for deep debugging
+
 
 ---
 
@@ -58,11 +69,77 @@ kest init
    ```bash
    kest history
    ```
+   ```
+   ID    TIME                 METHOD URL                    STATUS DURATION  
+   -------------------------------------------------------------------------
+   #34   00:30:16 today       GET    /api/profile           200    178ms   
+   #33   00:30:09 today       POST   /api/login             200    234ms    
+   ```
 
 4. **Replay and verify changes:**
    ```bash
    kest replay last --diff
    ```
+
+### 🆕 Advanced Testing Features
+
+**Performance Testing:**
+```bash
+# Fail if response time > 1000ms
+kest get /api/fast-endpoint --max-duration 1000
+```
+
+**Retry for Flaky APIs:**
+```bash
+# Retry 3 times with 2-second intervals
+kest post /api/payment -d @payment.json --retry 3 --retry-wait 2000
+```
+
+**Parallel Test Execution:**
+```bash
+# Create a test scenario file
+cat > api-tests.kest << EOF
+get /api/users/1 --max-duration 500
+get /api/users/2 --max-duration 500
+post /api/orders -d '{"item":"book"}' --retry 2
+get /api/health --max-duration 200
+EOF
+
+# Run with 8 parallel workers
+kest run api-tests.kest --parallel --jobs 8
+```
+
+**Test Summary Output:**
+```
+🚀 Running 4 test(s) from api-tests.kest
+⚡ Parallel mode: 8 workers
+
+╭─────────────────────────────────────────────────────────────────────╮
+│                        TEST SUMMARY                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│ ✓ GET      /api/users/1                          178ms │
+│ ✓ GET      /api/users/2                           92ms │
+│ ✓ POST     /api/orders                           234ms │
+│ ✓ GET      /api/health                            45ms │
+├─────────────────────────────────────────────────────────────────────┤
+│ Total: 4  │  Passed: 4  │  Failed: 0  │  Time: 549ms │
+│ Elapsed: 289ms                                                      │
+╰─────────────────────────────────────────────────────────────────────╯
+
+✓ All tests passed!
+```
+
+**gRPC Testing:**
+```bash
+# Test a gRPC service
+kest grpc localhost:50051 testpkg.TestService Say '{"message":"hello"}'
+```
+
+**Streaming Responses:**
+```bash
+# Handle LLM streaming
+kest post /v1/chat/completions -d @prompt.json --stream
+```
 
 ---
 
@@ -73,6 +150,8 @@ kest init
 - **AI Friendly**: Instead of screenshots of a UI, you get CLI outputs that AI can read and fix instantly.
 - **Context Preservation**: Your `kest history` is the source of truth for your API progress.
 - **Low Cognitive Load**: No context switching between your IDE and a heavy API app.
+- **Performance Aware**: Built-in duration assertions catch regressions immediately.
+- **Reliability First**: Automatic retries help you focus on development, not flaky infrastructure.
 
 ---
 
@@ -89,9 +168,45 @@ kest vars  # List all captured variables for the current environment
 kest get /users/1 -a "body.profile.role=admin" -a "body.tags.0=vip"
 ```
 
+### Performance Testing
+```bash
+# Assert response must be under 500ms
+kest get /api/search --max-duration 500
+
+# Combine with assertions
+kest get /api/users -a "status=200" --max-duration 1000
+```
+
+### Retry Mechanism
+```bash
+# Retry failed requests up to 5 times
+kest post /api/webhook -d @data.json --retry 5 --retry-wait 1000
+
+# Unlimited retries (use with caution!)
+kest get /eventually-consistent --retry -1
+```
+
+### Parallel Test Execution
+```bash
+# Run with default 4 workers
+kest run tests.kest --parallel
+
+# Use 16 workers for maximum speed
+kest run tests.kest --parallel --jobs 16
+```
+
 ### Global History
 ```bash
 kest history --global  # See requests across all your local projects
+```
+
+### Debugging
+```bash
+# Enable verbose mode
+kest get /api/debug -v
+
+# Check detailed logs (when log_enabled: true in config)
+cat .kest/logs/2026-01-30_00-30-16_GET_api_users.log
 ```
 
 ---
