@@ -43,6 +43,7 @@ environments:
     base_url: https://api.example.com
 
 active_env: dev
+log_enabled: true
 `
 		if err := os.WriteFile(configFile, []byte(configContent), 0644); err != nil {
 			return err
