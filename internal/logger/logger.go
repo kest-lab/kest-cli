@@ -11,24 +11,33 @@ import (
 )
 
 func LogRequest(method, url string, headers map[string]string, body string, status int, respHeaders map[string][]string, respBody string, duration time.Duration) error {
+	var logDir string
+
+	// Try project-level logging first
 	conf, err := config.LoadConfig()
-	if err != nil || !conf.LogEnabled {
-		return nil
+	if err == nil && conf.ProjectPath != "" && conf.LogEnabled {
+		// Project has .kest/config.yaml and logging is enabled
+		logDir = filepath.Join(conf.ProjectPath, ".kest", "logs")
+	} else {
+		// Fallback to global logging in ~/.kest/logs/
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return nil // Silently skip if we can't determine home dir
+		}
+		logDir = filepath.Join(homeDir, ".kest", "logs")
 	}
 
-	projectRoot := conf.ProjectPath
-	if projectRoot == "" {
-		return nil
-	}
-
-	logDir := filepath.Join(projectRoot, ".kest", "logs")
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return err
 	}
 
 	// Generate a unique filename: 2006-01-02_15-04-05_METHOD_PATH.log
 	// Sanitize path for filename
-	safePath := strings.ReplaceAll(strings.TrimPrefix(url, conf.GetActiveEnv().BaseURL), "/", "_")
+	baseURL := ""
+	if conf != nil && conf.GetActiveEnv().BaseURL != "" {
+		baseURL = conf.GetActiveEnv().BaseURL
+	}
+	safePath := strings.ReplaceAll(strings.TrimPrefix(url, baseURL), "/", "_")
 	safePath = strings.Map(func(r rune) rune {
 		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == '-' {
 			return r
