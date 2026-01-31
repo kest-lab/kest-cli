@@ -32,6 +32,7 @@ It combines the simplicity of `curl` with the power of **variable capturing** an
 - 🔄 **Smart Retry**: Handle flaky APIs with `--retry 3 --retry-wait 1000` (retry 3 times, 1s interval)
 - 🏃 **Parallel Execution**: Run test suites blazing fast with `kest run --parallel --jobs 8` (8 concurrent workers)
 - 📊 **Beautiful Test Reports**: Automatic summary with pass/fail stats, durations, and error details
+- 📝 **Markdown Support**: Write and run tests directly in Markdown files using ` ```kest ` blocks
 - 🌐 **gRPC Support**: Full gRPC testing with `kest grpc` command
 - 📡 **Streaming Support**: Handle LLM and server-sent events with `--stream` flag
 - 📝 **Detailed Logging**: Per-request log files in `.kest/logs/` for deep debugging
@@ -107,6 +108,32 @@ EOF
 
 # Run with 8 parallel workers
 kest run api-tests.kest --parallel --jobs 8
+```
+
+**Markdown Testing (New!):**
+You can now write your test scenarios inside Markdown files. Kest will extract and run any code block marked with `kest`.
+
+Example `README.md`:
+~~~markdown
+# My API Documentation
+
+To test the login flow:
+
+```kest
+post /api/login
+Content-Type: application/json
+
+{"username": "admin", "password": "password"}
+
+[Asserts]
+status=200
+body.token exists
+```
+~~~
+
+Run it directly:
+```bash
+kest run README.md
 ```
 
 **Test Summary Output:**

@@ -2,29 +2,28 @@
 
 ## 📦 本次更新内容
 
-### 🎯 核心功能
+### 核心功能
 1. **Duration 断言** - 性能测试
 2. **Retry 机制** - 自动重试
 3. **并行执行** - 加速测试
-4. **Test Summary** - 美观报告
+4. **Markdown 支持** - 文档即测试 (.md 格式)
+5. **Test Summary** - 美观报告
 
-### 🐛 Bug 修复
-- ✅ **gRPC 历史记录**: 修复了 gRPC 请求不保存到历史数据库的问题
+### Bug 修复
+- **gRPC 历史记录**: 修复了 gRPC 请求不保存到历史数据库的问题
 
 ---
 
-## ✨ 新增功能详解
+## 新增功能详解
 
-### 1️⃣ D
-
-uration 断言（性能测试）
+### 1. Duration 断言（性能测试）
 
 ```bash
 # 要求响应时间 < 1000ms，否则失败
 kest get /api/fast --max-duration 1000
 
 # 输出示例（失败）：
-# ❌ Request Failed: duration assertion failed: 1234ms > 1000ms
+# Request Failed: duration assertion failed: 1234ms > 1000ms
 ```
 
 **特性**：
@@ -35,16 +34,16 @@ kest get /api/fast --max-duration 1000
 
 ---
 
-### 2️⃣ Retry 机制（智能重试）
+### 2. Retry 机制（智能重试）
 
 ```bash
 # 重试 3 次，每次等待 1 秒
 kest post /api/order -d @data.json --retry 3 --retry-wait 1000
 
 # 输出示例：
-# ⏱️  Retry attempt 1/3 (waiting 1000ms)...
-# ⏱️  Retry attempt 2/3 (waiting 1000ms)...
-# ✅ Request succeeded on retry 2
+# Retry attempt 1/3 (waiting 1000ms)...
+# Retry attempt 2/3 (waiting 1000ms)...
+# Request succeeded on retry 2
 ```
 
 **特性**：
@@ -55,7 +54,7 @@ kest post /api/order -d @data.json --retry 3 --retry-wait 1000
 
 ---
 
-### 3️⃣ 并行执行（极速测试）
+### 3. 并行执行（极速测试）
 
 ```bash
 # 顺序执行（默认）
@@ -80,25 +79,32 @@ kest run tests.kest --parallel --jobs 8
 
 ---
 
-### 4️⃣ Test Summary（美观报告）
+### 4. Markdown 支持（文档即测试）
+
+```bash
+# 直接运行 Markdown 文件中的 kest 代码块
+kest run README.md
+```
+
+**特性**：
+- 支持 ` ```kest ` 代码块
+- 声明式语法：支持多行 JSON、Headers、断言
+- 适合编写可执行的 API 文档
+- 完美支持变量捕获和链式调用
+
+---
+
+### 5. Test Summary（美观报告）
 
 ```
-🚀 Running 6 test(s) from api-tests.kest
-⚡ Parallel mode: 8 workers
+ Running 6 test(s) from api-tests.kest
+ Parallel mode: 8 workers
 
-╭─────────────────────────────────────────────────────────────────────╮
-│                        TEST SUMMARY                                 │
-├─────────────────────────────────────────────────────────────────────┤
-│ ✓ GET      /api/users/1                          178ms │
-│ ✓ POST     /api/orders                           234ms │
-│ ✗ GET      /api/slow                            10006ms │
-│     Error: duration assertion failed: 10006ms > 3000ms      │
-├─────────────────────────────────────────────────────────────────────┤
-│ Total: 6  │  Passed: 5  │  Failed: 1  │  Time: 10.598s │
-│ Elapsed: 1.892s                                                     │
-╰─────────────────────────────────────────────────────────────────────╯
+ TEST SUMMARY                                 
+ Total: 6  |  Passed: 5  |  Failed: 1  |  Time: 10.598s 
+ Elapsed: 1.892s                                                     
 
-✗ 1 test(s) failed
+1 test(s) failed
 ```
 
 **特性**：
@@ -110,7 +116,7 @@ kest run tests.kest --parallel --jobs 8
 
 ---
 
-## 🐛 Bug 修复
+## Bug 修复
 
 ### gRPC 历史记录问题
 
@@ -140,14 +146,14 @@ store.SaveRecord(record)
 ```
 
 **影响**：
-- ✅ gRPC 请求现在会出现在 `kest history` 中
-- ✅ 可以使用 `kest show <id>` 查看详情
-- ✅ 支持 replay（如果有 proto 文件）
-- ✅ 跨项目和全局历史都能看到
+- gRPC 请求现在会出现在 `kest history` 中
+- 可以使用 `kest show <id>` 查看详情
+- 支持 replay（如果有 proto 文件）
+- 跨项目和全局历史都能看到
 
 ---
 
-## 📚 文档更新
+## 文档更新
 
 ### 新增文档
 
@@ -187,27 +193,27 @@ store.SaveRecord(record)
 
 ---
 
-## 🧪 测试验证
+## 测试验证
 
 ### 执行的测试
 
 ```bash
 # 1. 性能断言测试
 kest get https://httpbin.org/delay/2 --max-duration 500
-# ❌ Failed: duration assertion failed: 2621ms > 500ms ✅
+# Failed: duration assertion failed: 2621ms > 500ms 
 
 # 2. 重试测试
 kest get https://httpbin.org/status/500 --retry 3 --retry-wait 500
-# ⏱️  Retry attempts shown ✅
+# Retry attempts shown 
 
 # 3. 并行执行测试
 kest run demo.kest --parallel --jobs 6
-# 🚀 Parallel mode activated ✅
-# 📊 Test Summary shown ✅
+# Parallel mode activated 
+# Test Summary shown 
 
 # 4. gRPC 记录修复验证
 kest history --global | grep GRPC
-# (应该能看到 gRPC 记录) ✅
+# (应该能看到 gRPC 记录) 
 ```
 
 ### 历史记录验证
@@ -219,12 +225,12 @@ kest history
 # #34   00:30:16 today       GET    https://httpbin.org/...    200    11420ms   
 # #33   00:30:09 today       GET    https://httpbin.org/...    200    3672ms    
 # ...
-# Total: 20 records ✅
+# Total: 20 records 
 ```
 
 ---
 
-## 📊 VS Hurl 对比
+## VS Hurl 对比
 
 |功能|Hurl|Kest CLI|
 |---|---|---|
@@ -240,7 +246,7 @@ kest history
 
 ---
 
-## 🚀 使用建议
+## 使用建议
 
 ### CI/CD 集成
 
@@ -280,20 +286,17 @@ kest run tests.kest --parallel --jobs 8
 
 ---
 
-## 📝 Git 提交记录
+## Git 提交记录
 
 ```bash
 # 功能实现
-git commit -m "feat: implement duration assertion, retry, parallel execution, and test summary"
+git commit -m "feat: implement markdown support, duration assertion, retry, parallel execution, and test summary"
 
 # 文档更新
-git commit -m "docs: comprehensive documentation update with new features"
+git commit -m "docs: add markdown testing guide and update features summary"
 
 # Bug 修复
 git commit -m "fix: add history recording for gRPC requests"
-```
-
----
 
 ## 🎯 下一步计划
 
