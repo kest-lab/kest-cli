@@ -127,8 +127,17 @@ func ExecuteRequest(opts RequestOptions) error {
 		processedURL = strings.TrimSuffix(env.BaseURL, "/") + "/" + strings.TrimPrefix(targetURL, "/")
 	}
 
-	// Interpolate URL
-	finalURL := variable.Interpolate(processedURL, vars)
+	// Interpolate URL with warnings in verbose mode
+	var finalURL string
+	if opts.Verbose {
+		var warnings []string
+		finalURL, warnings = variable.InterpolateWithWarning(processedURL, vars, true)
+		if len(warnings) > 0 {
+			fmt.Printf("⚠️  Warning: Undefined variables in URL: %v\n", warnings)
+		}
+	} else {
+		finalURL = variable.Interpolate(processedURL, vars)
+	}
 
 	// Handle query params
 	if len(opts.Queries) > 0 {
@@ -148,20 +157,22 @@ func ExecuteRequest(opts RequestOptions) error {
 		finalURL = u.String()
 	}
 
-	// Handle headers
+	// Handle headers (normalize keys to avoid duplicates)
 	headers := make(map[string]string)
 	// Default headers from config
 	if conf != nil {
 		for k, v := range conf.Defaults.Headers {
-			headers[k] = variable.Interpolate(v, vars)
+			normalizedKey := strings.ToLower(strings.TrimSpace(k))
+			headers[normalizedKey] = variable.Interpolate(v, vars)
 		}
 	}
-	// Command line headers
+	// Command line headers (override config headers if same key)
 	for _, h := range opts.Headers {
 		processedHeader := variable.Interpolate(h, vars)
 		parts := strings.SplitN(processedHeader, ":", 2)
 		if len(parts) == 2 {
-			headers[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+			normalizedKey := strings.ToLower(strings.TrimSpace(parts[0]))
+			headers[normalizedKey] = strings.TrimSpace(parts[1])
 		}
 	}
 
@@ -271,6 +282,7 @@ func ExecuteRequest(opts RequestOptions) error {
 						Project:     conf.ProjectID,
 					})
 					fmt.Printf("Captured: %s = %s\n", varName, result.String())
+					logger.LogToSession("Captured: %s = %s", varName, result.String())
 				}
 			}
 		}
@@ -285,8 +297,10 @@ func ExecuteRequest(opts RequestOptions) error {
 			passed, msg := variable.Assert(resp.Status, resp.Body, resp.Duration.Milliseconds(), vars, assertion)
 			if passed {
 				fmt.Printf("  ✅ %s\n", assertion)
+				logger.LogToSession("Assertion Passed: %s", assertion)
 			} else {
 				fmt.Printf("  ❌ %s (%s)\n", assertion, msg)
+				logger.LogToSession("Assertion Failed: %s (%s)", assertion, msg)
 				if firstErr == "" {
 					firstErr = fmt.Sprintf("assertion failed: %s (%s)", assertion, msg)
 				}

@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
+	"github.com/kest-lab/kest-cli/internal/logger"
 	"github.com/kest-lab/kest-cli/internal/summary"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -33,6 +35,9 @@ func init() {
 }
 
 func runScenario(filePath string) error {
+	logger.StartSession(filepath.Base(filePath))
+	defer logger.EndSession()
+
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
