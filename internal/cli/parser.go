@@ -111,12 +111,16 @@ func ParseBlock(raw string) (RequestOptions, error) {
 		case "body":
 			bodyLines = append(bodyLines, line)
 		case "captures":
-			if trimmed != "" {
-				opts.Captures = append(opts.Captures, trimmed)
+			if trimmed != "" && !strings.HasPrefix(trimmed, "#") {
+				// Strip trailing comments
+				val := strings.SplitN(trimmed, "#", 2)[0]
+				opts.Captures = append(opts.Captures, strings.TrimSpace(val))
 			}
 		case "asserts":
-			if trimmed != "" {
-				opts.Asserts = append(opts.Asserts, trimmed)
+			if trimmed != "" && !strings.HasPrefix(trimmed, "#") {
+				// Strip trailing comments
+				val := strings.SplitN(trimmed, "#", 2)[0]
+				opts.Asserts = append(opts.Asserts, strings.TrimSpace(val))
 			}
 		}
 	}

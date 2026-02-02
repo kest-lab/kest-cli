@@ -141,7 +141,7 @@ func ExecuteRequest(opts RequestOptions) error {
 	// Default headers from config
 	if conf != nil {
 		for k, v := range conf.Defaults.Headers {
-			headers[k] = v
+			headers[k] = variable.Interpolate(v, vars)
 		}
 	}
 	// Command line headers
