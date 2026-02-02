@@ -103,10 +103,22 @@ func ExecuteRequest(opts RequestOptions) error {
 	env := conf.GetActiveEnv()
 	store, _ := storage.NewStore()
 
-	// Load variables
-	var vars map[string]string
+	// Load variables - merge config environment variables with runtime captured variables
+	vars := make(map[string]string)
+
+	// First, load static variables from config environment
+	if env.Variables != nil {
+		for k, v := range env.Variables {
+			vars[k] = v
+		}
+	}
+
+	// Then, load runtime captured variables (these override config variables if same name)
 	if store != nil {
-		vars, _ = store.GetVariables(conf.ProjectID, conf.ActiveEnv)
+		capturedVars, _ := store.GetVariables(conf.ProjectID, conf.ActiveEnv)
+		for k, v := range capturedVars {
+			vars[k] = v
+		}
 	}
 
 	// Handle base URL

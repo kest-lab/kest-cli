@@ -2,6 +2,7 @@ package variable
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -24,15 +25,28 @@ func Assert(status int, body []byte, durationMs int64, vars map[string]string, a
 		return false, fmt.Sprintf("exists check only supported for body fields: %s", key)
 	}
 
-	operators := []string{"==", "!=", ">=", "<=", ">", "<"}
+	operators := []string{"==", "!=", ">=", "<=", ">", "<", "matches"}
 	var op string
 	var parts []string
 
 	for _, o := range operators {
-		if strings.Contains(assertion, o) {
+		if strings.Contains(assertion, " "+o+" ") || strings.HasSuffix(assertion, " matches") {
+			// Special handling for matches to avoid partial hits if needed,
+			// but strings.Contains is usually fine for simple operators.
 			op = o
 			parts = strings.SplitN(assertion, o, 2)
 			break
+		}
+	}
+
+	if op == "" || len(parts) != 2 {
+		// Try without spaces for common operators
+		for _, o := range []string{"==", "!=", ">=", "<=", ">", "<"} {
+			if strings.Contains(assertion, o) {
+				op = o
+				parts = strings.SplitN(assertion, o, 2)
+				break
+			}
 		}
 	}
 
@@ -78,6 +92,14 @@ func Assert(status int, body []byte, durationMs int64, vars map[string]string, a
 		}
 	case "!=":
 		if actual != expected {
+			return true, ""
+		}
+	case "matches":
+		matched, err := regexp.MatchString(expected, actual)
+		if err != nil {
+			return false, fmt.Sprintf("invalid regex: %s", expected)
+		}
+		if matched {
 			return true, ""
 		}
 	case ">", ">=", "<", "<=":
