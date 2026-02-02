@@ -251,8 +251,12 @@ kest history --global  # See requests across all your local projects
 # Enable verbose mode
 kest get /api/debug -v
 
-# Check detailed logs (when log_enabled: true in config)
+# Check detailed request logs (individual files)
 cat .kest/logs/2026-01-30_00-30-16_GET_api_users.log
+
+# Check Session Logs (full flow traces)
+# Each 'kest run' creates a comprehensive session log
+cat .kest/logs/session_2026-02-02_18-52-10_test-user.flow.md.log
 ```
 
 ---
