@@ -9,8 +9,9 @@ import (
 )
 
 var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Initialize Kest configuration in the current directory",
+	Use:     "init",
+	Aliases: []string{"i"},
+	Short:   "Initialize Kest configuration in the current directory",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dir := ".kest"
 		if err := os.MkdirAll(dir, 0755); err != nil {

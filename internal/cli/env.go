@@ -8,8 +8,9 @@ import (
 )
 
 var envCmd = &cobra.Command{
-	Use:   "env",
-	Short: "Manage environments",
+	Use:     "env",
+	Aliases: []string{"e"},
+	Short:   "Manage environments",
 }
 
 var envListCmd = &cobra.Command{

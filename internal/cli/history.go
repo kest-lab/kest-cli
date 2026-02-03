@@ -17,9 +17,10 @@ var (
 )
 
 var historyCmd = &cobra.Command{
-	Use:   "history",
-	Short: "List test history",
-	Long:  "Display a table of recently recorded API requests. You can filter by project or limit the number of results.",
+	Use:     "history",
+	Aliases: []string{"h", "hist"},
+	Short:   "List test history",
+	Long:    "Display a table of recently recorded API requests. You can filter by project or limit the number of results.",
 	Example: `  # Show last 20 records (default)
   kest history
 

@@ -21,8 +21,9 @@ var (
 )
 
 var runCmd = &cobra.Command{
-	Use:   "run [file]",
-	Short: "Run a Kest scenario file (.kest) or a Markdown flow file (.flow.md)",
+	Use:     "run [file]",
+	Aliases: []string{"r"},
+	Short:   "Run a Kest scenario file (.kest) or a Markdown flow file (.flow.md)",
 	Long: `Execute API test scenarios defined in .kest or .flow.md files.
 Kest Flow (.flow.md) allows you to use standard Markdown to document and test your APIs simultaneously.`,
 	Example: `  # Run a single flow

@@ -22,8 +22,9 @@ var (
 )
 
 var syncCmd = &cobra.Command{
-	Use:   "sync",
-	Short: "Sync API documentation to Kest Platform",
+	Use:     "sync",
+	Aliases: []string{"sy"},
+	Short:   "Sync API documentation to Kest Platform",
 	Long: `Sync your API requests from local history to Kest Platform.
 This allows you to generate API documentation automatically without modifying your code.`,
 }
