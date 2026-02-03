@@ -54,6 +54,7 @@ brews:
     repository:
       owner: kest-lab
       name: homebrew-kest
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: "https://github.com/kest-lab/kest-cli"
     description: "The CLI-first API Testing Tool for Vibe Coding"
     license: "MIT"
