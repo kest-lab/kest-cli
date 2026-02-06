@@ -28,6 +28,7 @@ type RequestOptions struct {
 	Captures    []string
 	Asserts     []string
 	Verbose     bool
+	DebugVars   bool
 	Stream      bool
 	NoRecord    bool
 	MaxDuration int // Max duration in milliseconds
@@ -137,6 +138,38 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 		for k, v := range capturedVars {
 			vars[k] = v
 		}
+	}
+
+	// Debug: Show variable resolution if requested
+	if opts.DebugVars && len(vars) > 0 {
+		fmt.Println("\n🔍 Variable Resolution:")
+
+		// Get captured vars for source detection
+		var capturedVars map[string]string
+		if store != nil {
+			capturedVars, _ = store.GetVariables(conf.ProjectID, conf.ActiveEnv)
+		}
+
+		for k, v := range vars {
+			source := "config"
+			if capturedVars != nil {
+				if _, exists := capturedVars[k]; exists {
+					source = "runtime capture"
+				}
+			}
+			// Check for built-in variables
+			if k == "$randomInt" || k == "$timestamp" {
+				source = "built-in"
+			}
+
+			// Truncate long values
+			displayValue := v
+			if len(v) > 50 {
+				displayValue = v[:50] + "..."
+			}
+			fmt.Printf("  {{%s}} → \"%s\" (from: %s)\n", k, displayValue, source)
+		}
+		fmt.Println()
 	}
 
 	// Handle base URL
@@ -323,7 +356,18 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 				fmt.Printf("  ✅ %s\n", assertion)
 				logger.LogToSession("Assertion Passed: %s", assertion)
 			} else {
-				fmt.Printf("  ❌ %s (%s)\n", assertion, msg)
+				fmt.Printf("  ❌ Assertion Failed: %s\n", assertion)
+				fmt.Printf("     %s\n", strings.ReplaceAll(msg, "\n", "\n     "))
+
+				// Show response body snippet on failure for context
+				if len(resp.Body) > 0 && len(resp.Body) < 500 {
+					fmt.Printf("\n     Response Body:\n")
+					fmt.Printf("     %s\n", string(resp.Body))
+				} else if len(resp.Body) >= 500 {
+					fmt.Printf("\n     Response Body (truncated):\n")
+					fmt.Printf("     %s...\n", string(resp.Body[:500]))
+				}
+
 				logger.LogToSession("Assertion Failed: %s (%s)", assertion, msg)
 				if firstErr == "" {
 					firstErr = fmt.Sprintf("assertion failed: %s (%s)", assertion, msg)

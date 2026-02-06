@@ -63,11 +63,8 @@ func StartSession(name string) (*SessionLogger, error) {
 		return nil, err
 	}
 
-	filename := fmt.Sprintf("session_%s_%s.log",
-		time.Now().Format("2006-01-02_15-04-05"),
-		sanitizeFilename(name),
-	)
-	logPath := filepath.Join(logDir, filename)
+	// Primary log file for AI Editors (stable path)
+	logPath := filepath.Join(logDir, "kest.log")
 
 	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
@@ -76,7 +73,12 @@ func StartSession(name string) (*SessionLogger, error) {
 
 	sl := &SessionLogger{File: f, path: logPath}
 
-	header := fmt.Sprintf("=== KEST SESSION START: %s ===\nTime: %s\n\n", name, time.Now().Format(time.RFC3339))
+	header := fmt.Sprintf("\n\n"+
+		"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"+
+		"🚀 KEST SESSION START: %s\n"+
+		"⏰ Time: %s\n"+
+		"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n",
+		name, time.Now().Format(time.RFC3339))
 	sl.File.WriteString(header)
 
 	sessionMu.Lock()
@@ -94,6 +96,15 @@ func EndSession() {
 		currentSession.File.Close()
 		currentSession = nil
 	}
+}
+
+func GetSessionPath() string {
+	sessionMu.RLock()
+	defer sessionMu.RUnlock()
+	if currentSession != nil {
+		return currentSession.path
+	}
+	return ""
 }
 
 func LogToSession(format string, args ...interface{}) {
@@ -131,49 +142,39 @@ func LogRequest(method, url string, headers map[string]string, body string, stat
 	logEntry += prettyJSON(respBody) + "\n"
 	logEntry += "\n"
 
-	// Check if session is active
+	// Determine log destination
+	var logFile *os.File
+	var shouldClose bool
+
 	sessionMu.RLock()
-	hasSession := currentSession != nil
+	if currentSession != nil {
+		logFile = currentSession.File
+		shouldClose = false
+	}
 	sessionMu.RUnlock()
 
-	if hasSession {
-		LogToSession("%s", logEntry)
-		return nil
+	// If no session, log to kest.log by default
+	if logFile == nil {
+		logDir, err := getLogDir()
+		if err == nil {
+			os.MkdirAll(logDir, 0755)
+			logPath := filepath.Join(logDir, "kest.log")
+			f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+			if err == nil {
+				logFile = f
+				shouldClose = true
+			}
+		}
 	}
 
-	// If no session, write to individual file
-	logDir, err := getLogDir()
-	if err != nil {
-		return nil
+	if logFile != nil {
+		if shouldClose {
+			defer logFile.Close()
+		}
+		_, _ = logFile.WriteString(logEntry)
 	}
 
-	if err := os.MkdirAll(logDir, 0755); err != nil {
-		return err
-	}
-
-	// Generate a unique filename: 2006-01-02_15-04-05_METHOD_PATH.log
-	conf, _ := config.LoadConfig()
-	baseURL := ""
-	if conf != nil && conf.GetActiveEnv().BaseURL != "" {
-		baseURL = conf.GetActiveEnv().BaseURL
-	}
-	safePath := sanitizeFilename(strings.TrimPrefix(url, baseURL))
-
-	filename := fmt.Sprintf("%s_%s%s.log",
-		time.Now().Format("2006-01-02_15-04-05"),
-		strings.ToUpper(method),
-		safePath,
-	)
-	logPath := filepath.Join(logDir, filename)
-
-	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = f.WriteString(logEntry)
-	return err
+	return nil
 }
 
 func Info(format string, a ...interface{}) {

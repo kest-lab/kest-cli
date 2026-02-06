@@ -26,8 +26,32 @@ Kest 支持两种格式的测试场景文件：
 这是目前最推荐的方式，它允许你像写 API 文档一样编写测试用例。建议使用 `.flow.md` 后缀以便识别。
 
 #### 语法规范
-在 Markdown 文件中，使用 ` ```kest ` 代码块定义一个测试步骤。
+在 Markdown 文件中，你可以使用两种语法：
+- **新语法（推荐）**：` ```flow / ```step / ```edge ` 形成完整流程图
+- **旧语法（兼容）**：` ```kest ` 定义单个请求块
 
+**新语法示例：**
+```flow
+@flow id=user-flow
+@name User Flow
+@version 1.0
+```
+
+```step
+@id login
+@name Login
+POST /api/v1/login
+[Asserts]
+status == 200
+```
+
+```edge
+@from login
+@to profile
+@on success
+```
+
+**旧语法示例：**
 ```kest
 # 1. 第一行永远是 METHOD URL
 POST /api/v1/projects

@@ -1,81 +1,323 @@
-# Kest Flow (.flow.md) 使用指南 🌊
+# Kest Flow (.flow.md) User Guide 🌊
 
-Kest Flow 是 Kest CLI 的核心功能之一，旨在通过 Markdown 文档来实现“文档即测试”。每一个 `.flow.md` 文件代表一个完整的**测试链路场景**。
+Kest Flow is one of the core features of Kest CLI, designed to achieve "Documentation as Code" through Markdown documents. Each `.flow.md` file represents a complete **test flow scenario**.
 
-## 🌟 核心理念
+## 🌟 Core Philosophy
 
-- **链路式测试**：将多个相关的 API 调用串联起来，形成一个完整的业务流（如：注册 -> 登录 -> 创建项目 -> 查询详情）。
-- **变量传递**：自动从上一个接口的响应中提取数据（如 Token、ID），并传递给后续接口。
-- **文档即测试**：你的 API 文档本身就是可以一键执行的测试用例。
+- **Flow-based Testing**: Chain multiple related API calls together to form a complete business flow (e.g., Register → Login → Create Project → Query Details).
+- **Variable Passing**: Automatically extract data from previous responses (like Token, ID) and pass them to subsequent requests.
+- **Documentation as Code**: Your API documentation itself is executable test cases.
 
 ---
 
-## 📝 编写 Flow 文件
+## 🎯 Best Practices
 
-创建一个后缀为 `.flow.md` 的文件，使用 ` ```kest ` 代码块定义每一个步骤。
+### Use Relative URLs, Not Full URLs
 
-### 语法规范
-
+**❌ Don't hardcode base URLs in flow files:**
 ```kest
-# 1. 第一行：METHOD URL
-POST /api/v1/auth/login
+# Bad - hardcoded base URL
+POST https://api.example.com/v1/auth/login
+```
 
-# 2. 请求头 (可选)
+**✅ Use relative URLs and configure base URL:**
+```kest
+# Good - relative URL
+POST /api/v1/auth/login
+```
+
+**Why?**
+- Flow files become environment-agnostic
+- Easy to switch between dev/staging/production
+- No need to edit flow files when URLs change
+
+**How to configure base URL:**
+
+1. **Initialize project:**
+```bash
+kest init
+```
+
+2. **Edit `.kest/config.yaml`:**
+```yaml
+project_id: my-project
+active_env: dev
+
+environments:
+  - name: dev
+    base_url: https://api.dev.example.com
+  - name: staging
+    base_url: https://api.staging.example.com
+  - name: production
+    base_url: https://api.example.com
+```
+
+3. **Switch environments:**
+```bash
+kest env use staging
+kest run login.flow.md  # Uses staging base URL
+```
+
+---
+
+## 📝 Writing Flow Files
+
+Create a file with the `.flow.md` extension and use code blocks to define each step.
+
+### Supported Code Block Types
+
+Kest supports the following code block markers (choose your preferred syntax highlighting):
+- ` ```kest ` - Standard Kest syntax (legacy)
+- ` ```http ` - HTTP syntax highlighting (legacy)
+- ` ```json ` - JSON syntax highlighting (legacy)
+- ` ```flow ` - Flow metadata block (new)
+- ` ```step ` - Step block (new)
+- ` ```edge ` - Edge block (new)
+
+Both backticks and tildes are supported: ` ``` ` and ` ~~~ `.
+
+---
+
+## 🧭 Flow Blocks (Recommended)
+
+Flow blocks are Markdown-native and map 1:1 to a flow graph.
+
+### 1) Flow Metadata Block
+```flow
+@flow id=user-onboarding
+@name User Onboarding
+@version 1.0
+@tags auth, user
+@env dev
+```
+
+### 2) Step Block
+```step
+@id login
+@name Login
+@type http
+@retry 2
+@max-duration 1000
+
+POST /api/v1/auth/login
 Content-Type: application/json
 
-# 3. 请求体 (与 Header 之间保留一个空行)
 {
   "username": "admin",
   "password": "password123"
 }
 
-# 4. 变量捕获 (核心功能)
 [Captures]
-token: data.access_token
-user_id: data.user.id
+token = data.access_token
+user_id = data.user.id
 
-# 5. 逻辑断言
 [Asserts]
 status == 200
 body.data.access_token exists
-duration < 500ms
+duration < 500
+```
+
+### 3) Edge Block (Flow Graph)
+```edge
+@from login
+@to profile
+@on success
+```
+
+### Mermaid Preview (in `-v` mode)
+Kest prints a Mermaid flowchart for the parsed Flow document when you run with `-v`:
+```bash
+kest run user.flow.md -v
 ```
 
 ---
 
-## 🔗 变量与 Token 传递
+## 📘 Legacy Kest Blocks (Still Supported)
 
-在后续步骤中，你可以使用 `{{variable_name}}` 语法引用之前捕获的变量。
+Legacy blocks are kept for compatibility.
+### Complete Syntax Specification
 
 ```kest
-GET /api/v1/projects
+# 1. First line: METHOD URL
+POST /api/v1/auth/login
+
+# 2. Request Headers (Optional)
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+# 3. Request Body (Leave an empty line after headers)
+{
+  "username": "admin",
+  "password": "password123"
+}
+
+# 4. Variable Capture (Core Feature)
+[Captures]
+token = data.access_token
+user_id = data.user.id
+
+# 5. Logical Assertions
+[Asserts]
+status == 200
+body.data.access_token exists
+duration < 500
+```
+
+### 📋 Query Parameters
+
+You can add them directly in the URL or use the `[Queries]` block:
+
+```kest
+GET /api/v1/search
+
+[Queries]
+q = kest
+page = 1
+limit = 20
+```
+
+
+---
+
+## 🔗 Variable System
+
+### Variable Capture
+
+Use `[Captures]` to extract data from responses and save as variables:
+
+```kest
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "password123"
+}
+
+[Captures]
+token = data.access_token
+user_id = data.user.id
+expires_at = data.expires_at
+```
+
+**Syntax Explanation**:
+- Use `variable_name = JSONPath` format
+- JSONPath extracts data from response body
+- Variables are saved to local database (project + environment isolation)
+
+### Variable Usage
+
+Reference variables in subsequent requests using `{{variable_name}}`:
+
+```kest
+GET /api/v1/users/{{user_id}}/profile
 Authorization: Bearer {{token}}
 
 [Asserts]
 status == 200
 ```
 
----
+**Available Locations**:
+- URL: `/users/{{user_id}}`
+- Header: `Authorization: Bearer {{token}}`
+- Body: `{"userId": "{{user_id}}"}`
+- Query: `?id={{user_id}}`
 
-## 🚀 执行命令
+### Built-in Dynamic Variables
 
-你可以通过一个简单的命令执行整个测试链路：
+Kest provides built-in variables for generating dynamic data:
+
+```kest
+POST /api/v1/test
+Content-Type: application/json
+
+{
+  "requestId": "req-{{$randomInt}}",
+  "timestamp": {{$timestamp}}
+}
+```
+
+**Available Built-in Variables**:
+- `{{$randomInt}}` - Random integer (0-10000)
+- `{{$timestamp}}` - Current Unix timestamp
+
+### Variable Priority
+
+When variables with the same name come from multiple sources, the priority is:
+
+1. **Runtime Capture** - Variables captured via `[Captures]` in Flow (Highest Priority)
+2. **Config File** - Static variables defined in `.kest/config.yaml`
+3. **Built-in Variables** - `$randomInt`, `$timestamp`
+
+### Variable Scope
+
+Variable scope is: **Current Project + Current Environment**
 
 ```bash
-# 执行单个流程
+# After switching environments, variables are isolated
+kest env use dev
+kest run login.flow.md    # Captured token saved in dev environment
+
+kest env use staging
+kest run login.flow.md    # Captured token saved in staging environment
+```
+
+---
+
+## 🚀 Execution Commands
+
+You can execute the entire test flow with a simple command:
+
+```bash
+# Execute a single flow
 kest run user_auth.flow.md
 
-# 并行执行（如果你有多个 flow）
+# Parallel execution (if you have multiple flows)
 kest run tests/ --parallel --jobs 4
 ```
 
 ---
 
-## 🛠 进阶技巧
+## 🛠 Advanced Tips
 
-1. **环境切换**：配合 `kest env` 使用，可以无缝在开发、测试、生产环境运行同一个 flow。
-2. **多行 JSON**：Markdown 代码块完美支持多行格式化 JSON，比命令行更易读。
-3. **注释说明**：在代码块之外，你可以编写详细的 Markdown 文档说明，Kest 执行时会自动忽略非代码块内容。
+### 1. Environment Switching
+Use with `kest env` to seamlessly run the same flow across dev, test, and production environments:
+```bash
+kest env use staging
+kest run user_auth.flow.md
+```
+
+### 2. Retry Mechanism
+Add retry logic for unstable endpoints:
+```kest
+GET /api/v1/flaky-endpoint
+
+[Asserts]
+status == 200
+# Use command line parameters: kest run --retry 3 --retry-wait 1000
+```
+
+### 3. Parallel Execution
+Speed up test execution:
+```bash
+kest run tests/ --parallel --jobs 8
+```
+
+### 4. Verbose Logging
+View complete request/response details:
+```bash
+kest run user_auth.flow.md --verbose
+```
+
+### 5. Mixed Documentation and Testing
+Outside code blocks, you can write detailed Markdown documentation. Kest automatically ignores non-code-block content during execution, making your API documentation itself executable test cases.
+
+## 📘 Getting Help
+
+Run the following command anytime to get the built-in tutorial:
+```bash
+kest guide
+```
 
 ---
 

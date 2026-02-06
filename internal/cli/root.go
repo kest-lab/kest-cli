@@ -24,7 +24,9 @@ Core Features:
 
 Tips:
   - Logs are saved in ~/.kest/logs/ (or .kest/logs/ in your project directory)
-  - Use --verbose flag with 'run' to see full request/response details on the fly`,
+  - Use --verbose flag with 'run' to see full request/response details on the fly
+  - RUN 'kest guide' for a quick tutorial on Writing Flow files (.flow.md)
+`,
 	Example: `  # Initialize a new project
   kest init
 

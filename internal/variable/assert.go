@@ -128,5 +128,12 @@ func Assert(status int, body []byte, durationMs int64, vars map[string]string, a
 		}
 	}
 
-	return false, fmt.Sprintf("%s mismatch: expected %s %s, got %s", key, op, expected, actual)
+	// Build detailed error message
+	errorMsg := fmt.Sprintf(
+		"%s mismatch\n"+
+			"  Expected: %s %s\n"+
+			"  Actual:   %s",
+		key, op, expected, actual,
+	)
+	return false, errorMsg
 }

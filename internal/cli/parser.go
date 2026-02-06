@@ -27,7 +27,10 @@ func ParseMarkdown(content string) []KestBlock {
 		line := scanner.Text()
 		trimmed := strings.TrimSpace(line)
 
-		if strings.HasPrefix(trimmed, "```kest") {
+		if strings.HasPrefix(trimmed, "```kest") ||
+			strings.HasPrefix(trimmed, "```http") ||
+			strings.HasPrefix(trimmed, "```flow") ||
+			strings.HasPrefix(trimmed, "```json") {
 			inBlock = true
 			blockStartLine = lineNum
 			currentBlock.Reset()

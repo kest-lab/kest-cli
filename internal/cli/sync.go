@@ -112,6 +112,9 @@ type SyncResponse struct {
 }
 
 func runSyncPush() error {
+	logger.StartSession("sync_push")
+	defer logger.EndSession()
+
 	// 1. Load configuration
 	conf, err := config.LoadConfig()
 	if err != nil {
@@ -368,6 +371,11 @@ func pushToPlatform(apiURL, token, projectID string, specs []APISpecSync, conf *
 	// Save last sync time
 	conf.LastSyncTime = time.Now().Format(time.RFC3339)
 	config.SaveConfig(conf)
+
+	if logPath := logger.GetSessionPath(); logPath != "" {
+		fmt.Printf("\n📄 Full sync logs generated at: %s\n", logPath)
+		fmt.Printf("💡 Tip: Use this path for deep-context debugging in AI Editors (Cursor/Windsurf)\n")
+	}
 
 	return nil
 }
