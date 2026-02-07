@@ -17,7 +17,6 @@ builds:
     goarch:
       - amd64
       - arm64
-    # 定义 binary 的命名格式，方便 install.sh 识别
     id: kest
     targets:
       - darwin_amd64
@@ -28,7 +27,6 @@ builds:
 
 archives:
   - format: tar.gz
-    # 让文件名符合 install.sh 的逻辑，或者 install.sh 逻辑配合这里
     name_template: >-
       {{ .ProjectName }}_{{ .Os }}_{{ .Arch }}
     format_overrides:
@@ -48,7 +46,6 @@ changelog:
       - '^docs:'
       - '^test:'
 
-# Homebrew 自动更新配置
 brews:
   - name: kest
     repository:
