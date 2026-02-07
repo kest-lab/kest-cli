@@ -1,18 +1,17 @@
-# Kest Flow Writing Skill 🌊
+# Kest Flow Writing Skill
 
-Expertise in writing structured, chained API tests using Kest Flow (.flow.md). This skill ensures flows are written according to the highest standards of "Documentation as Code".
+Expertise in writing structured, chained API tests using Kest Flow (.flow.md). This skill ensures flows are written according to the latest Kest syntax standards.
 
-## 🎯 Standard Syntax (Scheme B - Recommended)
+## Standard Syntax
 
-Always prefer the ` ```step ` block format for maximum expressiveness and future compatibility.
+Always use ` ```kest ` code blocks with Markdown headings for step names.
 
 ### 1. Step Structure
-```step
-@id <unique_id>
-@name "<Human Readable Name>"
-@retry <number> (optional)
-@max-duration <ms> (optional)
 
+```markdown
+## 1. Step Name
+
+` ` `kest
 METHOD /path/to/api
 Header: value
 
@@ -21,25 +20,38 @@ Header: value
 }
 
 [Captures]
-var_name = json.path
+var_name: json.path
 
 [Asserts]
 status == 200
 body.field exists
+` ` `
 ```
 
 ### 2. Variable Chaining
-- **Capture**: `var_name = data.path` (extracts from previous response)
+- **Capture**: `var_name: data.path` (colon separator, extracts from response)
 - **Injection**: `{{var_name}}` (injects into URL, Headers, or Body)
+- **Built-in**: `{{$randomInt}}` generates a random integer
 
-## 🛠 AI Writing Rules
-1. **Prefer Relative URLs**: Always use `/api/v1/...` instead of `https://...`.
-2. **Sequential IDs**: Use meaningful IDs for steps (e.g., `login`, `create_user`).
-3. **Robust Captures**: Use specific JSON paths for captures.
-4. **English Asserts**: Use natural assertions like `status == 200`, `body exists`, `duration < 500`.
-5. **Flow Metadata**: Include a ` ```flow ` block at the top for document-level settings.
+### 3. Supported Assertions
+```
+status == 200                    # Status code
+body.data.id exists              # Field existence
+body.data.password !exists       # Field non-existence
+body.data.username != ""         # Not-equal
+body.name == "Expected"          # String equality
+duration < 500ms                 # Response time (always include ms)
+```
 
-## 📝 Prompt Template for Generating Flows
+## AI Writing Rules
+1. **Always use ` ```kest `**: Never use ` ```step `, ` ```http `, or ` ```flow `.
+2. **Markdown headings for steps**: Use `## N. Step Name`, not `@id` or `@name`.
+3. **Colon for captures**: Use `var: path` not `var = path`.
+4. **Prefer relative URLs**: Always use `/api/v1/...` instead of `https://...`.
+5. **Meaningful variable names**: Use `authToken`, `projectID`, not `t`, `p`.
+6. **Duration assertions**: Always include `ms` suffix: `duration < 500ms`.
+
+## Prompt Template for Generating Flows
 When asked to "generate a Kest flow", follow this pattern:
 1. Define the business objective.
 2. Step 1: Initial state (e.g., Login/Signup) + Capture credentials.
