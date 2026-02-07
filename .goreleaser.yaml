@@ -17,13 +17,9 @@ builds:
     goarch:
       - amd64
       - arm64
-    id: kest
-    targets:
-      - darwin_amd64
-      - darwin_arm64
-      - linux_amd64
-      - linux_arm64
-      - windows_amd64
+    ignore:
+      - goos: windows
+        goarch: arm64
 
 archives:
   - format: tar.gz
@@ -45,17 +41,3 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
-
-brews:
-  - name: kest
-    repository:
-      owner: kest-lab
-      name: homebrew-kest
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    homepage: "https://github.com/kest-lab/kest-cli"
-    description: "The CLI-first API Testing Tool for Vibe Coding"
-    license: "MIT"
-    test: |
-      system "#{bin}/kest version"
-    install: |
-      bin.install "kest"
