@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -241,4 +242,37 @@ func (s *Store) GetVariables(project, environment string) (map[string]string, er
 		vars[name] = value
 	}
 	return vars, nil
+}
+
+// GetLatestSuccessfulRecord finds the most recent 2xx record for a given method and path.
+// It handles path parameter matching (e.g., /users/:id matching /users/123).
+func (s *Store) GetLatestSuccessfulRecord(method, path, project string) (*Record, error) {
+	// Normalize path for matching: replace :param with % for SQL LIKE
+	// Note: This is a heuristic match.
+	sqlPath := path
+	re := regexp.MustCompile(`:[^/]+`) // Fixed regex for path params
+	sqlPath = re.ReplaceAllString(sqlPath, "%")
+
+	query := `
+	SELECT id, method, url, base_url, path, query_params, request_headers, request_body,
+	       response_status, response_headers, response_body, duration_ms, environment, project, created_at
+	FROM records 
+	WHERE method = ? AND path LIKE ? AND (? = "" OR project LIKE ?) AND response_status >= 200 AND response_status < 300
+	ORDER BY created_at DESC 
+	LIMIT 1
+	`
+	row := s.db.QueryRow(query, method, sqlPath, project, "%"+project+"%")
+	var r Record
+	var queryParams, requestHeaders, responseHeaders []byte
+	err := row.Scan(
+		&r.ID, &r.Method, &r.URL, &r.BaseURL, &r.Path, &queryParams, &requestHeaders, &r.RequestBody,
+		&r.ResponseStatus, &responseHeaders, &r.ResponseBody, &r.DurationMs, &r.Environment, &r.Project, &r.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	r.QueryParams = json.RawMessage(queryParams)
+	r.RequestHeaders = json.RawMessage(requestHeaders)
+	r.ResponseHeaders = json.RawMessage(responseHeaders)
+	return &r, nil
 }

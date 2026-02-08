@@ -34,23 +34,25 @@ func (s *GinScanner) Scan(ctx context.Context, rootPath string) ([]*scanner.Modu
 	var modules []*scanner.ModuleInfo
 
 	modulesPath := filepath.Join(rootPath, "internal", "modules")
-	err := filepath.Walk(modulesPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() && path != modulesPath && filepath.Dir(path) == modulesPath {
-			moduleName := filepath.Base(path)
+	entries, err := os.ReadDir(modulesPath)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			moduleName := entry.Name()
+			path := filepath.Join(modulesPath, moduleName)
 			modInfo, err := s.scanModule(path, moduleName)
 			if err != nil {
 				fmt.Printf("⚠️  Skipping module %s: %v\n", moduleName, err)
-				return nil
+				continue
 			}
 			if modInfo != nil && len(modInfo.Endpoints) > 0 {
 				modules = append(modules, modInfo)
 			}
 		}
-		return nil
-	})
+	}
 
 	return modules, err
 }
@@ -195,12 +197,90 @@ func (s *GinScanner) scanModule(modulePath, moduleName string) (*scanner.ModuleI
 		return true
 	})
 
-	handlerFile := filepath.Join(modulePath, "handler.go")
-	if _, err := os.Stat(handlerFile); err == nil {
-		s.enrichEndpointsWithComments(modInfo, handlerFile)
+	// Scan all .go files in the module directory for handler code/comments
+	entries, _ := os.ReadDir(modulePath)
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") &&
+			entry.Name() != "routes.go" && !strings.HasSuffix(entry.Name(), "_test.go") {
+			s.enrichEndpointsWithComments(modInfo, filepath.Join(modulePath, entry.Name()))
+		}
 	}
 
+	// Proactively scan dto.go to capture ALL DTOs (not just handler-referenced ones)
+	dtoFile := filepath.Join(modulePath, "dto.go")
+	if _, err := os.Stat(dtoFile); err == nil {
+		s.scanAllDTOs(modInfo, dtoFile)
+	}
+
+	// 💡 RECURSIVE LOGIC ANALYSIS: Trace implementation across layers
+	s.enrichEndpointsWithDeepLogic(modInfo, modulePath)
+
 	return modInfo, nil
+}
+
+func (s *GinScanner) enrichEndpointsWithDeepLogic(mod *scanner.ModuleInfo, modulePath string) {
+	serviceFile := filepath.Join(modulePath, "service.go")
+	repoFile := filepath.Join(modulePath, "repository.go")
+
+	serviceSources := make(map[string]string)
+	repoSources := make(map[string]string)
+
+	if _, err := os.Stat(serviceFile); err == nil {
+		serviceSources = s.parseFileFunctions(serviceFile)
+	}
+	if _, err := os.Stat(repoFile); err == nil {
+		repoSources = s.parseFileFunctions(repoFile)
+	}
+
+	for i := range mod.Endpoints {
+		ep := &mod.Endpoints[i]
+		// Trace Handler -> Service
+		s.traceCalls(ep, serviceSources, "service.", "Service")
+		// Trace Service -> Repo (if service logic was added)
+		s.traceCalls(ep, repoSources, "repo.", "Repository")
+	}
+}
+
+func (s *GinScanner) parseFileFunctions(filePath string) map[string]string {
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+	if err != nil {
+		return nil
+	}
+	content, _ := os.ReadFile(filePath)
+	sources := make(map[string]string)
+
+	ast.Inspect(node, func(n ast.Node) bool {
+		fn, ok := n.(*ast.FuncDecl)
+		if !ok {
+			return true
+		}
+		start := fset.Position(fn.Pos()).Offset
+		end := fset.Position(fn.End()).Offset
+		if start < len(content) && end <= len(content) {
+			sources[fn.Name.Name] = string(content[start:end])
+		}
+		return true
+	})
+	return sources
+}
+
+func (s *GinScanner) traceCalls(ep *scanner.APIEndpoint, sources map[string]string, prefix, label string) {
+	lines := strings.Split(ep.Code, "\n")
+	for _, line := range lines {
+		if strings.Contains(line, prefix) {
+			re := regexp.MustCompile(regexp.QuoteMeta(prefix) + `([A-Z][a-zA-Z0-9]+)`)
+			matches := re.FindStringSubmatch(line)
+			if len(matches) > 1 {
+				methodName := matches[1]
+				if src, ok := sources[methodName]; ok {
+					if !strings.Contains(ep.Code, "// Linked "+label+" Logic ("+methodName+")") {
+						ep.Code += "\n\n// Linked " + label + " Logic (" + methodName + "):\n" + src
+					}
+				}
+			}
+		}
+	}
 }
 
 func (s *GinScanner) enrichEndpointsWithComments(mod *scanner.ModuleInfo, handlerFile string) {
@@ -315,18 +395,27 @@ func (s *GinScanner) enrichEndpointsWithComments(mod *scanner.ModuleInfo, handle
 	})
 
 	for i := range mod.Endpoints {
-		name := mod.Endpoints[i].Handler
+		ep := &mod.Endpoints[i]
+		// Handle the case where the handler name is already qualified (e.g., student.Create)
+		// We only want the base name for lookup in the current file
+		name := ep.Handler
+		if strings.Contains(name, ".") {
+			parts := strings.Split(name, ".")
+			name = parts[len(parts)-1]
+		}
+
 		desc := comments[name]
 		code := sources[name]
 		reqType := handlerRequests[name]
 		respType := handlerResponses[name]
+		errs := handlerErrors[name]
 
-		if (desc == "" || strings.Contains(desc, "Convenience")) && proxies[name] != "" {
+		if (desc == "" || strings.HasPrefix(desc, "Convenience")) && proxies[name] != "" {
 			target := proxies[name]
 			if targetDesc := comments[target]; targetDesc != "" {
 				desc = targetDesc
 			}
-			if code == "" || len(code) < 50 {
+			if code == "" {
 				code = sources[target]
 			}
 			if reqType == "" {
@@ -335,28 +424,31 @@ func (s *GinScanner) enrichEndpointsWithComments(mod *scanner.ModuleInfo, handle
 			if respType == "" {
 				respType = handlerResponses[target]
 			}
+			if len(errs) == 0 {
+				errs = handlerErrors[target]
+			}
 		}
-		desc = cleanComment(desc)
-		if desc == "" {
-			desc = name
+
+		if desc != "" {
+			ep.Description = cleanComment(desc)
 		}
-		mod.Endpoints[i].Description = desc
-		mod.Endpoints[i].Code = code
-		mod.Endpoints[i].RequestType = reqType
-		mod.Endpoints[i].ResponseType = respType
-		mod.Endpoints[i].Errors = handlerErrors[name]
-		if len(mod.Endpoints[i].Errors) == 0 && proxies[name] != "" {
-			mod.Endpoints[i].Errors = handlerErrors[proxies[name]]
+		if code != "" {
+			ep.Code = code
 		}
-		// Fully qualify handler name
-		mod.Endpoints[i].Handler = fmt.Sprintf("%s.%s", mod.Name, name)
+		if reqType != "" {
+			ep.RequestType = reqType
+		}
+		if respType != "" {
+			ep.ResponseType = respType
+		}
+		if len(errs) > 0 {
+			ep.Errors = errs
+		}
 	}
 
-	dtoFile := filepath.Join(filepath.Dir(handlerFile), "dto.go")
+	// Scan DTOs if they exist in this file as well
 	if len(dtoNames) > 0 {
-		if _, err := os.Stat(dtoFile); err == nil {
-			s.scanDTOs(mod, dtoFile, dtoNames)
-		}
+		s.scanDTOs(mod, handlerFile, dtoNames)
 	}
 }
 
@@ -381,6 +473,32 @@ func mapHTTPStatus(status string) int {
 	default:
 		return 0
 	}
+}
+
+// scanAllDTOs scans ALL struct types in a dto.go file and adds them to the module's DTOs map.
+// Unlike scanDTOs, this does not filter by target names — it captures everything.
+func (s *GinScanner) scanAllDTOs(mod *scanner.ModuleInfo, dtoFile string) {
+	allNames := make(map[string]bool)
+
+	// First pass: collect all struct type names
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, dtoFile, nil, parser.ParseComments)
+	if err != nil {
+		return
+	}
+	ast.Inspect(node, func(n ast.Node) bool {
+		ts, ok := n.(*ast.TypeSpec)
+		if !ok || ts.Type == nil {
+			return true
+		}
+		if _, ok := ts.Type.(*ast.StructType); ok {
+			allNames[ts.Name.Name] = true
+		}
+		return true
+	})
+
+	// Second pass: reuse existing scanDTOs with all names
+	s.scanDTOs(mod, dtoFile, allNames)
 }
 
 func (s *GinScanner) scanDTOs(mod *scanner.ModuleInfo, dtoFile string, targetNames map[string]bool) {
