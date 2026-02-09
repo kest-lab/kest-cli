@@ -2,9 +2,12 @@
 
 # 🦅 Kest
 
-### The API Testing Tool for the AI Era
+### The CLI-First API Testing Tool Built for Vibe Coding
 
 **curl is stateless. Postman is heavy. Kest remembers everything.**
+
+*Built for developers who live in the terminal with AI copilots — Cursor, Windsurf, Copilot, Cline.*
+*Every request is recorded. Every variable is chained. AI sees your full context.*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kest-lab/kest-cli)](https://goreportcard.com/report/github.com/kest-lab/kest-cli)
@@ -13,7 +16,7 @@
 **REST** · **gRPC** · **SSE Streaming** · **Variable Chaining** · **Assertions** · **Snapshots**
 **Replay & Diff** · **Parallel Execution** · **Markdown Flows** · **AI Diagnosis** · **Mock Server**
 
-[Quick Start](#-quick-start) | [AI Features](#-ai-superpowers) | [Flow Testing](#-markdown-flow) | [Why Kest?](#-why-kest)
+[Quick Start](#-quick-start) | [AI Features](#-ai-superpowers) | [Vibe Coding](#-built-for-vibe-coding) | [Flow Testing](#-markdown-flow) | [Why Kest?](#-why-kest)
 
 </div>
 
@@ -124,6 +127,23 @@ kest init
 # Start testing
 kest get https://api.example.com/health -a "status==200"
 ```
+
+---
+
+## ⚡ Built for Vibe Coding
+
+Kest is designed for the workflow where **you and an AI copilot build together in the terminal**. No context switching. No GUI tabs. No JSON collection files.
+
+| Pain Point | How Kest Solves It |
+|---|---|
+| AI generates a curl command, but the response is lost | Kest **auto-records** every request. `kest show last` gives AI full context. |
+| You copy-paste tokens between requests manually | Kest **chains variables**: `-c "token=data.token"` → `{{token}}` in next request. |
+| API broke after AI changed backend code | `kest replay last --diff` — instant regression check without leaving the terminal. |
+| AI can't see what went wrong with your API | `kest why` — AI reads your local history and diagnoses the failure. |
+| Test files are unreadable JSON blobs | `.flow.md` — Markdown files that AI can read, write, and review natively. |
+| Switching between Postman and IDE kills flow | Kest runs **inline** in Cursor/Windsurf/Copilot terminal. Zero context switch. |
+
+> **The Vibe Coding loop:** `kest` command → AI sees output → AI suggests fix → `kest replay` → verified. All in one terminal.
 
 ---
 
