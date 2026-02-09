@@ -424,7 +424,7 @@ type AIResponse struct {
 func enhanceModuleWithAI(mod *scanner.ModuleInfo, projectName, lang string, conf *config.Config) {
 	langName := "English"
 	if lang == "zh" {
-		langName = "Chinese (简体中文)"
+		langName = "Chinese"
 	}
 	client := ai.NewClient(conf.AIKey, conf.AIBaseURL, conf.AIModel)
 	store, _ := storage.NewStore() // Open local database for Reality Seeding
@@ -789,22 +789,6 @@ func extractPathParams(path string) []string {
 
 // autoParamDesc generates a description for a path parameter
 func autoParamDesc(param string, isZh bool) string {
-	if isZh {
-		switch param {
-		case "id":
-			return "资源 ID"
-		case "project_id":
-			return "项目 ID"
-		case "organization_id":
-			return "组织 ID"
-		case "fingerprint":
-			return "问题指纹标识"
-		case "payment_no":
-			return "支付单号"
-		default:
-			return "资源标识符"
-		}
-	}
 	switch param {
 	case "id":
 		return "Resource ID"
@@ -829,154 +813,7 @@ func autoDescription(handler, method, moduleName string, isZh bool) string {
 		name = parts[len(parts)-1]
 	}
 
-	if isZh {
-		return autoDescZh(name, method, moduleName)
-	}
 	return autoDescEn(name, method, moduleName)
-}
-
-func autoDescZh(action, method, mod string) string {
-	modName := mod
-	switch action {
-	case "Register":
-		return "注册" + modName
-	case "RegisterTutor":
-		return "注册教师账号"
-	case "Login":
-		return "用户登录"
-	case "PhoneLogin":
-		return "手机号登录"
-	case "Create", "Store":
-		return "创建" + modName
-	case "List", "Index":
-		return "获取" + modName + "列表"
-	case "Get", "Show":
-		return "获取" + modName + "详情"
-	case "Update":
-		return "更新" + modName
-	case "Delete", "Destroy":
-		return "删除" + modName
-	case "GetProfile", "GetProfileExt":
-		return "获取当前用户资料"
-	case "UpdateProfile", "UpdateProfileExt":
-		return "更新当前用户资料"
-	case "ChangePassword":
-		return "修改密码"
-	case "ResetPassword":
-		return "重置密码"
-	case "DeleteAccount":
-		return "注销账号"
-	case "ListOrders":
-		return "获取订单列表"
-	case "GetOrder":
-		return "获取订单详情"
-	case "CreateTrialOrder":
-		return "创建试听订单"
-	case "CreateRegularOrder":
-		return "创建正式订单"
-	case "UpdateOrder":
-		return "更新订单"
-	case "ConvertToRegular":
-		return "转为正式订单"
-	case "RenewOrder":
-		return "续费订单"
-	case "CreateRefund":
-		return "申请退款"
-	case "ApplyForOrder":
-		return "申请接单"
-	case "GetApplications":
-		return "获取接单申请列表"
-	case "AssignTutor":
-		return "分配教师"
-	case "DeleteOrder":
-		return "删除订单"
-	case "ListRefunds":
-		return "获取退款列表"
-	case "ReviewRefund":
-		return "审核退款"
-	case "UpdateStatus":
-		return "更新状态"
-	case "CreateFeedback":
-		return "创建反馈"
-	case "GetFeedback":
-		return "获取反馈"
-	case "CreatePayment":
-		return "创建支付"
-	case "QueryPayment":
-		return "查询支付状态"
-	case "WechatNotify":
-		return "微信支付回调"
-	case "WechatRefundNotify":
-		return "微信退款回调"
-	case "AlipayNotify":
-		return "支付宝回调"
-	case "Upload":
-		return "上传文件"
-	case "Stats":
-		return "获取统计数据"
-	case "ListNotifications":
-		return "获取通知列表"
-	case "UnreadCount":
-		return "获取未读通知数"
-	case "MarkAllRead":
-		return "标记所有通知已读"
-	case "MarkRead":
-		return "标记通知已读"
-	case "Summary":
-		return "获取汇总数据"
-	case "Export":
-		return "导出数据"
-	case "Review":
-		return "审核"
-	case "CreateRole":
-		return "创建角色"
-	case "ListRoles":
-		return "获取角色列表"
-	case "GetRole":
-		return "获取角色详情"
-	case "UpdateRole":
-		return "更新角色"
-	case "DeleteRole":
-		return "删除角色"
-	case "AssignRole":
-		return "分配角色"
-	case "RemoveRole":
-		return "移除角色"
-	case "GetUserRoles":
-		return "获取用户角色"
-	case "ListPermissions":
-		return "获取权限列表"
-	case "ListTutors":
-		return "获取教师列表"
-	case "GetTutorDetail":
-		return "获取教师详情"
-	case "GetTutorSettings":
-		return "获取教师设置"
-	case "UpdateTutorSettings":
-		return "更新教师设置"
-	case "ListWithFilter":
-		return "获取用户列表（筛选）"
-	case "GetUserInfo":
-		return "获取用户详细信息"
-	case "UpdateApproval":
-		return "审核用户"
-	case "GetDSN":
-		return "获取 DSN"
-	case "StoreEnvelope":
-		return "接收事件数据"
-	case "StoreEvent":
-		return "接收事件（旧版）"
-	case "Resolve":
-		return "标记已解决"
-	case "Ignore":
-		return "忽略问题"
-	case "Reopen":
-		return "重新打开"
-	case "GetEvents":
-		return "获取事件列表"
-	default:
-		return camelToZh(action) + modName
-	}
 }
 
 func autoDescEn(action, method, mod string) string {
@@ -1005,11 +842,6 @@ func camelToWords(s string) string {
 		result.WriteRune(r)
 	}
 	return result.String()
-}
-
-func camelToZh(s string) string {
-	words := camelToWords(s)
-	return words + " "
 }
 
 // findRequestDTOForEndpoint tries to find a matching request DTO for an endpoint
@@ -1108,19 +940,19 @@ func exampleValueForField(field scanner.DTOField) interface{} {
 		case strings.Contains(nameLower, "phone"):
 			return "13800138000"
 		case strings.Contains(nameLower, "name") || strings.Contains(nameLower, "nickname"):
-			return "张三"
+			return "John Doe"
 		case strings.Contains(nameLower, "url") || strings.Contains(nameLower, "avatar") || strings.Contains(nameLower, "qr"):
 			return "https://example.com/image.jpg"
 		case strings.Contains(nameLower, "bio"):
-			return "个人简介"
+			return "A short bio"
 		case strings.Contains(nameLower, "reason"):
-			return "原因说明"
+			return "Reason description"
 		case strings.Contains(nameLower, "token"):
 			return "eyJhbGciOiJIUzI1NiIs..."
 		case strings.Contains(nameLower, "account"):
 			return "account_name"
 		case strings.Contains(nameLower, "campus"):
-			return "校区名称"
+			return "Campus name"
 		default:
 			return "string"
 		}
@@ -1149,61 +981,58 @@ func exampleValueForField(field scanner.DTOField) interface{} {
 
 // autoFieldDesc generates a description for a field based on its name
 func autoFieldDesc(jsonName, fieldType string, isZh bool) string {
-	if !isZh {
-		return "-"
-	}
 	nameLower := strings.ToLower(jsonName)
 	switch {
 	case nameLower == "username":
-		return "用户名"
+		return "Username"
 	case nameLower == "password":
-		return "密码"
+		return "Password"
 	case nameLower == "old_password":
-		return "旧密码"
+		return "Old password"
 	case nameLower == "new_password":
-		return "新密码"
+		return "New password"
 	case nameLower == "email":
-		return "邮箱地址"
+		return "Email address"
 	case nameLower == "phone":
-		return "手机号"
+		return "Phone number"
 	case nameLower == "nickname":
-		return "昵称"
+		return "Nickname"
 	case nameLower == "avatar":
-		return "头像 URL"
+		return "Avatar URL"
 	case nameLower == "bio":
-		return "个人简介"
+		return "Bio"
 	case nameLower == "access_token":
-		return "访问令牌"
+		return "Access token"
 	case nameLower == "is_accepting":
-		return "是否接单"
+		return "Accepting status"
 	case nameLower == "subjects":
-		return "科目列表"
+		return "Subject list"
 	case nameLower == "grade_levels":
-		return "年级列表"
+		return "Grade levels"
 	case nameLower == "course_types":
-		return "课程类型"
+		return "Course types"
 	case nameLower == "approval_status":
-		return "审核状态"
+		return "Approval status"
 	case nameLower == "reject_reason":
-		return "拒绝原因"
+		return "Rejection reason"
 	case nameLower == "wechat_qr_url":
-		return "微信二维码 URL"
+		return "WeChat QR code URL"
 	case nameLower == "ext_campus_name":
-		return "校区名称"
+		return "Campus name"
 	case nameLower == "ext_campus_account":
-		return "校区账号"
+		return "Campus account"
 	case strings.Contains(nameLower, "name"):
-		return "名称"
+		return "Name"
 	case strings.Contains(nameLower, "id"):
 		return "ID"
 	case strings.Contains(nameLower, "status"):
-		return "状态"
+		return "Status"
 	case strings.Contains(nameLower, "time") || strings.Contains(nameLower, "date") || strings.Contains(nameLower, "at"):
-		return "时间"
+		return "Timestamp"
 	case strings.Contains(nameLower, "count") || strings.Contains(nameLower, "total"):
-		return "数量/总计"
+		return "Count/Total"
 	case strings.Contains(nameLower, "amount") || strings.Contains(nameLower, "price") || strings.Contains(nameLower, "fee"):
-		return "金额"
+		return "Amount"
 	default:
 		return "-"
 	}
@@ -1247,43 +1076,7 @@ type docLabelSet struct {
 }
 
 func docLabels(isZh bool) docLabelSet {
-	if isZh {
-		return docLabelSet{
-			moduleAPI:          "模块 API",
-			autoSync:           "本文档由 kest CLI 自动生成，与源代码保持同步。",
-			generatedAt:        "生成时间",
-			modulePurpose:      "模块说明",
-			overview:           "接口概览",
-			theModule:          "模块",
-			providesEndpoints:  "提供以下 API 接口",
-			method:             "方法",
-			path:               "路径",
-			description:        "描述",
-			auth:               "认证",
-			public:             "公开",
-			authRequired:       "需要认证",
-			endpoint:           "接口地址",
-			middlewares:        "中间件",
-			permissions:        "权限要求",
-			securityAlert:      "安全警告",
-			unprotectedWarning: "此变更接口似乎未受保护（未检测到认证中间件）。",
-			logicFlow:          "逻辑流程",
-			request:            "请求参数",
-			response:           "响应结果",
-			jsonField:          "字段",
-			fieldType:          "类型",
-			validation:         "校验规则",
-			fieldDesc:          "说明",
-			requestExample:     "请求示例",
-			responseExample:    "响应示例",
-			errorResponses:     "错误响应",
-			statusCode:         "状态码",
-			handlerImpl:        "处理函数",
-			pathParams:         "路径参数",
-			paramName:          "参数名",
-			dtoReference:       "数据结构参考",
-		}
-	}
+	// Always return English labels regardless of isZh flag
 	return docLabelSet{
 		moduleAPI:          "Module API",
 		autoSync:           "This documentation is automatically synchronized with the source code.",
@@ -1331,22 +1124,6 @@ func hasAuthMiddleware(middlewares []string) bool {
 }
 
 func getStatusText(code int, isZh bool) string {
-	if isZh {
-		switch code {
-		case 400:
-			return "请求错误：请求无效或无法理解。"
-		case 401:
-			return "未授权：需要身份验证或验证失败。"
-		case 403:
-			return "禁止访问：客户端没有访问权限。"
-		case 404:
-			return "未找到：服务器无法找到请求的资源。"
-		case 500:
-			return "服务器内部错误：服务器遇到了意外情况。"
-		default:
-			return "服务器返回的错误响应。"
-		}
-	}
 	switch code {
 	case 400:
 		return "Bad Request: The request was invalid or could not be understood."

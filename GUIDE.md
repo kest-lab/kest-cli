@@ -1,139 +1,144 @@
-# Kest CLI 使用指南 (User Guide)
+# Kest CLI User Guide
 
-Kest CLI 是一个专为开发者设计的 **CLI-first** API 测试工具。它的核心理念是：**即时测试，自动记录，轻松回放**。
+Kest CLI is a **CLI-first** API testing tool designed for developers. Core philosophy: **Test instantly. Record automatically. Replay effortlessly.**
 
 ---
 
-## 1. 安装 (Installation)
+## 1. Installation
 
-确保你已经安装了 Go 环境，然后运行：
+Make sure you have Go installed, then run:
 
 ```bash
 go install github.com/kest-lab/kest-cli/cmd/kest@latest
 ```
 
-安装完成后，请确保 `$(go env GOPATH)/bin` 已加入你的系统 `PATH`。
+After installation, ensure `$(go env GOPATH)/bin` is in your system `PATH`.
 
 ---
 
-## 2. 快速开始 (Quick Start)
+## 2. Quick Start
 
-### 2.1 初始化项目
-在你的项目根目录下运行，这会创建一个 `.kest/config.yaml` 配置文件，用于定义基础 URL、环境变量和默认 Header。
+### 2.1 Initialize a Project
+
+Run this in your project root. It creates a `.kest/config.yaml` file for base URLs, environment variables, and default headers.
 
 ```bash
 kest init
 ```
 
-### 2.2 发起请求
-Kest 支持所有标准的 HTTP 方法，并在发送请求后**自动保存**结果。它的命令行设计极其精简，非常适合在 **Vibe Coding**（如在 Cursor/Windsurf 的 Terminal 中与 AI 协同）时使用。
+### 2.2 Make Requests
 
-#### 常用命令示例
+Kest supports all standard HTTP methods and **auto-records** every request/response. The CLI is designed to be minimal and fast — perfect for **Vibe Coding** (working with AI in Cursor/Windsurf terminals).
+
+#### Common Examples
+
 ```bash
-# GET 请求 (支持相对路径，自动补全 base_url)
+# GET request (relative paths auto-prepend base_url)
 kest get /users/1
 
-# POST 请求 (默认使用 application/json)
+# POST request (defaults to application/json)
 kest post /users -d '{"name": "stark"}'
 
-# 带自定义 Header
+# Custom headers
 kest get /protected -H "Authorization: Bearer token123"
 
-# 带多个 Query 参数
+# Multiple query parameters
 kest get /search -q "q=kest" -q "page=1"
 
-# 使用简写 (如果启用了别名，可选)
-kest p /users -d '{"email": "test@example.com"}'
-
-# 开启详细模式 (查看完整 Headers)
+# Verbose mode (see full headers)
 kest get /users/1 -v
 
-# 测试 LLM 流式响应 (Server-Sent Events)
+# LLM streaming responses (Server-Sent Events)
 kest post /chat/completions -d '{"stream": true, ...}' --stream
 
-# 性能断言：要求响应时间 < 1000ms
-kest get /api/users --max-duration 1000
+# Performance assertion: response must be < 1000ms
+kest get /api/users --max-time 1000
 
-# 失败重试：最多重试3次，每次间隔2秒
-kest post /api/payment -d @payment.json --retry 3 --retry-wait 2000
+# Retry on failure: up to 3 retries, 2s delay
+kest post /api/payment -d @payment.json --retry 3 --retry-delay 2000
 
-# gRPC 测试
+# gRPC testing
 kest grpc localhost:50051 mypackage.MyService SayHello '{"name":"World"}'
 ```
 
-#### 在 Vibe Coding 中如何使用？
+### 2.3 Vibe Coding Workflow
 
-Vibe Coding 强调**流式、高频、低阻力**的开发体验。Kest 通过以下方式适配这种风格：
+Vibe Coding emphasizes **fluid, high-frequency, low-friction** development. Kest fits this style perfectly:
 
-1.  **零配置心智**: 你不需要预先在 UI 界面创建 Collection。想测哪个接口，直接在 Terminal 输入命令。
-2.  **结合 AI 协同**: 
-    *   你可以直接告诉 AI：“帮我用 kest 调用一下创建订单接口”。
-    *   AI 会生成类似的命令：`kest post /orders -d '{"item_id": 101, "count": 2}'`。
-    *   执行后，Kest 自动保存了 Request 和 Response。如果报错，你直接把输出甩给 AI，不需要手动截图或复制各种 Header。
-3.  **历史即文档**: 在 Vibe Coding 过程中，你不需要分心去更新文档。你的 `kest history` 就是最真实、最新的 API 调用记录。
-4.  **快速回放验证**: 当你让 AI 修改了某段后端逻辑后，直接执行 `kest replay last --diff`，秒级验证逻辑改动是否影响了接口输出，无需离开 IDE。
+1. **Zero-config mindset**: No need to create collections in a GUI. Just type the command in your terminal.
+2. **AI collaboration**:
+   - Tell your AI: "Test the create order endpoint with kest."
+   - AI generates: `kest post /orders -d '{"item_id": 101, "count": 2}'`
+   - Kest auto-records the request and response. If it fails, paste the output to AI — no screenshots needed.
+3. **History as documentation**: Your `kest history` is the most accurate, up-to-date record of API interactions.
+4. **Instant replay verification**: After AI modifies backend logic, run `kest replay last --diff` to verify the change didn't break anything — without leaving your IDE.
 
-#### Pro Tips 为 Vibe Coding 加速
-*   **配合 `grep` 或 `jq`**: Kest 输出的是标准 JSON（对于 Body），你可以直接 `kest get /users | jq '.[0].id'`。
-*   **别名建议**: 建议在你的 `.zshrc` 或 `.bashrc` 中添加 `alias k='kest'`，这样测试接口只需要 `k get /path`，效率翻倍。
-*   **一键报错上下文**: 当请求失败时，你可以直接对 AI 说：“查看最后一条 kest 记录并修复后端代码”，AI 可以通过访问 Kest 的本地数据库或你执行 `kest show last` 的输出来获取完整上下文。
+#### Pro Tips
+
+- **Pipe to `jq`**: `kest get /users --quiet --output json | jq '.[0].id'`
+- **Shell alias**: Add `alias k='kest'` to `.zshrc` — then `k get /path` is all you need.
+- **One-command error context**: When a request fails, tell AI: "Check the last kest record and fix the backend." AI reads `kest show last` output for full context.
 
 ---
 
-## 3. 进阶特性：变量与断言 (Advanced Features)
+## 3. Advanced Features
 
-借鉴了 Hurl 的精华，Kest 支持在命令行直接进行**变量捕获**和**逻辑断言**，这极大地简化了接口联动测试。
+Inspired by [Hurl](https://hurl.dev), Kest supports **variable capturing** and **assertions** directly from the command line.
 
-### 3.1 变量捕获 (Captures)
-你可以从响应 Body 中提取字段并保存为变量，供后续请求使用。Kest 使用 **JSONPath (gjson)** 语法。
+### 3.1 Variable Capturing
+
+Extract fields from response bodies and save them as variables for subsequent requests. Uses **gjson** syntax.
 
 ```bash
-# 从登录响应中捕获 token
-kest post /login -d '{"user":"admin"}' -c "token=auth.token"
+# Capture token from login response
+kest post /login -d '{"user":"admin"}' -c "token=data.token"
 
-# 查看已保存的变量
+# View saved variables
 kest vars
 
-# 在后续请求中使用变量
+# Use variables in subsequent requests
 kest get /profile -H "Authorization: Bearer {{token}}"
 ```
 
-### 3.2 逻辑断言 (Assertions)
-在发起请求时直接验证结果，失败时会显式提示。
+### 3.2 Assertions
+
+Verify responses inline. Failures are reported explicitly.
 
 ```bash
-# 验证状态码和 Body 字段
-kest get /users/1 -a "status=200" -a "body.name=stark"
+# Assert status code and body fields
+kest get /users/1 -a "status==200" -a "body.name==stark"
 
-# 配合变量验证联动逻辑
-kest get /orders/{{last_id}} -a "status=200" -a "body.status=pending"
+# Assert with captured variables
+kest get /orders/{{last_id}} -a "status==200" -a "body.status==pending"
 ```
 
-### 3.3 性能测试 (Performance Testing)
-使用 `--max-duration` 断言响应时间，失败时自动报错：
+### 3.3 Performance Testing
+
+Use `--max-time` to assert response duration:
 
 ```bash
-# 要求接口在 500ms 内响应
-kest get /api/search --max-duration 500
+# Require response within 500ms
+kest get /api/search --max-time 500
 
-# 结合其他断言
-kest get /api/users -a "status=200" --max-duration 1000
+# Combine with other assertions
+kest get /api/users -a "status==200" --max-time 1000
 
-# 失败示例输出：
+# Failure output:
 # ❌ Request Failed: duration assertion failed: 1234ms > 1000ms
 ```
 
-### 3.4 重试机制 (Retry Mechanism)
-处理不稳定的 API 或网络问题：
+### 3.4 Retry Mechanism
+
+Handle flaky APIs or network issues:
 
 ```bash
-# 重试 3 次，每次等待 1 秒
-kest post /api/order -d @order.json --retry 3 --retry-wait 1000
+# Retry 3 times with 1s delay
+kest post /api/order -d @order.json --retry 3 --retry-delay 1000
 
-# 无限重试（慎用！）
-kest get /eventually-consistent --retry -1 --retry-wait 5000
+# Unlimited retries (use with caution!)
+kest get /eventually-consistent --retry -1 --retry-delay 5000
 
-# 重试输出示例：
+# Retry output:
 # ⏱️  Retry attempt 1/3 (waiting 1000ms)...
 # ⏱️  Retry attempt 2/3 (waiting 1000ms)...
 # ✅ Request succeeded on retry 2
@@ -141,147 +146,166 @@ kest get /eventually-consistent --retry -1 --retry-wait 5000
 
 ---
 
-## 4. gRPC 支持
+## 4. AI-Powered Commands
 
-Kest 通过动态反射支持 gRPC 测试，无需预编译。
+Kest uses your local request history as context for AI analysis.
 
 ```bash
-# 调用 gRPC 方法
-# 格式: kest grpc [地址] [服务/方法] -p [proto文件] -d [JSON参数]
+kest why                           # Diagnose last failed request
+kest suggest                       # AI suggests next command
+kest explain last                  # AI explains a recorded request
+kest review login.flow.md          # AI audits flow for security/coverage
+kest gen "test user registration"  # AI generates a flow file
+```
+
+Configure AI:
+```bash
+kest config set ai_key sk-xxx
+kest config set ai_model gpt-4o
+```
+
+---
+
+## 5. gRPC Support
+
+Kest supports gRPC testing via dynamic reflection — no pre-compilation needed.
+
+```bash
+# Call a gRPC method
+# Format: kest grpc [host:port] [service/method] -p [proto] -d [json]
 kest grpc localhost:50051 User/GetInfo -p user.proto -d '{"id": 1}'
 
-# 同样支持 Verbose 模式
+# With TLS
+kest grpc api.example.com:443 User/GetInfo --tls --cert ca.pem
+
+# Verbose mode
 kest grpc localhost:50051 User/GetInfo -p user.proto -d '{}' -v
 ```
 
 ---
 
-## 5. 场景脚本与自动生成 (Scenarios)
+## 6. Scenarios & Flow Files
 
-当你有一连串的接口需要批量执行时，可以使用 `.kest` 脚本。
+### 6.1 Scenario Scripts (.kest)
 
-### 5.1 场景脚本示例 (api.kest)
+For batch execution of multiple requests:
+
 ```text
-# 这是一个场景文件
-# 登录并捕获 Token
-POST /login -d '{"user":"admin"}' -c "token=auth.token"
+# Login and capture token
+POST /login -d '{"user":"admin"}' -c "token=data.token"
 
-# 使用 Token 获取配置
-GET /config -H "Authorization: Bearer {{token}}" -a "status=200"
+# Use token to get config
+GET /config -H "Authorization: Bearer {{token}}" -a "status==200"
 
-# 测试流式生成
+# Test streaming
 POST /generate -d '{"model":"gpt"}' --stream
 ```
 
-### 5.2 执行场景
+### 6.2 Running Scenarios
+
 ```bash
-# 顺序执行（默认）
+# Sequential (default)
 kest run api.kest
 
-# 并行执行（8 个 worker）
+# Parallel with 8 workers
 kest run api.kest --parallel --jobs 8
-
-# 输出测试汇总
-# 🚀 Running 3 test(s) from api.kest
-# ⚡ Parallel mode: 8 workers
-# 
-# ╭─────────────────────────────────────────────────────────────────────╮
-# │                        TEST SUMMARY                                 │
-# ├─────────────────────────────────────────────────────────────────────┤
-# │ ✓ POST     /login                               234ms │
-# │ ✓ GET      /config                               45ms │
-# │ ✓ POST     /generate                            178ms │
-# ├─────────────────────────────────────────────────────────────────────┤
-# │ Total: 3  │  Passed: 3  │  Failed: 0  │  Time: 457ms │
-# │ Elapsed: 312ms                                                      │
-# ╰─────────────────────────────────────────────────────────────────────╯
 ```
 
-### 5.3 从 OpenAPI 自动生成
-你可以快速根据 Swagger/OpenAPI 定义生成一个初步的场景脚本。
+### 6.3 Markdown Flow (.flow.md)
+
+The recommended way to write tests. See [FLOW_GUIDE.md](FLOW_GUIDE.md) for the full guide.
+
+```bash
+kest run login.flow.md
+kest run login.flow.md --var password=secret
+```
+
+### 6.4 Generate from OpenAPI
+
 ```bash
 kest generate --from-openapi swagger.json -o project.kest
 ```
 
 ---
 
-## 6. 历史记录与追溯 (History & Tracing)
+## 7. History & Tracing
 
-Kest 最强大的功能之一是它会自动记录你每一次的敲击。
+Kest automatically records every request you make.
 
-### 6.1 查看历史
+### 7.1 View History
 
-**重要说明**：
-- **项目级别历史**：默认 `kest history` 只显示**当前项目**的历史（基于当前目录的 `.kest/config.yaml`）
-- **全局历史**：使用 `--global` 标志可以查看**所有项目**的历史记录
-- **跨项目查看**：如果你在项目 A 想看项目 B 的历史，需要先 `cd` 到项目 B 的目录
+- **Project history** (default): `kest history` shows only the current project's records
+- **Global history**: `kest history --global` shows records across all projects
 
 ```bash
-# 查看当前项目最近 20 条记录
+# View recent records for current project
 kest history
 
-# 查看所有项目的全局历史（跨项目）
+# View all projects (global)
 kest history --global
 
-# 指定查看数量
+# Specify count
 kest history -n 50
 
-# 示例输出：
-# ID    TIME                 METHOD URL                    STATUS DURATION  
+# Example output:
+# ID    TIME                 METHOD URL                    STATUS DURATION
 # -------------------------------------------------------------------------
-# #34   00:30:16 today       GET    /api/profile           200    178ms   
+# #34   00:30:16 today       GET    /api/profile           200    178ms
 # #33   00:30:09 today       POST   /api/login             200    234ms
 ```
 
-### 6.2 查看详情
-你可以查看任何一条历史记录的完整 Request 和 Response（包括全部 Headers 和格式化后的 Body）。
+### 7.2 View Details
+
+View the full request and response (headers + formatted body) for any record.
 
 ```bash
-# 查看指定 ID 的记录
-kest show 42
-
-# 快速查看最后一条记录
-kest show last
+kest show 42          # Specific record
+kest show last        # Most recent record
 ```
 
 ---
 
-## 7. 回放与对比 (Replay & Diff)
+## 8. Replay & Diff
 
-当你修改了代码，想验证接口结果是否发生非预期变化时，可以使用 `replay`。
+After modifying code, verify that API responses haven't changed unexpectedly.
 
-### 7.1 重新执行
+### 8.1 Re-execute a Request
+
 ```bash
 kest replay 42
+kest replay last
 ```
 
-### 7.2 结果对比 (Visual Diff)
-Kest 会自动抓取回放的新结果，并与旧记录进行 Body 级别的对比。
+### 8.2 Visual Diff
+
+Kest replays the request and compares the new response body against the original.
 
 ```bash
 kest replay 42 --diff
+kest replay last --diff
 ```
 
 ---
 
-## 8. 环境管理 (Environments)
+## 9. Environments
 
-在 `.kest/config.yaml` 中你可以定义多个环境（如 `dev`, `staging`, `prod`）。
+Define multiple environments (`dev`, `staging`, `prod`) in `.kest/config.yaml`.
 
-### 8.1 查看与切换环境
+### 9.1 List and Switch
+
 ```bash
-# 列出所有环境
+# List all environments
 kest env list
 
-# 切换到 staging 环境
-kest env use staging
+# Switch to staging
+kest env set staging
 ```
 
-切换环境后，所有相对路径的 URL (如 `/users`) 都会自动拼接该环境对应的 `base_url`。
+After switching, all relative URLs (e.g. `/users`) auto-prepend the environment's `base_url`.
 
 ---
 
-## 9. 配置参考 (Config.yaml)
+## 10. Configuration Reference
 
 ```yaml
 version: 1
@@ -304,12 +328,14 @@ active_env: dev
 
 ---
 
-## 10. 数据存储位置
+## 11. Data Storage
 
-*   **全局数据库**: `~/.kest/records.db` (存储所有测试记录)
-*   **全局配置**: `~/.kest/config.yaml`
-*   **项目配置**: 当前项目目录下的 `.kest/config.yaml`
+- **Global database**: `~/.kest/records.db` (all test records)
+- **Global config**: `~/.kest/config.yaml`
+- **Project config**: `.kest/config.yaml` (in project directory)
+- **Logs**: `.kest/logs/` (project) or `~/.kest/logs/` (global)
+- **Snapshots**: `.kest/snapshots/` (project)
 
 ---
 
-*Happy Vibe Coding!* 🚀
+*Keep Every Step Tested.* 🦅

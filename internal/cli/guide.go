@@ -164,5 +164,5 @@ Kest ensures documentation perfectly matches your code:
 - **Strict Key Adherence**: JSON keys match your source code tags exactly.
 - **Deep Flow Analysis**: Sequence diagrams reflect implementation across layers.
 
-鹰击长空，Keep Every Step Aligned. 🦅
+Keep Every Step Aligned. 🦅
 `

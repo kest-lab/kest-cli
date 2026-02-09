@@ -1,36 +1,36 @@
-# Kest Scenario Guide (场景文件完全指南)
+# Kest Scenario Guide
 
-## 📝 什么是 Scenario？
+## What is a Scenario?
 
-**Scenario（场景）** 是 Kest 的测试用例文件格式，使用 `.kest` 扩展名。它是一个纯文本文件，描述了一系列 API 测试步骤。
+A **Scenario** is Kest's test case file format, using the `.kest` extension. It's a plain-text file describing a sequence of API test steps.
 
-**类比其他工具**：
+**Equivalent in other tools**:
 - Postman → Collection
 - Hurl → Test File
 - k6 → Script
-- **Kest → Scenario** ✨
+- **Kest → Scenario**
 
 ---
 
----
+## Scenario File Formats
 
-## 🎯 Scenario 文件格式
-
-Kest 支持两种格式的测试场景文件：
-1. **`.kest` (CLI 风格)**：继承自 Shell 命令的极简单行格式。
-2. **`.flow.md` (Markdown 风格)**：**[新功能]** 结合文档与测试的声明式格式，支持多行 JSON 和结构化断言。
+Kest supports two formats:
+1. **`.kest` (CLI style)**: Minimal one-line-per-request format inherited from shell commands.
+2. **`.flow.md` (Markdown style)**: Declarative format combining documentation and testing. Supports multi-line JSON and structured assertions. See [FLOW_GUIDE.md](FLOW_GUIDE.md).
 
 ---
 
-### 1. Markdown 风格 (.flow.md) - 文档即测试
-这是目前最推荐的方式，它允许你像写 API 文档一样编写测试用例。建议使用 `.flow.md` 后缀以便识别。
+### 1. Markdown Style (.flow.md) — Documentation as Tests
 
-#### 语法规范
-在 Markdown 文件中，你可以使用两种语法：
-- **新语法（推荐）**：` ```flow / ```step / ```edge ` 形成完整流程图
-- **旧语法（兼容）**：` ```kest ` 定义单个请求块
+The recommended approach. Write tests like API documentation. Use `.flow.md` extension.
 
-**新语法示例：**
+#### Syntax
+
+Two syntax variants are supported:
+- **New syntax (recommended)**: ` ```flow / ```step / ```edge ` for complete flow graphs
+- **Legacy syntax (compatible)**: ` ```kest ` for single request blocks
+
+**New syntax example:**
 ```flow
 @flow id=user-flow
 @name User Flow
@@ -51,60 +51,63 @@ status == 200
 @on success
 ```
 
-**旧语法示例：**
+**Legacy syntax example:**
 ```kest
-# 1. 第一行永远是 METHOD URL
+# 1. First line is always METHOD URL
 POST /api/v1/projects
 X-User-ID: 100
 Content-Type: application/json
 
-# 2. 空行之后是 Request Body (支持多行/格式化 JSON)
+# 2. After a blank line: Request Body (supports multi-line JSON)
 {
   "name": "My Project",
   "description": "Created from Markdown"
 }
 
-# 3. 变量捕获部分
+# 3. Variable captures
 [Captures]
 project_id: data.id
 
-# 4. 断言部分
+# 4. Assertions
 [Asserts]
 status == 201
 body.name == "My Project"
 duration < 500ms
 ```
 
-#### 运行方式
+#### Running
+
 ```bash
 kest run my-api-doc.flow.md
 ```
 
 ---
 
-### 2. CLI 风格 (.kest) - 极速单行
-适合：小型、快速、一次性的 API 调用。
+### 2. CLI Style (.kest) — Fast One-Liners
 
-# 1. 注册新用户
-POST /api/register -d '{"email":"test@example.com","password":"123456"}' -a "status=201"
-
-# 2. 登录并捕获 token
-POST /api/login -d '{"email":"test@example.com","password":"123456"}' -c "token=data.token" -a "status=200"
-
-# 3. 使用 token 获取用户信息
-GET /api/profile -H "Authorization: Bearer {{token}}" -a "status=200" -a "body.email=test@example.com"
-
-# 4. 性能测试：搜索接口必须 < 500ms
-GET /api/search?q=test --max-duration 500 -a "status=200"
-
-# 5. 不稳定接口自动重试
-POST /api/webhook -d '{"event":"test"}' --retry 3 --retry-wait 1000
-```
-
-### 支持的命令格式
+Best for: small, quick, one-off API calls.
 
 ```kest
-# HTTP 方法
+# 1. Register a new user
+POST /api/register -d '{"email":"test@example.com","password":"123456"}' -a "status==201"
+
+# 2. Login and capture token
+POST /api/login -d '{"email":"test@example.com","password":"123456"}' -c "token=data.token" -a "status==200"
+
+# 3. Use token to get user info
+GET /api/profile -H "Authorization: Bearer {{token}}" -a "status==200" -a "body.email==test@example.com"
+
+# 4. Performance test: search must respond < 500ms
+GET /api/search?q=test --max-time 500 -a "status==200"
+
+# 5. Retry flaky endpoint
+POST /api/webhook -d '{"event":"test"}' --retry 3 --retry-delay 1000
+```
+
+### Supported Command Format
+
+```kest
+# HTTP methods
 GET /path
 POST /path -d '{"key":"value"}'
 PUT /path -d '{"key":"value"}'
@@ -114,109 +117,107 @@ PATCH /path -d '{"key":"value"}'
 # Headers
 GET /path -H "Authorization: Bearer token" -H "X-Custom: value"
 
-# Query参数
+# Query parameters
 GET /path -q "page=1" -q "limit=10"
 
-# 变量捕获
-POST /login -c "token=auth.token" -c "userId=user.id"
+# Variable capture
+POST /login -c "token=data.token" -c "userId=data.user.id"
 
-# 断言
-GET /users -a "status=200" -a "body.length=10"
+# Assertions
+GET /users -a "status==200" -a "body.length==10"
 
-# 性能断言
-GET /api -max-duration 1000
+# Performance assertion
+GET /api --max-time 1000
 
-# 重试机制
-POST /api --retry 3 --retry-wait 1000
+# Retry mechanism
+POST /api --retry 3 --retry-delay 1000
 
-# gRPC 调用
+# gRPC call
 grpc localhost:50051 package.Service/Method -d '{"field":"value"}'
 
-# 流式响应
+# Streaming response
 POST /chat -d '{"stream":true}' --stream
 ```
 
 ---
 
-## 🚀 创建 Scenario 的 4 种方式
+## 4 Ways to Create Scenarios
 
-### 方式1：手动创建（推荐）
+### Option 1: Manual (Recommended)
 
-适合：小型项目、快速原型、自定义测试
+Best for: small projects, quick prototyping, custom tests.
 
 ```bash
-# 创建文件
 cat > user-flow.kest << 'EOF'
-# 用户完整流程测试
-POST /register -d '{"email":"new@test.com"}' -a "status=201"
+# Full user flow test
+POST /register -d '{"email":"new@test.com"}' -a "status==201"
 POST /login -d '{"email":"new@test.com"}' -c "token=data.token"
-GET /profile -H "Authorization: Bearer {{token}}" -a "status=200"
+GET /profile -H "Authorization: Bearer {{token}}" -a "status==200"
 EOF
 
-# 执行
 kest run user-flow.kest
 ```
 
 ---
 
-### 方式2：从 OpenAPI/Swagger 生成
+### Option 2: Generate from OpenAPI/Swagger
 
-适合：已有 API 文档、快速覆盖所有端点
+Best for: existing API docs, quick endpoint coverage.
 
 ```bash
-# 从本地文件生成
+# From local file
 kest generate --from-openapi swagger.json -o api-tests.kest
 
-# 从远程 URL 生成（需要先下载）
-curl https://petstore3.swagger.io/api/v3/openapi.json -o openapi.json
+# From remote URL
+kest get https://petstore3.swagger.io/api/v3/openapi.json --no-record > openapi.json
 kest generate --from-openapi openapi.json -o petstore.kest
 ```
 
-**生成的文件示例**：
+**Generated file example**:
 ```kest
 # Generated from swagger.json
 # Project: My API
 
 # Get user by ID
-GET /users/{id} -a "status=200"
+GET /users/{id} -a "status==200"
 
 # Create new user
-POST /users -d '{}' -a "status=200"
+POST /users -d '{}' -a "status==200"
 
 # Update user
-PUT /users/{id} -d '{}' -a "status=200"
+PUT /users/{id} -d '{}' -a "status==200"
 ```
 
-**优化生成的文件**：
-1. 替换占位符 `{}` 为真实数据
-2. 添加变量捕获 `-c`
-3. 添加性能断言 `--max-duration`
-4. 添加重试机制 `--retry`
+**After generating, optimize the file**:
+1. Replace placeholder `{}` with real data
+2. Add variable captures (`-c`)
+3. Add performance assertions (`--max-time`)
+4. Add retry for flaky endpoints (`--retry`)
 
 ---
 
-### 方式3：从历史记录转换（推荐！）
+### Option 3: Convert from History (Recommended!)
 
-适合：已经手动测试过、想固化测试用例
+Best for: solidifying manual test sessions into repeatable scenarios.
 
 ```bash
-# 1. 正常手动测试
-kest post /login -d '{"user":"admin"}' -c "token=auth.token"
+# 1. Test manually
+kest post /login -d '{"user":"admin"}' -c "token=data.token"
 kest get /profile -H "Authorization: Bearer {{token}}"
 kest get /orders
 
-# 2. 查看历史
+# 2. Review history
 kest history
-# ID    TIME                 METHOD URL                    STATUS DURATION  
+# ID    TIME                 METHOD URL                    STATUS DURATION
 # -------------------------------------------------------------------------
 # #12   10:23:45 today       GET    /orders                200    123ms
 # #11   10:23:40 today       GET    /profile               200    45ms
 # #10   10:23:30 today       POST   /login                 200    234ms
 
-# 3. 手动整理成 scenario（未来可以自动化）
+# 3. Organize into a scenario
 cat > my-workflow.kest << 'EOF'
-# 从历史记录整理的工作流
-POST /login -d '{"user":"admin"}' -c "token=auth.token"
+# Workflow from manual testing
+POST /login -d '{"user":"admin"}' -c "token=data.token"
 GET /profile -H "Authorization: Bearer {{token}}"
 GET /orders
 EOF
@@ -224,176 +225,174 @@ EOF
 
 ---
 
-### 方式4：AI 辅助生成
+### Option 4: AI-Assisted Generation
 
-适合：复杂场景、快速原型
+Best for: complex scenarios, rapid prototyping.
 
-**方法A：直接让 AI 生成**
+**Method A: Ask AI directly**
 ```
-你：请帮我生成一个 Kest scenario 文件，测试电商下单流程：
-1. 用户登录
-2. 浏览商品
-3. 添加到购物车
-4. 下单
-5. 查询订单状态
+You: Generate a Kest scenario file to test an e-commerce checkout flow:
+1. User login
+2. Browse products
+3. Add to cart
+4. Place order
+5. Check order status
 
-AI：（生成 .kest 文件）
+AI: (generates .kest file)
 ```
 
-**方法B：从 API 文档生成**
-```
-你：我有这个 API 文档（粘贴），请生成 Kest scenario
-
-AI：（分析并生成测试场景）
+**Method B: Use `kest gen`**
+```bash
+kest gen "test e-commerce checkout: login, browse, add to cart, order, check status"
 ```
 
 ---
 
-## 📋 Scenario 模板库
+## Scenario Templates
 
-### 模板1：基础 CRUD
+### Template 1: Basic CRUD
 
 ```kest
-# CRUD 完整测试
+# Full CRUD test
 # Create
-POST /api/items -d '{"name":"test","price":100}' -c "itemId=data.id" -a "status=201"
+POST /api/items -d '{"name":"test","price":100}' -c "itemId=data.id" -a "status==201"
 
 # Read (list)
-GET /api/items -a "status=200" --max-duration 500
+GET /api/items -a "status==200" --max-time 500
 
 # Read (single)
-GET /api/items/{{itemId}} -a "status=200" -a "body.name=test"
+GET /api/items/{{itemId}} -a "status==200" -a "body.name==test"
 
 # Update
-PUT /api/items/{{itemId}} -d '{"name":"updated","price":200}' -a "status=200"
+PUT /api/items/{{itemId}} -d '{"name":"updated","price":200}' -a "status==200"
 
 # Delete
-DELETE /api/items/{{itemId}} -a "status=204"
+DELETE /api/items/{{itemId}} -a "status==204"
 
 # Verify deletion
-GET /api/items/{{itemId}} -a "status=404"
+GET /api/items/{{itemId}} -a "status==404"
 ```
 
 ---
 
-### 模板2：认证流程
+### Template 2: Authentication Flow
 
 ```kest
-# 完整认证测试
-# 1. 注册
-POST /api/auth/register -d '{"email":"test@example.com","password":"pass123"}' -a "status=201"
+# Full authentication test
+# 1. Register
+POST /api/auth/register -d '{"email":"test@example.com","password":"pass123"}' -a "status==201"
 
-# 2. 登录
-POST /api/auth/login -d '{"email":"test@example.com","password":"pass123"}' -c "accessToken=tokens.access" -c "refreshToken=tokens.refresh" -a "status=200"
+# 2. Login
+POST /api/auth/login -d '{"email":"test@example.com","password":"pass123"}' -c "accessToken=tokens.access" -c "refreshToken=tokens.refresh" -a "status==200"
 
-# 3. 访问受保护资源
-GET /api/protected -H "Authorization: Bearer {{accessToken}}" -a "status=200"
+# 3. Access protected resource
+GET /api/protected -H "Authorization: Bearer {{accessToken}}" -a "status==200"
 
-# 4. 刷新 token
-POST /api/auth/refresh -d '{"refresh_token":"{{refreshToken}}"}' -c "newAccessToken=tokens.access" -a "status=200"
+# 4. Refresh token
+POST /api/auth/refresh -d '{"refresh_token":"{{refreshToken}}"}' -c "newAccessToken=tokens.access" -a "status==200"
 
-# 5. 使用新 token
-GET /api/protected -H "Authorization: Bearer {{newAccessToken}}" -a "status=200"
+# 5. Use new token
+GET /api/protected -H "Authorization: Bearer {{newAccessToken}}" -a "status==200"
 
-# 6. 登出
-POST /api/auth/logout -H "Authorization: Bearer {{newAccessToken}}" -a "status=200"
+# 6. Logout
+POST /api/auth/logout -H "Authorization: Bearer {{newAccessToken}}" -a "status==200"
 ```
 
 ---
 
-### 模板3：性能测试套件
+### Template 3: Performance Benchmark
 
 ```kest
-# 性能基准测试
-# 所有接口必须在指定时间内响应
+# Performance benchmark
+# All endpoints must respond within specified time
 
-# 健康检查 < 100ms
-GET /api/health --max-duration 100 -a "status=200"
+# Health check < 100ms
+GET /api/health --max-time 100 -a "status==200"
 
-# 首页 < 500ms
-GET /api/home --max-duration 500 -a "status=200"
+# Home page < 500ms
+GET /api/home --max-time 500 -a "status==200"
 
-# 搜索 < 1000ms
-GET /api/search?q=test --max-duration 1000 -a "status=200"
+# Search < 1000ms
+GET /api/search?q=test --max-time 1000 -a "status==200"
 
-# 列表查询 < 800ms
-GET /api/products?page=1&limit=20 --max-duration 800 -a "status=200"
+# List query < 800ms
+GET /api/products?page=1&limit=20 --max-time 800 -a "status==200"
 
-# 详情页 < 300ms
-GET /api/products/123 --max-duration 300 -a "status=200"
+# Detail page < 300ms
+GET /api/products/123 --max-time 300 -a "status==200"
 ```
 
 ---
 
-### 模板4：稳定性测试（重试）
+### Template 4: Stability Testing (Retry)
 
 ```kest
-# 不稳定 API 测试
-# Webhook 通知（可能超时）
-POST /api/webhooks/notify -d '{"event":"order.created"}' --retry 5 --retry-wait 2000 -a "status=200"
+# Flaky API tests
+# Webhook notification (may timeout)
+POST /api/webhooks/notify -d '{"event":"order.created"}' --retry 5 --retry-delay 2000 -a "status==200"
 
-# 第三方 API（可能失败）
-GET /api/external/data --retry 3 --retry-wait 1000 -a "status=200"
+# Third-party API (may fail)
+GET /api/external/data --retry 3 --retry-delay 1000 -a "status==200"
 
-# 最终一致性检查（需要多次尝试）
-GET /api/async/status --retry 10 --retry-wait 500 -a "body.status=completed"
+# Eventual consistency check (needs multiple attempts)
+GET /api/async/status --retry 10 --retry-delay 500 -a "body.status==completed"
 ```
 
 ---
 
-### 模板5：gRPC + REST 混合
+### Template 5: gRPC + REST Mixed
 
 ```kest
-# 混合测试场景
-# REST 登录
+# Mixed protocol test
+# REST login
 POST /api/login -d '{"email":"test@example.com"}' -c "token=data.token"
 
-# gRPC 调用
+# gRPC call
 grpc localhost:50051 user.UserService/GetProfile -d '{"token":"{{token}}"}' -p user.proto
 
-# REST 查询
+# REST query
 GET /api/orders -H "Authorization: Bearer {{token}}"
 
-# gRPC 创建订单
+# gRPC create order
 grpc localhost:50051 order.OrderService/Create -d '{"items":[{"id":1}]}' -p order.proto
 ```
 
 ---
 
-## 🎮 执行 Scenario
+## Running Scenarios
 
-### 基础执行
+### Basic Execution
 
 ```bash
-# 顺序执行
+# Sequential (default)
 kest run my-scenario.kest
 
-# 并行执行（快速）
+# Parallel (fast)
 kest run my-scenario.kest --parallel --jobs 8
 
-# 指定环境
-kest env use staging
+# With specific environment
+kest env set staging
 kest run my-scenario.kest
 ```
 
-### 高级选项
+### Advanced Options
 
 ```bash
-# 带详细输出
+# Verbose output
 kest run tests.kest -v
 
-# 从特定行开始执行（调试）
-# （功能待实现）
-
-# 执行并生成报告
+# Pipe results to file
 kest run tests.kest --parallel > test-results.log
+
+# CI/CD mode
+kest run tests.kest --quiet --output json
 ```
 
 ---
 
-## 🛠️ Scenario 最佳实践
+## Best Practices
 
-### 1. 文件组织
+### 1. File Organization
 
 ```
 project/
@@ -401,109 +400,107 @@ project/
 │   ├── config.yaml
 │   └── logs/
 ├── scenarios/
-│   ├── smoke-tests.kest      # 冒烟测试
-│   ├── auth-flow.kest         # 认证流程
-│   ├── user-crud.kest         # 用户 CRUD
-│   ├── order-flow.kest        # 订单流程
-│   └── performance.kest       # 性能测试
+│   ├── smoke-tests.kest      # Smoke tests
+│   ├── auth-flow.kest         # Authentication flow
+│   ├── user-crud.kest         # User CRUD
+│   ├── order-flow.kest        # Order flow
+│   └── performance.kest       # Performance benchmarks
 └── README.md
 ```
 
-### 2. 命名规范
+### 2. Naming Conventions
 
 ```kest
-# ✅ 好的命名
-# Scenario: 用户注册和首次登录
+# Good naming
+# Scenario: User registration and first login
 # Test: POST /register should return 201
 
-# ❌ 避免
+# Avoid
 # test1
-# 测试
+# stuff
 ```
 
-### 3. 注释习惯
+### 3. Comment Style
 
 ```kest
 # ===================================
-# Scenario: 电商下单完整流程
+# Scenario: E-commerce checkout flow
 # Author: stark
 # Created: 2026-01-30
-# Dependencies: 需要 staging 环境
+# Dependencies: Requires staging env
 # ===================================
 
-# Step 1: 用户登录
-# Expected: 返回 access_token
+# Step 1: User login
+# Expected: Returns access_token
 POST /login -d '{"email":"test@example.com"}' -c "token=data.token"
 
-# Step 2: 浏览商品（性能要求 < 500ms）
-GET /products --max-duration 500 -a "status=200"
+# Step 2: Browse products (must respond < 500ms)
+GET /products --max-time 500 -a "status==200"
 ```
 
-### 4. 变量管理
+### 4. Variable Management
 
 ```kest
-# 使用有意义的变量名
-POST /login -c "accessToken=auth.access" -c "userId=user.id"
+# Use meaningful variable names
+POST /login -c "accessToken=data.access" -c "userId=data.user.id"
 
-# 避免
-POST /login -c "t=auth.access" -c "id=user.id"
+# Avoid cryptic names
+POST /login -c "t=data.access" -c "id=data.user.id"
 ```
 
-### 5. 断言分层
+### 5. Layered Assertions
 
 ```kest
-# 基础断言
-GET /users -a "status=200"
+# Basic assertion
+GET /users -a "status==200"
 
-# 业务断言
-GET /users -a "status=200" -a "body.length=10"
+# Business logic assertion
+GET /users -a "status==200" -a "body.length==10"
 
-# 性能断言
-GET /users -a "status=200" --max-duration 500
+# Performance assertion
+GET /users -a "status==200" --max-time 500
 
-# 组合断言
-GET /users -a "status=200" -a "body.length=10" --max-duration 500
+# Combined assertion
+GET /users -a "status==200" -a "body.length==10" --max-time 500
 ```
 
 ---
 
-## 📊 Scenario vs 其他格式对比
+## Comparison with Other Formats
 
-| 特性 | Kest Scenario | Postman Collection | Hurl | k6 Script |
-|------|--------------|-------------------|------|-----------|
-| 格式 | 纯文本 | JSON | 纯文本 | JavaScript |
-| 变量 | ✅ | ✅ | ✅ | ✅ |
-| 断言 | ✅ | ✅ | ✅ | ✅ |
-| Git 友好 | ✅ | ❌ | ✅ | ✅ |
-| AI 生成 | ✅ | ❌ | ⚠️ | ⚠️ |
-| 性能测试 | ✅ | ❌ | ✅ | ✅ |
+| Feature | Kest Scenario | Postman Collection | Hurl | k6 Script |
+|---|---|---|---|---|
+| Format | Plain text | JSON | Plain text | JavaScript |
+| Variables | ✅ | ✅ | ✅ | ✅ |
+| Assertions | ✅ | ✅ | ✅ | ✅ |
+| Git-friendly | ✅ | ❌ | ✅ | ✅ |
+| AI generation | ✅ | ❌ | ⚠️ | ⚠️ |
+| Performance | ✅ | ❌ | ✅ | ✅ |
 | gRPC | ✅ | ✅ | ❌ | ❌ |
-| 并行执行 | ✅ | ❌ | ✅ | ✅ |
+| Parallel | ✅ | ❌ | ✅ | ✅ |
 
 ---
 
-## 🔮 未来功能（Roadmap）
+## Roadmap
 
-### 即将支持
-
-1. **从历史自动生成**
+1. **Auto-generate from history**
    ```bash
    kest history export --from 10 --to 15 -o workflow.kest
    ```
 
-2. **条件执行**
+2. **Conditional execution**
    ```kest
    # if status == 200
    POST /next-step
    ```
 
-3. **循环**
+3. **Loops**
    ```kest
    # for i in 1..10
    GET /items/{{i}}
    ```
 
-4. **子场景导入**
+4. **Sub-scenario imports**
    ```kest
    # import auth-flow.kest
    POST /protected-action
@@ -511,31 +508,32 @@ GET /users -a "status=200" -a "body.length=10" --max-duration 500
 
 ---
 
-## 💡 推荐工作流
+## Recommended Workflow
 
-### 开发阶段
+### Development Phase
+
 ```bash
-# 1. 手动探索 API
+# 1. Explore APIs manually
 kest post /login -d '{}' -c "token=..."
 kest get /profile -H "Authorization: ..."
 
-# 2. 记录到 scenario
+# 2. Save to scenario
 vim dev-tests.kest
-# (paste commands)
 
-# 3. 运行验证
+# 3. Run and verify
 kest run dev-tests.kest
 ```
 
-### CI/CD 阶段
+### CI/CD Phase
+
 ```bash
-# 冒烟测试
+# Smoke tests
 kest run smoke-tests.kest --parallel --jobs 8
 
-# 完整测试
-kest run all-scenarios.kest --parallel
+# Full test suite
+kest run tests/ --parallel --quiet --output json
 ```
 
 ---
 
-**Happy Testing! 🚀**
+*Keep Every Step Tested.* 🦅
