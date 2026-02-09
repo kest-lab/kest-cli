@@ -2,16 +2,21 @@ package cli
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/kest-lab/kest-cli/internal/logger"
 	"github.com/kest-lab/kest-cli/internal/summary"
+	"github.com/kest-lab/kest-cli/internal/variable"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/tidwall/gjson"
 )
 
 var (
@@ -19,7 +24,11 @@ var (
 	runJobs      int
 	runVerbose   bool
 	runDebugVars bool
+	runVars      []string
 )
+
+// CLIVars holds variables passed via --var flags, accessible by ExecuteRequest
+var CLIVars = make(map[string]string)
 
 var runCmd = &cobra.Command{
 	Use:     "run [file]",
@@ -46,12 +55,21 @@ func init() {
 	runCmd.Flags().IntVarP(&runJobs, "jobs", "j", 4, "Number of parallel jobs (default: 4)")
 	runCmd.Flags().BoolVarP(&runVerbose, "verbose", "v", false, "Show detailed request/response info")
 	runCmd.Flags().BoolVar(&runDebugVars, "debug-vars", false, "Show variable resolution details")
+	runCmd.Flags().StringArrayVar(&runVars, "var", []string{}, "Set variables (e.g. --var key=value)")
 	rootCmd.AddCommand(runCmd)
 }
 
 func runScenario(filePath string) error {
 	logger.StartSession(filepath.Base(filePath))
 	defer logger.EndSession()
+
+	// Parse --var flags into CLIVars
+	for _, v := range runVars {
+		parts := strings.SplitN(v, "=", 2)
+		if len(parts) == 2 {
+			CLIVars[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+		}
+	}
 
 	content, err := os.ReadFile(filePath)
 	if err != nil {
@@ -290,6 +308,17 @@ func runFlowDocument(doc FlowDoc, filePath string) error {
 
 	summ := summary.NewSummary()
 	for _, step := range steps {
+		// Handle @type exec steps
+		if step.Type == "exec" {
+			fmt.Printf("--- Exec %s (line %d) ---\n", stepName(step), step.LineNum)
+			result := executeExecStep(step)
+			summ.AddResult(result)
+			if !result.Success {
+				fmt.Printf("❌ Failed at exec step %s\n\n", stepName(step))
+			}
+			continue
+		}
+
 		if step.Request.Method == "" || step.Request.URL == "" {
 			result := summary.TestResult{
 				Name:    stepName(step),
@@ -405,6 +434,120 @@ func orderFlowSteps(doc FlowDoc) []FlowStep {
 		return doc.Steps
 	}
 	return ordered
+}
+
+// executeExecStep runs a shell command and captures output as variables.
+// Captures support two modes:
+//   - key=jsonpath  → parse stdout as JSON, extract via gjson
+//   - key=$stdout   → capture entire stdout as the variable value
+//   - key=$line.N   → capture Nth line (0-indexed) of stdout
+func executeExecStep(step FlowStep) summary.TestResult {
+	startTime := time.Now()
+	result := summary.TestResult{
+		Name:      stepName(step),
+		Method:    "EXEC",
+		StartTime: startTime,
+	}
+
+	if step.Exec.Command == "" {
+		result.Success = false
+		result.Error = fmt.Errorf("exec step has no command at line %d", step.LineNum)
+		return result
+	}
+
+	// Interpolate variables in the command using CLIVars (which accumulates captured vars)
+	command := variable.Interpolate(step.Exec.Command, CLIVars)
+
+	fmt.Printf("  $ %s\n", command)
+
+	cmd := exec.Command("sh", "-c", command)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	duration := time.Since(startTime)
+	result.Duration = duration
+
+	if err != nil {
+		result.Success = false
+		result.Error = fmt.Errorf("exec failed: %v\nstderr: %s", err, stderr.String())
+		fmt.Printf("  ❌ %v\n", result.Error)
+		return result
+	}
+
+	output := strings.TrimSpace(stdout.String())
+	if runVerbose && output != "" {
+		fmt.Printf("  stdout: %s\n", output)
+	}
+	if runVerbose && stderr.Len() > 0 {
+		fmt.Printf("  stderr: %s\n", stderr.String())
+	}
+
+	// Process captures from exec output
+	if len(step.Exec.Captures) > 0 {
+		lines := strings.Split(output, "\n")
+		for _, capExpr := range step.Exec.Captures {
+			sep := "="
+			if !strings.Contains(capExpr, "=") && strings.Contains(capExpr, ":") {
+				sep = ":"
+			}
+			parts := strings.SplitN(capExpr, sep, 2)
+			if len(parts) != 2 {
+				continue
+			}
+			varName := strings.TrimSpace(parts[0])
+			query := strings.TrimSpace(parts[1])
+
+			var value string
+			switch {
+			case query == "$stdout":
+				value = output
+			case strings.HasPrefix(query, "$line."):
+				idxStr := strings.TrimPrefix(query, "$line.")
+				idx := 0
+				for _, r := range idxStr {
+					if r >= '0' && r <= '9' {
+						idx = idx*10 + int(r-'0')
+					} else {
+						break
+					}
+				}
+				if idx < len(lines) {
+					value = strings.TrimSpace(lines[idx])
+				}
+			default:
+				// Try gjson on stdout (if stdout is JSON)
+				r := gjson.Get(output, query)
+				if r.Exists() {
+					value = r.String()
+				} else {
+					// Fallback: treat as plain text key=value output
+					// Look for "key=value" lines in stdout
+					for _, line := range lines {
+						kv := strings.SplitN(line, "=", 2)
+						if len(kv) == 2 && strings.TrimSpace(kv[0]) == query {
+							value = strings.TrimSpace(kv[1])
+							break
+						}
+					}
+				}
+			}
+
+			if value != "" {
+				CLIVars[varName] = value
+				fmt.Printf("  Captured: %s = %s\n", varName, value)
+				logger.LogToSession("Exec Captured: %s = %s", varName, value)
+			} else {
+				fmt.Printf("  ⚠️  Capture '%s' produced empty value\n", varName)
+			}
+		}
+	}
+
+	result.Success = true
+	result.ResponseBody = output
+	fmt.Printf("  ✅ Exec completed in %s\n", duration.Round(time.Millisecond))
+	return result
 }
 
 func sortByIndex(ids []string, index map[string]int) []string {

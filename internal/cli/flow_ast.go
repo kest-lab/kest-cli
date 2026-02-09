@@ -19,6 +19,12 @@ type FlowStep struct {
 	LineNum     int
 	Raw         string
 	Request     RequestOptions
+	Exec        ExecOptions
+}
+
+type ExecOptions struct {
+	Command  string
+	Captures []string
 }
 
 type FlowEdge struct {

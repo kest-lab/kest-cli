@@ -139,12 +139,40 @@ func parseFlowStep(b FlowBlock) FlowStep {
 
 	requestRaw := strings.TrimSpace(strings.Join(requestLines, "\n"))
 	if requestRaw != "" {
-		if opts, err := ParseBlock(requestRaw); err == nil {
+		if step.Type == "exec" {
+			step.Exec = parseExecBlock(requestRaw)
+		} else if opts, err := ParseBlock(requestRaw); err == nil {
 			step.Request = opts
 		}
 	}
 
 	return step
+}
+
+func parseExecBlock(raw string) ExecOptions {
+	opts := ExecOptions{}
+	lines := strings.Split(raw, "\n")
+	section := "command"
+	var cmdLines []string
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "[Captures]" {
+			section = "captures"
+			continue
+		}
+		switch section {
+		case "command":
+			cmdLines = append(cmdLines, line)
+		case "captures":
+			if trimmed != "" && !strings.HasPrefix(trimmed, "#") {
+				val := strings.SplitN(trimmed, "#", 2)[0]
+				opts.Captures = append(opts.Captures, strings.TrimSpace(val))
+			}
+		}
+	}
+	opts.Command = strings.TrimSpace(strings.Join(cmdLines, "\n"))
+	return opts
 }
 
 func parseFlowEdge(b FlowBlock) FlowEdge {

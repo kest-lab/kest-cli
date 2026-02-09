@@ -140,6 +140,11 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 		}
 	}
 
+	// Finally, apply CLI --var flags (highest priority, override everything)
+	for k, v := range CLIVars {
+		vars[k] = v
+	}
+
 	// Debug: Show variable resolution if requested
 	if opts.DebugVars && len(vars) > 0 {
 		fmt.Println("\n🔍 Variable Resolution:")
@@ -152,7 +157,9 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 
 		for k, v := range vars {
 			source := "config"
-			if capturedVars != nil {
+			if _, exists := CLIVars[k]; exists {
+				source = "cli --var"
+			} else if capturedVars != nil {
 				if _, exists := capturedVars[k]; exists {
 					source = "runtime capture"
 				}
