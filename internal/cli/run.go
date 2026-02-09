@@ -49,7 +49,8 @@ Kest Flow (.flow.md) allows you to use standard Markdown to document and test yo
 
   # Run a legacy .kest scenario
   kest run auth.kest`,
-	Args: cobra.ExactArgs(1),
+	Args:         cobra.ExactArgs(1),
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runScenario(args[0])
 	},
@@ -319,7 +320,7 @@ func runFlowDocument(doc FlowDoc, filePath string) error {
 	for _, step := range steps {
 		// Handle @type exec steps
 		if step.Type == "exec" {
-			fmt.Printf("--- Exec %s (line %d) ---\n", stepName(step), step.LineNum)
+			fmt.Printf("\n  ▶ %s (exec, line %d)\n", stepName(step), step.LineNum)
 			result := executeExecStep(step)
 			summ.AddResult(result)
 			if !result.Success {
@@ -337,11 +338,12 @@ func runFlowDocument(doc FlowDoc, filePath string) error {
 			summ.AddResult(result)
 			continue
 		}
-		fmt.Printf("--- Step %s (line %d) ---\n", stepName(step), step.LineNum)
+		fmt.Printf("\n  ▶ %s %s %s (line %d)\n", stepName(step), step.Request.Method, step.Request.URL, step.LineNum)
 
 		opts := step.Request
 		opts.Verbose = runVerbose
 		opts.DebugVars = runDebugVars
+		opts.SilentOutput = true
 		if step.Retry > 0 {
 			opts.Retry = step.Retry
 		}
@@ -366,7 +368,9 @@ func runFlowDocument(doc FlowDoc, filePath string) error {
 		}
 		summ.AddResult(result)
 		if err != nil {
-			fmt.Printf("❌ Failed at step %s\n\n", stepName(step))
+			fmt.Printf("    ❌ Failed at step %s\n", stepName(step))
+		} else {
+			fmt.Printf("    ✅ %s %s → %d (%s)\n", res.Method, step.Request.URL, res.Status, res.Duration.Round(time.Millisecond))
 		}
 	}
 

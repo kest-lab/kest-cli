@@ -14,15 +14,18 @@ func Assert(status int, body []byte, durationMs int64, vars map[string]string, a
 	// 1. Handle "exists" assertion (special case)
 	if strings.HasSuffix(assertion, " exists") {
 		key := strings.TrimSpace(strings.TrimSuffix(assertion, " exists"))
+		var query string
 		if strings.HasPrefix(key, "body.") {
-			query := key[5:]
-			result := gjson.Get(string(body), query)
-			if result.Exists() {
-				return true, ""
-			}
-			return false, fmt.Sprintf("body path does not exist: %s", query)
+			query = key[5:]
+		} else {
+			// Treat bare path (e.g. "data.choices[0]") as body query directly
+			query = key
 		}
-		return false, fmt.Sprintf("exists check only supported for body fields: %s", key)
+		result := gjson.Get(string(body), query)
+		if result.Exists() {
+			return true, ""
+		}
+		return false, fmt.Sprintf("body path does not exist: %s", query)
 	}
 
 	operators := []string{"==", "!=", ">=", "<=", ">", "<", "matches"}
@@ -82,7 +85,12 @@ func Assert(status int, body []byte, durationMs int64, vars map[string]string, a
 		}
 		actual = result.String()
 	} else {
-		return false, fmt.Sprintf("unknown assertion key: %s", key)
+		// Treat any other key as a direct gjson path into the response body
+		result := gjson.Get(string(body), key)
+		if !result.Exists() {
+			return false, fmt.Sprintf("body path not found: %s", key)
+		}
+		actual = result.String()
 	}
 
 	switch op {

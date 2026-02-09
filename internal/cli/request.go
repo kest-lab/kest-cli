@@ -20,20 +20,21 @@ import (
 )
 
 type RequestOptions struct {
-	Method      string
-	URL         string
-	Data        string
-	Headers     []string
-	Queries     []string
-	Captures    []string
-	Asserts     []string
-	Verbose     bool
-	DebugVars   bool
-	Stream      bool
-	NoRecord    bool
-	MaxDuration int // Max response time in milliseconds (--max-time)
-	Retry       int // Number of retries (0 = no retry)
-	RetryWait   int // Delay between retries in milliseconds (--retry-delay)
+	Method       string
+	URL          string
+	Data         string
+	Headers      []string
+	Queries      []string
+	Captures     []string
+	Asserts      []string
+	Verbose      bool
+	DebugVars    bool
+	Stream       bool
+	NoRecord     bool
+	MaxDuration  int  // Max response time in milliseconds (--max-time)
+	Retry        int  // Number of retries (0 = no retry)
+	RetryWait    int  // Delay between retries in milliseconds (--retry-delay)
+	SilentOutput bool // Suppress PrintResponse box (used by flow runner)
 }
 
 var (
@@ -454,6 +455,8 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 	result.ResponseBody = string(resp.Body)
 	result.Success = true
 
-	output.PrintResponse(strings.ToUpper(method), finalURL, resp.Status, resp.Duration.String(), resp.Body, recordID, startTime)
+	if !opts.SilentOutput {
+		output.PrintResponse(strings.ToUpper(method), finalURL, resp.Status, resp.Duration.String(), resp.Body, recordID, startTime)
+	}
 	return result, nil
 }
