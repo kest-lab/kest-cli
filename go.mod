@@ -1,6 +1,6 @@
 module github.com/kest-lab/kest-cli
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/charmbracelet/lipgloss v1.1.0
@@ -56,7 +56,8 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/protobuf v1.36.11 // indirect

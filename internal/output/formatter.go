@@ -3,11 +3,21 @@ package output
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
+	"golang.org/x/term"
 )
+
+func getTerminalWidth() int {
+	w, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil || w <= 0 {
+		return 80
+	}
+	return w
+}
 
 // Quiet suppresses decorative output (emoji, boxes). Set by --quiet/-q.
 var Quiet bool
@@ -73,8 +83,15 @@ func PrintResponse(method, url string, status int, duration string, body []byte,
 	statusText := sStyle.Render(statusStr)
 	durationText := infoStyle.Render(duration)
 
-	// Constrain width to terminal width or 100 characters
-	maxWidth := 100
+	// Constrain width to terminal width (with padding for border)
+	termWidth := getTerminalWidth()
+	maxWidth := termWidth - 4 // account for border chars + padding
+	if maxWidth < 40 {
+		maxWidth = 40
+	}
+	if maxWidth > 120 {
+		maxWidth = 120
+	}
 
 	var formattedBody string
 	var obj interface{}
