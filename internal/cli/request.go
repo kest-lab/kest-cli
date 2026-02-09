@@ -3,13 +3,13 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/kest-lab/kest-cli/internal/client"
-	"github.com/kest-lab/kest-cli/internal/config"
 	"github.com/kest-lab/kest-cli/internal/logger"
 	"github.com/kest-lab/kest-cli/internal/output"
 	"github.com/kest-lab/kest-cli/internal/storage"
@@ -74,7 +74,8 @@ func createRequestCmd(method string) *cobra.Command {
 
   # %[1]s with query parameters and assertions
   kest %[1]s /search -q "q=kest" -a "status=200" -a "body.results exists"`, method),
-		Args: cobra.ExactArgs(1),
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Create a temporary RunContext for ad-hoc --var flags
 			if len(reqVars) > 0 {
@@ -136,9 +137,12 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 	method := opts.Method
 	targetURL := opts.URL
 
-	conf, _ := config.LoadConfig()
+	conf := loadConfigWarn()
 	env := conf.GetActiveEnv()
 	store, _ := storage.NewStore()
+	if store != nil {
+		defer store.Close()
+	}
 
 	// Load variables - merge config environment variables with runtime captured variables
 	vars := make(map[string]string)
@@ -240,13 +244,13 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 		finalURL = u.String()
 	}
 
-	// Handle headers (normalize keys to avoid duplicates)
+	// Handle headers (use canonical HTTP key for dedup, preserve original case)
 	headers := make(map[string]string)
 	// Default headers from config
 	if conf != nil {
 		for k, v := range conf.Defaults.Headers {
-			normalizedKey := strings.ToLower(strings.TrimSpace(k))
-			headers[normalizedKey] = variable.Interpolate(v, vars)
+			canonicalKey := http.CanonicalHeaderKey(strings.TrimSpace(k))
+			headers[canonicalKey] = variable.Interpolate(v, vars)
 		}
 	}
 	// Command line headers (override config headers if same key)
@@ -254,8 +258,8 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 		processedHeader := variable.Interpolate(h, vars)
 		parts := strings.SplitN(processedHeader, ":", 2)
 		if len(parts) == 2 {
-			normalizedKey := strings.ToLower(strings.TrimSpace(parts[0]))
-			headers[normalizedKey] = strings.TrimSpace(parts[1])
+			canonicalKey := http.CanonicalHeaderKey(strings.TrimSpace(parts[0]))
+			headers[canonicalKey] = strings.TrimSpace(parts[1])
 		}
 	}
 
@@ -290,12 +294,16 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 			time.Sleep(time.Duration(opts.RetryWait) * time.Millisecond)
 		}
 
+		httpTimeout := 30 * time.Second
+		if opts.MaxDuration > 0 {
+			httpTimeout = time.Duration(opts.MaxDuration) * time.Millisecond
+		}
 		resp, err = client.Execute(client.RequestOptions{
 			Method:  strings.ToUpper(method),
 			URL:     finalURL,
 			Headers: headers,
 			Body:    body,
-			Timeout: time.Duration(30) * time.Second,
+			Timeout: httpTimeout,
 			Stream:  opts.Stream,
 		})
 
@@ -320,7 +328,7 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 			fmt.Printf("❌ Request Failed after %d attempts: %v\n", attempt+1, err)
 			result.Error = err
 			result.Success = false
-			return result, err
+			return result, &ExitError{Code: ExitRuntimeError, Err: err}
 		}
 	}
 
@@ -413,7 +421,7 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 
 		if !allPassed {
 			result.Error = fmt.Errorf("%s", firstErr)
-			return result, result.Error
+			return result, &ExitError{Code: ExitAssertionFailed, Err: result.Error}
 		}
 	}
 

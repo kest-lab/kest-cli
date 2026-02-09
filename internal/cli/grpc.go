@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/kest-lab/kest-cli/internal/client"
-	"github.com/kest-lab/kest-cli/internal/config"
 	"github.com/kest-lab/kest-cli/internal/logger"
 	"github.com/kest-lab/kest-cli/internal/output"
 	"github.com/kest-lab/kest-cli/internal/storage"
@@ -17,6 +16,8 @@ var (
 	grpcProtoPath string
 	grpcTimeout   int
 	grpcVerbose   bool
+	grpcTLS       bool
+	grpcCertFile  string
 )
 
 var grpcCmd = &cobra.Command{
@@ -33,6 +34,8 @@ var grpcCmd = &cobra.Command{
 			Data:      grpcData,
 			ProtoPath: grpcProtoPath,
 			Timeout:   time.Duration(grpcTimeout) * time.Second,
+			TLS:       grpcTLS,
+			CertFile:  grpcCertFile,
 		}
 
 		resp, err := client.ExecuteGRPC(opts)
@@ -45,9 +48,10 @@ var grpcCmd = &cobra.Command{
 		logger.LogRequest("GRPC", addr+"/"+method, nil, grpcData, 200, nil, string(resp.Data), resp.Duration)
 
 		// Save to history database
-		conf, _ := config.LoadConfig()
+		conf := loadConfigWarn()
 		store, storeErr := storage.NewStore()
 		if storeErr == nil {
+			defer store.Close()
 			projectID := ""
 			env := "default"
 			if conf != nil {
@@ -86,5 +90,7 @@ func init() {
 	grpcCmd.Flags().StringVarP(&grpcProtoPath, "proto", "p", "", "Path to .proto file")
 	grpcCmd.Flags().IntVarP(&grpcTimeout, "timeout", "t", 10, "Timeout in seconds")
 	grpcCmd.Flags().BoolVarP(&grpcVerbose, "verbose", "v", false, "Show detailed debug info")
+	grpcCmd.Flags().BoolVar(&grpcTLS, "tls", false, "Use TLS for the connection")
+	grpcCmd.Flags().StringVar(&grpcCertFile, "cert", "", "Path to CA certificate file (for custom CAs)")
 	rootCmd.AddCommand(grpcCmd)
 }

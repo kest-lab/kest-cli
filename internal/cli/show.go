@@ -25,6 +25,7 @@ var showCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		defer store.Close()
 
 		var record *storage.Record
 		if len(args) == 0 || args[0] == "last" {

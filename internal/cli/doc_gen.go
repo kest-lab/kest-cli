@@ -75,7 +75,7 @@ func runDocGen(rootPath, outputDir string, useAI, listOnly, verifyOnly, serveOnl
 	fmt.Printf("🔍 Scanning project at: %s\n", rootPath)
 
 	ctx := context.Background()
-	conf, _ := config.LoadConfig()
+	conf := loadConfigWarn()
 
 	// 1. Framework Detection & Scanning
 	ginScanner := gin.NewScanner()

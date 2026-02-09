@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/kest-lab/kest-cli/internal/config"
 	"github.com/kest-lab/kest-cli/internal/storage"
 	"github.com/spf13/cobra"
 )
@@ -14,11 +13,12 @@ var varsCmd = &cobra.Command{
 	Aliases: []string{"var"},
 	Short:   "List captured variables for the current project and environment",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, _ := config.LoadConfig()
+		conf := loadConfigWarn()
 		store, err := storage.NewStore()
 		if err != nil {
 			return err
 		}
+		defer store.Close()
 
 		vars, err := store.GetVariables(conf.ProjectID, conf.ActiveEnv)
 		if err != nil {

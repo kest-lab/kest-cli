@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kest-lab/kest-cli/internal/config"
+	"github.com/kest-lab/kest-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -11,6 +13,12 @@ import (
 //
 //	go build -ldflags "-X github.com/kest-lab/kest-cli/internal/cli.Version=v1.0.0"
 var Version = "dev"
+
+// Global flags accessible by all commands
+var (
+	QuietMode    bool
+	OutputFormat string // "" (default pretty), "json"
+)
 
 var rootCmd = &cobra.Command{
 	Use:     "kest",
@@ -47,11 +55,31 @@ Tips:
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
+		if exitErr, ok := err.(*ExitError); ok {
+			os.Exit(exitErr.Code)
+		}
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		os.Exit(ExitRuntimeError)
 	}
 }
 
+// loadConfigWarn loads config and prints a warning to stderr if it fails.
+// Returns a non-nil Config in all cases (empty fallback on error).
+func loadConfigWarn() *config.Config {
+	conf, err := config.LoadConfig()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "⚠️  Warning: failed to load config: %v\n", err)
+		return &config.Config{}
+	}
+	return conf
+}
+
 func init() {
-	// Root flags if any
+	rootCmd.PersistentFlags().BoolVar(&QuietMode, "quiet", false, "Suppress decorative output (for CI/CD pipelines)")
+	rootCmd.PersistentFlags().StringVar(&OutputFormat, "output", "", "Output format: json for machine-readable output")
+
+	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		output.Quiet = QuietMode
+		output.JSONOutput = OutputFormat == "json"
+	}
 }

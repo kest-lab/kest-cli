@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kest-lab/kest-cli/internal/config"
 	"github.com/kest-lab/kest-cli/internal/logger"
 	"github.com/kest-lab/kest-cli/internal/storage"
 	"github.com/kest-lab/kest-cli/internal/summary"
@@ -536,7 +535,7 @@ func executeExecStep(step FlowStep) summary.TestResult {
 func buildVarChain() map[string]string {
 	vars := make(map[string]string)
 
-	conf, _ := config.LoadConfig()
+	conf := loadConfigWarn()
 	if conf != nil {
 		env := conf.GetActiveEnv()
 		if env.Variables != nil {
@@ -547,10 +546,13 @@ func buildVarChain() map[string]string {
 	}
 
 	store, _ := storage.NewStore()
-	if store != nil && conf != nil {
-		capturedVars, _ := store.GetVariables(conf.ProjectID, conf.ActiveEnv)
-		for k, v := range capturedVars {
-			vars[k] = v
+	if store != nil {
+		defer store.Close()
+		if conf != nil {
+			capturedVars, _ := store.GetVariables(conf.ProjectID, conf.ActiveEnv)
+			for k, v := range capturedVars {
+				vars[k] = v
+			}
 		}
 	}
 

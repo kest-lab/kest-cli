@@ -9,6 +9,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// Quiet suppresses decorative output (emoji, boxes). Set by --quiet/-q.
+var Quiet bool
+
+// JSONOutput enables structured JSON output. Set by --output json.
+var JSONOutput bool
+
 var (
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
@@ -34,6 +40,22 @@ var (
 )
 
 func PrintResponse(method, url string, status int, duration string, body []byte, recordID int64, startTime time.Time) {
+	// JSON output mode: structured, machine-readable
+	if JSONOutput {
+		printResponseJSON(method, url, status, duration, body, recordID, startTime)
+		return
+	}
+
+	// Quiet mode: minimal text, no decoration
+	if Quiet {
+		fmt.Printf("%s %s %d %s\n", method, url, status, duration)
+		if recordID > 0 {
+			fmt.Printf("recorded #%d\n", recordID)
+		}
+		return
+	}
+
+	// Pretty mode (default): lipgloss boxes and colors
 	statusStr := fmt.Sprintf("%d", status)
 	var sStyle lipgloss.Style
 	if status >= 200 && status < 300 {
@@ -63,11 +85,9 @@ func PrintResponse(method, url string, status int, duration string, body []byte,
 			formattedBody = string(body)
 		}
 	} else {
-		// If it's a stream (starts with data:), don't try to pretty print as single JSON
 		formattedBody = string(body)
 	}
 
-	// Truncate or wrap long lines if not JSON
 	lines := strings.Split(formattedBody, "\n")
 	for i, line := range lines {
 		if len(line) > maxWidth-4 {
@@ -81,7 +101,6 @@ func PrintResponse(method, url string, status int, duration string, body []byte,
 	doc := strings.Builder{}
 	doc.WriteString(timestamp + titleStyle.Render(headerText) + "\n")
 
-	// Apply width constraint to the box and handle wrapping
 	styledContent := borderStyle.Width(maxWidth).Render(content)
 	doc.WriteString(styledContent + "\n")
 
@@ -90,4 +109,37 @@ func PrintResponse(method, url string, status int, duration string, body []byte,
 	}
 
 	fmt.Println(doc.String())
+}
+
+type jsonResponse struct {
+	Method    string      `json:"method"`
+	URL       string      `json:"url"`
+	Status    int         `json:"status"`
+	Duration  string      `json:"duration"`
+	Body      interface{} `json:"body"`
+	RecordID  int64       `json:"record_id,omitempty"`
+	Timestamp string      `json:"timestamp,omitempty"`
+}
+
+func printResponseJSON(method, url string, status int, duration string, body []byte, recordID int64, startTime time.Time) {
+	resp := jsonResponse{
+		Method:   method,
+		URL:      url,
+		Status:   status,
+		Duration: duration,
+		RecordID: recordID,
+	}
+	if !startTime.IsZero() {
+		resp.Timestamp = startTime.Format(time.RFC3339)
+	}
+
+	var parsed interface{}
+	if err := json.Unmarshal(body, &parsed); err == nil {
+		resp.Body = parsed
+	} else {
+		resp.Body = string(body)
+	}
+
+	out, _ := json.MarshalIndent(resp, "", "  ")
+	fmt.Println(string(out))
 }

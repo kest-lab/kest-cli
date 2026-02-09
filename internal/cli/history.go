@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kest-lab/kest-cli/internal/config"
 	"github.com/kest-lab/kest-cli/internal/storage"
 	"github.com/spf13/cobra"
 )
@@ -30,12 +29,13 @@ var historyCmd = &cobra.Command{
   # Show history from all projects
   kest history --global`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conf, _ := config.LoadConfig()
+		conf := loadConfigWarn()
 
 		store, err := storage.NewStore()
 		if err != nil {
 			return err
 		}
+		defer store.Close()
 
 		projectID := ""
 		if !globalHistory && conf != nil {

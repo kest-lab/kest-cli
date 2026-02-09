@@ -2,7 +2,10 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/jhump/protoreflect/desc"
@@ -10,6 +13,7 @@ import (
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/grpcdynamic"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -19,6 +23,8 @@ type GRPCOptions struct {
 	Data      string // JSON
 	ProtoPath string
 	Timeout   time.Duration
+	TLS       bool   // Use TLS for the connection
+	CertFile  string // Path to CA certificate file (optional, uses system pool if empty)
 }
 
 type GRPCResponse struct {
@@ -68,7 +74,25 @@ func ExecuteGRPC(opts GRPCOptions) (*GRPCResponse, error) {
 	}
 
 	// Dial
-	conn, err := grpc.DialContext(ctx, opts.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	var dialOpt grpc.DialOption
+	if opts.TLS {
+		tlsConf := &tls.Config{}
+		if opts.CertFile != "" {
+			caCert, err := os.ReadFile(opts.CertFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read CA cert: %v", err)
+			}
+			certPool := x509.NewCertPool()
+			if !certPool.AppendCertsFromPEM(caCert) {
+				return nil, fmt.Errorf("failed to parse CA cert")
+			}
+			tlsConf.RootCAs = certPool
+		}
+		dialOpt = grpc.WithTransportCredentials(credentials.NewTLS(tlsConf))
+	} else {
+		dialOpt = grpc.WithTransportCredentials(insecure.NewCredentials())
+	}
+	conn, err := grpc.DialContext(ctx, opts.Address, dialOpt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial: %v", err)
 	}

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/kest-lab/kest-cli/internal/client"
-	"github.com/kest-lab/kest-cli/internal/config"
 	"github.com/kest-lab/kest-cli/internal/output"
 	"github.com/kest-lab/kest-cli/internal/storage"
 	"github.com/kest-lab/kest-cli/internal/variable"
@@ -29,6 +28,7 @@ var replayCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		defer store.Close()
 
 		var id int64
 		var oldRecord *storage.Record
@@ -81,7 +81,7 @@ var replayCmd = &cobra.Command{
 
 		// Load variables
 		var vars map[string]string
-		conf, _ := config.LoadConfig()
+		conf := loadConfigWarn()
 		if conf != nil {
 			vars, _ = store.GetVariables(conf.ProjectID, conf.ActiveEnv)
 		}
@@ -100,7 +100,7 @@ var replayCmd = &cobra.Command{
 				}
 			}
 			if !allPassed {
-				return fmt.Errorf("replay assertions failed")
+				return &ExitError{Code: ExitAssertionFailed, Err: fmt.Errorf("replay assertions failed")}
 			}
 		}
 
