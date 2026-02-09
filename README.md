@@ -7,35 +7,93 @@
 **curl is stateless. Postman is heavy. Kest remembers everything.**
 
 *Built for developers who live in the terminal with AI copilots — Cursor, Windsurf, Copilot, Cline.*
-*Every request is recorded. Every variable is chained. AI sees your full context.*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kest-lab/kest-cli)](https://goreportcard.com/report/github.com/kest-lab/kest-cli)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-**REST** · **gRPC** · **SSE Streaming** · **Variable Chaining** · **Assertions** · **Snapshots**
-**Replay & Diff** · **Parallel Execution** · **Markdown Flows** · **AI Diagnosis** · **Mock Server**
-
-[Quick Start](#-quick-start) | [AI Features](#-ai-superpowers) | [Vibe Coding](#-built-for-vibe-coding) | [Flow Testing](#-markdown-flow) | [Why Kest?](#-why-kest)
+[Website](https://kest.dev) | [Quick Start](#-quick-start) | [Why Kest?](#-why-kest) | [Docs](https://kest.dev/docs)
 
 </div>
 
 ---
 
-## 30 Seconds to Understand Kest
-
-### 1️⃣ Test & Capture — like curl, but it remembers
+## 🚀 Quick Start
 
 ```bash
-kest post /api/login -d '{"user":"admin","pass":"secret"}' -c "token=data.token"
-kest get /api/profile -H "Authorization: Bearer {{token}}" -a "status==200"
+curl -fsSL https://kest.dev/install.sh | sh
 ```
 
-> Variables chain automatically. No manual copy-paste. Every request is auto-recorded.
+Or via Go: `go install github.com/kest-lab/kest-cli/cmd/kest@latest`
 
-### 2️⃣ Write Flows — your documentation IS your test suite
+```bash
+kest init                                                    # Initialize project
+kest get /api/users -a "status==200"                         # Test an endpoint
+kest post /api/login -d '{"user":"admin"}' -c "token=data.token"  # Capture token
+kest get /api/profile -H "Authorization: Bearer {{token}}"   # Use it instantly
+```
 
-> **`login.flow.md`** — a Markdown file that is both documentation and executable test:
+> Every request is auto-recorded. Variables chain automatically. No copy-paste.
+
+---
+
+## ⚡ Why Kest?
+
+Kest is designed for **Vibe Coding** — the workflow where you and an AI copilot build together in the terminal.
+
+<table>
+<tr>
+<td width="50%">
+
+**Without Kest**
+- curl forgets every response
+- Copy-paste tokens between requests
+- API broke? Manually re-test everything
+- Postman needs GUI + cloud account + $$$
+- Test files are 5000-line JSON blobs
+- Switch between IDE and Postman constantly
+
+</td>
+<td width="50%">
+
+**With Kest**
+- Every request auto-recorded to local DB
+- Variables chain: `-c "token=data.token"` → `{{token}}`
+- `kest replay last --diff` — instant regression check
+- 100% terminal, 100% local, 100% free
+- `.flow.md` — Markdown that AI reads natively
+- Runs inline in Cursor/Windsurf terminal
+
+</td>
+</tr>
+</table>
+
+> **The Vibe Coding loop:** `kest` → AI sees output → AI suggests fix → `kest replay` → verified. All in one terminal.
+
+---
+
+## 🧠 AI-Powered
+
+Kest uses your **local request history** as context for AI — something no other tool can do.
+
+```bash
+kest why                           # AI diagnoses why your last request failed
+kest suggest                       # AI suggests the next logical API call
+kest explain 42                    # AI explains what record #42 does
+kest review auth.flow.md           # AI audits your flow for security gaps
+kest gen "test user registration"  # AI generates a complete .flow.md
+```
+
+```bash
+kest config set ai_key sk-xxx      # Supports OpenAI, Azure, any compatible API
+kest config set ai_model gpt-4o
+```
+
+---
+
+## 📝 Markdown Flow — Documentation IS Your Test Suite
+
+Write tests as `.flow.md` files — readable by humans, executable by Kest, reviewable in PRs.
 
 ~~~markdown
 ```step
@@ -64,16 +122,14 @@ body.user == "admin"
 
 <table><tr><td>
 
-**Run it:**
-
 ```
 $ kest run login.flow.md
 
-  ▶ login POST /api/login (line 3)
-    ✅ POST /api/login → 200 (142ms)
+  ▶ login POST /api/login
+    ✅ 200 (142ms)
 
-  ▶ profile GET /api/profile (line 14)
-    ✅ GET /api/profile → 200 (89ms)
+  ▶ profile GET /api/profile
+    ✅ 200 (89ms)
 
 ╭──────────────────────────────────────────────────╮
 │                 TEST SUMMARY                      │
@@ -83,291 +139,120 @@ $ kest run login.flow.md
 ├──────────────────────────────────────────────────┤
 │ Total: 2  │  Passed: 2  │  Time: 231ms │
 ╰──────────────────────────────────────────────────╯
-✓ All tests passed!
 ```
 
 </td></tr></table>
 
-> `.flow.md` files are **Git-diffable**, **PR-reviewable**, and readable by humans AND AI agents. Postman collections are 5000-line JSON blobs.
-
-### 3️⃣ Debug with AI — it sees your full request history
-
-<table><tr><td>
-
-```
-$ kest why
-
-🧠 The token expired. Your login was at 14:03, but /api/profile
-   was called at 14:18. The JWT has a 15-minute TTL.
-
-   Fix: kest post /api/login -d '...' -c "token=data.token"
-```
-
-```
-$ kest replay last --diff     # Re-run & compare response changes
-$ kest suggest                # AI suggests next logical API call
-$ kest explain 42             # AI explains what record #42 does
-```
-
-</td></tr></table>
-
-> No collections. No GUI. No cloud account. **Just your terminal.**
-
 ---
 
-## 🚀 Quick Start
+## 🔥 More Features
 
-```bash
-# One-line install
-curl -fsSL https://kest.dev/install.sh | sh
-
-# Or via Go
-go install github.com/kest-lab/kest-cli/cmd/kest@latest
-```
-
-```bash
-# Initialize project
-kest init
-
-# Start testing
-kest get https://api.example.com/health -a "status==200"
-```
-
----
-
-## ⚡ Built for Vibe Coding
-
-Kest is designed for the workflow where **you and an AI copilot build together in the terminal**. No context switching. No GUI tabs. No JSON collection files.
-
-| Pain Point | How Kest Solves It |
-|---|---|
-| AI generates a curl command, but the response is lost | Kest **auto-records** every request. `kest show last` gives AI full context. |
-| You copy-paste tokens between requests manually | Kest **chains variables**: `-c "token=data.token"` → `{{token}}` in next request. |
-| API broke after AI changed backend code | `kest replay last --diff` — instant regression check without leaving the terminal. |
-| AI can't see what went wrong with your API | `kest why` — AI reads your local history and diagnoses the failure. |
-| Test files are unreadable JSON blobs | `.flow.md` — Markdown files that AI can read, write, and review natively. |
-| Switching between Postman and IDE kills flow | Kest runs **inline** in Cursor/Windsurf/Copilot terminal. Zero context switch. |
-
-> **The Vibe Coding loop:** `kest` command → AI sees output → AI suggests fix → `kest replay` → verified. All in one terminal.
-
----
-
-## 🧠 AI Superpowers
-
-Every command below uses your **local request history** as context — something no other tool can do.
-
-| Command | What it does |
-|---|---|
-| `kest why` | AI diagnoses why your last request failed |
-| `kest suggest` | AI suggests the next logical API call |
-| `kest explain 42` | AI explains what record #42 does in plain English |
-| `kest review auth.flow.md` | AI audits your test file for security gaps |
-| `kest gen "test user CRUD"` | AI generates a complete test flow from description |
-
-```bash
-# Configure AI (supports OpenAI, Azure, any compatible API)
-kest config set ai_key sk-xxx
-kest config set ai_model gpt-4o
-```
-
----
-
-## 📝 Markdown Flow
-
-Write tests in Markdown. **Your documentation IS your test suite.**
-
-~~~markdown
-# Login Flow
-
-```step
-@id login
-POST /api/auth/login
-Content-Type: application/json
-
-{"email": "admin@test.com", "password": "{{password}}"}
-
-[Captures]
-token = data.access_token
-
-[Asserts]
-status == 200
-duration < 500
-```
-
-Token captured! Now use it:
-
-```step
-@id profile
-GET /api/profile
-Authorization: Bearer {{token}}
-
-[Asserts]
-status == 200
-body.email == "admin@test.com"
-```
-~~~
-
-```bash
-kest run login.flow.md --var password=secret
-```
-
-```
-🚀 Running 2 step(s) from login.flow.md
-
-  ▶ login POST /api/auth/login (line 3)
-    ✅ POST /api/auth/login → 200 (142ms)
-
-  ▶ profile GET /api/profile (line 16)
-    ✅ GET /api/profile → 200 (89ms)
-
-╭─────────────────────────────────────────────────────────────────────╮
-│                        TEST SUMMARY                                 │
-├─────────────────────────────────────────────────────────────────────┤
-│ ✓ 14:03:21 [POST] /api/auth/login                142ms │
-│ ✓ 14:03:21 [GET]  /api/profile                     89ms │
-├─────────────────────────────────────────────────────────────────────┤
-│ Total: 2  │  Passed: 2  │  Failed: 0  │  Time: 231ms │
-╰─────────────────────────────────────────────────────────────────────╯
-
-✓ All tests passed!
-```
-
-**Why Markdown?** Because `.flow.md` files are Git-diffable, PR-reviewable, and readable by humans AND AI agents. Postman collections are 5000-line JSON blobs.
-
----
-
-## 🔥 Killer Features
-
-### Zero-Config Mock Server
+### Mock Server — zero config, from your history
 
 ```bash
 kest mock --port 8080
-# 🎭 Mock server started on :8080
-# Auto-generated from 200+ recorded responses:
-#   GET  /api/users       → 200
-#   POST /api/login       → 200
-#   GET  /api/orders/:id  → 200
+# Serves recorded responses automatically
+# GET  /api/users → 200    POST /api/login → 200
 ```
 
-Your request history becomes a mock server. **No setup. No maintenance.** Frontend team gets real response shapes instantly.
-
-### API Snapshot Testing
+### Snapshot Testing — like Jest, but for APIs
 
 ```bash
-kest snap /api/users                  # 📸 Snapshot saved
-kest snap /api/users --verify         # ✅ Response matches snapshot
-kest snap /api/users --verify         # ❌ Snapshot mismatch! 'role' changed
-kest snap /api/users --update         # 📸 Snapshot updated
+kest snap /api/users              # Save snapshot
+kest snap /api/users --verify     # ❌ 'role' field changed!
+kest snap /api/users --update     # Accept new snapshot
 ```
 
-Like Jest snapshots, but for APIs. Catch breaking changes before they ship.
-
-### Request Diffing
+### Replay & Diff — instant regression detection
 
 ```bash
-kest diff 100 last
-# ╭─── Request Diff ───╮
-# │ Response Body:      │
-# │ - "role": "admin"   │
-# │ + "role": "superadmin"  ← changed!
-# ╰─────────────────────╯
+kest replay last --diff
+# - "role": "admin"
+# + "role": "superadmin"  ← changed!
 ```
 
-### File Watch (TDD for APIs)
+### File Watch — TDD for APIs
 
 ```bash
 kest watch login.flow.md
-# 👀 Watching login.flow.md for changes...
 # [14:03:21] ✅ All 4 steps passed (1.2s)
 # [14:03:35] 📝 File changed, re-running...
 # [14:03:36] ✅ All 4 steps passed (0.9s)
 ```
 
+### gRPC + TLS
+
+```bash
+kest grpc localhost:50051 pkg.Service/Method -p app.proto -d '{}'
+kest grpc api.example.com:443 pkg.Service/Method --tls --cert ca.pem
+```
+
+### SSE / LLM Streaming
+
+```bash
+kest post /v1/chat/completions -d '{"stream":true, ...}' --stream
+```
+
 ---
 
-## 🏆 Why Kest?
-
-<table>
-<tr>
-<td width="33%" valign="top">
-
-### vs curl
-curl forgets everything. Kest **remembers every request**, chains variables, asserts responses, and lets AI analyze your history.
-
-</td>
-<td width="33%" valign="top">
-
-### vs Postman
-Postman needs a GUI, a cloud account, and $$$. Kest lives in your terminal, stores data locally, and the mock server is **free**.
-
-</td>
-<td width="33%" valign="top">
-
-### vs Hurl / Bruno
-Great tools, but no AI diagnosis, no auto-history, no mock server, no snapshot testing, no file watch.
-
-</td>
-</tr>
-</table>
+## 🏆 Comparison
 
 | Feature | curl | Postman | Hurl | **Kest** |
 |---|:---:|:---:|:---:|:---:|
 | Zero config | ✅ | ❌ | ✅ | ✅ |
-| Auto history | ❌ | ❌ | ❌ | ✅ |
-| AI diagnosis (`why`) | ❌ | ❌ | ❌ | ✅ |
-| AI suggestions | ❌ | ❌ | ❌ | ✅ |
-| AI test generation | ❌ | ❌ | ❌ | ✅ |
-| Mock server | ❌ | 💰 | ❌ | ✅ |
-| Snapshot testing | ❌ | 💰 | ❌ | ✅ |
-| File watch | ❌ | ❌ | ❌ | ✅ |
-| Request diff | ❌ | ❌ | ❌ | ✅ |
-| Git-friendly tests | ❌ | ❌ | ✅ | ✅ |
+| Auto history | ❌ | ❌ | ❌ | **✅** |
 | Variable chaining | ❌ | ✅ | ✅ | ✅ |
-| gRPC + TLS | ❌ | ❌ | ❌ | ✅ |
-| CI/CD JSON output | ❌ | ❌ | ✅ | ✅ |
-| 100% local & private | ✅ | ❌ | ✅ | ✅ |
+| AI diagnosis | ❌ | ❌ | ❌ | **✅** |
+| AI test generation | ❌ | ❌ | ❌ | **✅** |
+| Mock server | ❌ | 💰 | ❌ | **✅** |
+| Snapshot testing | ❌ | 💰 | ❌ | **✅** |
+| File watch | ❌ | ❌ | ❌ | **✅** |
+| Replay & diff | ❌ | ❌ | ❌ | **✅** |
+| gRPC + TLS | ❌ | ❌ | ❌ | **✅** |
+| Git-friendly tests | ❌ | ❌ | ✅ | ✅ |
+| SSE streaming | ❌ | ❌ | ❌ | **✅** |
+| CI/CD ready | ❌ | ❌ | ✅ | ✅ |
+| 100% local | ✅ | ❌ | ✅ | ✅ |
 
 ---
 
-## 📖 Full Command Reference
+## 📖 Command Reference
 
 <details>
 <summary><b>HTTP Requests</b></summary>
 
 ```bash
 kest get /api/users                              # GET
-kest post /api/users -d '{"name":"Alice"}'       # POST
+kest post /api/users -d '{"name":"Alice"}'       # POST with JSON body
 kest put /api/users/1 -d '{"name":"Bob"}'        # PUT
 kest delete /api/users/1                         # DELETE
-kest patch /api/users/1 -d '{"role":"admin"}'    # PATCH
+kest post /api/upload -d @file.json              # Body from file
 
-# Flags:
-#   -H "Key: Value"     Header
-#   -d '{"json":true}'  Body (or -d @file.json)
-#   -q "key=value"      Query param
-#   -c "var=json.path"  Capture variable
-#   -a "status==200"    Assert
-#   -v                  Verbose
-#   --max-time 5000     Timeout (ms)
-#   --retry 3           Retry count
-#   --retry-delay 1000  Retry delay (ms)
-#   --stream            SSE/streaming
-#   --var key=value     Set variable
+# Flags
+-H "Key: Value"       # Header
+-q "key=value"        # Query param
+-c "var=json.path"    # Capture variable
+-a "status==200"      # Assertion
+-v                    # Verbose (show headers)
+--max-time 5000       # Timeout (ms)
+--retry 3             # Retry count
+--retry-delay 1000    # Retry delay (ms)
+--stream              # SSE streaming
+--var key=value       # Set variable
 ```
 
 </details>
 
 <details>
-<summary><b>History & Comparison</b></summary>
+<summary><b>History & Replay</b></summary>
 
 ```bash
 kest history                # Recent records
 kest history -n 50          # Last 50
-kest show last              # Full details
+kest show last              # Full request/response details
 kest show 42                # Specific record
-kest diff 100 105           # Compare two records
-kest diff 100 last          # Compare with latest
-kest replay last --diff     # Replay and diff
+kest diff 100 last          # Compare two records
+kest replay last --diff     # Re-execute and compare
 ```
 
 </details>
@@ -376,33 +261,13 @@ kest replay last --diff     # Replay and diff
 <summary><b>Testing & Automation</b></summary>
 
 ```bash
-kest run login.flow.md                  # Run flow
-kest run tests/ --parallel --jobs 8     # Parallel
-kest watch login.flow.md                # Auto-rerun
+kest run login.flow.md                  # Run flow file
+kest run login.flow.md --var key=val    # With variables
+kest run tests/ --parallel --jobs 8     # Parallel execution
+kest watch login.flow.md                # Auto-rerun on change
 kest snap /api/users                    # Save snapshot
-kest snap /api/users --verify           # Verify
-kest snap /api/users --update           # Update
-kest chain login.flow.md               # Variable flow
-```
-
-</details>
-
-<details>
-<summary><b>Mock Server</b></summary>
-
-```bash
-kest mock                   # Start on :8787
-kest mock --port 9090       # Custom port
-```
-
-</details>
-
-<details>
-<summary><b>gRPC</b></summary>
-
-```bash
-kest grpc localhost:50051 pkg.Service/Method -p app.proto -d '{}'
-kest grpc api.example.com:443 pkg.Service/Method --tls --cert ca.pem
+kest snap /api/users --verify           # Verify against snapshot
+kest mock --port 8080                   # Mock server from history
 ```
 
 </details>
@@ -411,43 +276,40 @@ kest grpc api.example.com:443 pkg.Service/Method --tls --cert ca.pem
 <summary><b>Configuration</b></summary>
 
 ```bash
+kest init                   # Initialize project
 kest config set ai_key sk-xxx
 kest config set ai_model gpt-4o
-kest config list
-kest env set staging
-kest vars
-kest completion zsh
+kest env set staging        # Switch environment
+kest vars                   # List captured variables
+kest completion zsh         # Shell completion
 ```
 
 </details>
 
 ---
 
-## 🏗 How It Works
+## 🏗 Architecture
 
 ```
-Your Terminal                          Local Storage
-┌──────────────────┐                  ┌──────────────┐
-│ kest get /users  │──auto-record──→ │ SQLite DB     │
-│ kest post /login │──capture vars─→ │ Variables     │
-│ kest run flow.md │──assertions──→  │ History       │
-└──────────────────┘                  └──────┬───────┘
-                                             │
-                                    ┌────────▼────────┐
-                                    │ AI Analysis      │
-                                    │ kest why         │
-                                    │ kest suggest     │
-                                    │ kest explain     │
-                                    └─────────────────┘
+Terminal                              Local Storage
+┌──────────────────┐                 ┌──────────────┐
+│ kest get /users  │──auto-record──→│ SQLite DB     │
+│ kest post /login │──capture var──→│ Variables     │
+│ kest run flow.md │──assertions──→ │ History       │
+└──────────────────┘                 └──────┬───────┘
+                                            │
+                                   ┌────────▼────────┐
+                                   │ AI Engine        │
+                                   │ why · suggest    │
+                                   │ explain · review │
+                                   └─────────────────┘
 ```
 
-Everything stays on your machine. No cloud. No account. No telemetry.
+**100% local.** No cloud. No account. No telemetry. Your data never leaves your machine.
 
 ---
 
 ## 🤝 Contributing
-
-Contributions are welcome! See our [docs/VISION.md](docs/VISION.md) for the project philosophy.
 
 ```bash
 git clone https://github.com/kest-lab/kest-cli.git
@@ -456,11 +318,7 @@ go build ./cmd/kest
 go test ./...
 ```
 
----
-
-## 📜 License
-
-MIT License. See [LICENSE](LICENSE).
+See [docs/VISION.md](docs/VISION.md) for project philosophy. PRs welcome!
 
 ---
 
@@ -468,8 +326,10 @@ MIT License. See [LICENSE](LICENSE).
 
 **Keep Every Step Tested.** 🦅
 
-[GitHub](https://github.com/kest-lab/kest-cli) | [Report Bug](https://github.com/kest-lab/kest-cli/issues) | [Request Feature](https://github.com/kest-lab/kest-cli/issues)
+[Website](https://kest.dev) · [GitHub](https://github.com/kest-lab/kest-cli) · [Report Bug](https://github.com/kest-lab/kest-cli/issues)
 
 If Kest saves you time, consider giving it a ⭐
+
+MIT License — See [LICENSE](LICENSE)
 
 </div>
