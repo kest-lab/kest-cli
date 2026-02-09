@@ -10,6 +10,8 @@ builds:
     binary: kest
     env:
       - CGO_ENABLED=1
+    ldflags:
+      - -s -w -X github.com/kest-lab/kest-cli/internal/cli.Version={{.Version}}
     goos:
       - linux
     goarch:

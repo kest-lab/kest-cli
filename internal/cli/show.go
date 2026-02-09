@@ -12,8 +12,14 @@ import (
 
 var showCmd = &cobra.Command{
 	Use:   "show [id]",
-	Short: "Show details of a record",
-	Args:  cobra.MaximumNArgs(1),
+	Short: "Show details of a recorded request/response",
+	Long:  "Display the full request and response details of a recorded API interaction, including headers, body, status, and duration.",
+	Example: `  # Show the last recorded request
+  kest show last
+
+  # Show a specific record by ID
+  kest show 42`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		store, err := storage.NewStore()
 		if err != nil {
@@ -24,8 +30,8 @@ var showCmd = &cobra.Command{
 		if len(args) == 0 || args[0] == "last" {
 			record, err = store.GetLastRecord()
 		} else {
-			id, err := strconv.ParseInt(args[0], 10, 64)
-			if err != nil {
+			id, parseErr := strconv.ParseInt(args[0], 10, 64)
+			if parseErr != nil {
 				return fmt.Errorf("invalid record ID: %s", args[0])
 			}
 			record, err = store.GetRecord(id)

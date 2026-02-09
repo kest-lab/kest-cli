@@ -39,8 +39,14 @@ Kest Flow (.flow.md) allows you to use standard Markdown to document and test yo
 	Example: `  # Run a single flow
   kest run login.flow.md
 
+  # Inject variables from CLI
+  kest run login.flow.md --var api_key=secret --var env=prod
+
   # Run with parallel workers for speed
   kest run tests/ --parallel --jobs 8
+
+  # Set exec step timeout and verbose output
+  kest run hmac.flow.md --exec-timeout 10 -v --debug-vars
 
   # Run a legacy .kest scenario
   kest run auth.kest`,

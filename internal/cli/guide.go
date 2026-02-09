@@ -47,33 +47,31 @@ Create a file named "login.flow.md" and use code blocks like this:
 ` + "```" + `step
 @id login
 @name Login
-# 1. First line: METHOD URL
-POST /api/v1/auth/login
 
-# 2. Headers (Optional)
+POST /api/v1/auth/login
 Content-Type: application/json
 
-# 3. Body (Leave an empty line after headers)
 {
   "username": "admin",
   "password": "password123"
 }
 
-# 4. Capture variables for the next step
 [Captures]
 token = data.access_token
 
-# 5. Logical assertions
 [Asserts]
 status == 200
-duration < 500ms
+duration < 500
 ` + "```" + `
 
 ## 🔗 Chaining Requests
 
 Use captured variables with the {{variable_name}} syntax:
 
-` + "```" + `kest
+` + "```" + `step
+@id profile
+@name Get Profile
+
 GET /api/v1/profile
 Authorization: Bearer {{token}}
 
@@ -81,15 +79,36 @@ Authorization: Bearer {{token}}
 status == 200
 ` + "```" + `
 
+## 🔧 Exec Steps (Dynamic Variables)
+
+Use @type exec to run shell commands and capture output:
+
+` + "```" + `step
+@id gen-sig
+@name Generate HMAC
+@type exec
+
+echo -n "{{timestamp}}:{{api_key}}" | openssl dgst -sha256 -hmac "{{api_key}}" | awk '{print $NF}'
+
+[Captures]
+signature = $line.0
+` + "```" + `
+
+Capture modes: $stdout (all output), $line.N (Nth line), or a gjson path for JSON output.
+
 ## 🚀 Running the flow
 
-$ kest run login.flow.md
+  $ kest run login.flow.md
+  $ kest run login.flow.md --var api_key=secret
+  $ kest run login.flow.md --exec-timeout 10 -v
 
 ## 💡 Tips
 
-- Use "http" or "json" if you prefer syntax highlighting in editors.
+- Use "step" blocks for all new flows (recommended over legacy "kest" blocks).
 - Non-code content (text, images) is ignored by Kest, perfect for documentation.
 - Use "kest history" to see the results of previous runs.
+- Use "--debug-vars" to see how variables are resolved.
+- Exec steps default to 30s timeout. Override with --exec-timeout.
 
 Keep Every Step Tested. 🦅
 `
@@ -108,7 +127,7 @@ $ kest doc ./path/to/api -o ./docs
 Generates realistic examples, Mermaid diagrams, and permission summaries.
 $ kest doc ./path/to/api -o ./docs --ai
 
-### 🎯 Selective Scaning
+### 🎯 Selective Scanning
 Focus on a specific module to save time.
 $ kest doc ./path/to/api -o ./docs -m module_name --ai
 

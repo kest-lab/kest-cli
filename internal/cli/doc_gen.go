@@ -457,7 +457,7 @@ Endpoints:`
 
 	// 2. Enhance endpoints
 	systemPrompt := fmt.Sprintf(`You are a STRICT API Auditor and Documentation Engineer.
-Your goal is to generate 100% technically accurate documentation snippets based ONLY on the provided source code, schemas, and REAL WORLD EXAMPLES.
+Your goal is to generate 100%% technically accurate documentation snippets based ONLY on the provided source code, schemas, and REAL WORLD EXAMPLES.
 
 REALITY SEEDING RULE:
 If a "REAL WORLD EXAMPLE (GOLDEN TRUTH)" is provided, prioritize its structure and values for your "request_example" and "response_example". This is data that actually happened in production/testing.

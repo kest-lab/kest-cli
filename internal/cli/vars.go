@@ -11,8 +11,8 @@ import (
 
 var varsCmd = &cobra.Command{
 	Use:     "vars",
-	Aliases: []string{"v"},
-	Short:   "Manage variables",
+	Aliases: []string{"var"},
+	Short:   "List captured variables for the current project and environment",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf, _ := config.LoadConfig()
 		store, err := storage.NewStore()

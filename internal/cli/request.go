@@ -48,6 +48,8 @@ var (
 	reqMaxDuration int
 	reqRetry       int
 	reqRetryWait   int
+	reqVars        []string
+	reqDebugVars   bool
 )
 
 func init() {
@@ -74,6 +76,19 @@ func createRequestCmd(method string) *cobra.Command {
   kest %[1]s /search -q "q=kest" -a "status=200" -a "body.results exists"`, method),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Create a temporary RunContext for ad-hoc --var flags
+			if len(reqVars) > 0 {
+				cliVars := make(map[string]string, len(reqVars))
+				for _, v := range reqVars {
+					parts := strings.SplitN(v, "=", 2)
+					if len(parts) == 2 {
+						cliVars[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+					}
+				}
+				ActiveRunCtx = NewRunContext(cliVars)
+				defer func() { ActiveRunCtx = nil }()
+			}
+
 			_, err := ExecuteRequest(RequestOptions{
 				Method:      method,
 				URL:         args[0],
@@ -83,6 +98,7 @@ func createRequestCmd(method string) *cobra.Command {
 				Captures:    reqCaptures,
 				Asserts:     reqAsserts,
 				Verbose:     reqVerbose,
+				DebugVars:   reqDebugVars,
 				Stream:      reqStream,
 				NoRecord:    reqNoRec,
 				MaxDuration: reqMaxDuration,
@@ -104,6 +120,8 @@ func createRequestCmd(method string) *cobra.Command {
 	cmd.Flags().IntVar(&reqMaxDuration, "max-duration", 0, "Max duration in milliseconds (0 = no limit)")
 	cmd.Flags().IntVar(&reqRetry, "retry", 0, "Number of retries on failure")
 	cmd.Flags().IntVar(&reqRetryWait, "retry-wait", 1000, "Wait time between retries in milliseconds")
+	cmd.Flags().StringArrayVar(&reqVars, "var", []string{}, "Set variables (e.g. --var key=value)")
+	cmd.Flags().BoolVar(&reqDebugVars, "debug-vars", false, "Show variable resolution details")
 
 	return cmd
 }

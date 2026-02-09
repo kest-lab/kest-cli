@@ -11,11 +11,18 @@ var envCmd = &cobra.Command{
 	Use:     "env",
 	Aliases: []string{"e"},
 	Short:   "Manage environments",
+	Long:    "View and switch between configured environments (dev, staging, production, etc.).",
+	Example: `  # List all environments
+  kest env list
+
+  # Switch to staging
+  kest env use staging`,
 }
 
 var envListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all environments",
+	Use:     "list",
+	Aliases: []string{"ls"},
+	Short:   "List all environments",
 	Run: func(cmd *cobra.Command, args []string) {
 		conf, err := config.LoadConfig()
 		if err != nil {
@@ -36,9 +43,10 @@ var envListCmd = &cobra.Command{
 }
 
 var envUseCmd = &cobra.Command{
-	Use:   "use [env]",
-	Short: "Switch to a different environment",
-	Args:  cobra.ExactArgs(1),
+	Use:     "use [env]",
+	Short:   "Switch to a different environment",
+	Example: `  kest env use staging`,
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		newEnv := args[0]
 

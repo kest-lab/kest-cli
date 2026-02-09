@@ -129,12 +129,22 @@ func parseFlowStep(b FlowBlock) FlowStep {
 			case "max-duration":
 				step.MaxDuration = parseInt(val)
 			case "on-fail":
+				fmt.Printf("⚠️  Warning: @on-fail is not yet implemented (line %d), ignoring.\n", b.LineNum)
 				step.OnFail = val
 			}
 			continue
 		}
 		directivePhase = false
 		requestLines = append(requestLines, line)
+	}
+
+	// Validate @type
+	switch step.Type {
+	case "", "http", "exec":
+		// valid
+	default:
+		fmt.Printf("⚠️  Warning: unknown step type '%s' at line %d, treating as http.\n", step.Type, b.LineNum)
+		step.Type = ""
 	}
 
 	requestRaw := strings.TrimSpace(strings.Join(requestLines, "\n"))

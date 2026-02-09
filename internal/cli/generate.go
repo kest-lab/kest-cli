@@ -29,7 +29,7 @@ var generateCmd = &cobra.Command{
 
 func init() {
 	generateCmd.Flags().StringVarP(&genFromOpenAPI, "from-openapi", "f", "", "OpenAPI/Swagger spec file path")
-	generateCmd.Flags().StringVarP(&genOutFile, "output", "o", "api.kest", "Output scenario file path")
+	generateCmd.Flags().StringVarP(&genOutFile, "output", "o", "api.flow.md", "Output file path (.flow.md or .kest)")
 	rootCmd.AddCommand(generateCmd)
 }
 

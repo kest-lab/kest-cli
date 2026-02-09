@@ -100,7 +100,7 @@ var replayCmd = &cobra.Command{
 				}
 			}
 			if !allPassed {
-				// We don't necessarily return error here
+				return fmt.Errorf("replay assertions failed")
 			}
 		}
 
