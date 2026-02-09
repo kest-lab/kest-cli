@@ -1,7 +1,35 @@
+# Binaries
 kest
+kest_local
+kest-darwin-*
+kest_darwin_*
+main
+*.tar.gz
+*.exe
+bin/
+dist/
+
+# Local data
 .kest/
 *.db
 *.db-journal
 *.db-shm
 *.db-wal
-bin/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+vendor/
+
+# Backup files
+*.bak
+*.tmp

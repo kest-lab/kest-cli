@@ -1,9 +1,0 @@
-# Generated from sample_api.json
-# Project: Sample API
-
-# Sample GET request
-GET /get -a "status=200"
-
-# Sample POST request
-POST /post -a "status=200" -d '{}'
-
