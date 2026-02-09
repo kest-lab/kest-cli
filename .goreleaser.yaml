@@ -1,6 +1,8 @@
 # .goreleaser.yaml
 version: 2
 
+project_name: kest
+
 before:
   hooks:
     - go mod tidy
@@ -9,13 +11,15 @@ builds:
   - main: ./cmd/kest
     binary: kest
     env:
-      - CGO_ENABLED=1
+      - CGO_ENABLED=0
     ldflags:
       - -s -w -X github.com/kest-lab/kest-cli/internal/cli.Version={{.Version}}
     goos:
       - linux
+      - darwin
     goarch:
       - amd64
+      - arm64
 
 archives:
   - format: tar.gz

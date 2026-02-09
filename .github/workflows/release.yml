@@ -9,19 +9,22 @@ permissions:
   contents: write
 
 jobs:
-  goreleaser:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y gcc
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
+
+      - name: Run tests
+        run: go test ./...
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
