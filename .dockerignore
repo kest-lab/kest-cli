@@ -1,0 +1,73 @@
+# Kest - Docker ignore file
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Development files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Dependencies
+node_modules
+vendor
+
+# Build outputs
+dist
+build
+out
+.next
+bin
+*.exe
+main
+test-server
+test-server-prod
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+storage/logs/
+
+# Testing
+coverage/
+.nyc_output/
+*.coverprofile
+*.out
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+.cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation (internal)
+*_REPORT.md
+*_STATUS.md
+*_SUMMARY.md
+AGENTS.md
+DOCKERFILE_FIX.md
+PLATFORM_*.md
+ZEABUR_*.md
+WEB_UI_*.md
+ADMIN_UI_*.md
+CLI_*.md
+IMPLEMENTATION*.md
+TEST_*.md
+
+# Storage
+storage/
+user_data/
+uploads/

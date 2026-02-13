@@ -1,0 +1,54 @@
+name: ZGO CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+
+      - name: Unit Tests
+        run: go test -v ./internal/...
+
+  build-and-deploy:
+    name: Build & Deploy to Staging
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Build & Push to GCR
+        run: |
+          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/zgo-app:${{ github.sha }} .
+          gcloud auth configure-docker
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/zgo-app:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy zgo-staging \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/zgo-app:${{ github.sha }} \
+            --region us-central1 \
+            --platform managed

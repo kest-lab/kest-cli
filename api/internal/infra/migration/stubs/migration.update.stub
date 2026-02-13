@@ -1,0 +1,32 @@
+package migrations
+
+import (
+	"github.com/eogo-dev/eogo/internal/infra/migration"
+	"github.com/eogo-dev/eogo/internal/infra/migration/schema"
+	"gorm.io/gorm"
+)
+
+func init() {
+	register("{{ .MigrationID }}", &{{ .StructName }}{})
+}
+
+// {{ .StructName }} modifies the {{ .TableName }} table.
+type {{ .StructName }} struct {
+	migration.BaseMigration
+}
+
+// Up applies the migration.
+func (m *{{ .StructName }}) Up(db *gorm.DB) error {
+	s := schema.NewBuilder(db)
+	return s.Table("{{ .TableName }}", func(table *schema.Blueprint) {
+		// TODO: Add columns or modify table
+	})
+}
+
+// Down reverts the migration.
+func (m *{{ .StructName }}) Down(db *gorm.DB) error {
+	s := schema.NewBuilder(db)
+	return s.Table("{{ .TableName }}", func(table *schema.Blueprint) {
+		// TODO: Revert changes
+	})
+}

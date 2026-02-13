@@ -1,0 +1,63 @@
+# Production Dockerfile for ZGO Application
+# Optimized for size and security
+
+# --- Build Stage ---
+FROM golang:1.21-alpine AS builder
+
+# Set build arguments
+ARG VERSION=1.0.0
+
+# Install dependencies for building
+RUN apk update && apk add --no-cache git make build-base
+
+WORKDIR /app
+
+# Download dependencies separately to leverage Docker cache
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the source code
+COPY . .
+
+# Build the binary
+# -ldflags="-s -w" reduces binary size by removing debug symbols
+# -tags=prod adds production-specific build constraints if any
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags="-s -w -X main.version=${VERSION}" \
+    -o /app/zgo-server \
+    ./cmd/server
+
+# --- Production Stage ---
+# Use distroless for the smallest possible attack surface
+# Or alpine if you need shell/tools (this example uses alpine for convenience)
+FROM alpine:3.18
+
+# Security best practice: Add a non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Install basic runtime requirements
+RUN apk --no-cache add ca-certificates tzdata \
+    && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && echo "Asia/Shanghai" > /etc/timezone
+
+WORKDIR /home/appuser
+
+# Copy bin from builder
+COPY --from=builder /app/zgo-server .
+COPY --from=builder /app/config ./config
+
+# Set ownership to non-root user
+RUN chown -R appuser:appgroup /home/appuser
+
+# Use non-root user
+USER appuser
+
+# Document ports
+EXPOSE 8080 9090
+
+# Standard environment variables
+ENV APP_ENV=production
+ENV GIN_MODE=release
+
+# Run entry point
+CMD ["./zgo-server"]

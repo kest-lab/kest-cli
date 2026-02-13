@@ -1,0 +1,25 @@
+active_env: local
+defaults:
+    timeout: 30
+    headers:
+        authorization: Bearer {{access_token}}
+        content-type: application/json
+environments:
+    dev:
+        base_url: https://dev-api.kest.io
+        variables: {}
+    local:
+        base_url: http://127.0.0.1:7111
+        variables: {}
+    production:
+        base_url: https://api.kest.dev/v1
+        variables: {}
+    staging:
+        base_url: https://staging-api.kest.io
+        variables: {}
+last_sync_time: ""
+log_enabled: true
+platform_project_id: ""
+platform_token: ""
+platform_url: ""
+version: 1

@@ -1,335 +1,285 @@
+# Kest - API Testing Platform for Vibe Coding
+
 <div align="center">
 
-# 🦅 Kest
+**Test APIs at the Speed of Thought**
 
-### The CLI-First API Testing Tool Built for Vibe Coding
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go)](https://go.dev/)
+[![Node Version](https://img.shields.io/badge/Node-20+-339933?logo=node.js)](https://nodejs.org/)
 
-**curl is stateless. Postman is heavy. Kest remembers everything.**
+The only API testing platform designed from the ground up for **Vibe Coding**—where velocity meets quality, and documentation writes itself.
 
-*Built for developers who live in the terminal with AI copilots — Cursor, Windsurf, Copilot, Cline.*
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Go Report Card](https://goreportcard.com/badge/github.com/kest-labs/kest)](https://goreportcard.com/report/github.com/kest-labs/kest)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
-
-[Website](https://kest.dev) | [Quick Start](#-quick-start) | [Why Kest?](#-why-kest) | [Docs](https://kest.dev/docs)
+[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🤝 Contributing](#-contributing)
 
 </div>
 
 ---
 
+## 🎯 What is Kest?
+
+Kest is a modern API testing platform built for AI-assisted development workflows. It combines:
+
+- **🌐 Cloud Platform** (web/) - Centralized API documentation and team collaboration
+- **⚡ CLI Tool** - Local-first test execution with blazing speed  
+- **🔌 MCP Integration** - Native support for AI editors (Cursor, Windsurf, Cline)
+
+### Built for Vibe Coding
+
+Traditional tools weren't designed for AI-assisted development. Kest was.
+
+- **Markdown-Native**: Write tests in Markdown—documentation and tests are one
+- **Local-First**: Zero network latency, native-speed execution
+- **Git-Native**: Tests version alongside code, auto-integrated into CI/CD
+- **MCP-Ready**: Plug into AI editors via Model Context Protocol
+
+---
+
+## 📁 Repository Structure
+
+```
+kest/
+├── web/              # Next.js web platform (TypeScript)
+│   ├── src/
+│   ├── public/
+│   └── package.json
+│
+├── api/              # Go backend service
+│   ├── cmd/
+│   ├── internal/
+│   ├── pkg/
+│   └── go.mod
+│
+├── cli/              # Kest CLI tool (separate repo: kest-lab/kest-cli)
+│
+├── docker/           # Docker configurations
+│   ├── web.Dockerfile
+│   ├── api.Dockerfile
+│   └── docker-compose.yml
+│
+└── docs/             # Documentation
+```
+
+---
+
 ## 🚀 Quick Start
 
+### Prerequisites
+
+- **Node.js** 20+ (for web platform)
+- **Go** 1.22+ (for API backend)
+- **Docker** & Docker Compose (for deployment)
+- **PostgreSQL** 15+ (for production)
+
+### Local Development
+
+#### 1. Clone the Repository
+
 ```bash
-curl -fsSL https://kest.dev/install.sh | sh
+git clone git@github.com:kest-lab/kest.git
+cd kest
 ```
 
-Or via Go: `go install github.com/kest-labs/kest/cmd/kest@latest`
+#### 2. Setup Web Platform
 
 ```bash
-kest init                                                    # Initialize project
-kest get /api/users -a "status==200"                         # Test an endpoint
-kest post /api/login -d '{"user":"admin"}' -c "token=data.token"  # Capture token
-kest get /api/profile -H "Authorization: Bearer {{token}}"   # Use it instantly
+cd web
+npm install
+cp .env.example .env.local
+# Edit .env.local with your configuration
+npm run dev
 ```
 
-> Every request is auto-recorded. Variables chain automatically. No copy-paste.
+The web platform will be available at `http://localhost:3000`
 
----
-
-## ⚡ Why Kest?
-
-Kest is designed for **Vibe Coding** — the workflow where you and an AI copilot build together in the terminal.
-
-<table>
-<tr>
-<td width="50%">
-
-**Without Kest**
-- curl forgets every response
-- Copy-paste tokens between requests
-- API broke? Manually re-test everything
-- Postman needs GUI + cloud account + $$$
-- Test files are 5000-line JSON blobs
-- Switch between IDE and Postman constantly
-
-</td>
-<td width="50%">
-
-**With Kest**
-- Every request auto-recorded to local DB
-- Variables chain: `-c "token=data.token"` → `{{token}}`
-- `kest replay last --diff` — instant regression check
-- 100% terminal, 100% local, 100% free
-- `.flow.md` — Markdown that AI reads natively
-- Runs inline in Cursor/Windsurf terminal
-
-</td>
-</tr>
-</table>
-
-> **The Vibe Coding loop:** `kest` → AI sees output → AI suggests fix → `kest replay` → verified. All in one terminal.
-
----
-
-## 🧠 AI-Powered
-
-Kest uses your **local request history** as context for AI — something no other tool can do.
+#### 3. Setup API Backend
 
 ```bash
-kest why                           # AI diagnoses why your last request failed
-kest suggest                       # AI suggests the next logical API call
-kest explain 42                    # AI explains what record #42 does
-kest review auth.flow.md           # AI audits your flow for security gaps
-kest gen "test user registration"  # AI generates a complete .flow.md
+cd api
+go mod download
+cp .env.example .env
+# Edit .env with your configuration
+go run cmd/server/main.go
 ```
 
+The API will be available at `http://localhost:8080`
+
+### Docker Deployment
+
 ```bash
-kest config set ai_key sk-xxx      # Supports OpenAI, Azure, any compatible API
-kest config set ai_model gpt-4o
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
 ```
 
 ---
 
-## 📝 Markdown Flow — Documentation IS Your Test Suite
+## 📖 Documentation
 
-Write tests as `.flow.md` files — readable by humans, executable by Kest, reviewable in PRs.
+### Core Features
 
-~~~markdown
-```step
-@id login
-POST /api/login
-Content-Type: application/json
-{"user": "admin", "pass": "secret"}
+#### Cloud Platform (web/)
+- **API Documentation Editor**: OpenAPI 3.0 compatible
+- **Multi-Level Management**: Projects, Environments, Categories
+- **Team Collaboration**: Real-time editing, permission control
+- **Version History**: Track changes and rollback
 
-[Captures]
-token = data.token
+#### CLI Tool
+- **Local Execution**: Millisecond-level test completion
+- **Session Logging**: Automatic request/response recording
+- **JSON Formatting**: Pretty-print built-in
+- **Git Integration**: Tests as code
 
-[Asserts]
-status == 200
+#### MCP Integration
+- **AI Editor Support**: Cursor, Windsurf, Cline
+- **Skill System**: Shareable coding standards
+- **Context Protocol**: Native integration
+
+### Environment Variables
+
+#### Web Platform (`web/.env.local`)
+
+```env
+# API Connection
+NEXT_PUBLIC_API_URL=http://localhost:8080
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Database (if needed for serverless)
+DATABASE_URL=postgresql://user:pass@localhost:5432/kest
+
+# Auth (configure based on your setup)
+NEXTAUTH_SECRET=your-secret-key
+NEXTAUTH_URL=http://localhost:3000
 ```
 
-```step
-@id profile
-GET /api/profile
-Authorization: Bearer {{token}}
+#### API Backend (`api/.env`)
 
-[Asserts]
-status == 200
-body.user == "admin"
-```
-~~~
+```env
+# Server
+PORT=8080
+GIN_MODE=release
 
-<table><tr><td>
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=kest
+DB_USER=kest_user
+DB_PASSWORD=your_password
 
-```
-$ kest run login.flow.md
+# JWT
+JWT_SECRET=your-jwt-secret
+JWT_EXPIRATION=24h
 
-  ▶ login POST /api/login
-    ✅ 200 (142ms)
-
-  ▶ profile GET /api/profile
-    ✅ 200 (89ms)
-
-╭──────────────────────────────────────────────────╮
-│                 TEST SUMMARY                      │
-├──────────────────────────────────────────────────┤
-│ ✓ [POST] /api/login                  142ms │
-│ ✓ [GET]  /api/profile                  89ms │
-├──────────────────────────────────────────────────┤
-│ Total: 2  │  Passed: 2  │  Time: 231ms │
-╰──────────────────────────────────────────────────╯
-```
-
-</td></tr></table>
-
----
-
-## 🔥 More Features
-
-### Mock Server — zero config, from your history
-
-```bash
-kest mock --port 8080
-# Serves recorded responses automatically
-# GET  /api/users → 200    POST /api/login → 200
-```
-
-### Snapshot Testing — like Jest, but for APIs
-
-```bash
-kest snap /api/users              # Save snapshot
-kest snap /api/users --verify     # ❌ 'role' field changed!
-kest snap /api/users --update     # Accept new snapshot
-```
-
-### Replay & Diff — instant regression detection
-
-```bash
-kest replay last --diff
-# - "role": "admin"
-# + "role": "superadmin"  ← changed!
-```
-
-### File Watch — TDD for APIs
-
-```bash
-kest watch login.flow.md
-# [14:03:21] ✅ All 4 steps passed (1.2s)
-# [14:03:35] 📝 File changed, re-running...
-# [14:03:36] ✅ All 4 steps passed (0.9s)
-```
-
-### gRPC + TLS
-
-```bash
-kest grpc localhost:50051 pkg.Service/Method -p app.proto -d '{}'
-kest grpc api.example.com:443 pkg.Service/Method --tls --cert ca.pem
-```
-
-### SSE / LLM Streaming
-
-```bash
-kest post /v1/chat/completions -d '{"stream":true, ...}' --stream
+# CORS
+ALLOWED_ORIGINS=http://localhost:3000,https://kest.example.com
 ```
 
 ---
 
-## 🏆 Comparison
+## 🛠️ Development
 
-| Feature | curl | Postman | Hurl | **Kest** |
-|---|:---:|:---:|:---:|:---:|
-| Zero config | ✅ | ❌ | ✅ | ✅ |
-| Auto history | ❌ | ❌ | ❌ | **✅** |
-| Variable chaining | ❌ | ✅ | ✅ | ✅ |
-| AI diagnosis | ❌ | ❌ | ❌ | **✅** |
-| AI test generation | ❌ | ❌ | ❌ | **✅** |
-| Mock server | ❌ | 💰 | ❌ | **✅** |
-| Snapshot testing | ❌ | 💰 | ❌ | **✅** |
-| File watch | ❌ | ❌ | ❌ | **✅** |
-| Replay & diff | ❌ | ❌ | ❌ | **✅** |
-| gRPC + TLS | ❌ | ❌ | ❌ | **✅** |
-| Git-friendly tests | ❌ | ❌ | ✅ | ✅ |
-| SSE streaming | ❌ | ❌ | ❌ | **✅** |
-| CI/CD ready | ❌ | ❌ | ✅ | ✅ |
-| 100% local | ✅ | ❌ | ✅ | ✅ |
+### Web Platform Stack
 
----
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui
+- **State**: Zustand + React Query
+- **i18n**: next-intl
+- **Theme**: OKLCH color system
 
-## 📖 Command Reference
+### API Backend Stack
 
-<details>
-<summary><b>HTTP Requests</b></summary>
+- **Language**: Go 1.22+
+- **Framework**: Gin
+- **ORM**: GORM
+- **Database**: PostgreSQL 15+
+- **Architecture**: Domain-Driven Design (DDD)
 
-```bash
-kest get /api/users                              # GET
-kest post /api/users -d '{"name":"Alice"}'       # POST with JSON body
-kest put /api/users/1 -d '{"name":"Bob"}'        # PUT
-kest delete /api/users/1                         # DELETE
-kest post /api/upload -d @file.json              # Body from file
+### Code Standards
 
-# Flags
--H "Key: Value"       # Header
--q "key=value"        # Query param
--c "var=json.path"    # Capture variable
--a "status==200"      # Assertion
--v                    # Verbose (show headers)
---max-time 5000       # Timeout (ms)
---retry 3             # Retry count
---retry-delay 1000    # Retry delay (ms)
---stream              # SSE streaming
---var key=value       # Set variable
-```
-
-</details>
-
-<details>
-<summary><b>History & Replay</b></summary>
-
-```bash
-kest history                # Recent records
-kest history -n 50          # Last 50
-kest show last              # Full request/response details
-kest show 42                # Specific record
-kest diff 100 last          # Compare two records
-kest replay last --diff     # Re-execute and compare
-```
-
-</details>
-
-<details>
-<summary><b>Testing & Automation</b></summary>
-
-```bash
-kest run login.flow.md                  # Run flow file
-kest run login.flow.md --var key=val    # With variables
-kest run tests/ --parallel --jobs 8     # Parallel execution
-kest watch login.flow.md                # Auto-rerun on change
-kest snap /api/users                    # Save snapshot
-kest snap /api/users --verify           # Verify against snapshot
-kest mock --port 8080                   # Mock server from history
-```
-
-</details>
-
-<details>
-<summary><b>Configuration</b></summary>
-
-```bash
-kest init                   # Initialize project
-kest config set ai_key sk-xxx
-kest config set ai_model gpt-4o
-kest env set staging        # Switch environment
-kest vars                   # List captured variables
-kest completion zsh         # Shell completion
-```
-
-</details>
+- **Frontend**: ESLint + Prettier
+- **Backend**: golangci-lint
+- **Commits**: Conventional Commits
+- **Branching**: Git Flow
 
 ---
 
-## 🏗 Architecture
+## 🐳 Deployment
 
-```
-Terminal                              Local Storage
-┌──────────────────┐                 ┌──────────────┐
-│ kest get /users  │──auto-record──→│ SQLite DB     │
-│ kest post /login │──capture var──→│ Variables     │
-│ kest run flow.md │──assertions──→ │ History       │
-└──────────────────┘                 └──────┬───────┘
-                                            │
-                                   ┌────────▼────────┐
-                                   │ AI Engine        │
-                                   │ why · suggest    │
-                                   │ explain · review │
-                                   └─────────────────┘
+### Production Deployment
+
+```bash
+# Build and deploy
+docker-compose -f docker-compose.prod.yml up -d
+
+# Scale services
+docker-compose -f docker-compose.prod.yml up -d --scale api=3
 ```
 
-**100% local.** No cloud. No account. No telemetry. Your data never leaves your machine.
+### Cloud Platforms
+
+#### Vercel (Web)
+```bash
+cd web
+vercel --prod
+```
+
+#### Google Cloud Run (API)
+```bash
+cd api
+gcloud run deploy kest-api \
+  --source . \
+  --platform managed \
+  --region us-central1
+```
 
 ---
 
 ## 🤝 Contributing
 
-```bash
-git clone https://github.com/kest-labs/kest.git
-cd kest-cli
-go build ./cmd/kest
-go test ./...
-```
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-See [docs/VISION.md](docs/VISION.md) for project philosophy. PRs welcome!
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📜 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🔗 Links
+
+- **Website**: https://kest.example.com
+- **Documentation**: https://docs.kest.example.com
+- **CLI Repository**: https://github.com/kest-lab/kest-cli
+- **Issue Tracker**: https://github.com/kest-lab/kest/issues
+- **Discussions**: https://github.com/kest-lab/kest/discussions
+
+---
+
+## 🌟 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=kest-lab/kest&type=Date)](https://star-history.com/#kest-lab/kest&Date)
 
 ---
 
 <div align="center">
 
-**Keep Every Step Tested.** 🦅
+**Built with ❤️ for Vibe Coding**
 
-[Website](https://kest.dev) · [GitHub](https://github.com/kest-labs/kest) · [Report Bug](https://github.com/kest-labs/kest/issues)
-
-If Kest saves you time, consider giving it a ⭐
-
-MIT License — See [LICENSE](LICENSE)
+[⬆ Back to Top](#kest---api-testing-platform-for-vibe-coding)
 
 </div>

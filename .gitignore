@@ -1,35 +1,181 @@
-# Binaries
-kest
-kest_local
-kest-darwin-*
-kest_darwin_*
-main
-*.tar.gz
-*.exe
-bin/
+# ===========================================
+# Kest Monorepo - Git Ignore
+# ===========================================
+
+# ===========================================
+# Dependencies
+# ===========================================
+node_modules/
+vendor/
+
+# ===========================================
+# Build outputs
+# ===========================================
+.next/
+out/
+build/
 dist/
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
 
-# Local data
-.kest/
-*.db
-*.db-journal
-*.db-shm
-*.db-wal
+# ===========================================
+# Environment variables
+# ===========================================
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# IDE
-.idea/
+# Keep example files
+!.env.example
+!.env.*.example
+
+# ===========================================
+# Logs
+# ===========================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log.*
+
+# ===========================================
+# Testing
+# ===========================================
+coverage/
+.nyc_output/
+*.coverprofile
+*.out
+
+# ===========================================
+# IDE & Editors
+# ===========================================
 .vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
 *.swp
 *.swo
 *~
+*.sublime-workspace
+*.sublime-project
 
-# OS
+# ===========================================
+# OS Files
+# ===========================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Go
-vendor/
-
-# Backup files
-*.bak
+# ===========================================
+# Temporary files
+# ===========================================
+tmp/
+temp/
 *.tmp
+.cache/
+
+# ===========================================
+# Go specific
+# ===========================================
+go.work
+go.work.sum
+
+# ===========================================
+# Next.js specific
+# ===========================================
+.next/
+out/
+.swc/
+
+# ===========================================
+# Vercel
+# ===========================================
+.vercel
+
+# ===========================================
+# Docker
+# ===========================================
+docker-compose.override.yml
+
+# ===========================================
+# Sensitive data (IMPORTANT FOR OPEN SOURCE)
+# ===========================================
+# Database credentials
+*.sql
+*.db
+*.sqlite
+*.sqlite3
+
+# API keys and secrets
+secrets/
+*.pem
+*.key
+*.cert
+*.pfx
+
+# JWT keys
+jwt_*.key
+
+# Session data
+sessions/
+
+# User uploads
+uploads/
+user_data/
+
+# ===========================================
+# Compiled binaries (IMPORTANT FOR OPEN SOURCE)
+# ===========================================
+# Go binaries
+main
+test-server
+test-server-prod
+kest-api
+server
+**/cmd/*/main
+**/cmd/*/*.exe
+
+# ===========================================
+# Development reports and internal docs
+# ===========================================
+# Root level reports
+API_REVIEW_REPORT.md
+FINAL_COMPLETION_REPORT.md
+*_REPORT.md
+*_STATUS.md
+*_SUMMARY.md
+
+# API internal docs
+api/AGENTS.md
+api/DOCKERFILE_FIX.md
+api/PLATFORM_*.md
+api/ZEABUR_*.md
+api/WEB_UI_*.md
+
+# Web internal docs
+web/ADMIN_UI_*.md
+web/CLI_*.md
+web/COMPLETE_*.md
+web/FINAL_*.md
+web/IMPLEMENTATION*.md
+web/TEST_*.md
+
+# ===========================================
+# Storage and runtime data
+# ===========================================
+storage/
+api/storage/
+web/storage/

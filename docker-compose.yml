@@ -1,0 +1,41 @@
+# ===========================================
+# Kest Platform - Docker Compose Configuration
+# ===========================================
+# Monolithic deployment: Go API serves embedded Vite frontend
+# Uses existing PostgreSQL container (1Panel-postgresql-5d9H)
+
+services:
+  # ===========================================
+  # API Backend (Go + Gin + embedded frontend)
+  # ===========================================
+  api:
+    image: ghcr.io/kest-lab/kest:latest
+    container_name: kest-api
+    restart: unless-stopped
+    environment:
+      # Server
+      PORT: 8080
+      GIN_MODE: ${GIN_MODE:-release}
+      
+      # Database (existing PostgreSQL)
+      DB_HOST: ${DB_HOST:-host.docker.internal}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-kest}
+      DB_USER: ${DB_USER:-kest_user}
+      DB_PASSWORD: ${DB_PASSWORD}
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: 24h
+      
+      # CORS
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

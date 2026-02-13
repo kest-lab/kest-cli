@@ -1,0 +1,27 @@
+package migrations
+
+import (
+	"github.com/eogo-dev/eogo/internal/infra/migration"
+	"gorm.io/gorm"
+)
+
+func init() {
+	register("{{ .MigrationID }}", &{{ .StructName }}{})
+}
+
+// {{ .StructName }} migration.
+type {{ .StructName }} struct {
+	migration.BaseMigration
+}
+
+// Up applies the migration.
+func (m *{{ .StructName }}) Up(db *gorm.DB) error {
+	// TODO: Implement migration logic
+	return nil
+}
+
+// Down reverts the migration.
+func (m *{{ .StructName }}) Down(db *gorm.DB) error {
+	// TODO: Implement rollback logic
+	return nil
+}

@@ -1,0 +1,34 @@
+# Kest Scenario: RBAC Permissions Full Lifecycle Test
+# This scenario tests project creation, role management, and permission enforcement.
+
+# === STEP 1: User 100 Creates a Project ===
+# Expected: Success, and User 100 becomes Owner
+POST /api/v1/projects -H "X-User-ID: 100" -H "Content-Type: application/json" -d '{"name": "Scenario Project", "description": "Testing from Kest file"}' -c "projectID=data.id" -a "status=201" -a "body.name=Scenario Project"
+
+# === STEP 2: Verify Membership ===
+# Expected: User 100 is indeed the owner
+GET /api/v1/projects/{{projectID}}/members -H "X-User-ID: 100" -a "status=200" -a "body[0].user_id=100" -a "body[0].role=owner"
+
+# === STEP 3: Owner (100) Adds User 101 as 'Read' role ===
+# Expected: Success
+POST /api/v1/projects/{{projectID}}/members -H "X-User-ID: 100" -H "Content-Type: application/json" -d '{"user_id": 101, "role": "read"}' -a "status=201"
+
+# === STEP 4: User 101 (Read) Tries to Update Project ===
+# Expected: 403 Forbidden
+PATCH /api/v1/projects/{{projectID}} -H "X-User-ID: 101" -H "Content-Type: application/json" -d '{"name": "Hacked"}' -a "status=403"
+
+# === STEP 5: User 101 (Read) Tries to Create Environment ===
+# Expected: 403 Forbidden
+POST /api/v1/projects/{{projectID}}/environments -H "X-User-ID: 101" -H "Content-Type: application/json" -d '{"name": "Unauthorized Env", "base_url": "https://api.fail.com"}' -a "status=403"
+
+# === STEP 6: Owner (100) Creates Environment ===
+# Expected: 201 Created
+POST /api/v1/projects/{{projectID}}/environments -H "X-User-ID: 100" -H "Content-Type: application/json" -d '{"project_id": {{projectID}}, "name": "Prod Env", "base_url": "https://api.example.com"}' -c "envID=data.id" -a "status=201"
+
+# === STEP 7: User 101 (Read) Lists Environments ===
+# Expected: 200 OK and sees the entry
+GET /api/v1/projects/{{projectID}}/environments -H "X-User-ID: 101" -a "status=200"
+
+# === STEP 8: Anonymous User (102) Tries to Access ===
+# Expected: 403 Forbidden (since 102 is not a member)
+GET /api/v1/projects/{{projectID}} -H "X-User-ID: 102" -a "status=403"

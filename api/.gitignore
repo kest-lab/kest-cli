@@ -1,0 +1,108 @@
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+*.trace
+
+# Binaries (root directory only)
+bin/
+dist/
+/zgo
+/migrate
+/server
+test_output.txt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+.env
+
+# Dependencies
+vendor/
+
+# Logs
+*.log
+logs/
+log/
+
+# Test cache
+*.test
+*.tmp
+coverage.txt
+coverage.html
+
+# Configuration
+# config.yaml
+# config.yml
+*.local.yaml
+*.local.yml
+
+# Temp
+tmp/
+temp/
+.tmp/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Certificates
+*.pem
+*.key
+*.crt
+*.csr
+*.srl
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Cache
+.cache/
+
+# Air
+tmp/
+
+# Go workspace
+go.work
+go.work.sum
+
+# Debug
+__debug_bin
+debug.test
+
+# System
+.DS_Store
+Thumbs.db
+
+# Project uploads
+uploads/
+static/uploads/
+public/uploads/
+
+# Reference code
+_reference/
+.ref
+# Reference code
+.ref/
+
+# Built binaries
+zgo
+server
+
+# Examples (keep source code but ignore build artifacts)
+examples/*/bin/
+examples/*/dist/
+examples/*/tmp/
+examples/*/.env
+examples/*/*.log
