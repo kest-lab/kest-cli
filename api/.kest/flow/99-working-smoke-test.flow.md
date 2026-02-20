@@ -7,7 +7,7 @@
 ## Step 1: User Registration
 
 ```kest
-POST /api/v1/register
+POST /v1/register
 Content-Type: application/json
 
 {
@@ -33,7 +33,7 @@ duration < 1000ms
 ## Step 2: User Login
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -56,7 +56,7 @@ duration < 1000ms
 ## Step 3: Get User Profile
 
 ```kest
-GET /api/v1/users/profile
+GET /v1/users/profile
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -72,7 +72,7 @@ duration < 500ms
 ## Step 4: Create Project
 
 ```kest
-POST /api/v1/projects
+POST /v1/projects
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -96,7 +96,7 @@ duration < 1000ms
 ## Step 5: Get Project Details
 
 ```kest
-GET /api/v1/projects/{{project_id}}
+GET /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -111,7 +111,7 @@ duration < 500ms
 ## Step 6: List All Projects
 
 ```kest
-GET /api/v1/projects
+GET /v1/projects
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -126,7 +126,7 @@ duration < 1000ms
 ## Step 7: Delete Project
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}
+DELETE /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -140,7 +140,7 @@ duration < 1000ms
 ## Step 8: Verify Project Deletion
 
 ```kest
-GET /api/v1/projects/{{project_id}}
+GET /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]

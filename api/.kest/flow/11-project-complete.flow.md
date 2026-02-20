@@ -7,7 +7,7 @@ Complete CRUD testing for project management including DSN retrieval.
 ## Step 1: User Login (Setup)
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -30,7 +30,7 @@ body.data.access_token exists
 ## Step 2: Create Project
 
 ```kest
-POST /api/v1/projects
+POST /v1/projects
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -57,7 +57,7 @@ duration < 1000ms
 ## Step 3: Get Project Details
 
 ```kest
-GET /api/v1/projects/{{project_id}}
+GET /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -74,7 +74,7 @@ duration < 500ms
 ## Step 4: List All Projects
 
 ```kest
-GET /api/v1/projects
+GET /v1/projects
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -89,7 +89,7 @@ duration < 1000ms
 ## Step 5: Update Project
 
 ```kest
-PUT /api/v1/projects/{{project_id}}
+PUT /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -110,7 +110,7 @@ duration < 1000ms
 ## Step 6: Verify Project Update
 
 ```kest
-GET /api/v1/projects/{{project_id}}
+GET /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -126,7 +126,7 @@ body.data.platform == "mobile"
 ## Step 7: Get Project DSN
 
 ```kest
-GET /api/v1/projects/{{project_id}}/dsn
+GET /v1/projects/{{project_id}}/dsn
 Authorization: Bearer {{access_token}}
 
 [Captures]
@@ -144,7 +144,7 @@ duration < 500ms
 ## Step 8: Delete Project
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}
+DELETE /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -158,7 +158,7 @@ duration < 1000ms
 ## Step 9: Verify Project Deletion (Negative Test)
 
 ```kest
-GET /api/v1/projects/{{project_id}}
+GET /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]

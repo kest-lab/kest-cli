@@ -9,7 +9,7 @@ Test security features including unauthorized access, invalid tokens, and permis
 Try to access protected endpoint without token.
 
 ```kest
-GET /api/v1/users/profile
+GET /v1/users/profile
 
 [Asserts]
 status == 401
@@ -23,7 +23,7 @@ duration < 200ms
 Try to access projects without authentication.
 
 ```kest
-GET /api/v1/projects
+GET /v1/projects
 
 [Asserts]
 status == 401
@@ -37,7 +37,7 @@ duration < 200ms
 Try to access with a malformed token.
 
 ```kest
-GET /api/v1/users/profile
+GET /v1/users/profile
 Authorization: Bearer invalid-token-12345
 
 [Asserts]
@@ -52,7 +52,7 @@ duration < 300ms
 Create a valid user for testing.
 
 ```kest
-POST /api/v1/register
+POST /v1/register
 Content-Type: application/json
 
 {
@@ -77,7 +77,7 @@ duration < 1000ms
 Obtain a valid authentication token.
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -103,7 +103,7 @@ duration < 800ms
 Create a project for ownership testing.
 
 ```kest
-POST /api/v1/projects
+POST /v1/projects
 Authorization: Bearer {{valid_token}}
 Content-Type: application/json
 
@@ -129,7 +129,7 @@ duration < 1000ms
 Verify user can access their own project.
 
 ```kest
-GET /api/v1/projects/{{project_id}}
+GET /v1/projects/{{project_id}}
 Authorization: Bearer {{valid_token}}
 
 [Asserts]
@@ -146,7 +146,7 @@ duration < 500ms
 Try to access a project that doesn't exist.
 
 ```kest
-GET /api/v1/projects/999999
+GET /v1/projects/999999
 Authorization: Bearer {{valid_token}}
 
 [Asserts]
@@ -161,7 +161,7 @@ duration < 500ms
 Verify password reset endpoint is accessible without auth.
 
 ```kest
-POST /api/v1/password/reset
+POST /v1/password/reset
 Content-Type: application/json
 
 {
@@ -180,7 +180,7 @@ duration < 800ms
 Test with an expired/invalid token format.
 
 ```kest
-GET /api/v1/projects
+GET /v1/projects
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid
 
 [Asserts]

@@ -9,7 +9,7 @@ Performance testing for critical endpoints with strict duration requirements.
 Health endpoint must respond in under 100ms.
 
 ```kest
-GET /api/v1/health
+GET /v1/health
 
 [Asserts]
 status == 200
@@ -23,7 +23,7 @@ duration < 100ms
 Get authentication token for protected endpoints.
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -47,7 +47,7 @@ duration < 800ms
 Profile endpoint must respond in under 300ms.
 
 ```kest
-GET /api/v1/users/profile
+GET /v1/users/profile
 Authorization: Bearer {{token}}
 
 [Asserts]
@@ -63,7 +63,7 @@ duration < 300ms
 Project listing must respond in under 500ms.
 
 ```kest
-GET /api/v1/projects
+GET /v1/projects
 Authorization: Bearer {{token}}
 
 [Asserts]
@@ -79,7 +79,7 @@ duration < 500ms
 Project creation must complete in under 1 second.
 
 ```kest
-POST /api/v1/projects
+POST /v1/projects
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -104,7 +104,7 @@ duration < 1000ms
 Single project retrieval must respond in under 300ms.
 
 ```kest
-GET /api/v1/projects/{{project_id}}
+GET /v1/projects/{{project_id}}
 Authorization: Bearer {{token}}
 
 [Asserts]
@@ -120,7 +120,7 @@ duration < 300ms
 Project update must complete in under 800ms.
 
 ```kest
-PUT /api/v1/projects/{{project_id}}
+PUT /v1/projects/{{project_id}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -141,7 +141,7 @@ duration < 800ms
 API spec creation must complete in under 1 second.
 
 ```kest
-POST /api/v1/projects/{{project_id}}/api-specs
+POST /v1/projects/{{project_id}}/api-specs
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -167,7 +167,7 @@ duration < 1000ms
 API spec listing must respond in under 500ms.
 
 ```kest
-GET /api/v1/projects/{{project_id}}/api-specs
+GET /v1/projects/{{project_id}}/api-specs
 Authorization: Bearer {{token}}
 
 [Asserts]
@@ -183,7 +183,7 @@ duration < 500ms
 Deletion operations must complete in under 500ms.
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}/api-specs/{{spec_id}}
+DELETE /v1/projects/{{project_id}}/api-specs/{{spec_id}}
 Authorization: Bearer {{token}}
 
 [Asserts]

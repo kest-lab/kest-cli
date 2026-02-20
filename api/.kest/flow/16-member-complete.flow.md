@@ -7,7 +7,7 @@ Complete CRUD testing for project member management.
 ## Step 1: User Login & Create Project (Setup)
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -29,7 +29,7 @@ body.code == 0
 ## Step 2: Create Test Project
 
 ```kest
-POST /api/v1/projects
+POST /v1/projects
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -52,7 +52,7 @@ body.data.id exists
 ## Step 3: Register Second User (for member testing)
 
 ```kest
-POST /api/v1/register
+POST /v1/register
 Content-Type: application/json
 
 {
@@ -76,7 +76,7 @@ body.data.id exists
 ## Step 4: Add Member to Project
 
 ```kest
-POST /api/v1/projects/{{project_id}}/members
+POST /v1/projects/{{project_id}}/members
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -98,7 +98,7 @@ duration < 1000ms
 ## Step 5: List Project Members
 
 ```kest
-GET /api/v1/projects/{{project_id}}/members
+GET /v1/projects/{{project_id}}/members
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -113,7 +113,7 @@ duration < 1000ms
 ## Step 6: Update Member Role
 
 ```kest
-PATCH /api/v1/projects/{{project_id}}/members/{{member_user_id}}
+PATCH /v1/projects/{{project_id}}/members/{{member_user_id}}
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -132,7 +132,7 @@ duration < 1000ms
 ## Step 7: Verify Member Role Update
 
 ```kest
-GET /api/v1/projects/{{project_id}}/members
+GET /v1/projects/{{project_id}}/members
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -146,7 +146,7 @@ body.data exists
 ## Step 8: Remove Member from Project
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}/members/{{member_user_id}}
+DELETE /v1/projects/{{project_id}}/members/{{member_user_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -160,7 +160,7 @@ duration < 1000ms
 ## Step 9: Verify Member Removal
 
 ```kest
-GET /api/v1/projects/{{project_id}}/members
+GET /v1/projects/{{project_id}}/members
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -173,7 +173,7 @@ body.code == 0
 ## Step 10: Cleanup - Delete Project
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}
+DELETE /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]

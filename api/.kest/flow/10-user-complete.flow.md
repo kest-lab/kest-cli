@@ -7,7 +7,7 @@ Complete CRUD testing for user authentication and profile management.
 ## Step 1: User Registration
 
 ```kest
-POST /api/v1/register
+POST /v1/register
 Content-Type: application/json
 
 {
@@ -35,7 +35,7 @@ duration < 1000ms
 ## Step 2: User Login
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -59,7 +59,7 @@ duration < 1000ms
 ## Step 3: Get User Profile
 
 ```kest
-GET /api/v1/users/profile
+GET /v1/users/profile
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -75,7 +75,7 @@ duration < 500ms
 ## Step 4: Update User Profile
 
 ```kest
-PUT /api/v1/users/profile
+PUT /v1/users/profile
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -95,7 +95,7 @@ duration < 1000ms
 ## Step 5: Verify Profile Update
 
 ```kest
-GET /api/v1/users/profile
+GET /v1/users/profile
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -110,7 +110,7 @@ body.data.bio == "This is my updated bio"
 ## Step 6: Change Password
 
 ```kest
-PUT /api/v1/users/password
+PUT /v1/users/password
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -130,7 +130,7 @@ duration < 1000ms
 ## Step 7: Login with New Password
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -153,7 +153,7 @@ duration < 1000ms
 ## Step 8: List Users (Admin)
 
 ```kest
-GET /api/v1/users
+GET /v1/users
 Authorization: Bearer {{new_access_token}}
 
 [Asserts]
@@ -168,7 +168,7 @@ duration < 1000ms
 ## Step 9: Get User Info by ID
 
 ```kest
-GET /api/v1/users/{{user_id}}/info
+GET /v1/users/{{user_id}}/info
 Authorization: Bearer {{new_access_token}}
 
 [Asserts]
@@ -183,7 +183,7 @@ duration < 500ms
 ## Step 10: Delete Account
 
 ```kest
-DELETE /api/v1/users/account
+DELETE /v1/users/account
 Authorization: Bearer {{new_access_token}}
 
 [Asserts]
@@ -197,7 +197,7 @@ duration < 1000ms
 ## Step 11: Verify Account Deletion (Negative Test)
 
 ```kest
-GET /api/v1/users/profile
+GET /v1/users/profile
 Authorization: Bearer {{new_access_token}}
 
 [Asserts]

@@ -7,7 +7,7 @@ Complete end-to-end integration test covering all major modules.
 ## Step 1: User Registration & Login
 
 ```kest
-POST /api/v1/register
+POST /v1/register
 Content-Type: application/json
 
 {
@@ -30,7 +30,7 @@ body.code == 0
 ## Step 2: Login
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -52,7 +52,7 @@ body.data.access_token exists
 ## Step 3: Create Project
 
 ```kest
-POST /api/v1/projects
+POST /v1/projects
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -76,7 +76,7 @@ body.data.id exists
 ## Step 4: Create Category
 
 ```kest
-POST /api/v1/projects/{{project_id}}/categories
+POST /v1/projects/{{project_id}}/categories
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -99,7 +99,7 @@ body.code == 0
 ## Step 5: Create Environment
 
 ```kest
-POST /api/v1/projects/{{project_id}}/environments
+POST /v1/projects/{{project_id}}/environments
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -125,7 +125,7 @@ body.code == 0
 ## Step 6: Create API Specification
 
 ```kest
-POST /api/v1/projects/{{project_id}}/api-specs
+POST /v1/projects/{{project_id}}/api-specs
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -157,7 +157,7 @@ body.code == 0
 ## Step 7: Create Test Case from Spec
 
 ```kest
-POST /api/v1/projects/{{project_id}}/test-cases/from-spec
+POST /v1/projects/{{project_id}}/test-cases/from-spec
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -180,7 +180,7 @@ body.code == 0
 ## Step 8: Run Test Case
 
 ```kest
-POST /api/v1/projects/{{project_id}}/test-cases/{{testcase_id}}/run
+POST /v1/projects/{{project_id}}/test-cases/{{testcase_id}}/run
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -199,7 +199,7 @@ duration < 3000ms
 ## Step 9: List Project Issues
 
 ```kest
-GET /api/v1/projects/{{project_id}}/issues
+GET /v1/projects/{{project_id}}/issues
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -212,7 +212,7 @@ body.code == 0
 ## Step 10: Get Project DSN
 
 ```kest
-GET /api/v1/projects/{{project_id}}/dsn
+GET /v1/projects/{{project_id}}/dsn
 Authorization: Bearer {{access_token}}
 
 [Captures]
@@ -229,7 +229,7 @@ body.data.dsn exists
 ## Step 11: Update User Profile
 
 ```kest
-PUT /api/v1/users/profile
+PUT /v1/users/profile
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -248,7 +248,7 @@ body.code == 0
 ## Step 12: List All Projects
 
 ```kest
-GET /api/v1/projects
+GET /v1/projects
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -262,7 +262,7 @@ body.data exists
 ## Step 13: Export API Specs
 
 ```kest
-GET /api/v1/projects/{{project_id}}/api-specs/export
+GET /v1/projects/{{project_id}}/api-specs/export
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -276,7 +276,7 @@ duration < 2000ms
 ## Step 14: Cleanup - Delete Test Case
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}/test-cases/{{testcase_id}}
+DELETE /v1/projects/{{project_id}}/test-cases/{{testcase_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -289,7 +289,7 @@ body.code == 0
 ## Step 15: Cleanup - Delete API Spec
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}/api-specs/{{spec_id}}
+DELETE /v1/projects/{{project_id}}/api-specs/{{spec_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -302,7 +302,7 @@ body.code == 0
 ## Step 16: Cleanup - Delete Environment
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}/environments/{{env_id}}
+DELETE /v1/projects/{{project_id}}/environments/{{env_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -315,7 +315,7 @@ body.code == 0
 ## Step 17: Cleanup - Delete Category
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}/categories/{{category_id}}
+DELETE /v1/projects/{{project_id}}/categories/{{category_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -328,7 +328,7 @@ body.code == 0
 ## Step 18: Cleanup - Delete Project
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}
+DELETE /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -341,7 +341,7 @@ body.code == 0
 ## Step 19: Cleanup - Delete User Account
 
 ```kest
-DELETE /api/v1/users/account
+DELETE /v1/users/account
 Authorization: Bearer {{access_token}}
 
 [Asserts]

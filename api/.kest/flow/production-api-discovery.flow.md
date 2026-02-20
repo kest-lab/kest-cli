@@ -29,7 +29,7 @@ status in [200, 404]
 ## Step 3: Test API v1 Group
 
 ```kest
-GET https://api.kest.dev/api/v1/health
+GET https://api.kest.dev/v1/health
 
 [Asserts]
 status in [200, 404]
@@ -40,7 +40,7 @@ status in [200, 404]
 ## Step 4: Test Register with Different Paths
 
 ```kest
-POST https://api.kest.dev/api/v1/register
+POST https://api.kest.dev/v1/register
 Content-Type: application/json
 
 {
@@ -58,7 +58,7 @@ status in [200, 201, 400, 404]
 ## Step 5: Test Login with Different Paths
 
 ```kest
-POST https://api.kest.dev/api/v1/login
+POST https://api.kest.dev/v1/login
 Content-Type: application/json
 
 {
@@ -75,7 +75,7 @@ status in [200, 400, 401, 404]
 ## Step 6: Test Projects Endpoint
 
 ```kest
-GET https://api.kest.dev/api/v1/projects
+GET https://api.kest.dev/v1/projects
 
 [Asserts]
 status in [200, 401, 404]

@@ -7,7 +7,7 @@ Complete CRUD testing for API specifications and examples.
 ## Step 1: User Login & Create Project (Setup)
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -28,7 +28,7 @@ body.code == 0
 ## Step 2: Create Test Project
 
 ```kest
-POST /api/v1/projects
+POST /v1/projects
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -51,7 +51,7 @@ body.data.id exists
 ## Step 3: Create API Specification
 
 ```kest
-POST /api/v1/projects/{{project_id}}/api-specs
+POST /v1/projects/{{project_id}}/api-specs
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -87,7 +87,7 @@ duration < 1000ms
 ## Step 4: Get API Specification
 
 ```kest
-GET /api/v1/projects/{{project_id}}/api-specs/{{spec_id}}
+GET /v1/projects/{{project_id}}/api-specs/{{spec_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -104,7 +104,7 @@ duration < 500ms
 ## Step 5: List API Specifications
 
 ```kest
-GET /api/v1/projects/{{project_id}}/api-specs
+GET /v1/projects/{{project_id}}/api-specs
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -119,7 +119,7 @@ duration < 1000ms
 ## Step 6: Update API Specification
 
 ```kest
-PATCH /api/v1/projects/{{project_id}}/api-specs/{{spec_id}}
+PATCH /v1/projects/{{project_id}}/api-specs/{{spec_id}}
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -139,7 +139,7 @@ duration < 1000ms
 ## Step 7: Get Spec with Examples
 
 ```kest
-GET /api/v1/projects/{{project_id}}/api-specs/{{spec_id}}/full
+GET /v1/projects/{{project_id}}/api-specs/{{spec_id}}/full
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -155,7 +155,7 @@ duration < 500ms
 ## Step 8: Create API Example
 
 ```kest
-POST /api/v1/projects/{{project_id}}/api-specs/{{spec_id}}/examples
+POST /v1/projects/{{project_id}}/api-specs/{{spec_id}}/examples
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -188,7 +188,7 @@ duration < 1000ms
 ## Step 9: Export API Specs
 
 ```kest
-GET /api/v1/projects/{{project_id}}/api-specs/export
+GET /v1/projects/{{project_id}}/api-specs/export
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -202,7 +202,7 @@ duration < 2000ms
 ## Step 10: Delete API Specification
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}/api-specs/{{spec_id}}
+DELETE /v1/projects/{{project_id}}/api-specs/{{spec_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -216,7 +216,7 @@ duration < 1000ms
 ## Step 11: Verify Deletion (Negative Test)
 
 ```kest
-GET /api/v1/projects/{{project_id}}/api-specs/{{spec_id}}
+GET /v1/projects/{{project_id}}/api-specs/{{spec_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -229,7 +229,7 @@ duration < 500ms
 ## Step 12: Cleanup - Delete Project
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}
+DELETE /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]

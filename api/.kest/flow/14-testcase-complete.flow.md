@@ -7,7 +7,7 @@ Complete CRUD testing for test case management including duplication and executi
 ## Step 1: User Login & Create Project (Setup)
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -28,7 +28,7 @@ body.code == 0
 ## Step 2: Create Test Project
 
 ```kest
-POST /api/v1/projects
+POST /v1/projects
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -51,7 +51,7 @@ body.data.id exists
 ## Step 3: Create Test Case
 
 ```kest
-POST /api/v1/projects/{{project_id}}/test-cases
+POST /v1/projects/{{project_id}}/test-cases
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -86,7 +86,7 @@ duration < 1000ms
 ## Step 4: Get Test Case Details
 
 ```kest
-GET /api/v1/projects/{{project_id}}/test-cases/{{testcase_id}}
+GET /v1/projects/{{project_id}}/test-cases/{{testcase_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -103,7 +103,7 @@ duration < 500ms
 ## Step 5: List All Test Cases
 
 ```kest
-GET /api/v1/projects/{{project_id}}/test-cases
+GET /v1/projects/{{project_id}}/test-cases
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -118,7 +118,7 @@ duration < 1000ms
 ## Step 6: Update Test Case
 
 ```kest
-PATCH /api/v1/projects/{{project_id}}/test-cases/{{testcase_id}}
+PATCH /v1/projects/{{project_id}}/test-cases/{{testcase_id}}
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -139,7 +139,7 @@ duration < 1000ms
 ## Step 7: Verify Test Case Update
 
 ```kest
-GET /api/v1/projects/{{project_id}}/test-cases/{{testcase_id}}
+GET /v1/projects/{{project_id}}/test-cases/{{testcase_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -154,7 +154,7 @@ body.data.expected_status == 201
 ## Step 8: Duplicate Test Case
 
 ```kest
-POST /api/v1/projects/{{project_id}}/test-cases/{{testcase_id}}/duplicate
+POST /v1/projects/{{project_id}}/test-cases/{{testcase_id}}/duplicate
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -178,7 +178,7 @@ duration < 1000ms
 ## Step 9: Run Test Case
 
 ```kest
-POST /api/v1/projects/{{project_id}}/test-cases/{{testcase_id}}/run
+POST /v1/projects/{{project_id}}/test-cases/{{testcase_id}}/run
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -201,7 +201,7 @@ duration < 3000ms
 ## Step 10: Delete Original Test Case
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}/test-cases/{{testcase_id}}
+DELETE /v1/projects/{{project_id}}/test-cases/{{testcase_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -215,7 +215,7 @@ duration < 1000ms
 ## Step 11: Delete Duplicated Test Case
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}/test-cases/{{duplicated_testcase_id}}
+DELETE /v1/projects/{{project_id}}/test-cases/{{duplicated_testcase_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -228,7 +228,7 @@ body.code == 0
 ## Step 12: Cleanup - Delete Project
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}
+DELETE /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]

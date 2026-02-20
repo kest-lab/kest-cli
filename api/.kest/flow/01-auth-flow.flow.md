@@ -9,7 +9,7 @@ Basic user authentication testing including registration, login, and profile ret
 Register a new user account with unique credentials.
 
 ```kest
-POST /api/v1/register
+POST /v1/register
 Content-Type: application/json
 
 {
@@ -35,7 +35,7 @@ body.code == 0
 Login with the registered credentials to obtain access token.
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -61,7 +61,7 @@ duration < 1000ms
 Retrieve the authenticated user's profile information.
 
 ```kest
-GET /api/v1/users/profile
+GET /v1/users/profile
 Authorization: Bearer {{access_token}}
 
 [Asserts]

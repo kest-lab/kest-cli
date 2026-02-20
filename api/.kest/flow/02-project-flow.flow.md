@@ -2,7 +2,7 @@
 
 ## 1. Create a New Project
 ```kest
-POST /api/v1/projects
+POST /v1/projects
 {
   "name": "Kest Test Project",
   "description": "A project created by Kest automated flow"
@@ -20,7 +20,7 @@ body.data.id exists
 
 ## 2. Verify Project Persistence (Side-Effect Check)
 ```kest
-GET /api/v1/projects/{{projectId}}
+GET /v1/projects/{{projectId}}
 
 [Asserts]
 status == 200
@@ -31,7 +31,7 @@ body.data.description exists
 
 ## 3. List Projects & Verify Inclusion
 ```kest
-GET /api/v1/projects
+GET /v1/projects
 
 [Asserts]
 status == 200
@@ -42,7 +42,7 @@ body.data exists
 
 ## 4. Update Project
 ```kest
-PATCH /api/v1/projects/{{projectId}}
+PATCH /v1/projects/{{projectId}}
 {
   "name": "Updated Kest Project",
   "description": "New description"
@@ -56,7 +56,7 @@ status < 300
 
 ## 5. Verify Update (Consistency Check)
 ```kest
-GET /api/v1/projects/{{projectId}}
+GET /v1/projects/{{projectId}}
 
 [Asserts]
 status == 200
@@ -66,7 +66,7 @@ body.data.description == "New description"
 
 ## 6. Delete Project
 ```kest
-DELETE /api/v1/projects/{{projectId}}
+DELETE /v1/projects/{{projectId}}
 
 [Asserts]
 status == 200
@@ -74,7 +74,7 @@ status == 200
 
 ## 7. Verify Cleanup (Negative Test)
 ```kest
-GET /api/v1/projects/{{projectId}}
+GET /v1/projects/{{projectId}}
 
 [Asserts]
 status == 404

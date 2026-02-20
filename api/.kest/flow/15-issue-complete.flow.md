@@ -7,7 +7,7 @@ Complete testing for issue management including status changes and event trackin
 ## Step 1: User Login & Create Project (Setup)
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -28,7 +28,7 @@ body.code == 0
 ## Step 2: Create Test Project
 
 ```kest
-POST /api/v1/projects
+POST /v1/projects
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -51,7 +51,7 @@ body.data.id exists
 ## Step 3: List Issues (Empty State)
 
 ```kest
-GET /api/v1/projects/{{project_id}}/issues
+GET /v1/projects/{{project_id}}/issues
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -68,7 +68,7 @@ duration < 1000ms
 Note: Issues are typically created by error ingestion. For testing, we'll use a mock fingerprint.
 
 ```kest
-GET /api/v1/projects/{{project_id}}/issues/test-fingerprint-{{$timestamp}}
+GET /v1/projects/{{project_id}}/issues/test-fingerprint-{{$timestamp}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -81,7 +81,7 @@ duration < 1000ms
 ## Step 5: Resolve Issue
 
 ```kest
-POST /api/v1/projects/{{project_id}}/issues/test-fingerprint-123/resolve
+POST /v1/projects/{{project_id}}/issues/test-fingerprint-123/resolve
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -99,7 +99,7 @@ duration < 1000ms
 ## Step 6: Ignore Issue
 
 ```kest
-POST /api/v1/projects/{{project_id}}/issues/test-fingerprint-456/ignore
+POST /v1/projects/{{project_id}}/issues/test-fingerprint-456/ignore
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -117,7 +117,7 @@ duration < 1000ms
 ## Step 7: Reopen Issue
 
 ```kest
-POST /api/v1/projects/{{project_id}}/issues/test-fingerprint-123/reopen
+POST /v1/projects/{{project_id}}/issues/test-fingerprint-123/reopen
 Authorization: Bearer {{access_token}}
 Content-Type: application/json
 
@@ -135,7 +135,7 @@ duration < 1000ms
 ## Step 8: Get Issue Events
 
 ```kest
-GET /api/v1/projects/{{project_id}}/issues/test-fingerprint-123/events
+GET /v1/projects/{{project_id}}/issues/test-fingerprint-123/events
 Authorization: Bearer {{access_token}}
 
 [Asserts]
@@ -149,7 +149,7 @@ duration < 1000ms
 ## Step 9: Cleanup - Delete Project
 
 ```kest
-DELETE /api/v1/projects/{{project_id}}
+DELETE /v1/projects/{{project_id}}
 Authorization: Bearer {{access_token}}
 
 [Asserts]

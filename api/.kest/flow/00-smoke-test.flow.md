@@ -23,7 +23,7 @@ body.status == "ok"
 Quick user registration.
 
 ```kest
-POST /api/v1/register
+POST /v1/register
 Content-Type: application/json
 
 {
@@ -47,7 +47,7 @@ body.code == 0
 Quick login to get token.
 
 ```kest
-POST /api/v1/login
+POST /v1/login
 Content-Type: application/json
 
 {
@@ -70,7 +70,7 @@ body.code == 0
 Verify authenticated endpoint works.
 
 ```kest
-GET /api/v1/users/profile
+GET /v1/users/profile
 Authorization: Bearer {{token}}
 
 [Asserts]
@@ -85,7 +85,7 @@ body.code == 0
 Verify project creation works.
 
 ```kest
-POST /api/v1/projects
+POST /v1/projects
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -109,7 +109,7 @@ body.code == 0
 Verify project listing works.
 
 ```kest
-GET /api/v1/projects
+GET /v1/projects
 Authorization: Bearer {{token}}
 
 [Asserts]
