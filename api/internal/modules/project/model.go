@@ -15,6 +15,7 @@ type ProjectPO struct {
 	Name      string         `gorm:"size:100;not null"`
 	Slug      string         `gorm:"size:50;uniqueIndex"`
 	Platform  string         `gorm:"size:50"`   // go, javascript, python, etc.
+	PublicKey string         `gorm:"size:64"`   // Public key for project
 	Status    int            `gorm:"default:1"` // 1: active, 0: disabled
 }
 
@@ -29,6 +30,7 @@ type Project struct {
 	Name      string    `json:"name"`
 	Slug      string    `json:"slug"`
 	Platform  string    `json:"platform"`
+	PublicKey string    `json:"public_key,omitempty"`
 	Status    int       `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -44,6 +46,7 @@ func (po *ProjectPO) toDomain() *Project {
 		Name:      po.Name,
 		Slug:      po.Slug,
 		Platform:  po.Platform,
+		PublicKey: po.PublicKey,
 		Status:    po.Status,
 		CreatedAt: po.CreatedAt,
 		UpdatedAt: po.UpdatedAt,
@@ -56,11 +59,12 @@ func newProjectPO(p *Project) *ProjectPO {
 		return nil
 	}
 	return &ProjectPO{
-		ID:       p.ID,
-		Name:     p.Name,
-		Slug:     p.Slug,
-		Platform: p.Platform,
-		Status:   p.Status,
+		ID:        p.ID,
+		Name:      p.Name,
+		Slug:      p.Slug,
+		Platform:  p.Platform,
+		PublicKey: p.PublicKey,
+		Status:    p.Status,
 	}
 }
 

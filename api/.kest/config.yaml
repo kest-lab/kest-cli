@@ -1,4 +1,4 @@
-active_env: local
+active_env: zeabur
 defaults:
     timeout: 30
     headers:
@@ -16,6 +16,9 @@ environments:
         variables: {}
     staging:
         base_url: https://staging-api.kest.io
+        variables: {}
+    zeabur:
+        base_url: https://kest.zeabur.app
         variables: {}
 last_sync_time: ""
 log_enabled: true

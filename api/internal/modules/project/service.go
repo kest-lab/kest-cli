@@ -2,6 +2,8 @@ package project
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"regexp"
@@ -57,12 +59,19 @@ func (s *service) Create(ctx context.Context, userID uint, req *CreateProjectReq
 		return nil, ErrSlugAlreadyExists
 	}
 
+	// Generate public key
+	publicKey, err := generatePublicKey()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate public key: %w", err)
+	}
+
 	// Create project
 	project := &Project{
-		Name:     req.Name,
-		Slug:     slug,
-		Platform: req.Platform,
-		Status:   1, // Active by default
+		Name:      req.Name,
+		Slug:      slug,
+		Platform:  req.Platform,
+		PublicKey: publicKey,
+		Status:    1, // Active by default
 	}
 
 	if err := s.repo.Create(ctx, project); err != nil {
@@ -181,4 +190,13 @@ func generateSlug(name string) string {
 	}
 
 	return slug
+}
+
+// generatePublicKey generates a random public key for the project
+func generatePublicKey() (string, error) {
+	bytes := make([]byte, 32) // 32 bytes = 64 hex characters
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }

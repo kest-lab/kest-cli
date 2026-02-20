@@ -9,7 +9,7 @@ Fast smoke test to verify all critical endpoints are working.
 Verify the API server is running.
 
 ```kest
-GET /health
+GET /v1/health
 
 [Asserts]
 status == 200
