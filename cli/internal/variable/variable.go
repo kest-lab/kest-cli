@@ -27,142 +27,127 @@ func init() {
 	}
 }
 
-// Regular expressions for variable parsing
-var (
-	// Matches {{var}} or {{var | default: "value"}}
-	varRegex = regexp.MustCompile(`\{\{([^}]+)\}\}`)
-	// Matches default value syntax: {{var | default: "value"}}
-	// Allows empty default values
-	defaultRegex = regexp.MustCompile(`^([^|]+)\s*\|\s*default:\s*"([^"]*)"$`)
+// InterpolationMode defines how to handle undefined variables
+type InterpolationMode int
+
+const (
+	// ModePermissive returns original {{var}} for undefined variables
+	ModePermissive InterpolationMode = iota
+	// ModeWarning collects warnings for undefined variables
+	ModeWarning
+	// ModeStrict returns error for undefined variables
+	ModeStrict
 )
 
-// Interpolate replaces {{var}} with values from the map
-// Supports default value syntax: {{var | default: "value"}}
-func Interpolate(text string, vars map[string]string) string {
-	return varRegex.ReplaceAllStringFunc(text, func(match string) string {
-		// Boundary check
-		if len(match) < 4 {
+// Regular expressions for variable parsing
+var (
+	// Optimized: single regex matches both {{var}} and {{var | default: "value"}}
+	// Group 1: variable name
+	// Group 2: default value (optional, captured only if | default: syntax present)
+	combinedRegex = regexp.MustCompile(`\{\{([^|{}]+?)(?:\s*\|\s*default:\s*"([^"]*)")?\}\}`)
+)
+
+// interpolateWithMode is the unified implementation for all interpolation modes
+// This eliminates code duplication and improves performance with a single regex
+func interpolateWithMode(text string, vars map[string]string, mode InterpolationMode) (string, []string, error) {
+	var warnings []string
+	var missing []string
+
+	result := combinedRegex.ReplaceAllStringFunc(text, func(match string) string {
+		// Extract submatches
+		matches := combinedRegex.FindStringSubmatch(match)
+		if len(matches) < 2 {
+			return match // Invalid match, keep original
+		}
+
+		varName := strings.TrimSpace(matches[1])
+		if varName == "" {
 			return match
 		}
 
-		content := strings.TrimSpace(match[2 : len(match)-2])
-		if content == "" {
-			return match
+		// Default value is in group 2 (may be empty string)
+		defaultValue := ""
+		hasDefault := false
+		if len(matches) >= 3 {
+			// Check if default syntax was present (even if value is empty)
+			// matches[2] will be "" if default: "" was specified
+			// matches[2] will be missing if no default was specified
+			hasDefault = true
+			defaultValue = matches[2]
 		}
-
-		// Check for default value syntax
-		varName, defaultValue := parseVarWithDefault(content)
 
 		// Built-in dynamic variables
 		if isBuiltinVar(varName) {
 			return resolveBuiltin(varName)
 		}
 
+		// Check if variable exists
 		if val, ok := vars[varName]; ok {
 			return val
 		}
 
 		// Use default value if provided
-		if defaultValue != "" {
+		if hasDefault {
 			return defaultValue
 		}
 
-		// Variable not found - return original to make it obvious
-		return match
+		// Variable not found - handle based on mode
+		switch mode {
+		case ModeWarning:
+			warnings = append(warnings, varName)
+		case ModeStrict:
+			missing = append(missing, varName)
+		}
+
+		return match // Keep original for undefined variables
 	})
+
+	// Check for errors in strict mode
+	if mode == ModeStrict && len(missing) > 0 {
+		return "", nil, fmt.Errorf("required variables not provided: %s", strings.Join(missing, ", "))
+	}
+
+	return result, warnings, nil
+}
+
+// Interpolate replaces {{var}} with values from the map
+// Supports default value syntax: {{var | default: "value"}}
+func Interpolate(text string, vars map[string]string) string {
+	result, _, _ := interpolateWithMode(text, vars, ModePermissive)
+	return result
 }
 
 // InterpolateWithWarning replaces {{var}} and warns about undefined variables
 // Supports default value syntax: {{var | default: "value"}}
 func InterpolateWithWarning(text string, vars map[string]string, verbose bool) (string, []string) {
-	var warnings []string
-	result := varRegex.ReplaceAllStringFunc(text, func(match string) string {
-		// Boundary check
-		if len(match) < 4 {
-			return match
-		}
-
-		content := strings.TrimSpace(match[2 : len(match)-2])
-		if content == "" {
-			return match
-		}
-
-		// Check for default value syntax
-		varName, defaultValue := parseVarWithDefault(content)
-
-		// Built-in dynamic variables
-		if isBuiltinVar(varName) {
-			return resolveBuiltin(varName)
-		}
-
-		if val, ok := vars[varName]; ok {
-			return val
-		}
-
-		// Use default value if provided
-		if defaultValue != "" {
-			return defaultValue
-		}
-
-		// Variable not found
-		if verbose {
-			warnings = append(warnings, varName)
-		}
-		return match
-	})
+	if !verbose {
+		return Interpolate(text, vars), nil
+	}
+	result, warnings, _ := interpolateWithMode(text, vars, ModeWarning)
 	return result, warnings
 }
 
 // InterpolateStrict replaces {{var}} and returns error if any variable is undefined
 // Supports default value syntax: {{var | default: "value"}}
 func InterpolateStrict(text string, vars map[string]string) (string, error) {
-	var missing []string
-	result := varRegex.ReplaceAllStringFunc(text, func(match string) string {
-		// Boundary check
-		if len(match) < 4 {
-			return match
-		}
-
-		content := strings.TrimSpace(match[2 : len(match)-2])
-		if content == "" {
-			return match
-		}
-
-		// Check for default value syntax
-		varName, defaultValue := parseVarWithDefault(content)
-
-		// Built-in dynamic variables
-		if isBuiltinVar(varName) {
-			return resolveBuiltin(varName)
-		}
-
-		if val, ok := vars[varName]; ok {
-			return val
-		}
-
-		// Use default value if provided
-		if defaultValue != "" {
-			return defaultValue
-		}
-
-		// Variable not found and no default - record as missing
-		missing = append(missing, varName)
-		return match
-	})
-
-	if len(missing) > 0 {
-		return "", fmt.Errorf("required variables not provided: %s", strings.Join(missing, ", "))
-	}
-
-	return result, nil
+	result, _, err := interpolateWithMode(text, vars, ModeStrict)
+	return result, err
 }
 
-// parseVarWithDefault parses variable name and default value from content
-// Returns (varName, defaultValue)
+// parseVarWithDefault is deprecated - kept for backward compatibility
+// The new combinedRegex handles this in a single pass
 func parseVarWithDefault(content string) (string, string) {
-	matches := defaultRegex.FindStringSubmatch(content)
-	if len(matches) == 3 {
-		return strings.TrimSpace(matches[1]), matches[2]
+	// Try to match default syntax
+	if idx := strings.Index(content, "|"); idx > 0 {
+		varName := strings.TrimSpace(content[:idx])
+		rest := strings.TrimSpace(content[idx+1:])
+		if strings.HasPrefix(rest, "default:") {
+			rest = strings.TrimPrefix(rest, "default:")
+			rest = strings.TrimSpace(rest)
+			if len(rest) >= 2 && rest[0] == '"' && rest[len(rest)-1] == '"' {
+				return varName, rest[1 : len(rest)-1]
+			}
+		}
 	}
 	return content, ""
 }

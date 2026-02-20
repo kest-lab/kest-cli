@@ -47,7 +47,7 @@ func TestInterpolate(t *testing.T) {
 			name:     "empty default value",
 			text:     `{{name | default: ""}}`,
 			vars:     map[string]string{},
-			expected: "",
+			expected: "", // Empty string is valid default
 		},
 		{
 			name:     "default with spaces",
