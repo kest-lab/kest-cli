@@ -42,9 +42,11 @@ const (
 // Regular expressions for variable parsing
 var (
 	// Optimized: single regex matches both {{var}} and {{var | default: "value"}}
+	// Supports both escaped quotes (\" in JSON) and normal quotes
 	// Group 1: variable name
 	// Group 2: default value (optional, captured only if | default: syntax present)
-	combinedRegex = regexp.MustCompile(`\{\{([^|{}]+?)(?:\s*\|\s*default:\s*"([^"]*)")?\}\}`)
+	// Uses [^}]+ to match everything until the closing }}
+	combinedRegex = regexp.MustCompile(`\{\{([^|{}]+?)(?:\s*\|\s*default:\s*\\?"([^}]+?)\\?")?\}\}`)
 )
 
 // interpolateWithMode is the unified implementation for all interpolation modes
@@ -68,12 +70,19 @@ func interpolateWithMode(text string, vars map[string]string, mode Interpolation
 		// Default value is in group 2 (may be empty string)
 		defaultValue := ""
 		hasDefault := false
-		if len(matches) >= 3 {
-			// Check if default syntax was present (even if value is empty)
-			// matches[2] will be "" if default: "" was specified
-			// matches[2] will be missing if no default was specified
+		if len(matches) >= 3 && matches[2] != "" {
+			// Check if default syntax was present
 			hasDefault = true
 			defaultValue = matches[2]
+
+			// Clean up the default value:
+			// 1. Remove leading/trailing quotes (both \" and ")
+			defaultValue = strings.Trim(defaultValue, "\"")
+			defaultValue = strings.Trim(defaultValue, "\\")
+
+			// 2. Unescape any escaped characters
+			defaultValue = strings.ReplaceAll(defaultValue, "\\\"", "\"")
+			defaultValue = strings.ReplaceAll(defaultValue, "\\\\", "\\")
 		}
 
 		// Built-in dynamic variables
