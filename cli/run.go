@@ -27,6 +27,8 @@ var (
 	runDebugVars bool
 	runVars      []string
 	execTimeout  int
+	runFailFast  bool
+	runStrict    bool
 )
 
 var runCmd = &cobra.Command{
@@ -63,6 +65,8 @@ func init() {
 	runCmd.Flags().BoolVar(&runDebugVars, "debug-vars", false, "Show variable resolution details")
 	runCmd.Flags().StringArrayVar(&runVars, "var", []string{}, "Set variables (e.g. --var key=value)")
 	runCmd.Flags().IntVar(&execTimeout, "exec-timeout", 30, "Timeout in seconds for exec steps")
+	runCmd.Flags().BoolVar(&runFailFast, "fail-fast", false, "Stop execution on first failed step")
+	runCmd.Flags().BoolVar(&runStrict, "strict", false, "Enable strict variable validation (error on undefined variables)")
 	rootCmd.AddCommand(runCmd)
 }
 
@@ -317,7 +321,7 @@ func runFlowDocument(doc FlowDoc, filePath string) error {
 	}
 
 	summ := summary.NewSummary()
-	for _, step := range steps {
+	for i, step := range steps {
 		// Handle @type exec steps
 		if step.Type == "exec" {
 			fmt.Printf("\n  ▶ %s (exec, line %d)\n", stepName(step), step.LineNum)
@@ -325,6 +329,14 @@ func runFlowDocument(doc FlowDoc, filePath string) error {
 			summ.AddResult(result)
 			if !result.Success {
 				fmt.Printf("❌ Failed at exec step %s\n\n", stepName(step))
+				if runFailFast {
+					fmt.Printf("\n⚠️  Stopping execution (--fail-fast enabled)\n")
+					fmt.Printf("   Failed step: %s\n", stepName(step))
+					if i+1 < len(steps) {
+						fmt.Printf("   Skipped %d remaining step(s)\n", len(steps)-i-1)
+					}
+					break
+				}
 			}
 			continue
 		}
@@ -336,6 +348,14 @@ func runFlowDocument(doc FlowDoc, filePath string) error {
 				Error:   fmt.Errorf("invalid step (missing METHOD/URL) at line %d", step.LineNum),
 			}
 			summ.AddResult(result)
+			if runFailFast {
+				fmt.Printf("\n⚠️  Stopping execution (--fail-fast enabled)\n")
+				fmt.Printf("   Failed step: %s (invalid step)\n", stepName(step))
+				if i+1 < len(steps) {
+					fmt.Printf("   Skipped %d remaining step(s)\n", len(steps)-i-1)
+				}
+				break
+			}
 			continue
 		}
 		fmt.Printf("\n  ▶ %s %s %s (line %d)\n", stepName(step), step.Request.Method, step.Request.URL, step.LineNum)
@@ -369,6 +389,15 @@ func runFlowDocument(doc FlowDoc, filePath string) error {
 		summ.AddResult(result)
 		if err != nil {
 			fmt.Printf("    ❌ Failed at step %s\n", stepName(step))
+			if runFailFast {
+				fmt.Printf("\n⚠️  Stopping execution (--fail-fast enabled)\n")
+				fmt.Printf("   Failed step: %s\n", stepName(step))
+				fmt.Printf("   Reason: %v\n", err)
+				if i+1 < len(steps) {
+					fmt.Printf("   Skipped %d remaining step(s)\n", len(steps)-i-1)
+				}
+				break
+			}
 		} else {
 			fmt.Printf("    ✅ %s %s → %d (%s)\n", res.Method, step.Request.URL, res.Status, res.Duration.Round(time.Millisecond))
 		}
