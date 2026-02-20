@@ -179,3 +179,8 @@ web/TEST_*.md
 storage/
 api/storage/
 web/storage/
+
+# ===========================================
+# package-lock.json and yarn.lock (if you want to ignore them, but generally it's recommended to keep them in version control)
+# ===========================================
+package-lock.json
