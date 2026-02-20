@@ -40,11 +40,18 @@ export function HomePage() {
           <a href="#ai-workflow" className="hover:text-white transition-colors">AI Context</a>
           <a href="#cli" className="hover:text-white transition-colors">CLI</a>
         </div>
-        <Link to="/projects">
-          <Button variant="outline" className="border-slate-700 hover:bg-slate-800 text-slate-200">
-            Console
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/login">
+            <Button variant="outline" className="border-slate-300 bg-gray-200 hover:bg-slate-400 text-black">
+              Login
+            </Button>
+          </Link>
+          <Link to="/register">
+            <Button className="bg-blue-600 hover:bg-blue-500 text-white border-slate-300">
+              Register
+            </Button>
+          </Link>
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -71,7 +78,7 @@ export function HomePage() {
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </Link>
-          <Button size="lg" variant="ghost" className="h-14 px-10 rounded-full text-slate-300 hover:text-white hover:bg-slate-800/50">
+          <Button size="lg" variant="ghost" className="h-14 px-10 rounded-full text-slate-300 hover:text-white hover:bg-slate-800/50 ">
             Read Specs
           </Button>
         </div>

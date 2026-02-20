@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Settings, ChevronRight, FolderTree, FileText, Search, Plus, Workflow, ChevronDown, MoreHorizontal, Trash2, Share2, ListPlus, Database, Download, FileUp, FileDown } from 'lucide-react'
-import { useProject, useAPISpecs, useCategoryTree, useAPISpecWithExamples, useDeleteAPISpec } from '@/hooks/use-kest-api'
+import { useProject, useAPISpecs, useCategoryTree, useAPISpec, useAPISpecWithExamples, useDeleteAPISpec } from '@/hooks/use-kest-api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -44,12 +44,17 @@ export function ProjectDetailPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<APISpec | null>(null)
+  const [loadFullSpec, setLoadFullSpec] = useState(false)
   const deleteAPISpec = useDeleteAPISpec()
 
   // Sync viewMode with URL: if sid is present, always show apis
   useEffect(() => {
     if (sid) setViewMode('apis')
   }, [sid])
+
+  useEffect(() => {
+    setLoadFullSpec(false)
+  }, [selectedSpecId])
 
   const switchView = (mode: ViewMode) => {
     setViewMode(mode)
@@ -78,14 +83,21 @@ export function ProjectDetailPage() {
     return []
   })()
 
-  // Fetch full spec detail when a spec is selected
-  const { data: selectedSpecDetail, isLoading: specDetailLoading } = useAPISpecWithExamples(projectId, selectedSpecId || 0)
+  // Fetch lightweight detail first for faster initial render
+  const { data: selectedSpecBasic, isLoading: specBasicLoading } = useAPISpec(projectId, selectedSpecId || 0)
+  // Fetch full detail (with examples) on demand
+  const { data: selectedSpecDetail, isLoading: specDetailLoading, error: specDetailError, refetch: refetchSpecDetail } = useAPISpecWithExamples(
+    projectId,
+    selectedSpecId || 0,
+    { enabled: !!selectedSpecId && loadFullSpec }
+  )
 
   // Use full detail if available, fallback to list item for sidebar highlight
   const selectedSpec = useMemo(() => {
     if (selectedSpecDetail) return selectedSpecDetail as APISpec
+    if (selectedSpecBasic) return selectedSpecBasic as APISpec
     return apiSpecs.find(s => s.id === selectedSpecId) || null
-  }, [selectedSpecDetail, apiSpecs, selectedSpecId])
+  }, [selectedSpecDetail, selectedSpecBasic, apiSpecs, selectedSpecId])
 
   const specsByCategory = useMemo(() => {
     const map = new Map<number, APISpec[]>()
@@ -390,7 +402,7 @@ export function ProjectDetailPage() {
 
       {/* Right Panel */}
       <div className="flex-1 overflow-hidden">
-        {viewMode === 'apis' && selectedSpecId && specDetailLoading && (
+        {viewMode === 'apis' && selectedSpecId && specBasicLoading && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center space-y-3">
               <Skeleton className="h-8 w-64 mx-auto" />
@@ -399,11 +411,37 @@ export function ProjectDetailPage() {
             </div>
           </div>
         )}
-        {viewMode === 'apis' && selectedSpec && !specDetailLoading && (
-          <APIDetailPanel spec={selectedSpec} projectId={projectId} />
+        {viewMode === 'apis' && selectedSpec && !specBasicLoading && (
+          <div className="h-full flex flex-col">
+            <div className="border-b px-4 py-2 flex items-center justify-between bg-background/50">
+              <p className="text-xs text-muted-foreground">
+                {loadFullSpec ? 'Full specification loaded (including examples)' : 'Basic specification loaded (faster)'}
+              </p>
+              {!loadFullSpec && (
+                <Button size="sm" variant="outline" onClick={() => setLoadFullSpec(true)}>
+                  Load Examples
+                </Button>
+              )}
+              {loadFullSpec && specDetailLoading && (
+                <span className="text-xs text-muted-foreground">Loading examples...</span>
+              )}
+              {loadFullSpec && specDetailError && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { void refetchSpecDetail() }}
+                >
+                  Retry Loading Examples
+                </Button>
+              )}
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <APIDetailPanel spec={selectedSpec} projectId={projectId} />
+            </div>
+          </div>
         )}
 
-        {viewMode === 'apis' && !selectedSpec && !specDetailLoading && (
+        {viewMode === 'apis' && !selectedSpec && !specBasicLoading && (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold mb-4">
               {project.name.charAt(0).toUpperCase()}

@@ -57,7 +57,7 @@ export function EnvironmentManager({ projectId }: EnvironmentManagerProps) {
   }
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateEnvironmentRequest) => kestApi.environment.create(data),
+    mutationFn: (data: Omit<CreateEnvironmentRequest, 'project_id'>) => kestApi.environment.create(projectId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.environments(projectId) })
       toast.success('Environment created')
@@ -68,8 +68,8 @@ export function EnvironmentManager({ projectId }: EnvironmentManagerProps) {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<CreateEnvironmentRequest> }) =>
-      kestApi.environment.update(id, data),
+    mutationFn: ({ id, data }: { id: number; data: Partial<Omit<CreateEnvironmentRequest, 'project_id'>> }) =>
+      kestApi.environment.update(projectId, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.environments(projectId) })
       toast.success('Environment updated')
@@ -80,7 +80,7 @@ export function EnvironmentManager({ projectId }: EnvironmentManagerProps) {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => kestApi.environment.delete(id),
+    mutationFn: (id: number) => kestApi.environment.delete(projectId, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.environments(projectId) })
       toast.success('Environment deleted')
@@ -100,7 +100,7 @@ export function EnvironmentManager({ projectId }: EnvironmentManagerProps) {
     if (editingEnv) {
       updateMutation.mutate({ id: editingEnv.id, data: { name, base_url: baseUrl, variables } })
     } else {
-      createMutation.mutate({ project_id: projectId, name, base_url: baseUrl, variables })
+      createMutation.mutate({ name, base_url: baseUrl, variables })
     }
   }
 

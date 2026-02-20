@@ -140,19 +140,19 @@ export function useAllAPISpecs(projectId: number) {
     })
 }
 
-export function useAPISpec(projectId: number, id: number) {
+export function useAPISpec(projectId: number, id: number, options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: queryKeys.apiSpec(id),
         queryFn: () => kestApi.apiSpec.get(projectId, id),
-        enabled: !!id && !!projectId,
+        enabled: (options?.enabled ?? true) && !!id && !!projectId,
     })
 }
 
-export function useAPISpecWithExamples(projectId: number, id: number) {
+export function useAPISpecWithExamples(projectId: number, id: number, options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: queryKeys.apiSpecWithExamples(id),
         queryFn: () => kestApi.apiSpec.getWithExamples(projectId, id),
-        enabled: !!id && !!projectId,
+        enabled: (options?.enabled ?? true) && !!id && !!projectId,
     })
 }
 

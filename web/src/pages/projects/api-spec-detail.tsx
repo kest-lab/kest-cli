@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
     ArrowLeft,
@@ -11,7 +11,7 @@ import {
     Copy,
     Plus
 } from 'lucide-react'
-import { useAPISpecWithExamples } from '@/hooks/use-kest-api'
+import { useAPISpec, useAPISpecWithExamples } from '@/hooks/use-kest-api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -24,9 +24,23 @@ export function APISpecDetailPage() {
     const projectId = parseInt(id || '0')
     const specId = parseInt(sid || '0')
 
-    const { data: spec, isLoading } = useAPISpecWithExamples(projectId, specId)
-
     const [activeTab, setActiveTab] = useState('definition')
+    const [shouldLoadExamples, setShouldLoadExamples] = useState(false)
+
+    useEffect(() => {
+        setShouldLoadExamples(false)
+        setActiveTab('definition')
+    }, [specId])
+
+    const { data: basicSpec, isLoading: basicLoading } = useAPISpec(projectId, specId)
+    const {
+        data: fullSpec,
+        isLoading: fullLoading,
+        error: fullError,
+        refetch: refetchFullSpec,
+    } = useAPISpecWithExamples(projectId, specId, { enabled: shouldLoadExamples })
+
+    const spec = fullSpec || basicSpec
 
     const getMethodColor = (method: string) => {
         const colors: Record<string, string> = {
@@ -44,7 +58,7 @@ export function APISpecDetailPage() {
         toast.success('Copied to clipboard')
     }
 
-    if (isLoading) {
+    if (basicLoading) {
         return (
             <div className="container mx-auto p-8">
                 <Skeleton className="h-8 w-64 mb-4" />
@@ -119,10 +133,19 @@ export function APISpecDetailPage() {
                 </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <Tabs
+                value={activeTab}
+                onValueChange={(value) => {
+                    setActiveTab(value)
+                    if (value === 'examples') setShouldLoadExamples(true)
+                }}
+                className="space-y-6"
+            >
                 <TabsList className="bg-muted p-1 rounded-lg">
                     <TabsTrigger value="definition">Definition</TabsTrigger>
-                    <TabsTrigger value="examples">Examples ({spec.examples?.length || 0})</TabsTrigger>
+                    <TabsTrigger value="examples">
+                        Examples ({fullSpec?.examples?.length || 0})
+                    </TabsTrigger>
                     <TabsTrigger value="tests">Test Cases</TabsTrigger>
                     <TabsTrigger value="history">History</TabsTrigger>
                 </TabsList>
@@ -256,8 +279,35 @@ export function APISpecDetailPage() {
 
                 <TabsContent value="examples" className="mt-6">
                     <div className="grid grid-cols-1 gap-6">
-                        {spec.examples && spec.examples.length > 0 ? (
-                            spec.examples.map((example) => (
+                        {!shouldLoadExamples ? (
+                            <div className="text-center py-20 border-2 border-dashed rounded-lg">
+                                <Database className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-20" />
+                                <h3 className="text-lg font-medium">Examples are loaded on demand</h3>
+                                <p className="text-muted-foreground mb-4">Load full specification to view examples</p>
+                                <Button onClick={() => setShouldLoadExamples(true)}>
+                                    Load Examples
+                                </Button>
+                            </div>
+                        ) : fullLoading ? (
+                            <Card>
+                                <CardContent className="py-10">
+                                    <div className="space-y-3">
+                                        <Skeleton className="h-6 w-48" />
+                                        <Skeleton className="h-28 w-full" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ) : fullError ? (
+                            <div className="text-center py-20 border-2 border-dashed rounded-lg">
+                                <Database className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-20" />
+                                <h3 className="text-lg font-medium">Failed to load examples</h3>
+                                <p className="text-muted-foreground mb-4">Basic API details are still available</p>
+                                <Button onClick={() => { void refetchFullSpec() }}>
+                                    Retry
+                                </Button>
+                            </div>
+                        ) : fullSpec?.examples && fullSpec.examples.length > 0 ? (
+                            fullSpec.examples.map((example) => (
                                 <Card key={example.id}>
                                     <CardHeader>
                                         <div className="flex items-center justify-between">
