@@ -9,7 +9,7 @@ environments:
         base_url: https://dev-api.kest.io
         variables: {}
     local:
-        base_url: http://127.0.0.1:7111
+        base_url: http://127.0.0.1:5119
         variables: {}
     production:
         base_url: https://api.kest.dev/v1

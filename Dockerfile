@@ -42,9 +42,10 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 # Port from environment variable (Render/Zeabur auto-inject PORT)
-EXPOSE ${PORT:-8025}
+# Default: 5119 (KEST signature port: K=11, E=5, S=19, T=20 → 5119)
+EXPOSE ${PORT:-5119}
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:${PORT:-8025}/v1/health || exit 1
+  CMD curl -f http://localhost:${PORT:-5119}/v1/health || exit 1
 
 CMD ["./kest-api"]

@@ -63,7 +63,7 @@ func (r *Repository) loadFromEnv() {
 	r.Set("app.key", env.Get("APP_KEY", ""))
 
 	// Server
-	r.Set("server.port", env.GetInt("SERVER_PORT", 7030))
+	r.Set("server.port", env.GetInt("SERVER_PORT", 5119)) // KEST signature port
 	r.Set("server.host", env.Get("SERVER_HOST", ""))
 	r.Set("server.mode", env.Get("GIN_MODE", "debug"))
 	r.Set("server.read_timeout", env.GetInt("SERVER_READ_TIMEOUT", 60))

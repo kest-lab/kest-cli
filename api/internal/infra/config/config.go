@@ -159,7 +159,7 @@ func Load() (*Config, error) {
 		},
 		Server: ServerConfig{
 			Host:         env.Get("SERVER_HOST", ""),
-			Port:         env.GetInt("SERVER_PORT", 7030),
+			Port:         env.GetInt("SERVER_PORT", 5119), // KEST signature port: E(5) + S(19)
 			Mode:         env.Get("GIN_MODE", "debug"),
 			ReadTimeout:  env.GetInt("SERVER_READ_TIMEOUT", 60),
 			WriteTimeout: env.GetInt("SERVER_WRITE_TIMEOUT", 60),
