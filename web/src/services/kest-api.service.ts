@@ -159,11 +159,17 @@ export const apiSpecApi = {
      * Add example to API spec
      */
     addExample: (projectId: number, apiSpecId: number, data: {
-        name: string
-        request_headers?: Record<string, string>
+        path: string
+        method: string
+        status_code: number
+        request_headers?: Record<string, any>
         request_body?: any
-        response_status: number
+        response_headers?: Record<string, any>
         response_body?: any
+        description?: string
+        // Backward compatible fields
+        name?: string
+        response_status?: number
         duration_ms?: number
     }) => request.post<APIExample>(`/v1/projects/${projectId}/api-specs/${apiSpecId}/examples`, data),
 }

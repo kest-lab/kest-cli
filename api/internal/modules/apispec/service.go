@@ -171,8 +171,32 @@ func (s *service) GetSpecWithExamples(ctx context.Context, id uint) (*APISpecRes
 
 func (s *service) CreateExample(ctx context.Context, req *CreateAPIExampleRequest) (*APIExampleResponse, error) {
 	// Verify spec exists
-	if _, err := s.repo.GetSpecByID(ctx, req.APISpecID); err != nil {
+	spec, err := s.repo.GetSpecByID(ctx, req.APISpecID)
+	if err != nil {
 		return nil, ErrSpecNotFound
+	}
+
+	if req.Path == "" {
+		req.Path = spec.Path
+	}
+	if req.Method == "" {
+		req.Method = spec.Method
+	}
+	if req.StatusCode == 0 && req.ResponseStatus != 0 {
+		req.StatusCode = req.ResponseStatus
+	}
+	if req.ResponseStatus == 0 && req.StatusCode != 0 {
+		req.ResponseStatus = req.StatusCode
+	}
+	if req.ResponseStatus == 0 {
+		return nil, ErrInvalidSpecData
+	}
+	if req.Name == "" {
+		if req.Description != "" {
+			req.Name = req.Description
+		} else {
+			req.Name = fmt.Sprintf("%s %s %d", req.Method, req.Path, req.ResponseStatus)
+		}
 	}
 
 	po := ToAPIExamplePO(req)

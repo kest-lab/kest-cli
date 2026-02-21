@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, Settings, ChevronRight, FolderTree, FileText, Search, Plus, Workflow, ChevronDown, MoreHorizontal, Trash2, Share2, ListPlus, Database, Download, FileUp, FileDown } from 'lucide-react'
 import { useProject, useAPISpecs, useCategoryTree, useAPISpec, useAPISpecWithExamples, useDeleteAPISpec } from '@/hooks/use-kest-api'
 import { Button } from '@/components/ui/button'
@@ -36,8 +36,12 @@ type ViewMode = 'apis' | 'flows' | 'categories' | 'environments' | 'settings'
 export function ProjectDetailPage() {
   const { id, sid } = useParams<{ id: string; sid: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
+  const search = new URLSearchParams(location.search)
   const projectId = parseInt(id || '0')
   const selectedSpecId = sid ? parseInt(sid) : null
+  const panelTab = search.get('tab')
+  const openExampleComposer = search.get('newExample') === '1'
   const [viewMode, setViewMode] = useState<ViewMode>('apis')
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set())
@@ -215,7 +219,13 @@ export function ProjectDetailPage() {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem onClick={() => { navigate(`/projects/${projectId}/api-specs/${spec.id}`); setViewMode('apis') }}>
+          <DropdownMenuItem
+            onClick={() => {
+              navigate(`/projects/${projectId}/api-specs/${spec.id}?tab=examples&newExample=1`)
+              setViewMode('apis')
+              setLoadFullSpec(true)
+            }}
+          >
             <ListPlus className="h-3.5 w-3.5 mr-2" />
             Add Examples
           </DropdownMenuItem>
@@ -436,7 +446,12 @@ export function ProjectDetailPage() {
               )}
             </div>
             <div className="flex-1 overflow-hidden">
-              <APIDetailPanel spec={selectedSpec} projectId={projectId} />
+              <APIDetailPanel
+                spec={selectedSpec}
+                projectId={projectId}
+                initialTab={panelTab === 'examples' ? 'examples' : undefined}
+                autoOpenExampleForm={openExampleComposer}
+              />
             </div>
           </div>
         )}

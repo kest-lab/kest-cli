@@ -153,9 +153,14 @@ export interface JSONSchema {
 export interface APIExample {
     id: number
     api_spec_id: number
+    path?: string
+    method?: string
+    status_code?: number
+    description?: string
     name: string
-    request_headers?: Record<string, string>
+    request_headers?: Record<string, any>
     request_body?: any
+    response_headers?: Record<string, any>
     response_status: number
     response_body?: any
     duration_ms: number

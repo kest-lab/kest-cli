@@ -34,13 +34,18 @@ type UpdateAPISpecRequest struct {
 }
 
 type CreateAPIExampleRequest struct {
-	APISpecID      uint              `json:"api_spec_id" binding:"required"`
-	Name           string            `json:"name" binding:"required,max=255"`
-	RequestHeaders map[string]string `json:"request_headers"`
-	RequestBody    json.RawMessage   `json:"request_body"`
-	ResponseStatus int               `json:"response_status" binding:"required,min=100,max=599"`
-	ResponseBody   json.RawMessage   `json:"response_body"`
-	DurationMs     int64             `json:"duration_ms"`
+	APISpecID       uint                   `json:"api_spec_id"`
+	Path            string                 `json:"path"`
+	Method          string                 `json:"method"`
+	StatusCode      int                    `json:"status_code" binding:"omitempty,min=100,max=599"`
+	Description     string                 `json:"description" binding:"omitempty,max=500"`
+	Name            string                 `json:"name" binding:"omitempty,max=255"`
+	RequestHeaders  map[string]interface{} `json:"request_headers"`
+	RequestBody     json.RawMessage        `json:"request_body"`
+	ResponseStatus  int                    `json:"response_status" binding:"omitempty,min=100,max=599"`
+	ResponseHeaders map[string]interface{} `json:"response_headers"`
+	ResponseBody    json.RawMessage        `json:"response_body"`
+	DurationMs      int64                  `json:"duration_ms"`
 }
 
 // ========== Response DTOs ==========
@@ -65,15 +70,20 @@ type APISpecResponse struct {
 }
 
 type APIExampleResponse struct {
-	ID             uint              `json:"id"`
-	APISpecID      uint              `json:"api_spec_id"`
-	Name           string            `json:"name"`
-	RequestHeaders map[string]string `json:"request_headers,omitempty"`
-	RequestBody    json.RawMessage   `json:"request_body,omitempty"`
-	ResponseStatus int               `json:"response_status"`
-	ResponseBody   json.RawMessage   `json:"response_body,omitempty"`
-	DurationMs     int64             `json:"duration_ms"`
-	CreatedAt      time.Time         `json:"created_at"`
+	ID              uint                   `json:"id"`
+	APISpecID       uint                   `json:"api_spec_id"`
+	Path            string                 `json:"path"`
+	Method          string                 `json:"method"`
+	StatusCode      int                    `json:"status_code"`
+	Description     string                 `json:"description,omitempty"`
+	Name            string                 `json:"name"`
+	RequestHeaders  map[string]interface{} `json:"request_headers,omitempty"`
+	RequestBody     json.RawMessage        `json:"request_body,omitempty"`
+	ResponseStatus  int                    `json:"response_status"`
+	ResponseHeaders map[string]interface{} `json:"response_headers,omitempty"`
+	ResponseBody    json.RawMessage        `json:"response_body,omitempty"`
+	DurationMs      int64                  `json:"duration_ms"`
+	CreatedAt       time.Time              `json:"created_at"`
 }
 
 // ========== Schema Specs (OpenAPI-like) ==========
@@ -196,10 +206,22 @@ func FromAPISpecPO(po *APISpecPO) *APISpecResponse {
 
 // ToAPIExamplePO converts request to persistent object
 func ToAPIExamplePO(req *CreateAPIExampleRequest) *APIExamplePO {
+	status := req.ResponseStatus
+	if req.StatusCode != 0 {
+		status = req.StatusCode
+	}
+	name := req.Name
+	if name == "" {
+		name = req.Description
+	}
+
 	po := &APIExamplePO{
 		APISpecID:      req.APISpecID,
-		Name:           req.Name,
-		ResponseStatus: req.ResponseStatus,
+		Name:           name,
+		Path:           req.Path,
+		Method:         req.Method,
+		Description:    req.Description,
+		ResponseStatus: status,
 		DurationMs:     req.DurationMs,
 	}
 
@@ -212,6 +234,10 @@ func ToAPIExamplePO(req *CreateAPIExampleRequest) *APIExamplePO {
 	// Convert bodies
 	if req.RequestBody != nil {
 		po.RequestBody = string(req.RequestBody)
+	}
+	if req.ResponseHeaders != nil {
+		headersJSON, _ := json.Marshal(req.ResponseHeaders)
+		po.ResponseHeaders = string(headersJSON)
 	}
 	if req.ResponseBody != nil {
 		po.ResponseBody = string(req.ResponseBody)
@@ -229,6 +255,10 @@ func FromAPIExamplePO(po *APIExamplePO) *APIExampleResponse {
 	resp := &APIExampleResponse{
 		ID:             po.ID,
 		APISpecID:      po.APISpecID,
+		Path:           po.Path,
+		Method:         po.Method,
+		StatusCode:     po.ResponseStatus,
+		Description:    po.Description,
 		Name:           po.Name,
 		ResponseStatus: po.ResponseStatus,
 		DurationMs:     po.DurationMs,
@@ -243,6 +273,9 @@ func FromAPIExamplePO(po *APIExamplePO) *APIExampleResponse {
 	// Parse bodies
 	if po.RequestBody != "" {
 		resp.RequestBody = json.RawMessage(po.RequestBody)
+	}
+	if po.ResponseHeaders != "" {
+		json.Unmarshal([]byte(po.ResponseHeaders), &resp.ResponseHeaders)
 	}
 	if po.ResponseBody != "" {
 		resp.ResponseBody = json.RawMessage(po.ResponseBody)
