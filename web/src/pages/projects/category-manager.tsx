@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Plus, Folder, Edit2, Trash2, MoreVertical } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
     useCategoryTree,
-    useCreateCategory,
     useUpdateCategory,
     useDeleteCategory
 } from '@/hooks/use-kest-api'
+import { queryKeys } from '@/hooks/use-kest-api'
+import { kestApi } from '@/services/kest-api.service'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,10 +34,11 @@ interface CategoryManagerProps {
 }
 
 export function CategoryManager({ projectId }: CategoryManagerProps) {
+    const queryClient = useQueryClient()
     const { data: treeData, isLoading } = useCategoryTree(projectId)
-    const createMutation = useCreateCategory()
     const updateMutation = useUpdateCategory()
     const deleteMutation = useDeleteCategory()
+    const [isCreating, setIsCreating] = useState(false)
 
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [isEditOpen, setIsEditOpen] = useState(false)
@@ -53,21 +56,23 @@ export function CategoryManager({ projectId }: CategoryManagerProps) {
 
     const handleCreate = async () => {
         if (!formData.name) return
+        setIsCreating(true)
         try {
-            await createMutation.mutateAsync({
-                projectId,
-                data: {
-                    name: formData.name,
-                    description: formData.description,
-                    parent_id: selectedParentId || undefined,
-                }
+            await kestApi.category.create(projectId, {
+                name: formData.name,
+                description: formData.description,
+                parent_id: selectedParentId || undefined,
             })
+            await queryClient.invalidateQueries({ queryKey: queryKeys.categories(projectId) })
+            await queryClient.invalidateQueries({ queryKey: queryKeys.categoryTree(projectId) })
             toast.success('Category created')
             setIsCreateOpen(false)
             setFormData({ name: '', description: '' })
             setSelectedParentId(null)
         } catch (err: any) {
             toast.error(err.message || 'Failed to create category')
+        } finally {
+            setIsCreating(false)
         }
     }
 
@@ -241,8 +246,8 @@ export function CategoryManager({ projectId }: CategoryManagerProps) {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                        <Button onClick={handleCreate} disabled={createMutation.isPending}>
-                            {createMutation.isPending ? 'Creating...' : 'Create'}
+                        <Button onClick={handleCreate} disabled={isCreating}>
+                            {isCreating ? 'Creating...' : 'Create'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
