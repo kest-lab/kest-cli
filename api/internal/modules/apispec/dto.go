@@ -34,7 +34,7 @@ type UpdateAPISpecRequest struct {
 }
 
 type CreateAPIExampleRequest struct {
-	APISpecID      uint              `json:"api_spec_id" binding:"required"`
+	APISpecID      uint              `json:"api_spec_id"`
 	Name           string            `json:"name" binding:"required,max=255"`
 	RequestHeaders map[string]string `json:"request_headers"`
 	RequestBody    json.RawMessage   `json:"request_body"`
