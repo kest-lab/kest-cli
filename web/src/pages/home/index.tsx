@@ -20,32 +20,27 @@ import { Button } from '@/components/ui/button'
 export function HomePage() {
   return (
     <div className="min-h-screen bg-[#020617] text-slate-200 selection:bg-blue-500/30">
+      <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
+        <Link to="/login">
+          <Button
+            className="h-10 px-5 rounded-full border border-slate-400/70 bg-slate-100 text-slate-800 hover:bg-white"
+          >
+            Login
+          </Button>
+        </Link>
+        <Link to="/register">
+          <Button className="h-10 px-5 rounded-full bg-blue-600 text-white hover:bg-blue-500">
+            Register
+          </Button>
+        </Link>
+      </div>
+
       {/* Cinematic Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
       </div>
-
-      {/* Navigation (Overlay) */}
-      <nav className="container mx-auto px-6 py-6 flex justify-between items-center border-b border-slate-800/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <Zap className="w-5 h-5 text-white fill-current" />
-          </div>
-          <span className="text-xl font-bold tracking-tighter text-white">KEST <span className="text-blue-500">OS</span></span>
-        </div>
-        <div className="hidden md:flex gap-8 text-sm font-medium text-slate-400">
-          <a href="#features" className="hover:text-white transition-colors">Features</a>
-          <a href="#ai-workflow" className="hover:text-white transition-colors">AI Context</a>
-          <a href="#cli" className="hover:text-white transition-colors">CLI</a>
-        </div>
-        <Link to="/projects">
-          <Button variant="outline" className="border-slate-700 hover:bg-slate-800 text-slate-200">
-            Console
-          </Button>
-        </Link>
-      </nav>
 
       {/* Hero Section */}
       <section className="container mx-auto px-6 pt-24 pb-32 text-center relative">
