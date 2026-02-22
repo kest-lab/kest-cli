@@ -187,14 +187,12 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
 
   const createExampleMutation = useMutation({
     mutationFn: (data: {
-      path: string
-      method: string
-      status_code: number
+      name: string
       request_headers?: Record<string, any>
       request_body?: any
-      response_headers?: Record<string, any>
+      response_status: number
       response_body?: any
-      description?: string
+      duration_ms?: number
     }) => kestApi.apiSpec.addExample(projectId, spec.id, data),
     onSuccess: () => {
       toast.success('Example saved')
@@ -299,18 +297,15 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
     try {
       const headers = parseJsonInput(exampleHeaders, 'Request headers')
       const requestBody = parseJsonInput(exampleRequestBody, 'Request body')
-      const responseHeaders = parseJsonInput(exampleResponseHeaders, 'Response headers')
+      parseJsonInput(exampleResponseHeaders, 'Response headers')
       const responseBody = parseJsonInput(exampleResponseBody, 'Response body')
 
       createExampleMutation.mutate({
-        path: examplePath.trim(),
-        method: exampleMethod.trim().toUpperCase(),
-        status_code: statusCode,
+        name: exampleDescription.trim() || `${exampleMethod.trim().toUpperCase()} ${examplePath.trim()} (${statusCode})`,
         request_headers: headers,
         request_body: requestBody,
-        response_headers: responseHeaders,
+        response_status: statusCode,
         response_body: responseBody,
-        description: exampleDescription.trim() || undefined,
       })
     } catch (error: any) {
       toast.error(error?.message || 'Invalid example payload')
