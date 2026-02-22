@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kest-labs/kest/api/internal/contracts"
+	"github.com/kest-labs/kest/api/internal/modules/member"
 	"github.com/kest-labs/kest/api/pkg/handler"
 	"github.com/kest-labs/kest/api/pkg/response"
 )
@@ -13,7 +14,8 @@ import (
 // Handler handles HTTP requests for project module
 type Handler struct {
 	contracts.BaseModule
-	service Service
+	service       Service
+	memberService member.Service
 }
 
 // Name returns the module name
@@ -22,9 +24,10 @@ func (h *Handler) Name() string {
 }
 
 // NewHandler creates a new project handler
-func NewHandler(service Service) *Handler {
+func NewHandler(service Service, memberService member.Service) *Handler {
 	return &Handler{
-		service: service,
+		service:       service,
+		memberService: memberService,
 	}
 }
 
@@ -121,10 +124,15 @@ func (h *Handler) Delete(c *gin.Context) {
 
 // List handles GET /projects
 func (h *Handler) List(c *gin.Context) {
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		return
+	}
+
 	page := handler.QueryInt(c, "page", 1)
 	perPage := handler.QueryInt(c, "per_page", 20)
 
-	projects, total, err := h.service.List(c.Request.Context(), page, perPage)
+	projects, total, err := h.service.List(c.Request.Context(), userID, page, perPage)
 	if err != nil {
 		response.InternalServerError(c, err.Error(), err)
 		return

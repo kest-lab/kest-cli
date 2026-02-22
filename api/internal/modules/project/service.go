@@ -25,7 +25,7 @@ type Service interface {
 	GetByID(ctx context.Context, id uint) (*Project, error)
 	Update(ctx context.Context, id uint, req *UpdateProjectRequest) (*Project, error)
 	Delete(ctx context.Context, id uint) error
-	List(ctx context.Context, page, perPage int) ([]*Project, int64, error)
+	List(ctx context.Context, userID uint, page, perPage int) ([]*Project, int64, error)
 	GetStats(ctx context.Context, projectID uint) (*ProjectStats, error)
 }
 
@@ -141,7 +141,7 @@ func (s *service) Delete(ctx context.Context, id uint) error {
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *service) List(ctx context.Context, page, perPage int) ([]*Project, int64, error) {
+func (s *service) List(ctx context.Context, userID uint, page, perPage int) ([]*Project, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -153,7 +153,7 @@ func (s *service) List(ctx context.Context, page, perPage int) ([]*Project, int6
 	}
 
 	offset := (page - 1) * perPage
-	return s.repo.List(ctx, offset, perPage)
+	return s.repo.List(ctx, userID, offset, perPage)
 }
 
 func (s *service) GetStats(ctx context.Context, projectID uint) (*ProjectStats, error) {

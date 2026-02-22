@@ -1,7 +1,9 @@
 package project
 
 import (
+	"github.com/kest-labs/kest/api/internal/infra/middleware"
 	"github.com/kest-labs/kest/api/internal/infra/router"
+	"github.com/kest-labs/kest/api/internal/modules/member"
 )
 
 // RegisterRoutes registers the project module routes
@@ -13,12 +15,27 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 		// Project CRUD
 		auth.POST("/projects", h.Create).Name("projects.create")
 		auth.GET("/projects", h.List).Name("projects.list")
-		auth.GET("/projects/:id", h.Get).Name("projects.show").WhereNumber("id")
-		auth.PUT("/projects/:id", h.Update).Name("projects.update").WhereNumber("id")
-		auth.PATCH("/projects/:id", h.Update).Name("projects.patch").WhereNumber("id")
-		auth.DELETE("/projects/:id", h.Delete).Name("projects.delete").WhereNumber("id")
+		auth.GET("/projects/:id", h.Get).
+			Name("projects.show").
+			WhereNumber("id").
+			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleRead))
+		auth.PUT("/projects/:id", h.Update).
+			Name("projects.update").
+			WhereNumber("id").
+			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
+		auth.PATCH("/projects/:id", h.Update).
+			Name("projects.patch").
+			WhereNumber("id").
+			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
+		auth.DELETE("/projects/:id", h.Delete).
+			Name("projects.delete").
+			WhereNumber("id").
+			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleAdmin))
 
 		// Stats endpoint
-		auth.GET("/projects/:id/stats", h.GetStats).Name("projects.stats").WhereNumber("id")
+		auth.GET("/projects/:id/stats", h.GetStats).
+			Name("projects.stats").
+			WhereNumber("id").
+			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleRead))
 	})
 }

@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Copy, ChevronDown, ChevronRight, Pencil, Save, X } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
-import { useUpdateAPISpec } from '@/hooks/use-kest-api'
+import { queryKeys, useUpdateAPISpec } from '@/hooks/use-kest-api'
+import { kestApi } from '@/services/kest-api.service'
 import type { APISpec } from '@/types/kest-api'
 
 const METHOD_COLORS: Record<string, string> = {
@@ -22,24 +24,207 @@ const METHOD_COLORS: Record<string, string> = {
 interface APIDetailPanelProps {
   spec: APISpec
   projectId: number
+  initialTab?: 'params' | 'body' | 'headers' | 'responses' | 'examples'
+  autoOpenExampleForm?: boolean
 }
 
-export function APIDetailPanel({ spec, projectId }: APIDetailPanelProps) {
+type ExampleDefaults = {
+  path: string
+  method: string
+  status: string
+  description: string
+  headers: string
+  requestBody: string
+  responseHeaders: string
+  responseBody: string
+}
+
+const defaultStringValue = (fieldName: string) => {
+  const key = fieldName.toLowerCase()
+  if (key.includes('email')) return 'user@example.com'
+  if (key.includes('name')) return 'example_name'
+  if (key.includes('id')) return '123'
+  if (key.includes('token') || key.includes('auth')) return 'token_value'
+  if (key.includes('url') || key.includes('uri')) return 'https://api.example.com'
+  if (key.includes('phone')) return '+1-555-0100'
+  return `example_${fieldName || 'value'}`
+}
+
+const buildExampleFromSchema = (schema: any, fieldName = 'field', depth = 0): any => {
+  if (!schema || depth > 5) return null
+
+  if (schema.example !== undefined) return schema.example
+  if (schema.default !== undefined) return schema.default
+  if (Array.isArray(schema.enum) && schema.enum.length > 0) return schema.enum[0]
+
+  if (Array.isArray(schema.oneOf) && schema.oneOf.length > 0) {
+    return buildExampleFromSchema(schema.oneOf[0], fieldName, depth + 1)
+  }
+  if (Array.isArray(schema.anyOf) && schema.anyOf.length > 0) {
+    return buildExampleFromSchema(schema.anyOf[0], fieldName, depth + 1)
+  }
+  if (Array.isArray(schema.allOf) && schema.allOf.length > 0) {
+    return buildExampleFromSchema(schema.allOf[0], fieldName, depth + 1)
+  }
+
+  switch (schema.type) {
+    case 'object': {
+      const result: Record<string, any> = {}
+      const properties = schema.properties || {}
+      for (const [key, value] of Object.entries(properties)) {
+        result[key] = buildExampleFromSchema(value, key, depth + 1)
+      }
+      return result
+    }
+    case 'array':
+      return [buildExampleFromSchema(schema.items || {}, fieldName, depth + 1)]
+    case 'integer':
+      return schema.minimum ?? 1
+    case 'number':
+      return schema.minimum ?? 1.23
+    case 'boolean':
+      return true
+    case 'string':
+    default:
+      if (schema.format === 'date-time') return '2026-01-01T00:00:00Z'
+      if (schema.format === 'date') return '2026-01-01'
+      if (schema.format === 'uuid') return '123e4567-e89b-12d3-a456-426614174000'
+      if (schema.format === 'email') return 'user@example.com'
+      if (schema.format === 'uri' || schema.format === 'url') return 'https://api.example.com'
+      return defaultStringValue(fieldName)
+  }
+}
+
+const getPreferredStatusCode = (spec: APISpec) => {
+  const codes = Object.keys(spec.responses || {}).filter((key) => /^\d{3}$/.test(key))
+  const successCode = codes.find((code) => Number(code) >= 200 && Number(code) < 300)
+  return successCode || '200'
+}
+
+const getResponseByStatus = (spec: APISpec, status: string) => {
+  if (!spec.responses) return undefined
+  return spec.responses[status] || Object.values(spec.responses)[0]
+}
+
+const toPrettyJson = (value: any) => JSON.stringify(value, null, 2)
+
+const getInitialExampleValues = (spec: APISpec): ExampleDefaults => {
+  const status = getPreferredStatusCode(spec)
+  const responseConfig = getResponseByStatus(spec, status)
+
+  const requestHeadersObj: Record<string, any> = {}
+  if (spec.request_body?.content_type) {
+    requestHeadersObj['Content-Type'] = spec.request_body.content_type
+  }
+  if (!requestHeadersObj['Content-Type']) {
+    requestHeadersObj['Content-Type'] = 'application/json'
+  }
+
+  const requestBodyObj = spec.request_body?.schema
+    ? buildExampleFromSchema(spec.request_body.schema, 'request')
+    : {
+        name: 'example_name',
+        description: 'example_description',
+      }
+
+  const responseHeadersObj: Record<string, any> = {}
+  if (responseConfig?.content_type) {
+    responseHeadersObj['Content-Type'] = responseConfig.content_type
+  } else {
+    responseHeadersObj['Content-Type'] = 'application/json'
+  }
+
+  const responseBodyObj = responseConfig?.schema
+    ? buildExampleFromSchema(responseConfig.schema, 'response')
+    : {
+        success: Number(status) < 400,
+        message: Number(status) < 400 ? 'ok' : 'request_failed',
+        data: {},
+      }
+
+  return {
+    path: spec.path || '',
+    method: spec.method || 'GET',
+    status,
+    description: `${spec.method || 'GET'} ${spec.path || ''} example`.trim(),
+    headers: toPrettyJson(requestHeadersObj),
+    requestBody: toPrettyJson(requestBodyObj),
+    responseHeaders: toPrettyJson(responseHeadersObj),
+    responseBody: toPrettyJson(responseBodyObj),
+  }
+}
+
+export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpenExampleForm = false }: APIDetailPanelProps) {
+  const initialExample = getInitialExampleValues(spec)
   const [activeTab, setActiveTab] = useState('params')
   const [editing, setEditing] = useState(false)
   const [editSummary, setEditSummary] = useState(spec.summary || '')
   const [editDescription, setEditDescription] = useState(spec.description || '')
   const [editTags, setEditTags] = useState(spec.tags?.join(', ') || '')
+  const [showExampleForm, setShowExampleForm] = useState(false)
+  const [examplePath, setExamplePath] = useState(spec.path || '')
+  const [exampleMethod, setExampleMethod] = useState<string>(spec.method || 'GET')
+  const [exampleStatus, setExampleStatus] = useState(initialExample.status)
+  const [exampleDescription, setExampleDescription] = useState(initialExample.description)
+  const [exampleHeaders, setExampleHeaders] = useState(initialExample.headers)
+  const [exampleRequestBody, setExampleRequestBody] = useState(initialExample.requestBody)
+  const [exampleResponseHeaders, setExampleResponseHeaders] = useState(initialExample.responseHeaders)
+  const [exampleResponseBody, setExampleResponseBody] = useState(initialExample.responseBody)
 
+  const queryClient = useQueryClient()
   const updateMutation = useUpdateAPISpec()
+  const resetExampleForm = () => {
+    const defaults = getInitialExampleValues(spec)
+    setExamplePath(defaults.path)
+    setExampleMethod(defaults.method)
+    setExampleStatus(defaults.status)
+    setExampleDescription(defaults.description)
+    setExampleHeaders(defaults.headers)
+    setExampleRequestBody(defaults.requestBody)
+    setExampleResponseHeaders(defaults.responseHeaders)
+    setExampleResponseBody(defaults.responseBody)
+  }
+
+  const createExampleMutation = useMutation({
+    mutationFn: (data: {
+      path: string
+      method: string
+      status_code: number
+      request_headers?: Record<string, any>
+      request_body?: any
+      response_headers?: Record<string, any>
+      response_body?: any
+      description?: string
+    }) => kestApi.apiSpec.addExample(projectId, spec.id, data),
+    onSuccess: () => {
+      toast.success('Example saved')
+      queryClient.invalidateQueries({ queryKey: queryKeys.apiSpec(spec.id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.apiSpecWithExamples(spec.id) })
+      resetExampleForm()
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || 'Failed to save example')
+    },
+  })
 
   // Sync edit fields when spec changes
   useEffect(() => {
     setEditSummary(spec.summary || '')
     setEditDescription(spec.description || '')
     setEditTags(spec.tags?.join(', ') || '')
+    resetExampleForm()
     setEditing(false)
   }, [spec.id])
+
+  useEffect(() => {
+    setActiveTab(initialTab)
+  }, [initialTab, spec.id])
+
+  useEffect(() => {
+    if (!autoOpenExampleForm) return
+    setActiveTab('examples')
+    setShowExampleForm(true)
+  }, [autoOpenExampleForm, spec.id])
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
@@ -84,6 +269,53 @@ export function APIDetailPanel({ spec, projectId }: APIDetailPanelProps) {
   const hasHeaders = headerParams.length > 0
   const hasBody = !!spec.request_body
   const hasResponses = !!(spec.responses && Object.keys(spec.responses).length > 0)
+  const examples = spec.examples || []
+
+  const parseJsonInput = (value: string, label: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) return undefined
+    try {
+      return JSON.parse(trimmed)
+    } catch {
+      throw new Error(`${label} must be valid JSON`)
+    }
+  }
+
+  const handleSaveExample = () => {
+    const statusCode = Number(exampleStatus)
+    if (!Number.isInteger(statusCode) || statusCode < 100 || statusCode > 599) {
+      toast.error('Status code must be between 100 and 599')
+      return
+    }
+    if (!examplePath.trim()) {
+      toast.error('Path is required')
+      return
+    }
+    if (!exampleMethod.trim()) {
+      toast.error('Method is required')
+      return
+    }
+
+    try {
+      const headers = parseJsonInput(exampleHeaders, 'Request headers')
+      const requestBody = parseJsonInput(exampleRequestBody, 'Request body')
+      const responseHeaders = parseJsonInput(exampleResponseHeaders, 'Response headers')
+      const responseBody = parseJsonInput(exampleResponseBody, 'Response body')
+
+      createExampleMutation.mutate({
+        path: examplePath.trim(),
+        method: exampleMethod.trim().toUpperCase(),
+        status_code: statusCode,
+        request_headers: headers,
+        request_body: requestBody,
+        response_headers: responseHeaders,
+        response_body: responseBody,
+        description: exampleDescription.trim() || undefined,
+      })
+    } catch (error: any) {
+      toast.error(error?.message || 'Invalid example payload')
+    }
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -159,7 +391,7 @@ export function APIDetailPanel({ spec, projectId }: APIDetailPanelProps) {
         )}
       </div>
 
-      {/* Tabs: Params / Body / Headers / Responses */}
+      {/* Tabs: Params / Body / Headers / Responses / Examples */}
       <div className="flex-1 overflow-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <TabsList className="w-full justify-start rounded-none border-b bg-transparent px-4 h-auto py-0">
@@ -174,6 +406,9 @@ export function APIDetailPanel({ spec, projectId }: APIDetailPanelProps) {
             </TabsTrigger>
             <TabsTrigger value="responses" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs py-2">
               Responses {hasResponses && <Badge variant="secondary" className="ml-1 text-[9px] px-1 py-0">{Object.keys(spec.responses!).length}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="examples" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs py-2">
+              Examples {examples.length > 0 && <Badge variant="secondary" className="ml-1 text-[9px] px-1 py-0">{examples.length}</Badge>}
             </TabsTrigger>
           </TabsList>
 
@@ -242,6 +477,171 @@ export function APIDetailPanel({ spec, projectId }: APIDetailPanelProps) {
               ) : (
                 <div className="text-center py-8 text-sm text-muted-foreground">
                   No responses defined
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="examples" className="mt-0 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold">API Examples</h4>
+                <Button size="sm" variant="outline" onClick={() => setShowExampleForm((v) => !v)}>
+                  {showExampleForm ? 'Hide Form' : 'Add Example'}
+                </Button>
+              </div>
+
+              {showExampleForm && (
+                <div className="border rounded-md p-4 space-y-3 bg-muted/20">
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">`method` *</label>
+                      <Input
+                        value={exampleMethod}
+                        onChange={(e) => setExampleMethod(e.target.value)}
+                        placeholder="GET / POST / PUT..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">`path` *</label>
+                      <Input
+                        value={examplePath}
+                        onChange={(e) => setExamplePath(e.target.value)}
+                        placeholder="/users/{id}"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">`status_code` *</label>
+                      <Input
+                        value={exampleStatus}
+                        onChange={(e) => setExampleStatus(e.target.value)}
+                        placeholder="200"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">`description`</label>
+                    <Textarea
+                      value={exampleDescription}
+                      onChange={(e) => setExampleDescription(e.target.value)}
+                      placeholder="Create user success example"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="border rounded-md p-3 space-y-2 bg-background">
+                      <h5 className="text-xs font-semibold">Request</h5>
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-muted-foreground">`request_headers` (JSON)</label>
+                        <Textarea
+                          value={exampleHeaders}
+                          onChange={(e) => setExampleHeaders(e.target.value)}
+                          placeholder='{"Authorization":"Bearer token","Content-Type":"application/json"}'
+                          rows={7}
+                          className="font-mono text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-muted-foreground">`request_body` (JSON)</label>
+                        <Textarea
+                          value={exampleRequestBody}
+                          onChange={(e) => setExampleRequestBody(e.target.value)}
+                          placeholder='{"name":"John","email":"john@example.com"}'
+                          rows={7}
+                          className="font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border rounded-md p-3 space-y-2 bg-background">
+                      <h5 className="text-xs font-semibold">Response</h5>
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-muted-foreground">`response_headers` (JSON)</label>
+                        <Textarea
+                          value={exampleResponseHeaders}
+                          onChange={(e) => setExampleResponseHeaders(e.target.value)}
+                          placeholder='{"Content-Type":"application/json"}'
+                          rows={7}
+                          className="font-mono text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-muted-foreground">`response_body` (JSON)</label>
+                        <Textarea
+                          value={exampleResponseBody}
+                          onChange={(e) => setExampleResponseBody(e.target.value)}
+                          placeholder='{"id":1,"name":"John"}'
+                          rows={7}
+                          className="font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground">
+                    JSON 字段可以填 `{}`（空对象）或完整 JSON；不需要时可留空。
+                  </p>
+
+                  <div>
+                    <p className="text-[11px] text-muted-foreground">
+                      保存时会提交：`path` `method` `status_code` `request_headers` `request_body` `response_headers` `response_body` `description`
+                    </p>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button onClick={handleSaveExample} disabled={createExampleMutation.isPending}>
+                      {createExampleMutation.isPending ? 'Saving...' : 'Save Example'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {examples.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground border rounded-md">
+                  No examples yet
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {examples.map((example) => (
+                    <div key={example.id} className="border rounded-md p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="font-mono text-[10px]">{example.method || spec.method}</Badge>
+                          <span className="font-mono text-xs">{example.path || spec.path}</span>
+                        </div>
+                        <Badge className={(example.status_code || example.response_status) < 400 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                          {example.status_code || example.response_status}
+                        </Badge>
+                      </div>
+                      {(example.description || example.name) && (
+                        <p className="text-xs text-muted-foreground">{example.description || example.name}</p>
+                      )}
+                      <div className="grid gap-2 md:grid-cols-2">
+                        <div className="space-y-1">
+                          <p className="text-[11px] text-muted-foreground">`request_headers`</p>
+                          <pre className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto">
+                            {JSON.stringify(example.request_headers, null, 2)}
+                          </pre>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[11px] text-muted-foreground">`response_headers`</p>
+                          <pre className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto">
+                            {JSON.stringify(example.response_headers, null, 2)}
+                          </pre>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[11px] text-muted-foreground">`request_body`</p>
+                          <pre className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto">
+                            {JSON.stringify(example.request_body, null, 2)}
+                          </pre>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[11px] text-muted-foreground">`response_body`</p>
+                          <pre className="bg-muted p-2 rounded text-xs font-mono overflow-x-auto">
+                            {JSON.stringify(example.response_body, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </TabsContent>

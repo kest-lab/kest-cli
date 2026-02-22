@@ -23,7 +23,7 @@ type Repository interface {
 	GetBySlug(ctx context.Context, slug string) (*Project, error)
 	Update(ctx context.Context, project *Project) error
 	Delete(ctx context.Context, id uint) error
-	List(ctx context.Context, offset, limit int) ([]*Project, int64, error)
+	List(ctx context.Context, userID uint, offset, limit int) ([]*Project, int64, error)
 	GetStats(ctx context.Context, projectID uint) (*ProjectStats, error)
 }
 
@@ -80,15 +80,27 @@ func (r *repository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&ProjectPO{}, id).Error
 }
 
-func (r *repository) List(ctx context.Context, offset, limit int) ([]*Project, int64, error) {
+func (r *repository) List(ctx context.Context, userID uint, offset, limit int) ([]*Project, int64, error) {
 	var poList []*ProjectPO
 	var total int64
 
-	if err := r.db.WithContext(ctx).Model(&ProjectPO{}).Count(&total).Error; err != nil {
+	base := r.db.WithContext(ctx).
+		Model(&ProjectPO{}).
+		Joins("JOIN project_members ON project_members.project_id = projects.id").
+		Where("project_members.user_id = ?", userID).
+		Where("project_members.deleted_at IS NULL")
+
+	if err := base.Distinct("projects.id").Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := r.db.WithContext(ctx).Offset(offset).Limit(limit).Order("created_at DESC").Find(&poList).Error; err != nil {
+	if err := base.
+		Select("projects.*").
+		Distinct().
+		Offset(offset).
+		Limit(limit).
+		Order("projects.created_at DESC").
+		Find(&poList).Error; err != nil {
 		return nil, 0, err
 	}
 
