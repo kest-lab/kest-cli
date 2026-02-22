@@ -276,7 +276,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/workspace.WorkspaceResponse"
+                                "$ref": "#/definitions/internal_modules_workspace.WorkspaceResponse"
                             }
                         }
                     }
@@ -300,7 +300,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/workspace.CreateWorkspaceRequest"
+                            "$ref": "#/definitions/internal_modules_workspace.CreateWorkspaceRequest"
                         }
                     }
                 ],
@@ -308,7 +308,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/workspace.WorkspaceResponse"
+                            "$ref": "#/definitions/internal_modules_workspace.WorkspaceResponse"
                         }
                     }
                 }
@@ -336,7 +336,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/workspace.WorkspaceResponse"
+                            "$ref": "#/definitions/internal_modules_workspace.WorkspaceResponse"
                         }
                     }
                 }
@@ -386,7 +386,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/workspace.UpdateWorkspaceRequest"
+                            "$ref": "#/definitions/internal_modules_workspace.UpdateWorkspaceRequest"
                         }
                     }
                 ],
@@ -394,7 +394,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/workspace.WorkspaceResponse"
+                            "$ref": "#/definitions/internal_modules_workspace.WorkspaceResponse"
                         }
                     }
                 }
@@ -424,7 +424,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/workspace.WorkspaceMemberResponse"
+                                "$ref": "#/definitions/internal_modules_workspace.WorkspaceMemberResponse"
                             }
                         }
                     }
@@ -455,7 +455,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/workspace.AddMemberRequest"
+                            "$ref": "#/definitions/internal_modules_workspace.AddMemberRequest"
                         }
                     }
                 ],
@@ -526,7 +526,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/workspace.UpdateMemberRoleRequest"
+                            "$ref": "#/definitions/internal_modules_workspace.UpdateMemberRoleRequest"
                         }
                     }
                 ],
@@ -645,7 +645,7 @@
                 }
             }
         },
-        "workspace.AddMemberRequest": {
+        "internal_modules_workspace.AddMemberRequest": {
             "type": "object",
             "required": [
                 "role",
@@ -666,7 +666,7 @@
                 }
             }
         },
-        "workspace.CreateWorkspaceRequest": {
+        "internal_modules_workspace.CreateWorkspaceRequest": {
             "type": "object",
             "required": [
                 "name",
@@ -704,7 +704,7 @@
                 }
             }
         },
-        "workspace.UpdateMemberRoleRequest": {
+        "internal_modules_workspace.UpdateMemberRoleRequest": {
             "type": "object",
             "required": [
                 "role"
@@ -721,7 +721,7 @@
                 }
             }
         },
-        "workspace.UpdateWorkspaceRequest": {
+        "internal_modules_workspace.UpdateWorkspaceRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -742,7 +742,7 @@
                 }
             }
         },
-        "workspace.WorkspaceMemberResponse": {
+        "internal_modules_workspace.WorkspaceMemberResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -773,7 +773,7 @@
                 }
             }
         },
-        "workspace.WorkspaceResponse": {
+        "internal_modules_workspace.WorkspaceResponse": {
             "type": "object",
             "properties": {
                 "created_at": {

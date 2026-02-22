@@ -69,7 +69,7 @@ definitions:
       user_id:
         type: integer
     type: object
-  workspace.AddMemberRequest:
+  internal_modules_workspace.AddMemberRequest:
     properties:
       role:
         enum:
@@ -84,7 +84,7 @@ definitions:
     - role
     - user_id
     type: object
-  workspace.CreateWorkspaceRequest:
+  internal_modules_workspace.CreateWorkspaceRequest:
     properties:
       description:
         maxLength: 500
@@ -112,7 +112,7 @@ definitions:
     - slug
     - type
     type: object
-  workspace.UpdateMemberRoleRequest:
+  internal_modules_workspace.UpdateMemberRoleRequest:
     properties:
       role:
         enum:
@@ -124,7 +124,7 @@ definitions:
     required:
     - role
     type: object
-  workspace.UpdateWorkspaceRequest:
+  internal_modules_workspace.UpdateWorkspaceRequest:
     properties:
       description:
         maxLength: 500
@@ -139,7 +139,7 @@ definitions:
         - public
         type: string
     type: object
-  workspace.WorkspaceMemberResponse:
+  internal_modules_workspace.WorkspaceMemberResponse:
     properties:
       email:
         description: Joined from users table
@@ -160,7 +160,7 @@ definitions:
       workspace_id:
         type: integer
     type: object
-  workspace.WorkspaceResponse:
+  internal_modules_workspace.WorkspaceResponse:
     properties:
       created_at:
         type: string
@@ -363,7 +363,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/workspace.WorkspaceResponse'
+              $ref: '#/definitions/internal_modules_workspace.WorkspaceResponse'
             type: array
       summary: List workspaces
       tags:
@@ -377,14 +377,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/workspace.CreateWorkspaceRequest'
+          $ref: '#/definitions/internal_modules_workspace.CreateWorkspaceRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/workspace.WorkspaceResponse'
+            $ref: '#/definitions/internal_modules_workspace.WorkspaceResponse'
       summary: Create a new workspace
       tags:
       - Workspace
@@ -415,7 +415,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/workspace.WorkspaceResponse'
+            $ref: '#/definitions/internal_modules_workspace.WorkspaceResponse'
       summary: Get workspace details
       tags:
       - Workspace
@@ -433,14 +433,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/workspace.UpdateWorkspaceRequest'
+          $ref: '#/definitions/internal_modules_workspace.UpdateWorkspaceRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/workspace.WorkspaceResponse'
+            $ref: '#/definitions/internal_modules_workspace.WorkspaceResponse'
       summary: Update workspace
       tags:
       - Workspace
@@ -459,7 +459,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/workspace.WorkspaceMemberResponse'
+              $ref: '#/definitions/internal_modules_workspace.WorkspaceMemberResponse'
             type: array
       summary: List workspace members
       tags:
@@ -478,7 +478,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/workspace.AddMemberRequest'
+          $ref: '#/definitions/internal_modules_workspace.AddMemberRequest'
       produces:
       - application/json
       responses:
@@ -525,7 +525,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/workspace.UpdateMemberRoleRequest'
+          $ref: '#/definitions/internal_modules_workspace.UpdateMemberRoleRequest'
       produces:
       - application/json
       responses:

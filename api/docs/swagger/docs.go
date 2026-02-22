@@ -282,7 +282,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/workspace.WorkspaceResponse"
+                                "$ref": "#/definitions/internal_modules_workspace.WorkspaceResponse"
                             }
                         }
                     }
@@ -306,7 +306,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/workspace.CreateWorkspaceRequest"
+                            "$ref": "#/definitions/internal_modules_workspace.CreateWorkspaceRequest"
                         }
                     }
                 ],
@@ -314,7 +314,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/workspace.WorkspaceResponse"
+                            "$ref": "#/definitions/internal_modules_workspace.WorkspaceResponse"
                         }
                     }
                 }
@@ -342,7 +342,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/workspace.WorkspaceResponse"
+                            "$ref": "#/definitions/internal_modules_workspace.WorkspaceResponse"
                         }
                     }
                 }
@@ -392,7 +392,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/workspace.UpdateWorkspaceRequest"
+                            "$ref": "#/definitions/internal_modules_workspace.UpdateWorkspaceRequest"
                         }
                     }
                 ],
@@ -400,7 +400,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/workspace.WorkspaceResponse"
+                            "$ref": "#/definitions/internal_modules_workspace.WorkspaceResponse"
                         }
                     }
                 }
@@ -430,7 +430,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/workspace.WorkspaceMemberResponse"
+                                "$ref": "#/definitions/internal_modules_workspace.WorkspaceMemberResponse"
                             }
                         }
                     }
@@ -461,7 +461,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/workspace.AddMemberRequest"
+                            "$ref": "#/definitions/internal_modules_workspace.AddMemberRequest"
                         }
                     }
                 ],
@@ -532,7 +532,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/workspace.UpdateMemberRoleRequest"
+                            "$ref": "#/definitions/internal_modules_workspace.UpdateMemberRoleRequest"
                         }
                     }
                 ],
@@ -651,7 +651,7 @@ const docTemplate = `{
                 }
             }
         },
-        "workspace.AddMemberRequest": {
+        "internal_modules_workspace.AddMemberRequest": {
             "type": "object",
             "required": [
                 "role",
@@ -672,7 +672,7 @@ const docTemplate = `{
                 }
             }
         },
-        "workspace.CreateWorkspaceRequest": {
+        "internal_modules_workspace.CreateWorkspaceRequest": {
             "type": "object",
             "required": [
                 "name",
@@ -710,7 +710,7 @@ const docTemplate = `{
                 }
             }
         },
-        "workspace.UpdateMemberRoleRequest": {
+        "internal_modules_workspace.UpdateMemberRoleRequest": {
             "type": "object",
             "required": [
                 "role"
@@ -727,7 +727,7 @@ const docTemplate = `{
                 }
             }
         },
-        "workspace.UpdateWorkspaceRequest": {
+        "internal_modules_workspace.UpdateWorkspaceRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -748,7 +748,7 @@ const docTemplate = `{
                 }
             }
         },
-        "workspace.WorkspaceMemberResponse": {
+        "internal_modules_workspace.WorkspaceMemberResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -779,7 +779,7 @@ const docTemplate = `{
                 }
             }
         },
-        "workspace.WorkspaceResponse": {
+        "internal_modules_workspace.WorkspaceResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
