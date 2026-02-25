@@ -243,6 +243,27 @@ func (h *Handler) ExportSpecs(c *gin.Context) {
 	response.Success(c, data)
 }
 
+// GenDoc generates AI-powered documentation for an API specification
+func (h *Handler) GenDoc(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("sid"), 10, 32)
+	if err != nil {
+		response.BadRequest(c, "Invalid ID")
+		return
+	}
+
+	spec, err := h.service.GenDoc(c.Request.Context(), uint(id))
+	if err != nil {
+		if errors.Is(err, ErrSpecNotFound) {
+			response.NotFound(c, err.Error(), err)
+			return
+		}
+		response.HandleError(c, "Failed to generate documentation", err)
+		return
+	}
+
+	response.Success(c, spec)
+}
+
 // Convenience aliases for cleaner route definitions
 func (h *Handler) List(c *gin.Context) {
 	h.ListSpecs(c)
