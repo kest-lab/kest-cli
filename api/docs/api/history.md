@@ -1,22 +1,100 @@
-# History Module API
+# History API
 
-## Overview
+> Generated: 2026-02-25 22:40:55
 
-历史模块用于查看请求执行历史记录。
+## Base URL
 
-- Base Path: `/v1`
-- Auth: `Authorization: Bearer <token>`
+See [API Documentation](./api.md) for environment-specific base URLs.
 
 ## Endpoints
 
-| Method | Path | Description |
-| --- | --- | --- |
-| GET | `/v1/projects/:id/history` | 获取历史列表 |
-| GET | `/v1/projects/:id/history/:hid` | 获取历史详情 |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/v1/projects/:id/history` | List historys | 🔓 |
+| `GET` | `/v1/projects/:id/history/:hid` | Get history details | 🔓 |
 
-## Query Parameters
+---
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `page` | integer | No | 页码 |
-| `page_size` | integer | No | 每页数量 |
+## Details
+
+### GET `/v1/projects/:id/history`
+
+**List historys**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+| Route Name | `history.list` |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+
+#### Response
+
+```json
+{
+  "action": "string",
+  "created_at": "2024-01-01T00:00:00Z",
+  "data": "object",
+  "diff": "object",
+  "entity_id": 1,
+  "entity_type": "string",
+  "id": 1,
+  "message": "string",
+  "project_id": 1,
+  "user_id": 1
+}
+```
+
+#### Example
+
+```bash
+curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/history'
+```
+
+---
+
+### GET `/v1/projects/:id/history/:hid`
+
+**Get history details**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+| Route Name | `history.show` |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `hid` | `integer` | Resource identifier |
+
+#### Response
+
+```json
+{
+  "action": "string",
+  "created_at": "2024-01-01T00:00:00Z",
+  "data": "object",
+  "diff": "object",
+  "entity_id": 1,
+  "entity_type": "string",
+  "id": 1,
+  "message": "string",
+  "project_id": 1,
+  "user_id": 1
+}
+```
+
+#### Example
+
+```bash
+curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/history/:hid'
+```
+
+---
+

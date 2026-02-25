@@ -1,34 +1,59 @@
-# Run Module API
+# Run API
 
-## Overview
+> Generated: 2026-02-25 22:40:55
 
-Run 模块用于执行单个请求。
+## Base URL
 
-- Base Path: `/v1`
-- Auth: `Authorization: Bearer <token>`
+See [API Documentation](./api.md) for environment-specific base URLs.
 
 ## Endpoints
 
-| Method | Path | Description |
-| --- | --- | --- |
-| POST | `/v1/projects/:id/collections/:cid/requests/:rid/run` | 执行请求 |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/run` | Run run | 🔓 |
 
-## Response Example
+---
+
+## Details
+
+### POST `/v1/projects/:id/collections/:cid/requests/:rid/run`
+
+**Run run**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+| Route Name | `run.execute` |
+
+#### Request Body
 
 ```json
 {
-  "code": 200,
-  "message": "success",
-  "data": {
-    "status": 200,
-    "duration_ms": 58,
-    "headers": {
-      "content-type": "application/json"
-    },
-    "body": {
-      "id": 1,
-      "username": "demo"
-    }
-  }
+  "environment_id": null,
+  "variables": "object"
 }
 ```
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `environment_id` | `*uint` | ❌ | - |
+| `variables` | `map[string]string` | ❌ | - |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `cid` | `integer` | Resource identifier |
+| `rid` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/requests/:rid/run' \
+  -H 'Content-Type: application/json' \
+  -d '{"environment_id": null,"variables": "object"}'
+```
+
+---
+

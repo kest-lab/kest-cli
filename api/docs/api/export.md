@@ -1,19 +1,42 @@
-# Export Module API
+# Export API
 
-## Overview
+> Generated: 2026-02-25 22:40:55
 
-导出模块用于将集合导出为 Postman Collection。
+## Base URL
 
-- Base Path: `/v1`
-- Auth: `Authorization: Bearer <token>`
+See [API Documentation](./api.md) for environment-specific base URLs.
 
 ## Endpoints
 
-| Method | Path | Description |
-| --- | --- | --- |
-| GET | `/v1/projects/:id/collections/:cid/export/postman` | 导出 Postman Collection |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/v1/projects/:id/collections/:cid/export/postman` | Export Postman export | 🔓 |
 
-## Notes
+---
 
-- 返回 JSON 文件内容，通常用于下载。
-- 可直接导入 Postman。
+## Details
+
+### GET `/v1/projects/:id/collections/:cid/export/postman`
+
+**Export Postman export**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+| Route Name | `export.postman` |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `cid` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/export/postman'
+```
+
+---
+

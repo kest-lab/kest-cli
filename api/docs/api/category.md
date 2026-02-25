@@ -1,144 +1,158 @@
-# Category Module API
+# Category API
 
-> 💡 This documentation is automatically synchronized with the source code.
+> Generated: 2026-02-25 22:40:55
 
-## 📌 Overview
+## Base URL
 
-The `category` module provides the following API endpoints:
+See [API Documentation](./api.md) for environment-specific base URLs.
 
-### {
-  "summary": "Retrieves a list of all categories associated with a specific project, identified by the project ID. This endpoint is useful for getting an overview of how categories are organized within a given project.",
-  "request_example": "",
-  "response_example": [
-    {
-      "id": 1,
-      "name": "Electronics",
-      "parent_id": null,
-      "description": "All electronic items",
-      "sort_order": 1
-    },
-    {
-      "id": 2,
-      "name": "Laptops",
-      "parent_id": 1,
-      "description": "Portable computers",
-      "sort_order": 2
-    }
-  ]
-}
+## Endpoints
 
-**Endpoint:**
-<kbd>GET</kbd> `/projects/:id/categories`
-
-**Handler Implementation:**
-`category.List`
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/v1/projects/:id/categories` | List categorys | 🔓 |
+| `POST` | `/v1/projects/:id/categories` | Create category | 🔓 |
+| `PUT` | `/v1/projects/:id/categories/sort` | Sort category | 🔓 |
+| `GET` | `/v1/projects/:id/categories/:cid` | Get category details | 🔓 |
+| `PATCH` | `/v1/projects/:id/categories/:cid` | Update category | 🔓 |
+| `DELETE` | `/v1/projects/:id/categories/:cid` | Delete category | 🔓 |
 
 ---
 
-### {
-  "summary": "Creates a new category for the specified project. The category can have a name, an optional parent category, a description, and a sort order.",
-  "request_example": {
-    "name": "New Category",
-    "parent_id": 1,
-    "description": "This is a new category for the project.",
-    "sort_order": 1
-  },
-  "response_example": {
-    "id": 123,
-    "name": "New Category",
-    "parent_id": 1,
-    "description": "This is a new category for the project.",
-    "sort_order": 1,
-    "created_at": "2023-10-05T14:25:30Z"
-  }
-}
+## Details
 
-**Endpoint:**
-<kbd>POST</kbd> `/projects/:id/categories`
+### GET `/v1/projects/:id/categories`
 
-**Handler Implementation:**
-`category.Create`
+**List categorys**
 
----
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
 
-### {
-  "summary": "This endpoint allows reordering of categories within a project by providing a list of category IDs in the desired order.",
-  "request_example": {
-    "category_ids": [1, 3, 2, 4]
-  },
-  "response_example": {
-    "status": "success",
-    "message": "Categories sorted successfully"
-  }
-}
+#### Path Parameters
 
-**Endpoint:**
-<kbd>PUT</kbd> `/projects/:id/categories/sort`
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
 
-**Handler Implementation:**
-`category.Sort`
+#### Example
 
----
-
-### {
-  "summary": "This endpoint retrieves a specific category associated with a given project by its ID and the category's ID.",
-  "request_example": "",
-  "response_example": {
-    "id": 1,
-    "name": "Example Category",
-    "parent_id": null,
-    "description": "This is an example category for demonstration purposes.",
-    "sort_order": 1
-  }
-}
-
-**Endpoint:**
-<kbd>GET</kbd> `/projects/:id/categories/:cid`
-
-**Handler Implementation:**
-`category.Get`
-
----
-
-### {
-  "summary": "Updates the details of a specific category within a project, including its name, parent category, description, and sort order. The parent_id can be set to null to remove the association with a parent category.",
-  "request_example": {
-    "name": "Updated Category Name",
-    "parent_id": null,
-    "description": "This is an updated description for the category.",
-    "sort_order": 2
-  },
-  "response_example": {
-    "id": 1,
-    "name": "Updated Category Name",
-    "parent_id": null,
-    "description": "This is an updated description for the category.",
-    "sort_order": 2,
-    "created_at": "2023-10-01T12:00:00Z",
-    "updated_at": "2023-10-05T14:30:00Z"
-  }
-}
-
-**Endpoint:**
-<kbd>PATCH</kbd> `/projects/:id/categories/:cid`
-
-**Handler Implementation:**
-`category.Update`
-
----
-
-### Deletes a specific category associated with a project. The endpoint requires the project ID and the category ID to identify which category to delete.
-
-**Endpoint:**
-<kbd>DELETE</kbd> `/projects/:id/categories/:cid`
-
-**Response Example:**
-```json
-{}
+```bash
+curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/categories'
 ```
 
-**Handler Implementation:**
-`category.Delete`
+---
+
+### POST `/v1/projects/:id/categories`
+
+**Create category**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/categories'
+```
+
+---
+
+### PUT `/v1/projects/:id/categories/sort`
+
+**Sort category**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X PUT 'http://localhost:8025/api/v1/v1/projects/1/categories/sort'
+```
+
+---
+
+### GET `/v1/projects/:id/categories/:cid`
+
+**Get category details**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `cid` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/categories/:cid'
+```
+
+---
+
+### PATCH `/v1/projects/:id/categories/:cid`
+
+**Update category**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `cid` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X PATCH 'http://localhost:8025/api/v1/v1/projects/1/categories/:cid'
+```
+
+---
+
+### DELETE `/v1/projects/:id/categories/:cid`
+
+**Delete category**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `cid` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/categories/:cid'
+```
 
 ---
 

@@ -1,58 +1,51 @@
-# System Module API
+# System API
 
-> 💡 This documentation is automatically synchronized with the source code.
+> Generated: 2026-02-25 22:40:55
 
-## 📌 Overview
+## Base URL
 
-The `system` module provides the following API endpoints:
+See [API Documentation](./api.md) for environment-specific base URLs.
 
-### {
-  "description": "The GET /system-features endpoint retrieves a set of system features and their current enablement status. This includes options such as enabling email/password login, social OAuth login, user registration, API documentation, test runner, and CLI synchronization.",
-  "request_example": {},
-  "response_example": {
-    "EnableEmailPasswordLogin": true,
-    "EnableSocialOAuthLogin": false,
-    "IsAllowRegister": true,
-    "EnableAPIDocumentation": true,
-    "EnableTestRunner": true,
-    "EnableCLISync": true
-  }
-}
+## Endpoints
 
-**Endpoint:**
-<kbd>GET</kbd> `/system-features`
-
-**Handler Implementation:**
-`system.GetSystemFeatures`
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/v1/system-features` | Get System Features system | 🔓 |
+| `GET` | `/v1/setup-status` | Get Setup Status system | 🔓 |
 
 ---
 
-### {
-  "description": "This endpoint retrieves the current setup status of the system. It provides information about whether the setup process is completed, when it was set up, if an admin user exists, and the version of the system.",
-  "request": {
-    "method": "GET",
-    "url": "/setup-status",
-    "headers": {
-      "Content-Type": "application/json"
-    }
-  },
-  "response": {
-    "status": 200,
-    "body": {
-      "step": "finished",
-      "setupAt": "2024-01-01T00:00:00Z",
-      "isSetup": true,
-      "hasAdmin": true,
-      "version": "1.0.0"
-    }
-  }
-}
+## Details
 
-**Endpoint:**
-<kbd>GET</kbd> `/setup-status`
+### GET `/v1/system-features`
 
-**Handler Implementation:**
-`system.GetSetupStatus`
+**Get System Features system**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+
+#### Example
+
+```bash
+curl -X GET 'http://localhost:8025/api/v1/v1/system-features'
+```
+
+---
+
+### GET `/v1/setup-status`
+
+**Get Setup Status system**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+
+#### Example
+
+```bash
+curl -X GET 'http://localhost:8025/api/v1/v1/setup-status'
+```
 
 ---
 

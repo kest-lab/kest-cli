@@ -1,129 +1,308 @@
-# Collection Module API
+# Collection API
 
-## Overview
+> Generated: 2026-02-25 22:40:55
 
-集合（目录）模块用于管理项目下的请求分组树。
+## Base URL
 
-- Base Path: `/v1`
-- Auth: `Authorization: Bearer <token>`
+See [API Documentation](./api.md) for environment-specific base URLs.
 
 ## Endpoints
 
-| Method | Path | Description |
-| --- | --- | --- |
-| POST | `/v1/projects/:id/collections` | 创建集合 |
-| GET | `/v1/projects/:id/collections` | 获取集合列表 |
-| GET | `/v1/projects/:id/collections/tree` | 获取集合树 |
-| GET | `/v1/projects/:id/collections/:cid` | 获取集合详情 |
-| PUT | `/v1/projects/:id/collections/:cid` | 更新集合 |
-| DELETE | `/v1/projects/:id/collections/:cid` | 删除集合 |
-| PATCH | `/v1/projects/:id/collections/:cid/move` | 移动集合 |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `POST` | `/v1/projects/:id/collections` | Create collection | 🔓 |
+| `GET` | `/v1/projects/:id/collections` | List collections | 🔓 |
+| `GET` | `/v1/projects/:id/collections/tree` | Get Tree collection | 🔓 |
+| `GET` | `/v1/projects/:id/collections/:cid` | Get collection details | 🔓 |
+| `PUT` | `/v1/projects/:id/collections/:cid` | Update collection | 🔓 |
+| `DELETE` | `/v1/projects/:id/collections/:cid` | Delete collection | 🔓 |
+| `PATCH` | `/v1/projects/:id/collections/:cid/move` | Move collection | 🔓 |
 
 ---
 
-## POST /v1/projects/:id/collections
+## Details
 
-创建项目下的集合（目录）。
+### POST `/v1/projects/:id/collections`
 
-### Request Headers
+**Create collection**
 
-| Header | Required | Description |
-| --- | --- | --- |
-| Authorization | Yes | `Bearer <token>` |
-| Content-Type | Yes | `application/json` |
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+| Route Name | `collections.create` |
 
-### Path Parameters
+#### Path Parameters
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| id | integer | Yes | 项目 ID |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
 
-### Request Body
-
-| Field | Type | Required | Validation | Description |
-| --- | --- | --- | --- | --- |
-| name | string | Yes | `required,min=1,max=100` | 集合名称 |
-| description | string | No | `max=500` | 集合描述 |
-| parent_id | integer \| null | No | - | 父集合 ID，不传表示根节点 |
-| is_folder | boolean | No | - | 是否文件夹，默认建议传 `true` |
-| sort_order | integer | No | - | 同级排序值 |
-
-### Request Example
+#### Response
 
 ```json
 {
-  "name": "User APIs",
-  "description": "User related API collection",
-  "parent_id": null,
+  "created_at": "2024-01-01T00:00:00Z",
+  "description": "string",
+  "id": 1,
   "is_folder": true,
-  "sort_order": 1
+  "name": "John Doe",
+  "parent_id": null,
+  "project_id": 1,
+  "settings": "object",
+  "sort_order": 1,
+  "updated_at": "2024-01-01T00:00:00Z"
 }
 ```
 
-### Success Response (201)
+#### Example
+
+```bash
+curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections'
+```
+
+---
+
+### GET `/v1/projects/:id/collections`
+
+**List collections**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+| Route Name | `collections.list` |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+
+#### Response
 
 ```json
 {
-  "code": 0,
-  "message": "created",
-  "data": {
-    "id": 12,
-    "name": "User APIs",
-    "description": "User related API collection",
-    "project_id": 1001,
-    "parent_id": null,
-    "is_folder": true,
-    "sort_order": 1,
-    "created_at": "2026-02-23T23:56:00Z",
-    "updated_at": "2026-02-23T23:56:00Z"
-  }
+  "created_at": "2024-01-01T00:00:00Z",
+  "description": "string",
+  "id": 1,
+  "is_folder": true,
+  "name": "John Doe",
+  "parent_id": null,
+  "project_id": 1,
+  "settings": "object",
+  "sort_order": 1,
+  "updated_at": "2024-01-01T00:00:00Z"
 }
 ```
 
-### Error Responses
+#### Example
 
-#### 400 Bad Request（参数错误）
+```bash
+curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections'
+```
+
+---
+
+### GET `/v1/projects/:id/collections/tree`
+
+**Get Tree collection**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+| Route Name | `collections.tree` |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+
+#### Response
 
 ```json
 {
-  "code": 400,
-  "message": "invalid request",
-  "data": null
+  "created_at": "2024-01-01T00:00:00Z",
+  "description": "string",
+  "id": 1,
+  "is_folder": true,
+  "name": "John Doe",
+  "parent_id": null,
+  "project_id": 1,
+  "settings": "object",
+  "sort_order": 1,
+  "updated_at": "2024-01-01T00:00:00Z"
 }
 ```
 
-#### 400 Bad Request（父节点非法）
+#### Example
+
+```bash
+curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/tree'
+```
+
+---
+
+### GET `/v1/projects/:id/collections/:cid`
+
+**Get collection details**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+| Route Name | `collections.show` |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `cid` | `integer` | Resource identifier |
+
+#### Response
 
 ```json
 {
-  "code": 400,
-  "message": "invalid parent collection",
-  "data": null
+  "created_at": "2024-01-01T00:00:00Z",
+  "description": "string",
+  "id": 1,
+  "is_folder": true,
+  "name": "John Doe",
+  "parent_id": null,
+  "project_id": 1,
+  "settings": "object",
+  "sort_order": 1,
+  "updated_at": "2024-01-01T00:00:00Z"
 }
 ```
 
-#### 401 Unauthorized（未登录）
+#### Example
+
+```bash
+curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid'
+```
+
+---
+
+### PUT `/v1/projects/:id/collections/:cid`
+
+**Update collection**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+| Route Name | `collections.update` |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `cid` | `integer` | Resource identifier |
+
+#### Response
 
 ```json
 {
-  "code": 401,
-  "message": "unauthorized",
-  "data": null
+  "created_at": "2024-01-01T00:00:00Z",
+  "description": "string",
+  "id": 1,
+  "is_folder": true,
+  "name": "John Doe",
+  "parent_id": null,
+  "project_id": 1,
+  "settings": "object",
+  "sort_order": 1,
+  "updated_at": "2024-01-01T00:00:00Z"
 }
 ```
 
-#### 500 Internal Server Error（服务内部错误）
+#### Example
+
+```bash
+curl -X PUT 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid'
+```
+
+---
+
+### DELETE `/v1/projects/:id/collections/:cid`
+
+**Delete collection**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+| Route Name | `collections.delete` |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `cid` | `integer` | Resource identifier |
+
+#### Response
 
 ```json
 {
-  "code": 500,
-  "message": "internal server error",
-  "data": null
+  "created_at": "2024-01-01T00:00:00Z",
+  "description": "string",
+  "id": 1,
+  "is_folder": true,
+  "name": "John Doe",
+  "parent_id": null,
+  "project_id": 1,
+  "settings": "object",
+  "sort_order": 1,
+  "updated_at": "2024-01-01T00:00:00Z"
 }
 ```
 
-### Notes
+#### Example
 
-- 当前创建接口返回结构为统一响应包装：`code + message + data`。
-- 其中 `data` 对应 `CollectionResponse` 字段。
-- 该接口由 `POST /projects/:id/collections` 提供，见 @api/internal/modules/collection/routes.go#13-13。
+```bash
+curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid'
+```
+
+---
+
+### PATCH `/v1/projects/:id/collections/:cid/move`
+
+**Move collection**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+| Route Name | `collections.move` |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `cid` | `integer` | Resource identifier |
+
+#### Response
+
+```json
+{
+  "created_at": "2024-01-01T00:00:00Z",
+  "description": "string",
+  "id": 1,
+  "is_folder": true,
+  "name": "John Doe",
+  "parent_id": null,
+  "project_id": 1,
+  "settings": "object",
+  "sort_order": 1,
+  "updated_at": "2024-01-01T00:00:00Z"
+}
+```
+
+#### Example
+
+```bash
+curl -X PATCH 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/move'
+```
+
+---
+

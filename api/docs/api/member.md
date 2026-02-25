@@ -1,67 +1,111 @@
-# Member Module API
+# Member API
 
-> 💡 This documentation is automatically synchronized with the source code.
+> Generated: 2026-02-25 22:40:55
 
-## 📌 Overview
+## Base URL
 
-The `member` module provides the following API endpoints:
+See [API Documentation](./api.md) for environment-specific base URLs.
 
-### This endpoint is not provided in the given code. The provided DTOs (AddMemberRequest and UpdateMemberRequest) are for adding or updating member roles, but no handler code is given for a GET / request.
+## Endpoints
 
-**Endpoint:**
-<kbd>GET</kbd> `/`
-
-**Handler Implementation:**
-`member.unknown`
-
----
-
-### {
-  "summary": "This endpoint allows the creation of a new member with a specified role for a given user ID.",
-  "request_example": {
-    "user_id": 1,
-    "role": "admin"
-  },
-  "response_example": ""
-}
-
-**Endpoint:**
-<kbd>POST</kbd> `/`
-
-**Handler Implementation:**
-`member.Create`
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/v1/projects/:id/members` | Require Project Role member | 🔓 |
+| `POST` | `/v1/projects/:id/members` | Create member | 🔓 |
+| `PATCH` | `/v1/projects/:id/members/:uid` | Update member | 🔓 |
+| `DELETE` | `/v1/projects/:id/members/:uid` | Delete member | 🔓 |
 
 ---
 
-### {
-  "summary": "Updates the role of a member identified by their user ID.",
-  "request_example": {
-    "role": "admin"
-  },
-  "response_example": {
-    "message": "Member role updated successfully",
-    "data": {
-      "user_id": 1,
-      "role": "admin"
-    }
-  }
-}
+## Details
 
-**Endpoint:**
-<kbd>PATCH</kbd> `/:uid`
+### GET `/v1/projects/:id/members`
 
-**Handler Implementation:**
-`member.Update`
+**Require Project Role member**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/members'
+```
 
 ---
 
-### This endpoint allows for the removal of a member from a group or organization, identified by their unique user ID (uid).
+### POST `/v1/projects/:id/members`
 
-**Endpoint:**
-<kbd>DELETE</kbd> `/:uid`
+**Create member**
 
-**Handler Implementation:**
-`member.Delete`
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/members'
+```
+
+---
+
+### PATCH `/v1/projects/:id/members/:uid`
+
+**Update member**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `uid` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X PATCH 'http://localhost:8025/api/v1/v1/projects/1/members/:uid'
+```
+
+---
+
+### DELETE `/v1/projects/:id/members/:uid`
+
+**Delete member**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `uid` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/members/:uid'
+```
 
 ---
 
