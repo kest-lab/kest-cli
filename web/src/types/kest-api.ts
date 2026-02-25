@@ -198,14 +198,29 @@ export interface UpdateAPISpecRequest {
 
 export interface TestCase {
     id: number
-    api_spec_id: number
+    api_spec_id?: number
+    api_spec_name?: string
     name: string
     description?: string
-    env: string
-    headers?: Record<string, string>
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS'
+    path?: string
+    environment?: string
+    env?: string
+    category_id?: number
+    category_name?: string
+    status?: 'active' | 'inactive' | 'archived'
+    last_run_at?: string
+    last_run_status?: 'passed' | 'failed' | 'running' | 'not_run'
+    headers?: Record<string, string> // legacy
+    request_headers?: Record<string, string>
     query_params?: Record<string, any>
     path_params?: Record<string, any>
     request_body?: any
+    expected_status?: number
+    expected_response?: any
+    variables?: Record<string, any>
+    setup_script?: string
+    teardown_script?: string
 
     // Scripts
     pre_script?: string // JavaScript code
@@ -223,9 +238,14 @@ export interface TestCase {
 
 export interface Assertion {
     type: 'status' | 'json_path' | 'response_time' | 'header' | 'custom'
-    field?: string // For json_path, header assertions
+    field?: string // legacy
+    path?: string
+    key?: string
     operator?: 'equals' | 'not_equals' | 'contains' | 'less_than' | 'greater_than' | 'exists'
-    expect?: any
+    expect?: any // legacy
+    value?: any
+    actual?: any
+    passed?: boolean
     custom_script?: string // For custom assertions
 }
 
@@ -236,18 +256,97 @@ export interface VariableExtraction {
 }
 
 export interface CreateTestCaseRequest {
-    api_spec_id: number
+    api_spec_id?: number
     name: string
     description?: string
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS'
+    path?: string
+    environment?: string
     env?: string
     headers?: Record<string, string>
+    request_headers?: Record<string, string>
     query_params?: Record<string, any>
     path_params?: Record<string, any>
     request_body?: any
+    expected_status?: number
+    expected_response?: any
+    variables?: Record<string, any>
+    setup_script?: string
+    teardown_script?: string
     pre_script?: string
     post_script?: string
     assertions?: Assertion[]
     extract_vars?: VariableExtraction[]
+}
+
+export interface ListTestCasesParams {
+    page?: number
+    per_page?: number
+    api_spec_id?: number
+    env?: string
+    keyword?: string
+    status?: 'active' | 'inactive' | 'archived'
+    category_id?: number
+}
+
+export interface UpdateTestCaseRequest extends Partial<CreateTestCaseRequest> {}
+
+export interface DuplicateTestCaseRequest {
+    name: string
+    environment?: string
+    description?: string
+}
+
+export interface GenerateTestCasesFromSpecRequest {
+    api_spec_id: number
+    environment?: string
+    category_id?: number
+    options?: {
+        generate_positive_tests?: boolean
+        generate_negative_tests?: boolean
+        include_auth_tests?: boolean
+        max_tests_per_endpoint?: number
+    }
+}
+
+export interface GenerateTestCasesFromSpecResponse {
+    generated: number
+    updated: number
+    test_cases: Array<{
+        id: number
+        name: string
+        method: string
+        path: string
+    }>
+}
+
+export interface RunTestCaseRequest {
+    environment?: string
+    variables?: Record<string, any>
+    async?: boolean
+}
+
+export interface RunTestCaseResponse {
+    test_run_id?: string
+    status?: string
+    duration?: number
+    started_at?: string
+    completed_at?: string
+    request?: {
+        method?: string
+        url?: string
+        headers?: Record<string, string>
+        body?: any
+    }
+    response?: {
+        status?: number
+        status_text?: string
+        headers?: Record<string, string>
+        body?: any
+        response_time?: number
+    }
+    assertions?: Assertion[]
+    error?: any
 }
 
 // ========== Test Collection Types ==========
@@ -392,6 +491,14 @@ export interface PaginatedResponse<T> {
     page?: number
     per_page?: number
     pages?: number
+    pagination?: {
+        page: number
+        per_page: number
+        total: number
+        total_pages: number
+        has_next: boolean
+        has_prev: boolean
+    }
 }
 
 // ========== Common Response Types ==========

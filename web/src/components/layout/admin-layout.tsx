@@ -1,7 +1,9 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import {
   Home,
   Folder,
+  TestTube2,
+  Database,
   Settings,
   LogOut,
 } from 'lucide-react'
@@ -34,29 +36,39 @@ interface AdminLayoutProps {
   children: React.ReactNode
 }
 
-const menuItems = [
-  {
-    title: 'Dashboard',
-    items: [
-      { title: 'Home', icon: Home, url: '/' },
-    ],
-  },
-  {
-    title: 'Projects',
-    items: [
-      { title: 'All Projects', icon: Folder, url: '/projects' },
-    ],
-  },
-  {
-    title: 'Account',
-    items: [
-      { title: 'Settings', icon: Settings, url: '/settings' },
-    ],
-  },
-]
-
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { user, clearAuth } = useAuthStore()
+  const location = useLocation()
+
+  const currentProjectId = location.pathname.match(/^\/projects\/(\d+)/)?.[1]
+  const projectBase = currentProjectId ? `/projects/${currentProjectId}` : '/projects'
+
+  const menuItems = [
+    {
+      title: 'Dashboard',
+      items: [
+        { title: 'Home', icon: Home, url: '/' },
+      ],
+    },
+    {
+      title: 'Projects',
+      items: [
+        { title: 'All Projects', icon: Folder, url: '/projects' },
+        ...(currentProjectId
+          ? [
+              { title: 'Use Cases', icon: TestTube2, url: `${projectBase}?view=test-cases` },
+              { title: 'Environments', icon: Database, url: `${projectBase}?view=environments` },
+            ]
+          : []),
+      ],
+    },
+    {
+      title: 'Account',
+      items: [
+        { title: 'Settings', icon: Settings, url: '/settings' },
+      ],
+    },
+  ]
 
   const handleLogout = () => {
     clearAuth()

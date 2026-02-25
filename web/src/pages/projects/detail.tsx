@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Settings, ChevronRight, FolderTree, FileText, Search, Plus, Workflow, ChevronDown, MoreHorizontal, Trash2, Share2, ListPlus, Database, Download, FileUp, FileDown } from 'lucide-react'
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { ArrowLeft, Settings, ChevronRight, FolderTree, FileText, Search, Plus, Workflow, ChevronDown, MoreHorizontal, Trash2, Share2, ListPlus, Download, FileUp, FileDown } from 'lucide-react'
 import { useProject, useAPISpecs, useCategoryTree, useAPISpecWithExamples, useDeleteAPISpec } from '@/hooks/use-kest-api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +19,7 @@ import { ProjectSettings } from './project-settings'
 import { EnvironmentManager } from './environment-manager'
 import { CreateAPISpecDialog } from './create-api-spec-dialog'
 import { ImportAPISpecDialog } from './import-api-spec-dialog'
+import { TestCasesPanel } from './test-cases'
 import type { APISpec, CategoryTree } from '@/types/kest-api'
 
 const METHOD_COLORS: Record<string, string> = {
@@ -31,11 +32,12 @@ const METHOD_COLORS: Record<string, string> = {
   OPTIONS: 'text-gray-600',
 }
 
-type ViewMode = 'apis' | 'flows' | 'categories' | 'environments' | 'settings'
+type ViewMode = 'apis' | 'flows' | 'test-cases' | 'categories' | 'environments' | 'settings'
 
 export function ProjectDetailPage() {
   const { id, sid } = useParams<{ id: string; sid: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const projectId = parseInt(id || '0')
   const selectedSpecId = sid ? parseInt(sid) : null
   const [viewMode, setViewMode] = useState<ViewMode>('apis')
@@ -51,9 +53,19 @@ export function ProjectDetailPage() {
     if (sid) setViewMode('apis')
   }, [sid])
 
+  useEffect(() => {
+    if (sid) return
+    const view = searchParams.get('view')
+    if (view === 'test-cases' || view === 'flows' || view === 'categories' || view === 'environments' || view === 'settings' || view === 'apis') {
+      setViewMode(view)
+    }
+  }, [searchParams, sid])
+
   const switchView = (mode: ViewMode) => {
     setViewMode(mode)
     if (mode !== 'apis') {
+      navigate(`/projects/${projectId}?view=${mode}`, { replace: true })
+    } else {
       navigate(`/projects/${projectId}`, { replace: true })
     }
   }
@@ -367,15 +379,6 @@ export function ProjectDetailPage() {
               <FolderTree className="h-3.5 w-3.5 mr-1" /> Categories
             </Button>
             <Button
-              variant={viewMode === 'environments' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="text-xs h-7 px-2"
-              onClick={() => switchView('environments')}
-              title="Environments"
-            >
-              <Database className="h-3.5 w-3.5" />
-            </Button>
-            <Button
               variant={viewMode === 'settings' ? 'secondary' : 'ghost'}
               size="sm"
               className="text-xs h-7 px-2"
@@ -427,6 +430,12 @@ export function ProjectDetailPage() {
         {viewMode === 'flows' && (
           <div className="p-6 overflow-auto h-full">
             <FlowList projectId={projectId} />
+          </div>
+        )}
+
+        {viewMode === 'test-cases' && (
+          <div className="p-6 overflow-auto h-full">
+            <TestCasesPanel projectId={projectId} />
           </div>
         )}
 
