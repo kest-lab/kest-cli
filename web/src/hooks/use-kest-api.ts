@@ -21,10 +21,14 @@ import type {
     CategoryTree,
     TestCase,
     CreateTestCaseRequest,
+    UpdateTestCaseRequest,
+    ListTestCasesParams,
+    DuplicateTestCaseRequest,
+    GenerateTestCasesFromSpecRequest,
+    RunTestCaseRequest,
     TestCollection,
     CreateTestCollectionRequest,
     TestExecutionRequest,
-    TestExecutionResponse,
     SyncRequest,
     SyncResponse,
     AuditLog,
@@ -47,8 +51,8 @@ export const queryKeys = {
     categoryTree: (projectId: number) => ['categories', projectId, 'tree'] as const,
     category: (projectId: number, categoryId: number) => ['categories', projectId, categoryId] as const,
 
-    testCases: (apiSpecId: number) => ['test-cases', apiSpecId] as const,
-    testCase: (id: number) => ['test-cases', id] as const,
+    testCases: (projectId: number, params?: ListTestCasesParams) => ['test-cases', projectId, params] as const,
+    testCase: (projectId: number, id: number) => ['test-cases', projectId, id] as const,
 
     testCollections: (projectId: number) => ['test-collections', projectId] as const,
     testCollection: (id: number) => ['test-collections', id] as const,
@@ -196,17 +200,17 @@ export function useDeleteAPISpec() {
 
 // ========== Test Case Hooks ==========
 
-export function useTestCases(projectId: number, apiSpecId: number) {
+export function useTestCases(projectId: number, params?: ListTestCasesParams) {
     return useQuery({
-        queryKey: queryKeys.testCases(apiSpecId),
-        queryFn: () => kestApi.testCase.list(projectId, apiSpecId),
-        enabled: !!projectId && !!apiSpecId,
+        queryKey: queryKeys.testCases(projectId, params),
+        queryFn: () => kestApi.testCase.list(projectId, params),
+        enabled: !!projectId,
     })
 }
 
 export function useTestCase(projectId: number, id: number) {
     return useQuery({
-        queryKey: queryKeys.testCase(id),
+        queryKey: queryKeys.testCase(projectId, id),
         queryFn: () => kestApi.testCase.get(projectId, id),
         enabled: !!projectId && !!id,
     })
@@ -217,16 +221,66 @@ export function useCreateTestCase(projectId: number) {
 
     return useMutation({
         mutationFn: (data: CreateTestCaseRequest) => kestApi.testCase.create(projectId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['test-cases', projectId] })
+        },
+    })
+}
+
+export function useUpdateTestCase(projectId: number) {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: UpdateTestCaseRequest }) =>
+            kestApi.testCase.update(projectId, id, data),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.testCases(variables.api_spec_id) })
+            queryClient.invalidateQueries({ queryKey: ['test-cases', projectId] })
+            queryClient.invalidateQueries({ queryKey: queryKeys.testCase(projectId, variables.id) })
+        },
+    })
+}
+
+export function useDeleteTestCase(projectId: number) {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (id: number) => kestApi.testCase.delete(projectId, id),
+        onSuccess: (_, id) => {
+            queryClient.invalidateQueries({ queryKey: ['test-cases', projectId] })
+            queryClient.invalidateQueries({ queryKey: queryKeys.testCase(projectId, id) })
+        },
+    })
+}
+
+export function useDuplicateTestCase(projectId: number) {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: DuplicateTestCaseRequest }) =>
+            kestApi.testCase.duplicate(projectId, id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['test-cases', projectId] })
+        },
+    })
+}
+
+export function useGenerateTestCasesFromSpec(projectId: number) {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (data: GenerateTestCasesFromSpecRequest) =>
+            kestApi.testCase.fromSpec(projectId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['test-cases', projectId] })
         },
     })
 }
 
 export function useRunTestCase(projectId: number) {
+    const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: ({ id, environment }: { id: number; environment?: string }) =>
-            kestApi.testCase.run(projectId, id, environment),
+        mutationFn: ({ id, data }: { id: number; data?: RunTestCaseRequest }) =>
+            kestApi.testCase.run(projectId, id, data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['test-cases', projectId] })
+            queryClient.invalidateQueries({ queryKey: queryKeys.testCase(projectId, variables.id) })
+        },
     })
 }
 
@@ -438,6 +492,10 @@ export const useKestApi = {
     useTestCases,
     useTestCase,
     useCreateTestCase,
+    useUpdateTestCase,
+    useDeleteTestCase,
+    useDuplicateTestCase,
+    useGenerateTestCasesFromSpec,
     useRunTestCase,
 
     // Test Collections

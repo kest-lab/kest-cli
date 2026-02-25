@@ -19,6 +19,13 @@ import type {
     UpdateCategoryRequest,
     TestCase,
     CreateTestCaseRequest,
+    UpdateTestCaseRequest,
+    ListTestCasesParams,
+    DuplicateTestCaseRequest,
+    GenerateTestCasesFromSpecRequest,
+    GenerateTestCasesFromSpecResponse,
+    RunTestCaseRequest,
+    RunTestCaseResponse,
     TestCollection,
     CreateTestCollectionRequest,
     TestExecutionRequest,
@@ -171,11 +178,11 @@ export const apiSpecApi = {
 
 export const testCaseApi = {
     /**
-     * List test cases for an API
+     * List test cases for a project
      */
-    list: (projectId: number, apiSpecId?: number) =>
-        request.get<TestCase[]>(`/v1/projects/${projectId}/test-cases`, {
-            params: { api_spec_id: apiSpecId },
+    list: (projectId: number, params?: ListTestCasesParams) =>
+        request.get<PaginatedResponse<TestCase>>(`/v1/projects/${projectId}/test-cases`, {
+            params,
         }),
 
     /**
@@ -193,7 +200,7 @@ export const testCaseApi = {
     /**
      * Update test case
      */
-    update: (projectId: number, id: number, data: Partial<CreateTestCaseRequest>) =>
+    update: (projectId: number, id: number, data: UpdateTestCaseRequest) =>
         request.patch<TestCase>(`/v1/projects/${projectId}/test-cases/${id}`, data),
 
     /**
@@ -203,12 +210,22 @@ export const testCaseApi = {
         request.delete(`/v1/projects/${projectId}/test-cases/${id}`),
 
     /**
+     * Duplicate a test case
+     */
+    duplicate: (projectId: number, id: number, data: DuplicateTestCaseRequest) =>
+        request.post<TestCase>(`/v1/projects/${projectId}/test-cases/${id}/duplicate`, data),
+
+    /**
+     * Generate test cases from API spec
+     */
+    fromSpec: (projectId: number, data: GenerateTestCasesFromSpecRequest) =>
+        request.post<GenerateTestCasesFromSpecResponse>(`/v1/projects/${projectId}/test-cases/from-spec`, data),
+
+    /**
      * Run a single test case
      */
-    run: (projectId: number, id: number, environment?: string) =>
-        request.post<TestExecutionResponse>(`/v1/projects/${projectId}/test-cases/${id}/run`, {
-            environment,
-        }),
+    run: (projectId: number, id: number, data?: RunTestCaseRequest) =>
+        request.post<RunTestCaseResponse>(`/v1/projects/${projectId}/test-cases/${id}/run`, data),
 }
 
 // ========== Test Collection APIs ==========
