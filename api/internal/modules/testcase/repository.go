@@ -15,6 +15,14 @@ type Repository interface {
 	Update(ctx context.Context, tc *TestCasePO) error
 	Delete(ctx context.Context, id uint) error
 	CountByAPISpec(ctx context.Context, apiSpecID uint) (int64, error)
+
+	// Run history
+	CreateRun(ctx context.Context, run *TestRunPO) error
+	ListRuns(ctx context.Context, filter *ListRunsFilter) ([]*TestRunPO, int64, error)
+	GetRunByID(ctx context.Context, id uint) (*TestRunPO, error)
+
+	// SaveGeneratedTestCase creates a test case from AI-generated flow content
+	SaveGeneratedTestCase(ctx context.Context, apiSpecID uint, name, flowContent string) error
 }
 
 // ListFilter represents the filter for listing test cases
@@ -121,4 +129,60 @@ func (r *repository) CountByAPISpec(ctx context.Context, apiSpecID uint) (int64,
 		Where("api_spec_id = ?", apiSpecID).
 		Count(&count).Error
 	return count, err
+}
+
+// CreateRun saves a test run record
+func (r *repository) CreateRun(ctx context.Context, run *TestRunPO) error {
+	return r.db.WithContext(ctx).Create(run).Error
+}
+
+// ListRuns lists test run history for a test case
+func (r *repository) ListRuns(ctx context.Context, filter *ListRunsFilter) ([]*TestRunPO, int64, error) {
+	query := r.db.WithContext(ctx).Model(&TestRunPO{}).Where("test_case_id = ?", filter.TestCaseID)
+
+	if filter.Status != nil && *filter.Status != "" {
+		query = query.Where("status = ?", *filter.Status)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if filter.Page < 1 {
+		filter.Page = 1
+	}
+	if filter.PageSize < 1 {
+		filter.PageSize = 20
+	}
+
+	var runs []*TestRunPO
+	err := query.Order("id DESC").
+		Limit(filter.PageSize).
+		Offset((filter.Page - 1) * filter.PageSize).
+		Find(&runs).Error
+	return runs, total, err
+}
+
+// SaveGeneratedTestCase creates a test case record from AI-generated flow content
+func (r *repository) SaveGeneratedTestCase(ctx context.Context, apiSpecID uint, name, flowContent string) error {
+	tc := &TestCasePO{
+		APISpecID:   apiSpecID,
+		Name:        name,
+		Description: flowContent,
+	}
+	return r.db.WithContext(ctx).Create(tc).Error
+}
+
+// GetRunByID gets a single test run by ID
+func (r *repository) GetRunByID(ctx context.Context, id uint) (*TestRunPO, error) {
+	var run TestRunPO
+	err := r.db.WithContext(ctx).First(&run, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &run, nil
 }

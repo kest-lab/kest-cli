@@ -19,6 +19,8 @@ type Service interface {
 	DuplicateTestCase(ctx context.Context, id uint, req *DuplicateRequest) (*TestCaseResponse, error)
 	CreateTestCaseFromSpec(ctx context.Context, req *FromSpecRequest) (*TestCaseResponse, error)
 	RunTestCase(ctx context.Context, id uint, req *RunTestCaseRequest) (*RunTestCaseResponse, error)
+	ListRuns(ctx context.Context, filter *ListRunsFilter) ([]*TestRunResponse, *PaginationMeta, error)
+	GetRun(ctx context.Context, runID uint) (*TestRunResponse, error)
 }
 
 // Runner defines the interface for executing test cases
@@ -319,7 +321,117 @@ func (s *service) RunTestCase(ctx context.Context, id uint, req *RunTestCaseRequ
 	}
 
 	// Execute
-	return s.runner.Execute(ctx, tc, envVars)
+	result, err := s.runner.Execute(ctx, tc, envVars)
+	if err != nil {
+		return nil, err
+	}
+
+	// Persist run result
+	run := &TestRunPO{
+		TestCaseID: id,
+		Status:     result.Status,
+		DurationMs: result.DurationMs,
+		Message:    result.Message,
+	}
+	if result.Request != nil {
+		if data, e := json.Marshal(result.Request); e == nil {
+			run.Request = string(data)
+		}
+	}
+	if result.Response != nil {
+		if data, e := json.Marshal(result.Response); e == nil {
+			run.Response = string(data)
+		}
+	}
+	if result.Assertions != nil {
+		if data, e := json.Marshal(result.Assertions); e == nil {
+			run.Assertions = string(data)
+		}
+	}
+	if result.Variables != nil {
+		if data, e := json.Marshal(result.Variables); e == nil {
+			run.Variables = string(data)
+		}
+	}
+	// Save asynchronously to avoid blocking the response
+	go func() {
+		_ = s.repo.CreateRun(context.Background(), run)
+	}()
+
+	return result, nil
+}
+
+// ListRuns returns paginated run history for a test case
+func (s *service) ListRuns(ctx context.Context, filter *ListRunsFilter) ([]*TestRunResponse, *PaginationMeta, error) {
+	runs, total, err := s.repo.ListRuns(ctx, filter)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to list runs: %w", err)
+	}
+
+	resps := make([]*TestRunResponse, 0, len(runs))
+	for _, r := range runs {
+		resps = append(resps, toTestRunResponse(r))
+	}
+
+	totalPages := int(total) / filter.PageSize
+	if int(total)%filter.PageSize > 0 {
+		totalPages++
+	}
+	return resps, &PaginationMeta{
+		Page:       filter.Page,
+		PageSize:   filter.PageSize,
+		Total:      total,
+		TotalPages: totalPages,
+	}, nil
+}
+
+// GetRun returns a single run record
+func (s *service) GetRun(ctx context.Context, runID uint) (*TestRunResponse, error) {
+	run, err := s.repo.GetRunByID(ctx, runID)
+	if err != nil {
+		return nil, err
+	}
+	if run == nil {
+		return nil, fmt.Errorf("run not found")
+	}
+	return toTestRunResponse(run), nil
+}
+
+// toTestRunResponse converts TestRunPO to TestRunResponse
+func toTestRunResponse(run *TestRunPO) *TestRunResponse {
+	resp := &TestRunResponse{
+		ID:         run.ID,
+		TestCaseID: run.TestCaseID,
+		Status:     run.Status,
+		DurationMs: run.DurationMs,
+		Message:    run.Message,
+		CreatedAt:  run.CreatedAt,
+	}
+	if run.Request != "" {
+		var req RunRequestInfo
+		if json.Unmarshal([]byte(run.Request), &req) == nil {
+			resp.Request = &req
+		}
+	}
+	if run.Response != "" {
+		var res RunResponseInfo
+		if json.Unmarshal([]byte(run.Response), &res) == nil {
+			resp.Response = &res
+		}
+	}
+	if run.Assertions != "" {
+		var assertions []*AssertionResult
+		if json.Unmarshal([]byte(run.Assertions), &assertions) == nil {
+			resp.Assertions = assertions
+		}
+	}
+	if run.Variables != "" {
+		var vars map[string]any
+		if json.Unmarshal([]byte(run.Variables), &vars) == nil {
+			resp.Variables = vars
+		}
+	}
+	return resp
 }
 
 // populateResponse converts PO to response and fills additional fields from APISpec

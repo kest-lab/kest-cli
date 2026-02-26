@@ -50,25 +50,28 @@ type CreateAPIExampleRequest struct {
 // ========== Response DTOs ==========
 
 type APISpecResponse struct {
-	ID           uint                    `json:"id"`
-	ProjectID    uint                    `json:"project_id"`
-	CategoryID   *uint                   `json:"category_id,omitempty"`
-	Method       string                  `json:"method"`
-	Path         string                  `json:"path"`
-	Summary      string                  `json:"summary"`
-	Description  string                  `json:"description"`
-	DocMarkdown  string                  `json:"doc_markdown,omitempty"`
-	DocSource    string                  `json:"doc_source,omitempty"`
-	DocUpdatedAt *time.Time              `json:"doc_updated_at,omitempty"`
-	Tags         []string                `json:"tags"`
-	RequestBody  *RequestBodySpec        `json:"request_body,omitempty"`
-	Parameters   []ParameterSpec         `json:"parameters,omitempty"`
-	Responses    map[string]ResponseSpec `json:"responses,omitempty"`
-	Examples     []APIExampleResponse    `json:"examples,omitempty"`
-	Version      string                  `json:"version"`
-	IsPublic     bool                    `json:"is_public"`
-	CreatedAt    time.Time               `json:"created_at"`
-	UpdatedAt    time.Time               `json:"updated_at"`
+	ID            uint                    `json:"id"`
+	ProjectID     uint                    `json:"project_id"`
+	CategoryID    *uint                   `json:"category_id,omitempty"`
+	Method        string                  `json:"method"`
+	Path          string                  `json:"path"`
+	Summary       string                  `json:"summary"`
+	Description   string                  `json:"description"`
+	DocMarkdown   string                  `json:"doc_markdown,omitempty"`
+	DocSource     string                  `json:"doc_source,omitempty"`
+	DocUpdatedAt  *time.Time              `json:"doc_updated_at,omitempty"`
+	TestContent   string                  `json:"test_content,omitempty"`
+	TestSource    string                  `json:"test_source,omitempty"`
+	TestUpdatedAt *time.Time              `json:"test_updated_at,omitempty"`
+	Tags          []string                `json:"tags"`
+	RequestBody   *RequestBodySpec        `json:"request_body,omitempty"`
+	Parameters    []ParameterSpec         `json:"parameters,omitempty"`
+	Responses     map[string]ResponseSpec `json:"responses,omitempty"`
+	Examples      []APIExampleResponse    `json:"examples,omitempty"`
+	Version       string                  `json:"version"`
+	IsPublic      bool                    `json:"is_public"`
+	CreatedAt     time.Time               `json:"created_at"`
+	UpdatedAt     time.Time               `json:"updated_at"`
 }
 
 type APIExampleResponse struct {
@@ -172,20 +175,23 @@ func FromAPISpecPO(po *APISpecPO) *APISpecResponse {
 	}
 
 	resp := &APISpecResponse{
-		ID:           po.ID,
-		ProjectID:    po.ProjectID,
-		Method:       po.Method,
-		Path:         po.Path,
-		Summary:      po.Summary,
-		Description:  po.Description,
-		DocMarkdown:  po.DocMarkdown,
-		DocSource:    po.DocSource,
-		DocUpdatedAt: po.DocUpdatedAt,
-		Version:      po.Version,
-		IsPublic:     po.IsPublic,
-		CreatedAt:    po.CreatedAt,
-		UpdatedAt:    po.UpdatedAt,
-		CategoryID:   po.CategoryID,
+		ID:            po.ID,
+		ProjectID:     po.ProjectID,
+		Method:        po.Method,
+		Path:          po.Path,
+		Summary:       po.Summary,
+		Description:   po.Description,
+		DocMarkdown:   po.DocMarkdown,
+		DocSource:     po.DocSource,
+		DocUpdatedAt:  po.DocUpdatedAt,
+		TestContent:   po.TestContent,
+		TestSource:    po.TestSource,
+		TestUpdatedAt: po.TestUpdatedAt,
+		Version:       po.Version,
+		IsPublic:      po.IsPublic,
+		CreatedAt:     po.CreatedAt,
+		UpdatedAt:     po.UpdatedAt,
+		CategoryID:    po.CategoryID,
 	}
 
 	// Parse tags

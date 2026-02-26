@@ -56,3 +56,22 @@ type ExtractVar struct {
 	Source string `json:"source"` // body, header, cookie
 	Path   string `json:"path"`   // JSON path or header name
 }
+
+// TestRunPO represents a single execution record of a test case
+type TestRunPO struct {
+	ID         uint   `gorm:"primaryKey"`
+	TestCaseID uint   `gorm:"not null;index"`
+	Status     string `gorm:"size:20;not null"` // pass, fail, error
+	DurationMs int64  `gorm:"not null"`
+	Request    string `gorm:"type:text"` // JSON: RunRequestInfo
+	Response   string `gorm:"type:text"` // JSON: RunResponseInfo
+	Assertions string `gorm:"type:text"` // JSON: []AssertionResult
+	Variables  string `gorm:"type:text"` // JSON: map[string]any
+	Message    string `gorm:"type:text"`
+	CreatedAt  time.Time
+}
+
+// TableName returns the table name for TestRunPO
+func (TestRunPO) TableName() string {
+	return "test_runs"
+}

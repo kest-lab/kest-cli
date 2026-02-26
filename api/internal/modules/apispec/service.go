@@ -25,7 +25,7 @@ type Service interface {
 	GetSpecByID(ctx context.Context, id uint) (*APISpecResponse, error)
 	UpdateSpec(ctx context.Context, id uint, req *UpdateAPISpecRequest) (*APISpecResponse, error)
 	DeleteSpec(ctx context.Context, id uint) error
-	ListSpecs(ctx context.Context, projectID uint, version string, page, pageSize int) ([]*APISpecResponse, int64, error)
+	ListSpecs(ctx context.Context, filter *SpecListFilter) ([]*APISpecResponse, int64, error)
 	GetSpecWithExamples(ctx context.Context, id uint) (*APISpecResponse, error)
 	GenDoc(ctx context.Context, id uint, lang string) (*APISpecResponse, error)
 	GenTest(ctx context.Context, id uint, lang string) (string, error)
@@ -114,6 +114,15 @@ func (s *service) GenTest(ctx context.Context, id uint, lang string) (string, er
 	flowContent, err := client.complete(llmCtx, systemPrompt, userPrompt)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate test: %w", err)
+	}
+
+	po.TestContent = flowContent
+	po.TestSource = "ai"
+	now := time.Now()
+	po.TestUpdatedAt = &now
+
+	if err := s.repo.UpdateSpec(ctx, po); err != nil {
+		return "", err
 	}
 
 	return flowContent, nil
@@ -210,16 +219,15 @@ func (s *service) DeleteSpec(ctx context.Context, id uint) error {
 	return s.repo.DeleteSpec(ctx, id)
 }
 
-func (s *service) ListSpecs(ctx context.Context, projectID uint, version string, page, pageSize int) ([]*APISpecResponse, int64, error) {
-	// Input validation
-	if page < 1 {
-		page = 1
+func (s *service) ListSpecs(ctx context.Context, filter *SpecListFilter) ([]*APISpecResponse, int64, error) {
+	if filter.Page < 1 {
+		filter.Page = 1
 	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
+	if filter.PageSize < 1 || filter.PageSize > 100 {
+		filter.PageSize = 20
 	}
 
-	pos, total, err := s.repo.ListSpecs(ctx, projectID, version, page, pageSize)
+	pos, total, err := s.repo.ListSpecs(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
