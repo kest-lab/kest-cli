@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Copy, ChevronDown, ChevronRight, Pencil, Save, X } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -450,6 +452,9 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
       <div className="flex-1 overflow-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <TabsList className="w-full justify-start rounded-none border-b bg-transparent px-4 h-auto py-0">
+            <TabsTrigger value="doc" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs py-2">
+              Doc {spec.doc_markdown && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />}
+            </TabsTrigger>
             <TabsTrigger value="params" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs py-2">
               Params {hasParams && <Badge variant="secondary" className="ml-1 text-[9px] px-1 py-0">{pathParams.length + queryParams.length}</Badge>}
             </TabsTrigger>
@@ -465,12 +470,120 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
             <TabsTrigger value="examples" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs py-2">
               Examples {examples.length > 0 && <Badge variant="secondary" className="ml-1 text-[9px] px-1 py-0">{examples.length}</Badge>}
             </TabsTrigger>
-            <TabsTrigger value="doc" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs py-2">
-              Doc {spec.doc_markdown && <span className="ml-1 w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />}
-            </TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-auto p-4">
+            <TabsContent value="doc" className="mt-0 space-y-4">
+              <div className="border rounded-md p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant={docLang === 'zh' ? 'default' : 'outline'}
+                      onClick={() => setDocLang('zh')}
+                    >
+                      zh
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={docLang === 'en' ? 'default' : 'outline'}
+                      onClick={() => setDocLang('en')}
+                    >
+                      en
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" onClick={handleGenerateDoc} disabled={genDocMutation.isPending}>
+                      {genDocMutation.isPending ? 'Generating...' : 'AI Generate Doc'}
+                    </Button>
+                    {!docEditing && (
+                      <Button size="sm" variant="outline" onClick={() => setDocEditing(true)}>
+                        Edit
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => copyToClipboard(docDraft || '')} disabled={!docDraft}>
+                      Copy
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Source: {spec.doc_source || 'manual'} · Updated: {formatDocUpdateTime(spec.doc_updated_at)}
+                </p>
+
+                {docEditing ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={docDraft}
+                      onChange={(e) => setDocDraft(e.target.value)}
+                      placeholder="Write markdown documentation..."
+                      rows={20}
+                      className="font-mono text-xs"
+                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <Button size="sm" variant="outline" onClick={() => { setDocDraft(spec.doc_markdown || ''); setDocEditing(false) }}>
+                        Cancel
+                      </Button>
+                      <Button size="sm" onClick={handleSaveDoc} disabled={updateMutation.isPending}>
+                        {updateMutation.isPending ? 'Saving...' : 'Save Doc'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : docDraft ? (
+                  <div className="border rounded-md bg-background p-5">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        h1: ({ children }) => <h1 className="text-2xl font-semibold mb-4">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-xl font-semibold mt-6 mb-3">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-lg font-semibold mt-5 mb-2">{children}</h3>,
+                        p: ({ children }) => <p className="text-sm leading-7 mb-3 text-foreground/90">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc pl-6 space-y-1 mb-3 text-sm">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal pl-6 space-y-1 mb-3 text-sm">{children}</ol>,
+                        li: ({ children }) => <li className="leading-7">{children}</li>,
+                        blockquote: ({ children }) => (
+                          <blockquote className="border-l-4 border-primary/30 pl-4 italic text-muted-foreground my-3">
+                            {children}
+                          </blockquote>
+                        ),
+                        code: ({ className, children }) => {
+                          const raw = String(children ?? '')
+                          const isBlock = !!className || raw.includes('\n')
+                          if (isBlock) {
+                            return (
+                              <code className="block font-mono text-xs bg-muted rounded-md p-3 overflow-x-auto">
+                                {children}
+                              </code>
+                            )
+                          }
+                          return <code className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{children}</code>
+                        },
+                        pre: ({ children }) => <pre className="my-3">{children}</pre>,
+                        a: ({ href, children }) => (
+                          <a href={href} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-2">
+                            {children}
+                          </a>
+                        ),
+                        table: ({ children }) => (
+                          <div className="overflow-x-auto my-3">
+                            <table className="w-full border-collapse text-sm">{children}</table>
+                          </div>
+                        ),
+                        th: ({ children }) => <th className="border px-3 py-2 bg-muted text-left font-medium">{children}</th>,
+                        td: ({ children }) => <td className="border px-3 py-2 align-top">{children}</td>,
+                        hr: () => <hr className="my-5 border-border" />,
+                      }}
+                    >
+                      {docDraft}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-sm text-muted-foreground border rounded-md">
+                    No documentation yet. Click AI Generate Doc to create one.
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
             <TabsContent value="params" className="mt-0">
               {pathParams.length > 0 && (
                 <div className="mb-4">
@@ -704,72 +817,6 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
               )}
             </TabsContent>
 
-            <TabsContent value="doc" className="mt-0 space-y-4">
-              <div className="border rounded-md p-4 space-y-3">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant={docLang === 'zh' ? 'default' : 'outline'}
-                      onClick={() => setDocLang('zh')}
-                    >
-                      zh
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={docLang === 'en' ? 'default' : 'outline'}
-                      onClick={() => setDocLang('en')}
-                    >
-                      en
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={handleGenerateDoc} disabled={genDocMutation.isPending}>
-                      {genDocMutation.isPending ? 'Generating...' : 'AI Generate Doc'}
-                    </Button>
-                    {!docEditing && (
-                      <Button size="sm" variant="outline" onClick={() => setDocEditing(true)}>
-                        Edit
-                      </Button>
-                    )}
-                    <Button size="sm" variant="outline" onClick={() => copyToClipboard(docDraft || '')} disabled={!docDraft}>
-                      Copy
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Source: {spec.doc_source || 'manual'} · Updated: {formatDocUpdateTime(spec.doc_updated_at)}
-                </p>
-
-                {docEditing ? (
-                  <div className="space-y-2">
-                    <Textarea
-                      value={docDraft}
-                      onChange={(e) => setDocDraft(e.target.value)}
-                      placeholder="Write markdown documentation..."
-                      rows={20}
-                      className="font-mono text-xs"
-                    />
-                    <div className="flex items-center justify-end gap-2">
-                      <Button size="sm" variant="outline" onClick={() => { setDocDraft(spec.doc_markdown || ''); setDocEditing(false) }}>
-                        Cancel
-                      </Button>
-                      <Button size="sm" onClick={handleSaveDoc} disabled={updateMutation.isPending}>
-                        {updateMutation.isPending ? 'Saving...' : 'Save Doc'}
-                      </Button>
-                    </div>
-                  </div>
-                ) : docDraft ? (
-                  <pre className="bg-muted p-3 rounded-md text-xs font-mono whitespace-pre-wrap break-words">
-                    {docDraft}
-                  </pre>
-                ) : (
-                  <div className="text-center py-8 text-sm text-muted-foreground border rounded-md">
-                    No documentation yet. Click AI Generate Doc to create one.
-                  </div>
-                )}
-              </div>
-            </TabsContent>
           </div>
         </Tabs>
       </div>
