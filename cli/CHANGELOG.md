@@ -1,5 +1,31 @@
 # Kest CLI Changelog
 
+## v0.7.1 (2026-02-26)
+
+### Bug Fixes
+
+- **Fix: `[Captures]` and `[Asserts]` silently dropped in flow steps** — `parseFlowStep` was calling `ParseBlock` which returned a fresh `RequestOptions` and overwrote `step.Request` entirely, wiping out all captures and asserts parsed from the flow file. Fixed by preserving and merging them after assignment.
+- **Fix: assertions never evaluated for HTTP steps** — Root cause same as above. Since `step.Request.Asserts` was always empty after parsing, no assertions were ever run. Steps always showed ✅ regardless of actual response status.
+- **Fix: URL in logs/TestResult shows unsubstituted `{{var}}`** — `result.URL` was set to the raw pre-interpolation URL at initialization and never updated. Now updated to `finalURL` after variable substitution.
+
+### New Features
+
+- **`@timeout` directive for exec steps** — Exec steps now support a per-step timeout independent of the global `--exec-timeout` flag:
+  ```
+  @type exec
+  @timeout 60s
+  echo "long running task"
+  ```
+
+### Infrastructure
+
+- Replace `github.com/mattn/go-sqlite3` (CGO) with `modernc.org/sqlite` (pure Go) — enables cross-compilation for all platforms (linux/amd64, linux/arm64, darwin/amd64, darwin/arm64) without a C toolchain.
+- Fix CI release pipeline: set `working-directory: cli` for `go test`, add `workdir: cli` for GoReleaser action.
+- Fix root `.gitignore` `storage/` rule incorrectly ignoring `cli/internal/storage/*.go`.
+- Fix `auto-tag.yml` workflow to read `cli/VERSION` instead of root `VERSION`.
+
+---
+
 ## v1.1.0 (2026-02-20)
 
 ### 🎉 Major Features
