@@ -216,8 +216,13 @@ export const apiSpecApi = {
      */
     addExample: (projectId: number, apiSpecId: number, data: {
         name: string
+        method?: string
+        path?: string
+        description?: string
         request_headers?: Record<string, string>
         request_body?: any
+        response_headers?: Record<string, string>
+        status_code?: number
         response_status: number
         response_body?: any
         duration_ms?: number
