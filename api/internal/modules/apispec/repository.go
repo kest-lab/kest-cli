@@ -2,9 +2,21 @@ package apispec
 
 import (
 	"context"
+	"strings"
 
 	"gorm.io/gorm"
 )
+
+// SpecListFilter holds filter parameters for listing API specs
+type SpecListFilter struct {
+	ProjectID uint
+	Version   string
+	Method    string // GET, POST, PUT, etc.
+	Tag       string // filter by tag (partial match)
+	Keyword   string // search in path, summary, description
+	Page      int
+	PageSize  int
+}
 
 // Repository defines API specification data access interface
 type Repository interface {
@@ -14,7 +26,7 @@ type Repository interface {
 	GetSpecByMethodAndPath(ctx context.Context, projectID uint, method, path string) (*APISpecPO, error)
 	UpdateSpec(ctx context.Context, spec *APISpecPO) error
 	DeleteSpec(ctx context.Context, id uint) error
-	ListSpecs(ctx context.Context, projectID uint, version string, page, pageSize int) ([]*APISpecPO, int64, error)
+	ListSpecs(ctx context.Context, filter *SpecListFilter) ([]*APISpecPO, int64, error)
 	ListAllSpecs(ctx context.Context, projectID uint) ([]*APISpecPO, error)
 
 	// API Example operations
@@ -66,20 +78,37 @@ func (r *repository) DeleteSpec(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&APISpecPO{}, id).Error
 }
 
-func (r *repository) ListSpecs(ctx context.Context, projectID uint, version string, page, pageSize int) ([]*APISpecPO, int64, error) {
+func (r *repository) ListSpecs(ctx context.Context, filter *SpecListFilter) ([]*APISpecPO, int64, error) {
 	var specs []*APISpecPO
 	var total int64
 
-	query := r.db.WithContext(ctx).Model(&APISpecPO{}).Where("project_id = ?", projectID)
+	query := r.db.WithContext(ctx).Model(&APISpecPO{}).Where("project_id = ?", filter.ProjectID)
 
-	if version != "" {
-		query = query.Where("version = ?", version)
+	if filter.Version != "" {
+		query = query.Where("version = ?", filter.Version)
+	}
+	if filter.Method != "" {
+		query = query.Where("method = ?", strings.ToUpper(filter.Method))
+	}
+	if filter.Tag != "" {
+		query = query.Where("tags LIKE ?", "%"+filter.Tag+"%")
+	}
+	if filter.Keyword != "" {
+		kw := "%" + filter.Keyword + "%"
+		query = query.Where("path LIKE ? OR summary LIKE ? OR description LIKE ?", kw, kw, kw)
 	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
+	page, pageSize := filter.Page, filter.PageSize
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
 	offset := (page - 1) * pageSize
 	if err := query.Offset(offset).Limit(pageSize).Order("id DESC").Find(&specs).Error; err != nil {
 		return nil, 0, err

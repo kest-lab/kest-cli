@@ -1,6 +1,7 @@
 package apispec
 
 import (
+	"context"
 	"errors"
 	"strconv"
 
@@ -11,11 +12,17 @@ import (
 	"github.com/kest-labs/kest/api/pkg/response"
 )
 
+// TestCaseSaver is a minimal interface to save a generated test case, avoiding import cycles.
+type TestCaseSaver interface {
+	SaveGeneratedTestCase(ctx context.Context, apiSpecID uint, name, flowContent string) error
+}
+
 // Handler handles API specification HTTP requests
 type Handler struct {
 	contracts.BaseModule
 	service       Service
 	memberService member.Service
+	tcSaver       TestCaseSaver
 }
 
 // NewHandler creates a new API spec handler
@@ -24,6 +31,11 @@ func NewHandler(service Service, memberService member.Service) *Handler {
 		service:       service,
 		memberService: memberService,
 	}
+}
+
+// SetTestCaseSaver injects the test case saver after construction to avoid import cycles.
+func (h *Handler) SetTestCaseSaver(saver TestCaseSaver) {
+	h.tcSaver = saver
 }
 
 // Name returns the module name
@@ -141,11 +153,20 @@ func (h *Handler) DeleteSpec(c *gin.Context) {
 // ListSpecs lists API specifications
 func (h *Handler) ListSpecs(c *gin.Context) {
 	projectID, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	version := c.Query("version")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
-	specs, total, err := h.service.ListSpecs(c.Request.Context(), uint(projectID), version, page, pageSize)
+	filter := &SpecListFilter{
+		ProjectID: uint(projectID),
+		Version:   c.Query("version"),
+		Method:    c.Query("method"),
+		Tag:       c.Query("tag"),
+		Keyword:   c.Query("keyword"),
+		Page:      page,
+		PageSize:  pageSize,
+	}
+
+	specs, total, err := h.service.ListSpecs(c.Request.Context(), filter)
 	if err != nil {
 		response.HandleError(c, "Failed to list API specs", err)
 		return
@@ -261,6 +282,14 @@ func (h *Handler) GenTest(c *gin.Context) {
 		}
 		response.HandleError(c, "Failed to generate test", err)
 		return
+	}
+
+	// Save to test_cases table asynchronously if saver is configured
+	if h.tcSaver != nil {
+		specID := uint(id)
+		go func() {
+			_ = h.tcSaver.SaveGeneratedTestCase(context.Background(), specID, "[AI Generated]", flowContent)
+		}()
 	}
 
 	response.Success(c, map[string]string{

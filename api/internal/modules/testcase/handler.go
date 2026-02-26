@@ -51,6 +51,10 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
 		tc.POST("/:tcid/run", h.RunTestCase).
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
+		tc.GET("/:tcid/runs", h.ListRuns).
+			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleRead))
+		tc.GET("/:tcid/runs/:rid", h.GetRun).
+			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleRead))
 	})
 }
 
@@ -264,6 +268,60 @@ func (h *Handler) CreateFromSpec(c *gin.Context) {
 	}
 
 	response.Created(c, testCase)
+}
+
+// ListRuns handles GET /projects/:id/test-cases/:tcid/runs
+func (h *Handler) ListRuns(c *gin.Context) {
+	tcid, err := strconv.ParseUint(c.Param("tcid"), 10, 32)
+	if err != nil {
+		response.BadRequest(c, "Invalid test case ID")
+		return
+	}
+
+	filter := &ListRunsFilter{
+		TestCaseID: uint(tcid),
+		Page:       1,
+		PageSize:   20,
+	}
+
+	if status := c.Query("status"); status != "" {
+		filter.Status = &status
+	}
+	if page, err := strconv.Atoi(c.Query("page")); err == nil && page > 0 {
+		filter.Page = page
+	}
+	if pageSize, err := strconv.Atoi(c.Query("page_size")); err == nil && pageSize > 0 {
+		filter.PageSize = pageSize
+	}
+
+	runs, meta, err := h.service.ListRuns(c.Request.Context(), filter)
+	if err != nil {
+		response.HandleError(c, "Failed to list runs", err)
+		return
+	}
+
+	response.Success(c, gin.H{"items": runs, "meta": meta})
+}
+
+// GetRun handles GET /projects/:id/test-cases/:tcid/runs/:rid
+func (h *Handler) GetRun(c *gin.Context) {
+	rid, err := strconv.ParseUint(c.Param("rid"), 10, 32)
+	if err != nil {
+		response.BadRequest(c, "Invalid run ID")
+		return
+	}
+
+	run, err := h.service.GetRun(c.Request.Context(), uint(rid))
+	if err != nil {
+		if err.Error() == "run not found" {
+			response.NotFound(c, err.Error(), err)
+			return
+		}
+		response.HandleError(c, "Failed to get run", err)
+		return
+	}
+
+	response.Success(c, run)
 }
 
 // Convenience methods for router registration

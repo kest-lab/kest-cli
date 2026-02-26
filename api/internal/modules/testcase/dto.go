@@ -264,3 +264,25 @@ type AssertionResult struct {
 	Passed   bool   `json:"passed"`
 	Message  string `json:"message"`
 }
+
+// TestRunResponse represents a single test run history record
+type TestRunResponse struct {
+	ID         uint               `json:"id"`
+	TestCaseID uint               `json:"test_case_id"`
+	Status     string             `json:"status"`
+	DurationMs int64              `json:"duration_ms"`
+	Request    *RunRequestInfo    `json:"request,omitempty"`
+	Response   *RunResponseInfo   `json:"response,omitempty"`
+	Assertions []*AssertionResult `json:"assertions,omitempty"`
+	Variables  map[string]any     `json:"variables,omitempty"`
+	Message    string             `json:"message,omitempty"`
+	CreatedAt  time.Time          `json:"created_at"`
+}
+
+// ListRunsFilter is the filter for listing test run history
+type ListRunsFilter struct {
+	TestCaseID uint
+	Status     *string
+	Page       int
+	PageSize   int
+}
