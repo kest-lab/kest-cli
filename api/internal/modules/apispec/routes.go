@@ -15,6 +15,7 @@ func RegisterRoutes(r *router.Router, handler *Handler, memberService member.Ser
 		projects.POST("", handler.CreateSpec)
 		projects.POST("/import", handler.ImportSpecs)
 		projects.GET("/export", handler.ExportSpecs)
+		projects.POST("/batch-gen-doc", handler.BatchGenDoc)
 
 		projects.GET("/:sid", handler.GetSpec)
 		projects.GET("/:sid/full", handler.GetSpecWithExamples)

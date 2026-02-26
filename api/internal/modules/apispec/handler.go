@@ -320,6 +320,31 @@ func (h *Handler) GenDoc(c *gin.Context) {
 	response.Success(c, spec)
 }
 
+// BatchGenDoc triggers AI documentation generation for multiple specs concurrently.
+// Accepts optional category_id to scope generation to a single category.
+// Returns immediately with { total, queued, skipped }; work runs in the background.
+func (h *Handler) BatchGenDoc(c *gin.Context) {
+	projectID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.BadRequest(c, "Invalid project ID")
+		return
+	}
+
+	var req BatchGenDocRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	result, err := h.service.BatchGenDoc(c.Request.Context(), uint(projectID), &req)
+	if err != nil {
+		response.HandleError(c, "Failed to start batch doc generation", err)
+		return
+	}
+
+	response.Success(c, result)
+}
+
 // Convenience aliases for cleaner route definitions
 func (h *Handler) List(c *gin.Context) {
 	h.ListSpecs(c)

@@ -28,6 +28,7 @@ type Repository interface {
 	DeleteSpec(ctx context.Context, id uint) error
 	ListSpecs(ctx context.Context, filter *SpecListFilter) ([]*APISpecPO, int64, error)
 	ListAllSpecs(ctx context.Context, projectID uint) ([]*APISpecPO, error)
+	ListSpecsForBatchGen(ctx context.Context, projectID uint, categoryID *uint, forceRegen bool) ([]*APISpecPO, error)
 
 	// API Example operations
 	CreateExample(ctx context.Context, example *APIExamplePO) error
@@ -123,6 +124,23 @@ func (r *repository) ListAllSpecs(ctx context.Context, projectID uint) ([]*APISp
 		Where("project_id = ?", projectID).
 		Order("method ASC, path ASC").
 		Find(&specs).Error; err != nil {
+		return nil, err
+	}
+	return specs, nil
+}
+
+// ListSpecsForBatchGen returns specs eligible for batch generation.
+// If forceRegen is false, only specs with no existing doc are returned.
+func (r *repository) ListSpecsForBatchGen(ctx context.Context, projectID uint, categoryID *uint, forceRegen bool) ([]*APISpecPO, error) {
+	var specs []*APISpecPO
+	query := r.db.WithContext(ctx).Where("project_id = ?", projectID)
+	if categoryID != nil {
+		query = query.Where("category_id = ?", *categoryID)
+	}
+	if !forceRegen {
+		query = query.Where("doc_source IS NULL OR doc_source = ''")
+	}
+	if err := query.Order("id ASC").Find(&specs).Error; err != nil {
 		return nil, err
 	}
 	return specs, nil

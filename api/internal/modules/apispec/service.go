@@ -38,6 +38,7 @@ type Service interface {
 	// Batch operations
 	ImportSpecs(ctx context.Context, projectID uint, specs []*CreateAPISpecRequest) error
 	ExportSpecs(ctx context.Context, projectID uint, format string) (interface{}, error)
+	BatchGenDoc(ctx context.Context, projectID uint, req *BatchGenDocRequest) (*BatchGenDocResponse, error)
 }
 
 // service is the private implementation
@@ -390,4 +391,92 @@ func (s *service) exportToMarkdown(specs []*APISpecPO) string {
 	}
 
 	return md.String()
+}
+
+// batchGenConcurrency controls how many LLM calls run in parallel.
+const batchGenConcurrency = 3
+
+// BatchGenDoc generates AI documentation for multiple specs concurrently.
+// It returns immediately after queuing the work; generation runs in the background.
+func (s *service) BatchGenDoc(ctx context.Context, projectID uint, req *BatchGenDocRequest) (*BatchGenDocResponse, error) {
+	cfg := config.GlobalConfig
+	if cfg == nil || cfg.OpenAI.APIKey == "" {
+		return nil, fmt.Errorf("AI documentation generation is not configured (OPENAI_API_KEY missing)")
+	}
+
+	lang := req.Lang
+	if lang == "" {
+		lang = "en"
+	}
+
+	specs, err := s.repo.ListSpecsForBatchGen(ctx, projectID, req.CategoryID, req.Force)
+	if err != nil {
+		return nil, err
+	}
+
+	// Count total specs in scope to compute skipped count
+	var totalInScope int
+	if req.Force {
+		totalInScope = len(specs)
+	} else {
+		// Total = queued (missing doc) + skipped (already has doc)
+		allSpecs, err := s.repo.ListSpecsForBatchGen(ctx, projectID, req.CategoryID, true)
+		if err != nil {
+			return nil, err
+		}
+		totalInScope = len(allSpecs)
+	}
+
+	queued := len(specs)
+	skipped := totalInScope - queued
+
+	resp := &BatchGenDocResponse{
+		Total:   totalInScope,
+		Queued:  queued,
+		Skipped: skipped,
+	}
+
+	if queued == 0 {
+		return resp, nil
+	}
+
+	// Launch background goroutine pool
+	go func() {
+		sem := make(chan struct{}, batchGenConcurrency)
+		client := &llmClient{
+			apiKey:  cfg.OpenAI.APIKey,
+			baseURL: cfg.OpenAI.BaseURL,
+			model:   cfg.OpenAI.Model,
+		}
+		systemPrompt := getDocSystemPrompt(lang)
+
+		for _, spec := range specs {
+			sem <- struct{}{}
+			po := spec
+			go func() {
+				defer func() { <-sem }()
+
+				llmCtx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+				defer cancel()
+
+				markdown, err := client.complete(llmCtx, systemPrompt, buildDocPrompt(po))
+				if err != nil {
+					return
+				}
+
+				po.DocMarkdown = markdown
+				po.DocSource = "ai"
+				now := time.Now()
+				po.DocUpdatedAt = &now
+				_ = s.repo.UpdateSpec(context.Background(), po)
+			}()
+		}
+
+		// Drain semaphore to wait for all goroutines before exiting
+		for i := 0; i < batchGenConcurrency; i++ {
+			sem <- struct{}{}
+		}
+	}()
+
+	return resp, nil
 }

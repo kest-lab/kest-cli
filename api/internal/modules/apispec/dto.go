@@ -37,6 +37,18 @@ type UpdateAPISpecRequest struct {
 	IsPublic    *bool                    `json:"is_public"`
 }
 
+type BatchGenDocRequest struct {
+	CategoryID *uint  `json:"category_id"`
+	Lang       string `json:"lang"`
+	Force      bool   `json:"force"`
+}
+
+type BatchGenDocResponse struct {
+	Total   int `json:"total"`
+	Queued  int `json:"queued"`
+	Skipped int `json:"skipped"`
+}
+
 type CreateAPIExampleRequest struct {
 	APISpecID      uint              `json:"api_spec_id"`
 	Name           string            `json:"name" binding:"required,max=255"`
