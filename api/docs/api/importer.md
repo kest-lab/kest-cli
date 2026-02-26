@@ -1,32 +1,41 @@
-# Importer Module API
+# Importer API
 
-## Overview
+> Generated: 2026-02-25 22:40:55
 
-导入模块用于将 Postman Collection 导入到项目集合中。
+## Base URL
 
-- Base Path: `/v1`
-- Auth: `Authorization: Bearer <token>`
+See [API Documentation](./api.md) for environment-specific base URLs.
 
 ## Endpoints
 
-| Method | Path | Description |
-| --- | --- | --- |
-| POST | `/v1/projects/:id/collections/import/postman` | 导入 Postman Collection |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `POST` | `/v1/projects/:id/collections/import/postman` | Import Postman importer | 🔓 |
 
-## Request
+---
 
-- Content-Type: `multipart/form-data`
-- Form field: `file`
+## Details
 
-## Response Example
+### POST `/v1/projects/:id/collections/import/postman`
 
-```json
-{
-  "code": 200,
-  "message": "import success",
-  "data": {
-    "collections": 3,
-    "requests": 26
-  }
-}
+**Import Postman importer**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+| Route Name | `importer.postman` |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections/import/postman'
 ```
+
+---
+

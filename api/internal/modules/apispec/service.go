@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/kest-labs/kest/api/internal/infra/config"
 )
 
 var (
@@ -25,6 +27,8 @@ type Service interface {
 	DeleteSpec(ctx context.Context, id uint) error
 	ListSpecs(ctx context.Context, projectID uint, version string, page, pageSize int) ([]*APISpecResponse, int64, error)
 	GetSpecWithExamples(ctx context.Context, id uint) (*APISpecResponse, error)
+	GenDoc(ctx context.Context, id uint) (*APISpecResponse, error)
+	GenTest(ctx context.Context, id uint) (string, error)
 
 	// API Example operations
 	CreateExample(ctx context.Context, req *CreateAPIExampleRequest) (*APIExampleResponse, error)
@@ -44,6 +48,73 @@ type service struct {
 // NewService creates a new API spec service
 func NewService(repo Repository) Service {
 	return &service{repo: repo}
+}
+
+func (s *service) GenDoc(ctx context.Context, id uint) (*APISpecResponse, error) {
+	po, err := s.repo.GetSpecByID(ctx, id)
+	if err != nil {
+		return nil, ErrSpecNotFound
+	}
+
+	cfg := config.GlobalConfig
+	if cfg == nil || cfg.OpenAI.APIKey == "" {
+		return nil, fmt.Errorf("AI documentation generation is not configured (OPENAI_API_KEY missing)")
+	}
+
+	client := &llmClient{
+		apiKey:  cfg.OpenAI.APIKey,
+		baseURL: cfg.OpenAI.BaseURL,
+		model:   cfg.OpenAI.Model,
+	}
+
+	llmCtx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+
+	userPrompt := buildDocPrompt(po)
+	markdown, err := client.complete(llmCtx, docSystemPrompt, userPrompt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate documentation: %w", err)
+	}
+
+	po.DocMarkdown = markdown
+	po.DocSource = "ai"
+	now := time.Now()
+	po.DocUpdatedAt = &now
+
+	if err := s.repo.UpdateSpec(ctx, po); err != nil {
+		return nil, err
+	}
+
+	return FromAPISpecPO(po), nil
+}
+
+func (s *service) GenTest(ctx context.Context, id uint) (string, error) {
+	po, err := s.repo.GetSpecByID(ctx, id)
+	if err != nil {
+		return "", ErrSpecNotFound
+	}
+
+	cfg := config.GlobalConfig
+	if cfg == nil || cfg.OpenAI.APIKey == "" {
+		return "", fmt.Errorf("AI test generation is not configured (OPENAI_API_KEY missing)")
+	}
+
+	client := &llmClient{
+		apiKey:  cfg.OpenAI.APIKey,
+		baseURL: cfg.OpenAI.BaseURL,
+		model:   cfg.OpenAI.Model,
+	}
+
+	llmCtx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+
+	userPrompt := buildTestPrompt(po)
+	flowContent, err := client.complete(llmCtx, testSystemPrompt, userPrompt)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate test: %w", err)
+	}
+
+	return flowContent, nil
 }
 
 // ========== API Spec Operations ==========

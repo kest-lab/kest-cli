@@ -109,7 +109,9 @@ type EmailConfig struct {
 }
 
 type OpenAIConfig struct {
-	APIKey string
+	APIKey  string
+	BaseURL string
+	Model   string
 }
 
 type R2Config struct {
@@ -204,7 +206,9 @@ func Load() (*Config, error) {
 			ResendAPIKey: env.Get("RESEND_API_KEY", ""),
 		},
 		OpenAI: OpenAIConfig{
-			APIKey: env.Get("OPENAI_API_KEY", ""),
+			APIKey:  env.Get("OPENAI_API_KEY", ""),
+			BaseURL: env.Get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+			Model:   env.Get("OPENAI_MODEL", "gpt-4o-mini"),
 		},
 		R2: R2Config{
 			AccessKeyID:     env.Get("R2_ACCESS_KEY_ID", ""),

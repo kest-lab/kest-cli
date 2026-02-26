@@ -22,6 +22,8 @@ func RegisterRoutes(r *router.Router, handler *Handler, memberService member.Ser
 		projects.DELETE("/:sid", handler.DeleteSpec)
 
 		// API Examples (Nested under spec)
+		projects.POST("/:sid/gen-doc", handler.GenDoc)
+		projects.POST("/:sid/gen-test", handler.GenTest)
 		projects.GET("/:sid/examples", handler.ListExamples)
 		projects.POST("/:sid/examples", handler.CreateExample)
 	})
