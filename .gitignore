@@ -179,3 +179,5 @@ web/TEST_*.md
 storage/
 api/storage/
 web/storage/
+!cli/internal/storage/
+!cli/internal/storage/*.go
