@@ -1,6 +1,6 @@
 # Category API
 
-> Generated: 2026-02-25 22:40:55
+> Generated: 2026-02-26 14:24:48
 
 ## Base URL
 

@@ -1,6 +1,6 @@
 # Apispec API
 
-> Generated: 2026-02-25 22:40:55
+> Generated: 2026-02-26 14:24:48
 
 ## Base URL
 
@@ -19,6 +19,7 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 | `PATCH` | `/v1/projects/:id/api-specs/:sid` | Update Spec apispec | 🔓 |
 | `DELETE` | `/v1/projects/:id/api-specs/:sid` | Delete Spec apispec | 🔓 |
 | `POST` | `/v1/projects/:id/api-specs/:sid/gen-doc` | Gen Doc apispec | 🔓 |
+| `POST` | `/v1/projects/:id/api-specs/:sid/gen-test` | Gen Test apispec | 🔓 |
 | `GET` | `/v1/projects/:id/api-specs/:sid/examples` | List Examples apispec | 🔓 |
 | `POST` | `/v1/projects/:id/api-specs/:sid/examples` | Create Example apispec | 🔓 |
 
@@ -225,6 +226,29 @@ curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/api-specs/:sid'
 
 ```bash
 curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/api-specs/:sid/gen-doc'
+```
+
+---
+
+### POST `/v1/projects/:id/api-specs/:sid/gen-test`
+
+**Gen Test apispec**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔓 Not required |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+| `sid` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/api-specs/:sid/gen-test'
 ```
 
 ---
