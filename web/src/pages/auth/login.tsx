@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
@@ -52,59 +51,73 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="flex justify-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-2xl">
-              K
-            </div>
+    <div className="min-h-screen bg-[#efefef] px-4 py-8 sm:px-6">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md items-center justify-center">
+        <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-5">
+          <div>
+            <h1 className="text-[2.1rem] font-semibold tracking-tight text-[#1c1d20]">
+              Log in to Kest
+            </h1>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to Kest Platform
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
-              create a new account
-            </Link>
-          </p>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="rounded-md shadow-sm space-y-4">
-            <div>
-              <Label htmlFor="username">Username</Label>
+
+          <div className="space-y-4">
+            <div className="space-y-2.5">
+              <Label htmlFor="username" className="text-[1.05rem] font-medium text-[#1f2022]">
+                Email
+              </Label>
               <Input
                 id="username"
                 type="text"
                 autoComplete="username"
+                placeholder="me@somewhere.com"
                 {...register('username')}
-                className="mt-1"
+                className="h-12 rounded-md border-[#d7d7d7] bg-[#ececec] px-4 text-base text-[#1f2022] placeholder:text-[#a0a0a0] focus-visible:ring-0"
               />
               {errors.username && (
-                <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+                <p className="text-sm text-red-600">{errors.username.message}</p>
               )}
             </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
+
+            <div className="space-y-2.5">
+              <Label htmlFor="password" className="text-[1.05rem] font-medium text-[#1f2022]">
+                Password
+              </Label>
               <Input
                 id="password"
                 type="password"
                 autoComplete="current-password"
+                placeholder="••••••••••"
                 {...register('password')}
-                className="mt-1"
+                className="h-12 rounded-md border-[#d7d7d7] bg-[#ececec] px-4 text-base text-[#1f2022] placeholder:text-[#8f8f8f] focus-visible:ring-0"
               />
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="text-sm text-red-600">{errors.password.message}</p>
               )}
             </div>
           </div>
 
-          <div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </Button>
+          <div className="flex items-center justify-end gap-4 pt-2">
+            <Link
+              to="/"
+              className="text-base text-[#8d8d8d] transition-colors hover:text-[#606060]"
+            >
+              Back
+            </Link>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="h-11 min-w-24 rounded-md bg-black px-6 text-base font-medium text-white transition-colors hover:bg-[#1a1a1a] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoading ? 'Log in...' : 'Log in'}
+            </button>
           </div>
+
+          <p className="pt-1 text-center text-sm text-[#8d8d8d]">
+            No account?{' '}
+            <Link to="/register" className="font-medium text-[#1f2022] hover:underline">
+              Register
+            </Link>
+          </p>
         </form>
       </div>
     </div>
