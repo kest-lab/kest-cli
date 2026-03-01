@@ -7,8 +7,8 @@ import { z } from 'zod';
  */
 const envSchema = z.object({
     // Only the API entry point
-    // Dev defaults to local API service, prod defaults to Vercel proxy.
-    VITE_API_URL: z.string().default(import.meta.env.MODE === 'development' ? 'http://localhost:8025' : '/api'),
+    // Dev/Prod default to /api and rely on proxy/edge rewrite.
+    VITE_API_URL: z.string().default('/api'),
 
     // Optional but sometimes required
     VITE_GA_MEASUREMENT_ID: z.string().optional(),
