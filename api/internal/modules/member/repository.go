@@ -39,10 +39,8 @@ func (r *repository) DeleteMember(ctx context.Context, projectID, userID uint) e
 func (r *repository) GetMember(ctx context.Context, projectID, userID uint) (*ProjectMemberPO, error) {
 	var member ProjectMemberPO
 	err := r.db.WithContext(ctx).
-		Table("project_members pm").
-		Select("pm.id, pm.project_id, pm.user_id, pm.role, pm.created_at, pm.updated_at, u.username, u.email").
-		Joins("LEFT JOIN users u ON u.id = pm.user_id").
-		Where("pm.project_id = ? AND pm.user_id = ?", projectID, userID).
+		Where("project_id = ? AND user_id = ?", projectID, userID).
+		Preload("User").
 		First(&member).Error
 	if err != nil {
 		return nil, err
@@ -53,10 +51,8 @@ func (r *repository) GetMember(ctx context.Context, projectID, userID uint) (*Pr
 func (r *repository) ListMembers(ctx context.Context, projectID uint) ([]ProjectMemberPO, error) {
 	var members []ProjectMemberPO
 	err := r.db.WithContext(ctx).
-		Table("project_members pm").
-		Select("pm.id, pm.project_id, pm.user_id, pm.role, pm.created_at, pm.updated_at, u.username, u.email").
-		Joins("LEFT JOIN users u ON u.id = pm.user_id").
-		Where("pm.project_id = ?", projectID).
+		Where("project_id = ?", projectID).
+		Preload("User").
 		Find(&members).Error
 	return members, err
 }
