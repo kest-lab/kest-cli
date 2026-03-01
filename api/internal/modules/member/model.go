@@ -26,8 +26,7 @@ type ProjectMemberPO struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
 	ProjectID uint           `gorm:"index;uniqueIndex:idx_project_user;not null" json:"project_id"`
 	UserID    uint           `gorm:"index;uniqueIndex:idx_project_user;not null" json:"user_id"`
-	Username  string         `gorm:"column:username;->;-:migration" json:"username,omitempty"`
-	Email     string         `gorm:"column:email;->;-:migration" json:"email,omitempty"`
+	User      MemberUserPO   `gorm:"foreignKey:UserID;references:ID" json:"-"`
 	Role      string         `gorm:"size:20;not null" json:"role"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
@@ -36,4 +35,15 @@ type ProjectMemberPO struct {
 
 func (ProjectMemberPO) TableName() string {
 	return "project_members"
+}
+
+// MemberUserPO is a lightweight user projection used for member listings.
+type MemberUserPO struct {
+	ID       uint   `gorm:"primaryKey"`
+	Username string `gorm:"column:username"`
+	Email    string `gorm:"column:email"`
+}
+
+func (MemberUserPO) TableName() string {
+	return "users"
 }
