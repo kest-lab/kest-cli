@@ -46,18 +46,29 @@ export const authApi = {
 
     // Authentication
     login: async (credentials: LoginRequest) => {
-        const result = await request.post<{ access_token: string; user: User }>(ENDPOINTS.LOGIN, credentials);
+        const username = credentials.username || credentials.email || '';
+        const result = await request.post<{ access_token: string; user: User }>(
+            ENDPOINTS.LOGIN,
+            { username, password: credentials.password },
+            { skipAuth: true }
+        );
         return { user: result.user, token: result.access_token };
     },
 
-    register: (data: RegisterRequest) =>
-        request.post<AuthResponse>(ENDPOINTS.REGISTER, data),
+    register: (data: RegisterRequest) => {
+        const username = data.username || data.email.split('@')[0];
+        return request.post<AuthResponse>(
+            ENDPOINTS.REGISTER,
+            { ...data, username },
+            { skipAuth: true }
+        );
+    },
 
     changePassword: (data: ChangePasswordRequest) =>
         request.put<AuthResponse>(ENDPOINTS.CHANGE_PASSWORD, data),
 
     resetPassword: (email: string) =>
-        request.post<{ message: string }>(ENDPOINTS.RESET_PASSWORD, { email }),
+        request.post<{ message: string }>(ENDPOINTS.RESET_PASSWORD, { email }, { skipAuth: true }),
 
     logout: async () => {
         try {
