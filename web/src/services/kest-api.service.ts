@@ -105,6 +105,7 @@ export const environmentApi = {
 // ========== Member APIs ==========
 
 type ProjectMemberRole = 'owner' | 'admin' | 'write' | 'read'
+type ProjectAssignableRole = 'write' | 'read'
 
 type ProjectMember = {
     id: number
@@ -135,7 +136,7 @@ export const memberApi = {
      */
     create: (
         projectId: number,
-        data: { user_id: number; role: ProjectMemberRole }
+        data: { user_id: number; role: ProjectAssignableRole }
     ) => request.post<ProjectMember>(`/v1/projects/${projectId}/members`, data),
 
     /**
@@ -144,7 +145,7 @@ export const memberApi = {
     update: (
         projectId: number,
         userId: number,
-        data: { role: ProjectMemberRole }
+        data: { role: ProjectAssignableRole }
     ) => request.patch<ProjectMember>(`/v1/projects/${projectId}/members/${userId}`, data),
 
     /**

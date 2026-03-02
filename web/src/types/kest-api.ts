@@ -39,6 +39,7 @@ export interface UpdateProjectRequest {
 // ========== Member Types ==========
 
 export type ProjectMemberRole = 'owner' | 'admin' | 'write' | 'read'
+export type ProjectAssignableRole = 'write' | 'read'
 
 export interface ProjectMember {
     id: number
@@ -53,11 +54,11 @@ export interface ProjectMember {
 
 export interface AddMemberRequest {
     user_id: number
-    role: ProjectMemberRole
+    role: ProjectAssignableRole
 }
 
 export interface UpdateMemberRequest {
-    role: ProjectMemberRole
+    role: ProjectAssignableRole
 }
 
 // ========== Environment Types ==========
