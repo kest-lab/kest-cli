@@ -20,7 +20,7 @@ import { EnvironmentManager } from './environment-manager'
 import { CreateAPISpecDialog } from './create-api-spec-dialog'
 import { ImportAPISpecDialog } from './import-api-spec-dialog'
 import { TestCasesPanel } from './test-cases'
-import type { APISpec, CategoryTree, ProjectMember, ProjectMemberRole } from '@/types/kest-api'
+import type { APISpec, CategoryTree, ProjectMember, ProjectMemberRole, ProjectAssignableRole } from '@/types/kest-api'
 
 const METHOD_COLORS: Record<string, string> = {
   GET: 'text-blue-600',
@@ -33,6 +33,9 @@ const METHOD_COLORS: Record<string, string> = {
 }
 
 type ViewMode = 'apis' | 'flows' | 'test-cases' | 'categories' | 'environments' | 'settings' | 'members'
+
+const toAssignableRole = (role: ProjectMemberRole): ProjectAssignableRole | undefined =>
+  role === 'write' || role === 'read' ? role : undefined
 
 export function ProjectDetailPage() {
   const { id, sid } = useParams<{ id: string; sid: string }>()
@@ -47,8 +50,8 @@ export function ProjectDetailPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<APISpec | null>(null)
   const [newMemberUserId, setNewMemberUserId] = useState('')
-  const [newMemberRole, setNewMemberRole] = useState<ProjectMemberRole>('write')
-  const [memberRoleDraft, setMemberRoleDraft] = useState<Record<number, ProjectMemberRole>>({})
+  const [newMemberRole, setNewMemberRole] = useState<ProjectAssignableRole>('write')
+  const [memberRoleDraft, setMemberRoleDraft] = useState<Record<number, ProjectAssignableRole>>({})
   const deleteAPISpec = useDeleteAPISpec()
   const addMember = useAddMember(projectId)
   const updateMemberRole = useUpdateMemberRole(projectId)
@@ -220,7 +223,7 @@ export function ProjectDetailPage() {
   }
 
   const handleUpdateMemberRole = async (member: ProjectMember) => {
-    const role = memberRoleDraft[member.user_id] ?? member.role
+    const role = memberRoleDraft[member.user_id] ?? toAssignableRole(member.role)
     if (!role || role === member.role) {
       toast.info('No role changes')
       return
@@ -533,14 +536,12 @@ export function ProjectDetailPage() {
                   />
                   <Select
                     value={newMemberRole}
-                    onValueChange={(value: ProjectMemberRole) => setNewMemberRole(value)}
+                    onValueChange={(value: ProjectAssignableRole) => setNewMemberRole(value)}
                   >
                     <SelectTrigger className="w-full sm:w-40">
                       <SelectValue placeholder="Role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="owner">owner</SelectItem>
-                      <SelectItem value="admin">admin</SelectItem>
                       <SelectItem value="write">write</SelectItem>
                       <SelectItem value="read">read</SelectItem>
                     </SelectContent>
@@ -574,17 +575,16 @@ export function ProjectDetailPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Select
-                          value={memberRoleDraft[member.user_id] ?? member.role}
-                          onValueChange={(value: ProjectMemberRole) =>
+                          value={memberRoleDraft[member.user_id] ?? toAssignableRole(member.role)}
+                          disabled={member.role === 'owner' || updateMemberRole.isPending}
+                          onValueChange={(value: ProjectAssignableRole) =>
                             setMemberRoleDraft((prev) => ({ ...prev, [member.user_id]: value }))
                           }
                         >
                           <SelectTrigger className="w-28">
-                            <SelectValue />
+                            <SelectValue placeholder={member.role} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="owner">owner</SelectItem>
-                            <SelectItem value="admin">admin</SelectItem>
                             <SelectItem value="write">write</SelectItem>
                             <SelectItem value="read">read</SelectItem>
                           </SelectContent>
@@ -593,7 +593,7 @@ export function ProjectDetailPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleUpdateMemberRole(member)}
-                          disabled={updateMemberRole.isPending}
+                          disabled={updateMemberRole.isPending || member.role === 'owner'}
                         >
                           Save
                         </Button>
