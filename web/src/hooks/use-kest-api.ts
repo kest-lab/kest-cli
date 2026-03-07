@@ -242,6 +242,7 @@ export function useUpdateAPISpec() {
             kestApi.apiSpec.update(projectId, id, data),
         onSuccess: (result) => {
             queryClient.invalidateQueries({ queryKey: queryKeys.apiSpec(result.id) })
+            queryClient.invalidateQueries({ queryKey: queryKeys.apiSpecWithExamples(result.id) })
             queryClient.invalidateQueries({ queryKey: queryKeys.apiSpecs(result.project_id) })
         },
     })

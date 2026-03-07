@@ -226,6 +226,7 @@ export interface CreateAPISpecRequest {
 }
 
 export interface UpdateAPISpecRequest {
+    path?: string
     summary?: string
     description?: string
     tags?: string[]

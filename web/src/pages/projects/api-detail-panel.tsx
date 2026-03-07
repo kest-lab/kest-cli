@@ -26,6 +26,7 @@ const METHOD_COLORS: Record<string, string> = {
 interface APIDetailPanelProps {
   spec: APISpec
   projectId: number
+  canEditSpec?: boolean
   initialTab?: 'params' | 'body' | 'headers' | 'responses' | 'examples' | 'doc'
   autoOpenExampleForm?: boolean
 }
@@ -156,10 +157,12 @@ const getInitialExampleValues = (spec: APISpec): ExampleDefaults => {
   }
 }
 
-export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpenExampleForm = false }: APIDetailPanelProps) {
+export function APIDetailPanel({ spec, projectId, canEditSpec = false, initialTab = 'params', autoOpenExampleForm = false }: APIDetailPanelProps) {
   const initialExample = getInitialExampleValues(spec)
   const [activeTab, setActiveTab] = useState('params')
   const [editing, setEditing] = useState(false)
+  const [pathEditing, setPathEditing] = useState(false)
+  const [pathDraft, setPathDraft] = useState(spec.path || '')
   const [editSummary, setEditSummary] = useState(spec.summary || '')
   const [editDescription, setEditDescription] = useState(spec.description || '')
   const [editTags, setEditTags] = useState(spec.tags?.join(', ') || '')
@@ -221,6 +224,8 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
 
   // Sync edit fields when spec changes
   useEffect(() => {
+    setPathDraft(spec.path || '')
+    setPathEditing(false)
     setEditSummary(spec.summary || '')
     setEditDescription(spec.description || '')
     setEditTags(spec.tags?.join(', ') || '')
@@ -241,10 +246,18 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
   }, [initialTab, spec.id])
 
   useEffect(() => {
-    if (!autoOpenExampleForm) return
+    if (!autoOpenExampleForm || !canEditSpec) return
     setActiveTab('examples')
     setShowExampleForm(true)
-  }, [autoOpenExampleForm, spec.id])
+  }, [autoOpenExampleForm, canEditSpec, spec.id])
+
+  useEffect(() => {
+    if (canEditSpec) return
+    setEditing(false)
+    setDocEditing(false)
+    setShowExampleForm(false)
+    setPathEditing(false)
+  }, [canEditSpec])
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
@@ -252,6 +265,7 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
   }
 
   const handleSave = () => {
+    if (!canEditSpec) return
     const tags = editTags.split(',').map(t => t.trim()).filter(Boolean)
     updateMutation.mutate(
       {
@@ -282,7 +296,45 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
     setEditing(false)
   }
 
+  const handleCancelPathEdit = () => {
+    setPathDraft(spec.path || '')
+    setPathEditing(false)
+  }
+
+  const handleSavePath = () => {
+    if (!canEditSpec) return
+    const nextPath = pathDraft.trim()
+    if (!nextPath) {
+      toast.error('API URL is required')
+      return
+    }
+    if (nextPath === spec.path) {
+      setPathEditing(false)
+      return
+    }
+
+    updateMutation.mutate(
+      {
+        projectId,
+        id: spec.id,
+        data: {
+          path: nextPath,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success('API URL updated')
+          setPathEditing(false)
+        },
+        onError: (error: any) => {
+          toast.error(error?.message || 'Failed to update API URL')
+        },
+      }
+    )
+  }
+
   const handleGenerateDoc = () => {
+    if (!canEditSpec) return
     genDocMutation.mutate(
       { projectId, id: spec.id, lang: docLang },
       {
@@ -300,6 +352,7 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
   }
 
   const handleSaveDoc = () => {
+    if (!canEditSpec) return
     const data = docLang === 'zh'
       ? { doc_markdown_zh: docDraft, doc_markdown: docDraft, doc_source: 'manual' as const }
       : { doc_markdown_en: docDraft, doc_markdown: docDraft, doc_source: 'manual' as const }
@@ -349,6 +402,7 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
   }
 
   const handleSaveExample = () => {
+    if (!canEditSpec) return
     const statusCode = Number(exampleStatus)
     if (!Number.isInteger(statusCode) || statusCode < 100 || statusCode > 599) {
       toast.error('Status code must be between 100 and 599')
@@ -388,12 +442,66 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
         <Badge className={`${METHOD_COLORS[spec.method] || 'bg-gray-500 text-white'} text-xs font-bold px-2.5 py-1 rounded-md shrink-0`}>
           {spec.method}
         </Badge>
-        <div className="flex-1 flex items-center bg-muted rounded-md px-3 py-2 font-mono text-sm overflow-hidden">
-          <span className="truncate">{spec.path}</span>
-        </div>
-        <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => copyToClipboard(spec.path)}>
+        {canEditSpec && pathEditing ? (
+          <Input
+            value={pathDraft}
+            onChange={(e) => setPathDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                e.preventDefault()
+                handleSavePath()
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                handleCancelPathEdit()
+              }
+            }}
+            placeholder="/users/{id}"
+            className="h-9 flex-1 font-mono text-sm"
+            autoFocus
+            disabled={updateMutation.isPending}
+          />
+        ) : (
+          <button
+            type="button"
+            className="flex-1 min-w-0 rounded-md bg-muted px-3 py-2 text-left font-mono text-sm"
+            onClick={() => canEditSpec && setPathEditing(true)}
+            disabled={!canEditSpec}
+            title={canEditSpec ? 'Click to edit API URL' : undefined}
+          >
+            <span className="block truncate">{spec.path}</span>
+          </button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="shrink-0 h-8 w-8"
+          onClick={() => copyToClipboard(pathEditing ? pathDraft : spec.path)}
+        >
           <Copy className="h-3.5 w-3.5" />
         </Button>
+        {canEditSpec && pathEditing && (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 h-8 w-8"
+              onClick={handleSavePath}
+              disabled={updateMutation.isPending}
+            >
+              <Save className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 h-8 w-8"
+              onClick={handleCancelPathEdit}
+              disabled={updateMutation.isPending}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Title + Description — editable */}
@@ -437,6 +545,7 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
                 size="icon"
                 className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                 onClick={() => setEditing(true)}
+                disabled={!canEditSpec}
               >
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
@@ -508,10 +617,12 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={handleGenerateDoc} disabled={genDocMutation.isPending}>
-                      {genDocMutation.isPending ? 'Generating...' : 'AI Generate Doc'}
-                    </Button>
-                    {!docEditing && (
+                    {canEditSpec && (
+                      <Button size="sm" onClick={handleGenerateDoc} disabled={genDocMutation.isPending}>
+                        {genDocMutation.isPending ? 'Generating...' : 'AI Generate Doc'}
+                      </Button>
+                    )}
+                    {canEditSpec && !docEditing && (
                       <Button size="sm" variant="outline" onClick={() => setDocEditing(true)}>
                         Edit
                       </Button>
@@ -593,7 +704,7 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
                   </div>
                 ) : (
                   <div className="text-center py-8 text-sm text-muted-foreground border rounded-md">
-                    No documentation yet. Click AI Generate Doc to create one.
+                    {canEditSpec ? 'No documentation yet. Click AI Generate Doc to create one.' : 'No documentation yet.'}
                   </div>
                 )}
               </div>
@@ -670,9 +781,11 @@ export function APIDetailPanel({ spec, projectId, initialTab = 'params', autoOpe
             <TabsContent value="examples" className="mt-0 space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold">API Examples</h4>
-                <Button size="sm" variant="outline" onClick={() => setShowExampleForm((v) => !v)}>
-                  {showExampleForm ? 'Hide Form' : 'Add Example'}
-                </Button>
+                {canEditSpec && (
+                  <Button size="sm" variant="outline" onClick={() => setShowExampleForm((v) => !v)}>
+                    {showExampleForm ? 'Hide Form' : 'Add Example'}
+                  </Button>
+                )}
               </div>
 
               {showExampleForm && (

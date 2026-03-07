@@ -172,6 +172,20 @@ func (s *service) UpdateSpec(ctx context.Context, id uint, req *UpdateAPISpecReq
 		return nil, ErrSpecNotFound
 	}
 
+	if req.Path != nil {
+		path := strings.TrimSpace(*req.Path)
+		if path == "" {
+			return nil, ErrInvalidSpecData
+		}
+		if path != po.Path {
+			existing, err := s.repo.GetSpecByMethodAndPath(ctx, po.ProjectID, po.Method, path)
+			if err == nil && existing != nil && existing.ID != po.ID {
+				return nil, ErrSpecAlreadyExists
+			}
+			po.Path = path
+		}
+	}
+
 	// Apply updates
 	if req.Summary != nil {
 		po.Summary = *req.Summary

@@ -127,6 +127,14 @@ func (h *Handler) UpdateSpec(c *gin.Context) {
 
 	spec, err := h.service.UpdateSpec(c.Request.Context(), uint(id), &req)
 	if err != nil {
+		if errors.Is(err, ErrSpecAlreadyExists) {
+			response.Conflict(c, err.Error(), err)
+			return
+		}
+		if errors.Is(err, ErrInvalidSpecData) {
+			response.BadRequest(c, err.Error())
+			return
+		}
 		response.HandleError(c, "Failed to update API spec", err)
 		return
 	}

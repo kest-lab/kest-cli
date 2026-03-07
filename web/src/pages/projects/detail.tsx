@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Settings, ChevronRight, FolderTree, FileText, Search, Plus, Workflow, ChevronDown, MoreHorizontal, Trash2, Share2, ListPlus, Download, FileUp, FileDown } from 'lucide-react'
-import { useProject, useAPISpecs, useCategoryTree, useAPISpecWithExamples, useDeleteAPISpec, useMembers, useAddMember, useUpdateMemberRole, useRemoveMember } from '@/hooks/use-kest-api'
+import { useProject, useAPISpecs, useCategoryTree, useAPISpecWithExamples, useDeleteAPISpec, useMembers, useAddMember, useUpdateMemberRole, useRemoveMember, useMyProjectRole } from '@/hooks/use-kest-api'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
@@ -83,6 +83,7 @@ export function ProjectDetailPage() {
   const { data: apiSpecsData, isLoading: apisLoading } = useAPISpecs(projectId)
   const { data: categoryData } = useCategoryTree(projectId)
   const { data: membersData, isLoading: membersLoading } = useMembers(projectId)
+  const { data: myMemberRole } = useMyProjectRole(projectId)
 
   // Handle multiple possible response shapes from the API
   const apiSpecs: APISpec[] = (() => {
@@ -106,6 +107,7 @@ export function ProjectDetailPage() {
     if (Array.isArray((membersData as any)?.data)) return (membersData as any).data
     return []
   })()
+  const canManageSpecs = myMemberRole?.role === 'owner' || myMemberRole?.role === 'admin' || myMemberRole?.role === 'write'
 
   // Fetch full spec detail when a spec is selected
   const { data: selectedSpecDetail, isLoading: specDetailLoading } = useAPISpecWithExamples(projectId, selectedSpecId || 0)
@@ -463,7 +465,7 @@ export function ProjectDetailPage() {
           </div>
         )}
         {viewMode === 'apis' && selectedSpec && !specDetailLoading && (
-          <APIDetailPanel spec={selectedSpec} projectId={projectId} />
+          <APIDetailPanel spec={selectedSpec} projectId={projectId} canEditSpec={canManageSpecs} />
         )}
 
         {viewMode === 'apis' && !selectedSpec && !specDetailLoading && (

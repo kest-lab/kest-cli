@@ -28,6 +28,7 @@ type CreateAPISpecRequest struct {
 
 type UpdateAPISpecRequest struct {
 	CategoryID    *uint                    `json:"category_id"`
+	Path          *string                  `json:"path" binding:"omitempty,max=500"`
 	Summary       *string                  `json:"summary" binding:"omitempty,max=500"`
 	Description   *string                  `json:"description"`
 	DocMarkdown   *string                  `json:"doc_markdown"`
