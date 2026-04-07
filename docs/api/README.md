@@ -77,7 +77,7 @@ All API responses follow a consistent format:
    - Registration, Login, Profile Management
    
 2. [Projects](./02-projects.md)
-   - Project CRUD operations, DSN management
+   - Project CRUD operations, project statistics
    
 3. [API Specifications](./03-api-specifications.md)
    - API spec management, Import/Export

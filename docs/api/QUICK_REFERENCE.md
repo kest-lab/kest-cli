@@ -37,8 +37,9 @@ Authorization: Bearer <jwt-token>
 | GET | `/projects` | List projects | Yes |
 | GET | `/projects/:id` | Get project | Yes |
 | PUT | `/projects/:id` | Update project | Yes |
+| PATCH | `/projects/:id` | Patch project | Yes |
 | DELETE | `/projects/:id` | Delete project | Yes |
-| GET | `/projects/:id/dsn` | Get DSN | Yes |
+| GET | `/projects/:id/stats` | Get project stats | Yes |
 
 ### API Specifications
 

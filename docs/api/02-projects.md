@@ -2,29 +2,41 @@
 
 ## Overview
 
-The Projects module manages API projects, including creation, configuration, and DSN (Data Source Name) generation.
+The Projects module manages project records for authenticated users.
+
+- Creating a project auto-generates a slug when `slug` is omitted.
+- The creator is automatically added to the project as `owner`.
+- Project-specific routes are protected by project role checks.
 
 ## Base Path
 
-```
+```text
 /v1
 ```
 
-All project endpoints require authentication.
+All endpoints below require authentication.
 
----
+## Endpoint Summary
+
+| Method | Path | Access |
+|--------|------|--------|
+| `POST` | `/projects` | Authenticated user |
+| `GET` | `/projects` | Authenticated user |
+| `GET` | `/projects/:id` | Project role `read` or higher |
+| `PUT` | `/projects/:id` | Project role `write` or higher |
+| `PATCH` | `/projects/:id` | Project role `write` or higher |
+| `DELETE` | `/projects/:id` | Project role `admin` or higher |
+| `GET` | `/projects/:id/stats` | Project role `read` or higher |
 
 ## 1. Create Project
 
 ### POST /projects
 
-Create a new API project.
-
-**Authentication**: Required
+Create a new project.
 
 #### Request Headers
 
-```
+```text
 Content-Type: application/json
 Authorization: Bearer <token>
 ```
@@ -33,9 +45,9 @@ Authorization: Bearer <token>
 
 | Field | Type | Required | Validation | Description |
 |-------|------|----------|------------|-------------|
-| `name` | string | ✅ Yes | min: 1, max: 100 | Project name |
-| `slug` | string | ❌ No | min: 1, max: 50 | URL-friendly slug (auto-generated if not provided) |
-| `platform` | string | ❌ No | enum: go, javascript, python, java, ruby, php, csharp | Primary platform/language |
+| `name` | string | Yes | `min=1`, `max=100` | Project name |
+| `slug` | string | No | `min=1`, `max=50` | Optional unique slug |
+| `platform` | string | No | `go`, `javascript`, `python`, `java`, `ruby`, `php`, `csharp` | Primary platform |
 
 #### Example Request
 
@@ -52,16 +64,13 @@ Authorization: Bearer <token>
 ```json
 {
   "code": 0,
-  "message": "success",
+  "message": "created",
   "data": {
     "id": 1,
     "name": "My E-commerce API",
     "slug": "ecommerce-api",
-    "public_key": "pk_live_51H2K3j...kLmN",
-    "dsn": "https://api.kest.com/v1/ingest?public_key=pk_live_51H2K3j...kLmN&project_id=1",
     "platform": "javascript",
     "status": 1,
-    "rate_limit_per_minute": 1000,
     "created_at": "2024-02-05T01:00:00Z"
   }
 }
@@ -69,33 +78,26 @@ Authorization: Bearer <token>
 
 #### Error Responses
 
-- **400 Bad Request**: Validation failed
-- **409 Conflict**: Project slug already exists
-
----
+- `400 Bad Request`: Invalid request parameters
+- `409 Conflict`: Project slug already exists
 
 ## 2. List Projects
 
 ### GET /projects
 
-List all projects for the authenticated user.
-
-**Authentication**: Required
+List projects visible to the authenticated user.
 
 #### Query Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `page` | integer | ❌ No | 1 | Page number |
-| `per_page` | integer | ❌ No | 20 | Items per page (max 100) |
-| `search` | string | ❌ No | - | Search by name or slug |
-| `platform` | string | ❌ No | - | Filter by platform |
-| `status` | integer | ❌ No | - | Filter by status (0=inactive, 1=active) |
+| `page` | integer | No | `1` | Page number |
+| `per_page` | integer | No | `20` | Items per page, capped at `100` |
 
 #### Example Request
 
-```
-GET /projects?page=1&per_page=10&status=1
+```text
+GET /projects?page=1&per_page=10
 ```
 
 #### Response (200 OK)
@@ -107,47 +109,46 @@ GET /projects?page=1&per_page=10&status=1
   "data": {
     "items": [
       {
-        "id": 1,
-        "name": "My E-commerce API",
-        "slug": "ecommerce-api",
-        "platform": "javascript",
-        "status": 1
-      },
-      {
         "id": 2,
         "name": "Mobile App Backend",
         "slug": "mobile-backend",
         "platform": "go",
         "status": 1
+      },
+      {
+        "id": 1,
+        "name": "My E-commerce API",
+        "slug": "ecommerce-api",
+        "platform": "javascript",
+        "status": 1
       }
     ],
-    "pagination": {
+    "meta": {
+      "total": 2,
       "page": 1,
       "per_page": 10,
-      "total": 2,
-      "total_pages": 1,
-      "has_next": false,
-      "has_prev": false
+      "pages": 1
     }
   }
 }
 ```
 
----
+#### Notes
+
+- Results are restricted to projects where the authenticated user is a member.
+- The current implementation does not support `search`, `platform`, or `status` filters on this endpoint.
 
 ## 3. Get Project
 
 ### GET /projects/:id
 
-Get detailed project information.
-
-**Authentication**: Required
+Get project details.
 
 #### Path Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `id` | integer | ✅ Yes | Project ID |
+| `id` | integer | Yes | Project ID |
 
 #### Response (200 OK)
 
@@ -159,11 +160,8 @@ Get detailed project information.
     "id": 1,
     "name": "My E-commerce API",
     "slug": "ecommerce-api",
-    "public_key": "pk_live_51H2K3j...kLmN",
-    "dsn": "https://api.kest.com/v1/ingest?public_key=pk_live_51H2K3j...kLmN&project_id=1",
     "platform": "javascript",
     "status": 1,
-    "rate_limit_per_minute": 1000,
     "created_at": "2024-02-05T01:00:00Z"
   }
 }
@@ -171,119 +169,39 @@ Get detailed project information.
 
 #### Error Responses
 
-- **404 Not Found**: Project not found
-- **403 Forbidden**: No access to project
-
----
+- `400 Bad Request`: Invalid ID format
+- `403 Forbidden`: Permission denied
+- `404 Not Found`: Project not found
 
 ## 4. Update Project
 
 ### PUT /projects/:id
 
-Update project information.
-
-**Authentication**: Required
+Replace the editable fields of a project.
 
 #### Path Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `id` | integer | ✅ Yes | Project ID |
+| `id` | integer | Yes | Project ID |
 
 #### Request Body
 
 | Field | Type | Required | Validation | Description |
 |-------|------|----------|------------|-------------|
-| `name` | string | ❌ No | min: 1, max: 100 | Project name |
-| `platform` | string | ❌ No | enum: go, javascript, python, java, ruby, php, csharp | Primary platform |
-| `status` | integer | ❌ No | enum: 0, 1 | Project status (0=inactive, 1=active) |
-| `rate_limit_per_minute` | integer | ❌ No | min: 0, max: 100000 | Rate limit per minute |
+| `name` | string | No | `min=1`, `max=100` | Project name |
+| `platform` | string | No | `go`, `javascript`, `python`, `java`, `ruby`, `php`, `csharp` | Primary platform |
+| `status` | integer | No | `0`, `1` | Project status |
 
 #### Example Request
 
 ```json
 {
   "name": "Updated E-commerce API",
-  "platform": "typescript",
-  "rate_limit_per_minute": 2000
+  "platform": "python",
+  "status": 1
 }
 ```
-
-#### Response (200 OK)
-
-```json
-{
-  "code": 0,
-  "message": "Project updated successfully",
-  "data": {
-    "id": 1,
-    "name": "Updated E-commerce API",
-    "slug": "ecommerce-api",
-    "public_key": "pk_live_51H2K3j...kLmN",
-    "dsn": "https://api.kest.com/v1/ingest?public_key=pk_live_51H2K3j...kLmN&project_id=1",
-    "platform": "typescript",
-    "status": 1,
-    "rate_limit_per_minute": 2000,
-    "created_at": "2024-02-05T01:00:00Z"
-  }
-}
-```
-
----
-
-## 5. Patch Project
-
-### PATCH /projects/:id
-
-Partially update project information (same as PUT but only updates provided fields).
-
-**Authentication**: Required
-
-Same parameters and response as PUT /projects/:id.
-
----
-
-## 6. Delete Project
-
-### DELETE /projects/:id
-
-Delete a project and all associated data.
-
-**⚠️ Warning**: This action is irreversible and will delete all API specs, test cases, and test results.
-
-**Authentication**: Required
-
-#### Path Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `id` | integer | ✅ Yes | Project ID |
-
-#### Response (200 OK)
-
-```json
-{
-  "code": 0,
-  "message": "Project deleted successfully",
-  "data": null
-}
-```
-
----
-
-## 7. Get Project DSN
-
-### GET /projects/:id/dsn
-
-Get the Data Source Name (DSN) for a project. This is used to configure SDKs and send data to Kest.
-
-**Authentication**: Required
-
-#### Path Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `id` | integer | ✅ Yes | Project ID |
 
 #### Response (200 OK)
 
@@ -292,29 +210,93 @@ Get the Data Source Name (DSN) for a project. This is used to configure SDKs and
   "code": 0,
   "message": "success",
   "data": {
-    "dsn": "https://api.kest.com/v1/ingest?public_key=pk_live_51H2K3j...kLmN&project_id=1",
-    "public_key": "pk_live_51H2K3j...kLmN",
-    "project_id": 1,
-    "environment": "production"
+    "id": 1,
+    "name": "Updated E-commerce API",
+    "slug": "ecommerce-api",
+    "platform": "python",
+    "status": 1,
+    "created_at": "2024-02-05T01:00:00Z"
   }
 }
 ```
 
-#### DSN Format
+#### Error Responses
 
-The DSN contains all necessary information to connect your application to Kest:
+- `400 Bad Request`: Invalid ID format or request body
+- `403 Forbidden`: Permission denied
+- `404 Not Found`: Project not found
 
+## 5. Patch Project
+
+### PATCH /projects/:id
+
+Partially update a project.
+
+The accepted request body and response shape are the same as `PUT /projects/:id`.
+
+## 6. Delete Project
+
+### DELETE /projects/:id
+
+Delete a project.
+
+#### Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Project ID |
+
+#### Response (200 OK)
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "message": "project deleted"
+  }
+}
 ```
-https://api.kest.com/v1/ingest?public_key=<public_key>&project_id=<project_id>
+
+#### Error Responses
+
+- `400 Bad Request`: Invalid ID format
+- `403 Forbidden`: Permission denied
+- `404 Not Found`: Project not found
+
+## 7. Get Project Stats
+
+### GET /projects/:id/stats
+
+Return aggregate counters for a project.
+
+#### Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | Project ID |
+
+#### Response (200 OK)
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "api_spec_count": 12,
+    "flow_count": 3,
+    "environment_count": 2,
+    "member_count": 5,
+    "category_count": 8
+  }
+}
 ```
 
-For development environment:
+#### Error Responses
 
-```
-https://api-dev.kest.com/v1/ingest?public_key=<public_key>&project_id=<project_id>
-```
-
----
+- `400 Bad Request`: Invalid ID format
+- `403 Forbidden`: Permission denied
+- `500 Internal Server Error`: Failed to load project statistics
 
 ## Usage Examples
 
@@ -323,57 +305,48 @@ https://api-dev.kest.com/v1/ingest?public_key=<public_key>&project_id=<project_i
 ```javascript
 const token = 'your-jwt-token';
 
-// Create a new project
-const createProject = async () => {
-  const response = await fetch('http://localhost:8025/projects', {
+async function createProject() {
+  const response = await fetch('http://localhost:8025/v1/projects', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       name: 'My API Project',
-      platform: 'javascript'
-    })
+      platform: 'javascript',
+    }),
   });
-  
-  const data = await response.json();
-  console.log('Project created:', data.data);
-  return data.data;
-};
 
-// List projects
-const listProjects = async () => {
-  const response = await fetch('http://localhost:8025/projects?page=1&per_page=10', {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-  
-  const data = await response.json();
-  console.log('Projects:', data.data.items);
-  return data.data;
-};
+  return response.json();
+}
 
-// Get project DSN
-const getProjectDSN = async (projectId) => {
-  const response = await fetch(`http://localhost:8025/projects/${projectId}/dsn`, {
+async function listProjects() {
+  const response = await fetch('http://localhost:8025/v1/projects?page=1&per_page=10', {
     headers: {
-      'Authorization': `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
-  
-  const data = await response.json();
-  console.log('DSN:', data.data.dsn);
-  return data.data.dsn;
-};
+
+  return response.json();
+}
+
+async function getProjectStats(projectId) {
+  const response = await fetch(`http://localhost:8025/v1/projects/${projectId}/stats`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.json();
+}
 ```
 
 ### cURL
 
 ```bash
 # Create project
-curl -X POST http://localhost:8025/projects \
+curl -X POST http://localhost:8025/v1/projects \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer TOKEN" \
   -d '{
@@ -382,100 +355,29 @@ curl -X POST http://localhost:8025/projects \
   }'
 
 # List projects
-curl -X GET "http://localhost:8025/projects?page=1&per_page=10" \
+curl -X GET "http://localhost:8025/v1/projects?page=1&per_page=10" \
   -H "Authorization: Bearer TOKEN"
 
 # Get project details
-curl -X GET http://localhost:8025/projects/1 \
+curl -X GET http://localhost:8025/v1/projects/1 \
   -H "Authorization: Bearer TOKEN"
 
-# Update project
-curl -X PUT http://localhost:8025/projects/1 \
+# Patch project
+curl -X PATCH http://localhost:8025/v1/projects/1 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer TOKEN" \
   -d '{
     "name": "Updated Project Name",
-    "rate_limit_per_minute": 5000
+    "status": 1
   }'
 
-# Get DSN
-curl -X GET http://localhost:8025/projects/1/dsn \
+# Get project stats
+curl -X GET http://localhost:8025/v1/projects/1/stats \
   -H "Authorization: Bearer TOKEN"
 ```
 
----
+## Current Implementation Notes
 
-## SDK Configuration
-
-Once you have your project's DSN, you can configure the Kest SDK in your application:
-
-### JavaScript/TypeScript
-
-```javascript
-import Kest from '@kest-lab/kest-js';
-
-const kest = new Kest({
-  dsn: 'https://api.kest.com/v1/ingest?public_key=pk_live_51H2K3j...kLmN&project_id=1'
-});
-```
-
-### Go
-
-```go
-import "github.com/kest-lab/kest-go"
-
-kest.Init(kest.Config{
-    DSN: "https://api.kest.com/v1/ingest?public_key=pk_live_51H2K3j...kLmN&project_id=1",
-})
-```
-
-### Python
-
-```python
-from kest import Kest
-
-kest = Kest(
-    dsn="https://api.kest.com/v1/ingest?public_key=pk_live_51H2K3j...kLmN&project_id=1"
-)
-```
-
----
-
-## Rate Limits
-
-Each project has its own rate limit:
-
-- **Default**: 1000 requests per minute
-- **Maximum**: 100,000 requests per minute
-- **Burst**: Up to 2x the rate limit for short bursts
-
-Rate limit headers are included in responses:
-
-```
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1641234567
-```
-
----
-
-## Security Considerations
-
-1. **Public Key**: Treat your project's public key like a password
-2. **HTTPS**: Always use HTTPS for production DSNs
-3. **Environment Separation**: Use different projects for different environments
-4. **Access Control**: Only authorized users should be able to view/update projects
-
----
-
-## Testing
-
-Run the project tests:
-
-```bash
-# Unit tests
-go test ./internal/modules/project/...
-
-# Integration tests
-go test ./tests/feature/project_test.go
-```
+- Project responses currently expose `id`, `name`, `slug`, `platform`, `status`, and `created_at`.
+- This module does not currently expose `public_key`, `dsn`, or `rate_limit_per_minute`.
+- The documented contract here is based on the current handlers, DTOs, and routes in `internal/modules/project`.

@@ -18,8 +18,8 @@ This API documentation is organized into the following files:
    
 5. **[02-projects.md](./02-projects.md)** - Projects API
    - Project CRUD operations
-   - DSN generation and management
-   - Rate limiting configuration
+   - Project statistics
+   - Role-protected project access
    
 6. **[03-api-specifications.md](./03-api-specifications.md)** - API Specifications API
    - OpenAPI/Swagger spec management
@@ -69,7 +69,7 @@ This API documentation is organized into the following files:
 - Secure secret management
 
 ### Core Functionality
-- Project management with DSN generation
+- Project management with membership-based access control
 - OpenAPI/Swagger specification support
 - Automated test case generation
 - Multi-environment support
@@ -103,9 +103,9 @@ This API documentation is organized into the following files:
    POST /v1/projects
    ```
 
-4. **Get your DSN**
+4. **View project stats**
    ```bash
-   GET /v1/projects/{id}/dsn
+   GET /v1/projects/{id}/stats
    ```
 
 5. **Start testing!**
