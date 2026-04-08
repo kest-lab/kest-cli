@@ -1,97 +1,70 @@
-// Authentication service layer
-// Functional API pattern - stateless, pure functions
-
 import request from '@/http';
 import type {
-    User,
-    LoginRequest,
-    RegisterRequest,
-    ChangePasswordRequest,
-    SetupRequest,
-    AuthResponse,
-    SystemFeatures,
-    SetupStatus,
+  ApiUser,
+  ChangePasswordRequest,
+  LoginRequest,
+  LoginResponse,
+  MessageResponse,
+  PaginatedUsersResponse,
+  PasswordResetRequest,
+  PasswordResetResponse,
+  RegisterRequest,
+  UpdateProfileRequest,
+  UserListParams,
 } from '@/types/auth';
 
-// API endpoints (Real Backend)
-// All endpoints point to kest-api backend /v1 routes
-const ENDPOINTS = {
-    LOGIN: "/v1/login",
-    LOGOUT: "/v1/logout",
-    ME: "/v1/users/profile",
-    CHANGE_PASSWORD: "/v1/users/password",
-    RESET_PASSWORD: "/v1/password/reset",
-    REGISTER: "/v1/register",
-    SETUP_STATUS: "/v1/setup-status",
-    SETUP: "/v1/setup",
-    SYSTEM_FEATURES: "/v1/system-features",
-} as const;
+interface RawPaginatedUsersResponse {
+  code: number;
+  message: string;
+  data: ApiUser[];
+  meta: PaginatedUsersResponse['meta'];
+  links: PaginatedUsersResponse['links'];
+}
 
-/**
- * Authentication API
- * All methods are stateless pure functions
- * 
- * Connects to kest-api backend at http://localhost:8080/v1
- */
-export const authApi = {
-    // System setup
-    getSetupStatus: () =>
-        request.get<SetupStatus>(ENDPOINTS.SETUP_STATUS),
+export const authService = {
+  login: (data: LoginRequest) => request.post<LoginResponse>('/login', data, { skipAuth: true }),
 
-    setup: (data: SetupRequest) =>
-        request.post<AuthResponse>(ENDPOINTS.SETUP, data),
+  register: (data: RegisterRequest) => request.post<ApiUser>('/register', data, { skipAuth: true }),
 
-    getSystemFeatures: () =>
-        request.get<SystemFeatures>(ENDPOINTS.SYSTEM_FEATURES),
+  requestPasswordReset: (data: PasswordResetRequest) =>
+    request.post<PasswordResetResponse>('/password/reset', data, { skipAuth: true }),
 
-    // Authentication
-    login: async (credentials: LoginRequest) => {
-        const username = credentials.username || credentials.email || '';
-        const result = await request.post<{ access_token: string; user: User }>(
-            ENDPOINTS.LOGIN,
-            { username, password: credentials.password },
-            { skipAuth: true }
-        );
-        return { user: result.user, token: result.access_token };
-    },
+  getProfile: () => request.get<ApiUser>('/users/profile'),
 
-    register: (data: RegisterRequest) => {
-        const username = data.username || data.email.split('@')[0];
-        return request.post<AuthResponse>(
-            ENDPOINTS.REGISTER,
-            { ...data, username },
-            { skipAuth: true }
-        );
-    },
+  updateProfile: (data: UpdateProfileRequest) => request.put<ApiUser>('/users/profile', data),
 
-    changePassword: (data: ChangePasswordRequest) =>
-        request.put<AuthResponse>(ENDPOINTS.CHANGE_PASSWORD, data),
+  changePassword: (data: ChangePasswordRequest) =>
+    request.put<MessageResponse>('/users/password', data),
 
-    resetPassword: (email: string) =>
-        request.post<{ message: string }>(ENDPOINTS.RESET_PASSWORD, { email }, { skipAuth: true }),
+  deleteAccount: () => request.delete<void>('/users/account'),
+};
 
-    logout: async () => {
-        try {
-            await request.post(ENDPOINTS.LOGOUT, {});
-        } catch (error) {
-            console.warn('Logout request failed:', error);
-        }
-    },
+export const userService = {
+  list: async ({ page = 1, perPage = 10 }: UserListParams = {}): Promise<PaginatedUsersResponse> => {
+    // 用户列表接口除了 data 之外，还会在响应顶层返回 meta / links，
+    // 因此这里关闭默认 data 解包，保留完整响应结构再做一次前端归一化。
+    const response = await request.get<RawPaginatedUsersResponse>('/users', {
+      params: { page, per_page: perPage },
+      unwrapData: false,
+    });
 
-    // Profile
-    getProfile: async () => {
-        return request.get<User>(ENDPOINTS.ME);
-    },
+    return {
+      items: response.data,
+      meta: response.meta,
+      links: response.links,
+    };
+  },
 
-    /**
-     * Silent profile check - used during auth initialization.
-     * Does not show error toasts on failure (e.g., 401 when not logged in).
-     */
-    getProfileSilent: async () => {
-        return request.get<User>(ENDPOINTS.ME, { skipErrorHandler: true });
-    },
+  search: (query: string, limit = 20) =>
+    // 后端实际提供的是搜索接口，作为列表页的补充能力。
+    request.get<ApiUser[]>('/users/search', {
+      params: { q: query, limit },
+    }),
 
-} as const;
+  getById: (id: number | string) => request.get<ApiUser>(`/users/${id}`),
 
-// Type exports for external use
-export type AuthApi = typeof authApi;
+  getInfo: (id: number | string) => request.get<ApiUser>(`/users/${id}/info`),
+};
+
+export type AuthService = typeof authService;
+export type UserService = typeof userService;

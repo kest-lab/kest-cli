@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect } from 'react';
 import { eventBus } from '@/utils';
 
@@ -16,16 +18,16 @@ import { eventBus } from '@/utils';
  * });
  */
 export function useEventBus<T = unknown>(
-    event: string,
-    handler: (data: T) => void
+  event: string,
+  handler: (data: T) => void
 ) {
-    useEffect(() => {
-        // Subscribe to the event when the component mounts
-        const unsubscribe = eventBus.subscribe<T>(event, handler);
-
-        // Unsubscribe when the component unmounts
-        return unsubscribe;
-    }, [event, handler]);
+  useEffect(() => {
+    // Subscribe to the event when the component mounts
+    const unsubscribe = eventBus.subscribe<T>(event, handler);
+    
+    // Unsubscribe when the component unmounts
+    return unsubscribe;
+  }, [event, handler]);
 }
 
 export default useEventBus;

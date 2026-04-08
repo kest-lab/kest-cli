@@ -10,9 +10,9 @@
  * @param ellipsis - Optional custom ellipsis string (default '...')
  */
 export function truncate(str: string, length: number, ellipsis = '...'): string {
-    if (!str) return '';
-    if (str.length <= length) return str;
-    return str.substring(0, length).trim() + ellipsis;
+  if (!str) return '';
+  if (str.length <= length) return str;
+  return str.substring(0, length).trim() + ellipsis;
 }
 
 /**
@@ -20,8 +20,8 @@ export function truncate(str: string, length: number, ellipsis = '...'): string 
  * @param str - String to capitalize
  */
 export function capitalize(str: string): string {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 /**
@@ -29,12 +29,12 @@ export function capitalize(str: string): string {
  * @param str - String to format
  */
 export function toTitleCase(str: string): string {
-    if (!str) return '';
-    return str
-        .toLowerCase()
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 /**
@@ -42,14 +42,14 @@ export function toTitleCase(str: string): string {
  * @param str - String to slugify
  */
 export function slugify(str: string): string {
-    if (!str) return '';
-    return str
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^\w-]+/g, '')
-        .replace(/--+/g, '-')
-        .replace(/^-+/, '')
-        .replace(/-+$/, '');
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
 }
 
 /**
@@ -57,12 +57,12 @@ export function slugify(str: string): string {
  * @param str - String to convert
  */
 export function toCamelCase(str: string): string {
-    if (!str) return '';
-    return str
-        .replace(/(?:^\w|[A-Z]|\b\w)/g, (letter, index) =>
-            index === 0 ? letter.toLowerCase() : letter.toUpperCase()
-        )
-        .replace(/\s+/g, '');
+  if (!str) return '';
+  return str
+    .replace(/(?:^\w|[A-Z]|\b\w)/g, (letter, index) =>
+      index === 0 ? letter.toLowerCase() : letter.toUpperCase()
+    )
+    .replace(/\s+/g, '');
 }
 
 /**
@@ -72,21 +72,21 @@ export function toCamelCase(str: string): string {
  * @param currency - Currency code (default 'USD', only used if options is string)
  */
 export function formatCurrency(
-    value: number,
-    options: Intl.NumberFormatOptions | string = 'en-US',
-    currency = 'USD'
+  value: number, 
+  options: Intl.NumberFormatOptions | string = 'en-US', 
+  currency = 'USD'
 ): string {
-    if (typeof options === 'string') {
-        return new Intl.NumberFormat(options, {
-            style: 'currency',
-            currency,
-        }).format(value);
-    }
-    return new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency,
-        ...options
+  if (typeof options === 'string') {
+    return new Intl.NumberFormat(options, {
+      style: 'currency',
+      currency,
     }).format(value);
+  }
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    ...options
+  }).format(value);
 }
 
 /**
@@ -96,19 +96,19 @@ export function formatCurrency(
  * @param decimals - Number of decimal places (default 2, only used if options is string)
  */
 export function formatPercent(
-    value: number,
-    options: Intl.NumberFormatOptions | string = 'en-US',
-    decimals = 2
+  value: number, 
+  options: Intl.NumberFormatOptions | string = 'en-US', 
+  decimals = 2
 ): string {
-    if (typeof options === 'string') {
-        return new Intl.NumberFormat(options, {
-            style: 'percent',
-            minimumFractionDigits: decimals,
-            maximumFractionDigits: decimals,
-        }).format(value);
-    }
-    return new Intl.NumberFormat(undefined, {
-        style: 'percent',
-        ...options
+  if (typeof options === 'string') {
+    return new Intl.NumberFormat(options, {
+      style: 'percent',
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
     }).format(value);
+  }
+  return new Intl.NumberFormat(undefined, {
+    style: 'percent',
+    ...options
+  }).format(value);
 }

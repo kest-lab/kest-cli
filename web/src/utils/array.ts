@@ -9,14 +9,14 @@
  * @param key - Object key to group by
  */
 export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
-    return array.reduce((result, item) => {
-        const groupKey = String(item[key]);
-        if (!result[groupKey]) {
-            result[groupKey] = [];
-        }
-        result[groupKey].push(item);
-        return result;
-    }, {} as Record<string, T[]>);
+  return array.reduce((result, item) => {
+    const groupKey = String(item[key]);
+    if (!result[groupKey]) {
+      result[groupKey] = [];
+    }
+    result[groupKey].push(item);
+    return result;
+  }, {} as Record<string, T[]>);
 }
 
 /**
@@ -24,7 +24,7 @@ export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
  * @param array - Array with possible duplicates
  */
 export function uniqueArray<T>(array: T[]): T[] {
-    return [...new Set(array)];
+  return [...new Set(array)];
 }
 
 /**
@@ -34,15 +34,15 @@ export function uniqueArray<T>(array: T[]): T[] {
  * @param direction - Sort direction (asc or desc)
  */
 export function sortByKey<T>(
-    array: T[],
-    key: keyof T,
-    direction: 'asc' | 'desc' = 'asc'
+  array: T[], 
+  key: keyof T, 
+  direction: 'asc' | 'desc' = 'asc'
 ): T[] {
-    return [...array].sort((a, b) => {
-        if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
-        if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
-        return 0;
-    });
+  return [...array].sort((a, b) => {
+    if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
+    if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
 }
 
 /**
@@ -51,17 +51,17 @@ export function sortByKey<T>(
  * @param size - Size of each chunk
  */
 export function chunkArray<T>(array: T[], size: number): T[][] {
-    return array.reduce((result, item, index) => {
-        const chunkIndex = Math.floor(index / size);
-
-        if (!result[chunkIndex]) {
-            result[chunkIndex] = [];
-        }
-
-        result[chunkIndex].push(item);
-
-        return result;
-    }, [] as T[][]);
+  return array.reduce((result, item, index) => {
+    const chunkIndex = Math.floor(index / size);
+    
+    if (!result[chunkIndex]) {
+      result[chunkIndex] = [];
+    }
+    
+    result[chunkIndex].push(item);
+    
+    return result;
+  }, [] as T[][]);
 }
 
 /**
@@ -70,7 +70,7 @@ export function chunkArray<T>(array: T[], size: number): T[][] {
  * @param arrayB - Second array
  */
 export function arrayIntersection<T>(arrayA: T[], arrayB: T[]): T[] {
-    return arrayA.filter(item => arrayB.includes(item));
+  return arrayA.filter(item => arrayB.includes(item));
 }
 
 /**
@@ -79,5 +79,5 @@ export function arrayIntersection<T>(arrayA: T[], arrayB: T[]): T[] {
  * @param arrayB - Array to compare against
  */
 export function arrayDifference<T>(arrayA: T[], arrayB: T[]): T[] {
-    return arrayA.filter(item => !arrayB.includes(item));
+  return arrayA.filter(item => !arrayB.includes(item));
 }

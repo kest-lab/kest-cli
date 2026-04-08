@@ -9,27 +9,27 @@
  * @param obj - Object to clone
  */
 export function deepClone<T>(obj: T): T {
-    if (typeof structuredClone === 'function') {
-        return structuredClone(obj);
-    }
+  if (typeof structuredClone === 'function') {
+    return structuredClone(obj);
+  }
 
-    // Basic fallback for environments without structuredClone
-    if (obj === null || typeof obj !== 'object') {
-        return obj;
+  // Basic fallback for environments without structuredClone
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => deepClone(item)) as unknown as T;
+  }
+  
+  const clonedObj = {} as T;
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      (clonedObj as any)[key] = deepClone((obj as any)[key]);
     }
-
-    if (Array.isArray(obj)) {
-        return obj.map(item => deepClone(item)) as unknown as T;
-    }
-
-    const clonedObj = {} as T;
-    for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            (clonedObj as any)[key] = deepClone((obj as any)[key]);
-        }
-    }
-
-    return clonedObj;
+  }
+  
+  return clonedObj;
 }
 
 /**
@@ -39,23 +39,23 @@ export function deepClone<T>(obj: T): T {
  * @param defaultValue - Default value if path doesn't exist
  */
 export function getNestedValue<T, D = undefined>(
-    obj: Record<string, unknown> | null | undefined,
-    path: string,
-    defaultValue?: D
+  obj: Record<string, unknown> | null | undefined,
+  path: string,
+  defaultValue?: D
 ): T | D {
-    if (!obj) return defaultValue as D;
-
-    const keys = path.split('.');
-    let result: any = obj;
-
-    for (const key of keys) {
-        if (result === undefined || result === null) {
-            return defaultValue as D;
-        }
-        result = result[key];
+  if (!obj) return defaultValue as D;
+  
+  const keys = path.split('.');
+  let result: any = obj;
+  
+  for (const key of keys) {
+    if (result === undefined || result === null) {
+      return defaultValue as D;
     }
-
-    return (result === undefined) ? (defaultValue as D) : (result as T);
+    result = result[key];
+  }
+  
+  return (result === undefined) ? (defaultValue as D) : (result as T);
 }
 
 /**
@@ -64,16 +64,16 @@ export function getNestedValue<T, D = undefined>(
  * @param keys - Keys to include in the new object
  */
 export function pick<T extends object, K extends keyof T>(
-    obj: T,
-    keys: K[]
+  obj: T, 
+  keys: K[]
 ): Pick<T, K> {
-    const result = {} as Pick<T, K>;
-    keys.forEach(key => {
-        if (obj && Object.prototype.hasOwnProperty.call(obj, key)) {
-            result[key] = obj[key];
-        }
-    });
-    return result;
+  const result = {} as Pick<T, K>;
+  keys.forEach(key => {
+    if (obj && Object.prototype.hasOwnProperty.call(obj, key)) {
+      result[key] = obj[key];
+    }
+  });
+  return result;
 }
 
 /**
@@ -82,14 +82,14 @@ export function pick<T extends object, K extends keyof T>(
  * @param keys - Keys to exclude from the new object
  */
 export function omit<T extends object, K extends keyof T>(
-    obj: T,
-    keys: K[]
+  obj: T, 
+  keys: K[]
 ): Omit<T, K> {
-    const result = { ...obj };
-    keys.forEach(key => {
-        delete (result as any)[key];
-    });
-    return result;
+  const result = { ...obj };
+  keys.forEach(key => {
+    delete (result as any)[key];
+  });
+  return result;
 }
 
 /**
@@ -97,8 +97,8 @@ export function omit<T extends object, K extends keyof T>(
  * @param obj - Object to check
  */
 export function isEmptyObject(obj: object | null | undefined): boolean {
-    if (!obj) return true;
-    return Object.keys(obj).length === 0;
+  if (!obj) return true;
+  return Object.keys(obj).length === 0;
 }
 
 /**
@@ -107,27 +107,27 @@ export function isEmptyObject(obj: object | null | undefined): boolean {
  * @param sources - Source objects
  */
 export function deepMerge<T extends object>(target: T, ...sources: object[]): T {
-    if (!sources.length) return target;
-    const source = sources.shift();
+  if (!sources.length) return target;
+  const source = sources.shift();
 
-    if (isObject(target) && isObject(source)) {
-        Object.keys(source).forEach(key => {
-            const sourceValue = (source as any)[key];
-            const targetValue = (target as any)[key];
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach(key => {
+      const sourceValue = (source as any)[key];
+      const targetValue = (target as any)[key];
 
-            if (isObject(sourceValue)) {
-                if (!targetValue) {
-                    (target as any)[key] = deepClone(sourceValue);
-                } else {
-                    (target as any)[key] = deepMerge(targetValue, sourceValue);
-                }
-            } else {
-                (target as any)[key] = sourceValue;
-            }
-        });
-    }
+      if (isObject(sourceValue)) {
+        if (!targetValue) {
+          (target as any)[key] = deepClone(sourceValue);
+        } else {
+          (target as any)[key] = deepMerge(targetValue, sourceValue);
+        }
+      } else {
+        (target as any)[key] = sourceValue;
+      }
+    });
+  }
 
-    return deepMerge(target, ...sources);
+  return deepMerge(target, ...sources);
 }
 
 /**
@@ -135,23 +135,23 @@ export function deepMerge<T extends object>(target: T, ...sources: object[]): T 
  * @param obj - Object to freeze
  */
 export function deepFreeze<T extends object>(obj: T): T {
-    Object.freeze(obj);
-    Object.getOwnPropertyNames(obj).forEach(prop => {
-        const value = (obj as any)[prop];
-        if (
-            value !== null &&
-            (typeof value === 'object' || typeof value === 'function') &&
-            !Object.isFrozen(value)
-        ) {
-            deepFreeze(value);
-        }
-    });
-    return obj;
+  Object.freeze(obj);
+  Object.getOwnPropertyNames(obj).forEach(prop => {
+    const value = (obj as any)[prop];
+    if (
+      value !== null &&
+      (typeof value === 'object' || typeof value === 'function') &&
+      !Object.isFrozen(value)
+    ) {
+      deepFreeze(value);
+    }
+  });
+  return obj;
 }
 
 /**
  * Helper: Checks if value is a plain object
  */
 function isObject(item: unknown): item is Record<string, any> {
-    return item !== null && typeof item === 'object' && !Array.isArray(item);
+  return item !== null && typeof item === 'object' && !Array.isArray(item);
 }

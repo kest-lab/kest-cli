@@ -1,127 +1,143 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { buildApiUrl } from '@/config/api';
 import { createSelectors } from './utils/selectors';
-import { authApi } from '@/services/auth';
-import type { User, SystemFeatures, SetupStatus } from '@/types/auth';
+import type { ApiUser } from '@/types/auth';
 
 interface AuthState {
-    user: User | null;
-    isAuthenticated: boolean;
-    isLoading: boolean;
-    accessToken: string | null;
-    systemFeatures: SystemFeatures | null;
-    setupStatus: SetupStatus | null;
-    isSystemReady: boolean;
-    error: string | null;
-    setUser: (user: User | null) => void;
-    setLoading: (loading: boolean) => void;
-    setError: (error: string | null) => void;
-    setSystemFeatures: (features: SystemFeatures | null) => void;
-    setSetupStatus: (status: SetupStatus | null) => void;
-    refreshProfile: () => Promise<void>;
-    initializeSystem: () => Promise<void>;
-    clearAuth: () => void;
-    reset: () => void;
+  user: ApiUser | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  accessToken: string | null;
+  isSystemReady: boolean;
+
+  setUser: (user: ApiUser | null) => void;
+  updateUser: (user: ApiUser) => void;
+  setSession: (user: ApiUser, accessToken: string) => void;
+  clearSession: () => void;
+  setLoading: (loading: boolean) => void;
+  initializeAuth: () => Promise<void>;
+  reset: () => void;
 }
 
 const defaultState = {
-    user: null,
-    isAuthenticated: false,
-    isLoading: false,
-    accessToken: null,
-    systemFeatures: null,
-    setupStatus: null,
-    isSystemReady: false,
-    error: null,
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  accessToken: null,
+  isSystemReady: false,
 };
 
 const useAuthStoreBase = create<AuthState>()(
-    persist(
-        (set, get) => ({
-            ...defaultState,
-            setUser: (user) => set({
-                user,
-                isAuthenticated: !!user,
-                error: null
-            }),
-            setLoading: (isLoading) => set({ isLoading }),
-            setError: (error) => set({ error }),
-            setSystemFeatures: (systemFeatures) => set({
-                systemFeatures,
-                isSystemReady: true
-            }),
-            setSetupStatus: (setupStatus) => set({ setupStatus }),
-            refreshProfile: async () => {
-                set({ isLoading: true });
-                try {
-                    const user = await authApi.getProfile();
-                    set({ user, isLoading: false, isAuthenticated: true });
-                } catch (error: any) {
-                    set({ isLoading: false, error: error.message });
-                }
+  persist(
+    (set) => ({
+      ...defaultState,
+
+      setUser: (user) => set({ 
+        user, 
+        isAuthenticated: !!user,
+      }),
+
+      updateUser: (user) => set((state) => ({
+        ...state,
+        user,
+        isAuthenticated: true,
+      })),
+
+      setSession: (user, accessToken) => set({
+        user,
+        accessToken,
+        isAuthenticated: true,
+        isSystemReady: true,
+      }),
+
+      clearSession: () => set((state) => ({
+        ...state,
+        user: null,
+        accessToken: null,
+        isAuthenticated: false,
+        isLoading: false,
+        isSystemReady: true,
+      })),
+
+      setLoading: (isLoading) => set({ isLoading }),
+
+      initializeAuth: async () => {
+        const { accessToken } = useAuthStoreBase.getState();
+
+        set({ isLoading: true });
+        try {
+          if (!accessToken) {
+            // 没有 token 时直接把系统标记为已初始化，
+            // 这样公开页面不会一直卡在 loading 状态。
+            set({ user: null, isAuthenticated: false, isSystemReady: true });
+            return;
+          }
+
+          // 应用刷新后尝试用本地 token 恢复会话，
+          // 以后端 profile 结果作为当前登录态的唯一可信来源。
+          const response = await fetch(buildApiUrl('/users/profile'), {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
             },
-            initializeSystem: async () => {
-                set({ isLoading: true });
-                try {
-                    // You can add more initialization logic here if needed
-                    set({ isSystemReady: true });
-                } catch (error) {
-                    console.error('Failed to initialize system:', error);
-                    set({ isSystemReady: true });
-                } finally {
-                    set({ isLoading: false });
-                }
-            },
-            clearAuth: () => {
-                set({
-                    user: null,
-                    isAuthenticated: false,
-                    accessToken: null,
-                    error: null,
-                });
-                localStorage.removeItem('auth-storage');
-            },
-            reset: () => set(defaultState),
-        }),
-        {
-            name: 'auth-storage',
-            storage: createJSONStorage(() => localStorage),
-            partialize: (state) => ({
-                user: state.user,
-                isAuthenticated: state.isAuthenticated,
-                accessToken: state.accessToken,
-                systemFeatures: state.systemFeatures,
-                setupStatus: state.setupStatus,
-                isSystemReady: state.isSystemReady,
-            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to restore session');
+          }
+
+          const payload = await response.json();
+          const user = payload?.data as ApiUser | undefined;
+
+          if (!user) {
+            throw new Error('Invalid session response');
+          }
+
+          set({
+            user,
+            isAuthenticated: true,
+            isSystemReady: true,
+          });
+        } catch (error) {
+          console.error('Auth initialization failed:', error);
+          // token 失效或后端不可用时，主动清空本地会话，避免进入假登录状态。
+          set({
+            user: null,
+            accessToken: null,
+            isAuthenticated: false,
+            isSystemReady: true,
+          });
+        } finally {
+          set({ isLoading: false });
         }
-    )
+      },
+
+      reset: () => set(defaultState),
+    }),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+        accessToken: state.accessToken,
+      }),
+    }
+  )
 );
 
 export const getAuthTokens = () => {
-    try {
-        const state = useAuthStoreBase.getState();
-        return { accessToken: state.accessToken };
-    } catch {
-        return { accessToken: null };
-    }
+  const state = useAuthStoreBase.getState();
+  return {
+    accessToken: state.accessToken,
+  };
 };
 
 export const setAuthTokens = (accessToken: string | null) => {
-    useAuthStoreBase.setState({ accessToken, isAuthenticated: !!accessToken });
+  useAuthStoreBase.setState({ accessToken });
 };
 
 export const useAuthStore = createSelectors(useAuthStoreBase);
-
-export const authSelectors = {
-    isAdmin: (state: AuthState) => state.user?.role === 'admin',
-    needsSetup: (state: AuthState) => state.setupStatus?.step === 'not_started',
-    canRegister: (state: AuthState) => state.systemFeatures?.is_allow_register ?? true,
-    hasEmailLogin: (state: AuthState) => state.systemFeatures?.enable_email_password_login ?? true,
-    hasSocialLogin: (state: AuthState) => state.systemFeatures?.enable_social_oauth_login ?? false,
-};
-
 export const useCurrentUser = () => useAuthStore.use.user();
 export const useIsAuthenticated = () => useAuthStore.use.isAuthenticated();
 export const useAuthLoading = () => useAuthStore.use.isLoading();
-export const useAuthError = () => useAuthStore.use.error();

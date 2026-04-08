@@ -15,6 +15,10 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
+/**
+ * ErrorBoundary component to catch JavaScript errors anywhere in the child component tree
+ * Logs error information and displays a fallback UI
+ */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
@@ -25,6 +29,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    // Update state so the next render will show the fallback UI
     return { 
       hasError: true, 
       error 
@@ -32,8 +37,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    // You can log the error to an error reporting service
     console.error('Error caught by ErrorBoundary:', error, errorInfo);
     
+    // Call the onError callback if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
@@ -48,6 +55,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   render(): ReactNode {
     if (this.state.hasError) {
+      // You can render any custom fallback UI
       if (this.props.fallback) {
         return this.props.fallback;
       }
@@ -70,6 +78,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 }
 
+/**
+ * withErrorBoundary HOC to wrap components with an ErrorBoundary
+ * @param Component - Component to wrap
+ * @param errorBoundaryProps - ErrorBoundary props
+ */
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
   errorBoundaryProps?: Omit<ErrorBoundaryProps, 'children'>

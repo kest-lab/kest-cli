@@ -1,7 +1,19 @@
-import * as React from "react"
-import { Separator as SeparatorPrimitive } from "radix-ui"
+/**
+ * @component Separator
+ * @category UI
+ * @status Stable
+ * @description Visually or semantically separates content within a page or container.
+ * @usage Use to divide sections of content, either horizontally (default) or vertically.
+ * @example
+ * <Separator />
+ * <Separator orientation="vertical" />
+ */
+"use client"
 
-import { cn } from "@/lib/utils"
+import * as React from "react"
+import * as SeparatorPrimitive from "@radix-ui/react-separator"
+
+import { cn } from "@/utils"
 
 function Separator({
   className,
@@ -11,7 +23,7 @@ function Separator({
 }: React.ComponentProps<typeof SeparatorPrimitive.Root>) {
   return (
     <SeparatorPrimitive.Root
-      data-slot="separator"
+      data-slot="separator-root"
       decorative={decorative}
       orientation={orientation}
       className={cn(

@@ -1,142 +1,98 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { authApi } from '@/services/auth';
-import { useAuthStore, setAuthTokens } from '@/store/auth-store';
-import { authConfig } from '@/config/auth';
-import { useT } from '@/i18n';
-import type { RegisterRequest } from '@/types/auth';
+'use client';
 
-// ============================================================================
-// Auth Query Keys
-// ============================================================================
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { authService } from '@/services/auth';
+import { useAuthStore } from '@/store/auth-store';
+import type {
+  ChangePasswordRequest,
+  LoginRequest,
+  LoginResponse,
+  PasswordResetRequest,
+  RegisterRequest,
+  UpdateProfileRequest,
+} from '@/types/auth';
 
 export const authKeys = {
-    all: ['auth'] as const,
-    user: () => [...authKeys.all, 'user'] as const,
-    session: () => [...authKeys.all, 'session'] as const,
+  all: ['auth'] as const,
+  profile: () => [...authKeys.all, 'profile'] as const,
 };
 
-// ============================================================================
-// Login Mutation
-// ============================================================================
-
-interface LoginParams {
-    email: string;
-    password: string;
+export function useProfile(enabled = true) {
+  return useQuery({
+    queryKey: authKeys.profile(),
+    queryFn: authService.getProfile,
+    enabled,
+  });
 }
 
-/**
- * Login mutation hook with toast notifications
- * 
- * @example
- * ```tsx
- * const { mutate: login, isPending } = useLogin();
- * login({ email, password });
- * ```
- */
 export function useLogin() {
-    const navigate = useNavigate();
-    const queryClient = useQueryClient();
-    const setUser = useAuthStore.use.setUser();
-    const t = useT();
+  const queryClient = useQueryClient();
+  const setSession = useAuthStore.use.setSession();
 
-    return useMutation({
-        mutationFn: async ({ email, password }: LoginParams) => {
-            return authApi.login({ email, password });
-        },
-
-        onSuccess: (data) => {
-            const { user, token } = data;
-            setAuthTokens(token);
-            setUser(user);
-            toast.success(t.auth('loginSuccess'), {
-                description: t.auth('welcomeBack', { name: user.name || user.username }),
-            });
-            queryClient.invalidateQueries({ queryKey: authKeys.user() });
-            navigate(authConfig.routes.afterLogin);
-        },
-    });
+  return useMutation({
+    mutationFn: (data: LoginRequest) => authService.login(data),
+    onSuccess: (result: LoginResponse) => {
+      // 登录成功后同时更新本地会话和 profile 缓存，
+      // 这样控制台和站点头部都能立即反映最新登录状态。
+      setSession(result.user, result.access_token);
+      queryClient.setQueryData(authKeys.profile(), result.user);
+    },
+  });
 }
 
-// ============================================================================
-// Register Mutation
-// ============================================================================
-
-interface RegisterParams {
-    name: string;
-    email: string;
-    password: string;
-}
-
-/**
- * Register mutation hook with toast notifications
- * 
- * @example
- * ```tsx
- * const { mutate: register, isPending } = useRegister();
- * register({ name, email, password });
- * ```
- */
 export function useRegister() {
-    const t = useT();
-    const loginMutation = useLogin();
-
-    return useMutation({
-        mutationFn: async ({ name, email, password }: RegisterParams) => {
-            const data: RegisterRequest = { name, email, password };
-            return authApi.register(data);
-        },
-
-        onSuccess: (_, variables) => {
-            toast.success(t.auth('registerSuccess'), {
-                description: t.auth('accountCreated'),
-            });
-            // Auto-login after successful registration
-            loginMutation.mutate({
-                email: variables.email,
-                password: variables.password
-            });
-        },
-    });
+  return useMutation({
+    mutationFn: (data: RegisterRequest) => authService.register(data),
+  });
 }
 
-// ============================================================================
-// Logout Mutation
-// ============================================================================
+export function useRequestPasswordReset() {
+  return useMutation({
+    mutationFn: (data: PasswordResetRequest) => authService.requestPasswordReset(data),
+  });
+}
 
-/**
- * Logout mutation hook with toast notifications
- * 
- * @example
- * ```tsx
- * const { mutate: logout, isPending } = useLogout();
- * logout();
- * ```
- */
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  const updateUser = useAuthStore.use.updateUser();
+
+  return useMutation({
+    mutationFn: (data: UpdateProfileRequest) => authService.updateProfile(data),
+    onSuccess: (user) => {
+      // 设置页更新成功后，同步刷新 store 和 query cache，
+      // 避免头像、昵称等信息在不同区域出现短暂不一致。
+      updateUser(user);
+      queryClient.setQueryData(authKeys.profile(), user);
+    },
+  });
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (data: ChangePasswordRequest) => authService.changePassword(data),
+  });
+}
+
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+  const clearSession = useAuthStore.use.clearSession();
+
+  return useMutation({
+    mutationFn: authService.deleteAccount,
+    onSuccess: async () => {
+      // 账号删除后立即清空本地登录态，防止页面继续携带失效 token。
+      clearSession();
+      await queryClient.invalidateQueries({ queryKey: authKeys.all });
+    },
+  });
+}
+
 export function useLogout() {
-    const navigate = useNavigate();
-    const queryClient = useQueryClient();
-    const setUser = useAuthStore.use.setUser();
-    const t = useT();
+  const queryClient = useQueryClient();
+  const clearSession = useAuthStore.use.clearSession();
 
-    return useMutation({
-        mutationFn: async () => {
-            return authApi.logout();
-        },
-
-        onSuccess: () => {
-            setUser(null);
-            queryClient.clear();
-            toast.success(t.auth('logoutSuccess'));
-            navigate(authConfig.routes.afterLogout);
-        },
-
-        onError: () => {
-            // Still logout locally even if API fails
-            setUser(null);
-            queryClient.clear();
-            navigate(authConfig.routes.afterLogout);
-        },
-    });
+  return () => {
+    clearSession();
+    queryClient.removeQueries({ queryKey: authKeys.all });
+  };
 }

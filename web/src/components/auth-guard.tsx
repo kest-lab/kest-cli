@@ -1,56 +1,83 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import { authConfig } from '@/config/auth';
 
 interface AuthGuardProps {
-    children: React.ReactNode;
-    redirectTo?: string;
-    showLoading?: boolean;
+  children: React.ReactNode;
+  /**
+   * URL to redirect to if not authenticated
+   * @default '/login'
+   */
+  redirectTo?: string;
+  /**
+   * Show loading indicator while checking auth
+   * @default true
+   */
+  showLoading?: boolean;
 }
 
-export function AuthGuard({
-    children,
-    redirectTo = authConfig.routes.login,
-    showLoading = true,
+/**
+ * AuthGuard - Client component that protects routes
+ * 
+ * Checks if user is authenticated and redirects to login if not.
+ * Use this in layouts to protect entire route groups.
+ * 
+ * @example
+ * ```tsx
+ * // app/(normal)/layout.tsx
+ * export default function NormalLayout({ children }) {
+ *   return <AuthGuard>{children}</AuthGuard>;
+ * }
+ * ```
+ */
+export function AuthGuard({ 
+  children, 
+  redirectTo = authConfig.routes.login,
+  showLoading = true,
 }: AuthGuardProps) {
-    const navigate = useNavigate();
-    const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
+  
+  const isAuthenticated = useAuthStore.use.isAuthenticated();
+  const isLoading = useAuthStore.use.isLoading();
+  const isSystemReady = useAuthStore.use.isSystemReady();
 
-    const isAuthenticated = useAuthStore.use.isAuthenticated();
-    const isLoading = useAuthStore.use.isLoading();
-    const isSystemReady = useAuthStore.use.isSystemReady();
-
-    useEffect(() => {
-        if (!isSystemReady) return;
-
-        if (!isLoading && !isAuthenticated) {
-            const returnUrl = encodeURIComponent(location.pathname + location.search);
-            navigate(`${redirectTo}?returnUrl=${returnUrl}`, { replace: true });
-        }
-    }, [isAuthenticated, isLoading, isSystemReady, location, redirectTo, navigate]);
-
-    if (!isSystemReady || isLoading) {
-        if (showLoading) {
-            return (
-                <div className="flex min-h-screen items-center justify-center">
-                    <div className="flex flex-col items-center space-y-4">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        <p className="text-sm text-muted-foreground">Loading...</p>
-                    </div>
-                </div>
-            );
-        }
-        return null;
+  useEffect(() => {
+    // Wait for system to be ready before checking auth
+    if (!isSystemReady) return;
+    
+    // If not loading and not authenticated, redirect to login
+    if (!isLoading && !isAuthenticated) {
+      // Encode current path for redirect after login
+      const returnUrl = encodeURIComponent(pathname);
+      router.replace(`${redirectTo}?returnUrl=${returnUrl}`);
     }
+  }, [isAuthenticated, isLoading, isSystemReady, pathname, redirectTo, router]);
 
-    if (!isAuthenticated) {
-        return null;
+  // Show loading while system is initializing or checking auth
+  if (!isSystemReady || isLoading) {
+    if (showLoading) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      );
     }
+    return null;
+  }
 
-    return <>{children}</>;
+  // If not authenticated, don't render children (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return <>{children}</>;
 }
 
 export default AuthGuard;

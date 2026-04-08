@@ -1,0 +1,48 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.*
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Cache files
+.turbo
+.eslintcache
+*.tsbuildinfo
+
+# Environment files
+.env*
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+
+# Documentation
+docs/
+
+# Public assets
+public/
+
+# Package manager files
+package-lock.json
+yarn.lock
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/

@@ -1,0 +1,233 @@
+const messages = {
+  meta: {
+    title: 'kest',
+    description: '使用上下文、历史结果与 AI 诊断来构建更智能的 API 测试工作流。',
+  },
+  brand: {
+    name: 'kest',
+    tagline: '面向现代 API 团队的开源测试与协作平台。',
+  },
+  nav: {
+    product: '产品',
+    features: '能力',
+    apiDocs: 'API 文档',
+    resources: '资源',
+    pricing: '定价',
+    login: '登录',
+    signUp: '注册',
+    docsSoon: '即将推出',
+    mobileMenu: '打开导航',
+    closeMenu: '关闭导航',
+  },
+  hero: {
+    badge: 'AI 原生 API 测试流',
+    title: '借助上下文、历史记录与 AI 驱动诊断测试 API',
+    description:
+      '构建可读的测试流，在请求之间复用 token 与变量，检查历史执行结果，并帮助团队理解 API 测试失败的原因。',
+    primaryCta: '立即开始',
+    secondaryCta: '查看 API 文档',
+    supportingNote: '开源核心，团队协作工作区，企业级诊断体验。',
+    mockup: {
+      sidebarTitle: '工作区',
+      projectsLabel: '项目',
+      flowsLabel: '测试流',
+      environmentsLabel: '环境',
+      teamspacesLabel: '团队空间',
+      activeProject: '支付平台',
+      flowOne: '认证链路',
+      flowTwo: '订单回归',
+      environmentValue: 'Staging EU',
+      teamValue: '核心 API',
+      workspaceTitle: '带上下文的测试流',
+      workspaceSubtitle: '将每个请求视作同一工程化链路中的一步。',
+      requestOne: 'POST /auth/login',
+      requestTwo: 'GET /me',
+      requestThree: 'POST /billing/preview',
+      tokenForwarded: 'Bearer token 已从登录步骤自动传递',
+      sessionForwarded: 'session cookie 已注入后续请求',
+      variableForwarded: 'tenantId 变量来自上一步响应',
+      headersForwarded: 'x-trace-context 已贯穿整个测试流',
+      resultsTitle: '执行结果',
+      statusLabel: '状态',
+      failedCheck: 'POST /billing/preview 缺少 invoice_session',
+      failedHint: '失败出现在 token 刷新后，上游上下文仍指向旧会话。',
+      aiTitle: 'AI 诊断',
+      aiReason:
+        '登录步骤返回了新的 session_id，但第三步仍引用旧的缓存 header。请在步骤二之后重新映射会话变量。',
+      aiAction: '建议：在登录成功后更新 session.current，并让账单步骤从共享上下文中读取。',
+      historyTitle: '最近执行',
+      historyOne: '2 分钟前 · 失败 · 812ms',
+      historyTwo: '18 分钟前 · 通过 · 768ms',
+      historyThree: '1 小时前 · 通过 · 790ms',
+    },
+  },
+  logos: {
+    title: '为现代 API 团队而构建',
+  },
+  features: {
+    eyebrow: '核心能力',
+    title: '把 API 测试、结果追踪与团队协作放在同一个工作区里',
+    description:
+      'kest 不只是在发请求。它把链路、上下文、历史结果与团队反馈统一成一个面向工程的测试系统。',
+    items: {
+      flows: {
+        title: '可视化测试流',
+        description: '用可视化方式查看整个测试链路、步骤状态和依赖关系。',
+      },
+      context: {
+        title: '上下文感知请求',
+        description: '自动继承 token、cookies、headers 和变量，不再重复复制粘贴。',
+      },
+      history: {
+        title: '历史结果',
+        description: '按时间轴查看执行结果、耗时、状态变化与回归趋势。',
+      },
+      collaboration: {
+        title: '团队协作',
+        description: '共享测试流、状态、注释与工作区，保证团队上下文一致。',
+      },
+      workflow: {
+        title: '.flow.md 工作流文件',
+        description: '测试流程像文档一样可读，也能被 AI 直接理解和分析。',
+      },
+      diagnosis: {
+        title: 'AI 失败诊断',
+        description: '测试失败时，结合上下文、链路与响应信息解释问题来源。',
+      },
+    },
+  },
+  sections: {
+    flow: {
+      eyebrow: '测试流可视化',
+      title: '把每次测试都看成一条相互连接的流程',
+      description:
+        '不再只看单个请求。查看完整测试链路、请求依赖、变量传递与每一步的执行状态。',
+      cta: '探索可视化测试流',
+      points: {
+        one: '基于流程的请求组织',
+        two: '依赖关系可见',
+        three: '逐步执行追踪',
+        four: 'token 与变量自动传递',
+      },
+      mockup: {
+        title: '流程画布',
+        laneOne: '登录',
+        laneTwo: '身份确认',
+        laneThree: '账单校验',
+        laneFour: '回归报告',
+        detailOne: '生成 auth.token 与 session.current',
+        detailTwo: '读取 profile.id 并拼装租户上下文',
+        detailThree: '从共享变量中注入 invoice_session',
+        detailFour: '输出失败摘要与变更影响',
+      },
+    },
+    history: {
+      eyebrow: '历史结果与协作',
+      title: '持续追踪结果变化，让团队始终保持同步',
+      description:
+        '团队可以一起查看测试历史、失败记录、变更影响和当前协作状态，快速判断问题是否来自接口变更还是环境波动。',
+      cta: '查看共享工作区',
+      points: {
+        one: '执行历史',
+        two: '共享工作区',
+        three: '团队状态可见',
+        four: '注释与协作信号',
+      },
+      mockup: {
+        title: '团队时间线',
+        feedOne: '今天 09:42 · 账单回归失败',
+        feedTwo: 'Lina 已添加注释：怀疑会话刷新时机不一致',
+        feedThree: 'Marco 已确认变更来自 auth-service@v2.18',
+        feedFour: '受影响流程：checkout-flow、billing-preview',
+      },
+    },
+    ai: {
+      eyebrow: 'AI + .flow.md',
+      title: '对人类可读的工作流，也能被 AI 诊断',
+      description:
+        '.flow.md 文件让测试定义像文档一样易读，同时保留足够结构，让 AI 能理解上下文、解释失败并帮助新成员更快上手。',
+      cta: '查看工作流示例',
+      points: {
+        one: '人类可读的测试定义',
+        two: 'AI 可读的结构化工作流',
+        three: '结合上下文解释失败原因',
+        four: '更快调试与更快 onboarding',
+      },
+      mockup: {
+        title: '.flow.md 摘要',
+        lineOne: 'flow "billing-preview" uses auth.login -> user.profile -> billing.preview',
+        lineTwo: 'capture response.token as session.current.token',
+        lineThree: 'replay headers.authorization from session.current.token',
+        lineFour: 'ai note: compare failure with last green run and auth refresh timing',
+      },
+    },
+  },
+  stats: {
+    eyebrow: '价值信号',
+    title: '为高频 API 团队而设计的执行、协作与诊断体验',
+    description: '从上下文传播到失败解释，每一个细节都围绕工程效率与团队透明度来构建。',
+    items: {
+      runs: {
+        value: '10K+',
+        label: '已可视化的测试运行',
+        detail: '从单次排查到长期回归，所有执行记录都在同一个视图里。',
+      },
+      teams: {
+        value: '500+',
+        label: '协作中的 API 团队',
+        detail: '共享工作区、评论和状态流让跨角色协作保持一致。',
+      },
+      debugging: {
+        value: '90%',
+        label: '更快定位失败原因',
+        detail: '结合上下文与 AI 解释，减少手动回溯链路的时间。',
+      },
+      readable: {
+        value: '100%',
+        label: '可读工作流文件',
+        detail: '.flow.md 同时服务工程师、测试人员和 AI 分析器。',
+      },
+    },
+  },
+  cta: {
+    eyebrow: '开始构建',
+    title: '与团队一起构建更聪明的 API 测试工作流',
+    description:
+      '从开源工作流开始，在团队协作、历史记录和 AI 诊断到位的前提下扩展你的 API 测试体系。',
+    primaryCta: '免费开始',
+    secondaryCta: '阅读 API 文档',
+    pricingHint: '开源核心，面向成长型团队提供更强的协作与治理能力。',
+  },
+  footer: {
+    product: '产品',
+    apiDocs: 'API 文档',
+    resources: '资源',
+    company: '公司',
+    legal: '法律',
+    socialTitle: '社交',
+    links: {
+      overview: '产品概览',
+      features: '功能',
+      flows: '测试流',
+      docsOverview: '文档概览',
+      examples: '示例',
+      schemas: '模式',
+      changelog: '更新日志',
+      guides: '指南',
+      blog: '博客',
+      openSource: '开源',
+      careers: '招聘',
+      contact: '联系我们',
+      privacy: '隐私',
+      terms: '条款',
+      security: '安全',
+      github: 'GitHub',
+      discord: 'Discord',
+      x: 'X',
+    },
+  },
+};
+
+export default messages;
+
+export type MarketingMessages = typeof messages;

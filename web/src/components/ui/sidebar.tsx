@@ -1,12 +1,38 @@
+/**
+ * @component Sidebar
+ * @category UI
+ * @status Stable
+ * @description A comprehensive system for building complex, collapsible sidebars with support for navigation, menus, and groups.
+ * @usage Wraps the layout with SidebarProvider and uses SidebarTrigger to toggle visibility.
+ * @example
+ * <SidebarProvider>
+ *   <Sidebar>
+ *     <SidebarContent>
+ *       <SidebarGroup>
+ *         <SidebarGroupLabel>Application</SidebarGroupLabel>
+ *         <SidebarMenu>
+ *           <SidebarMenuItem>
+ *             <SidebarMenuButton>Home</SidebarMenuButton>
+ *           </SidebarMenuItem>
+ *         </SidebarMenu>
+ *       </SidebarGroup>
+ *     </SidebarContent>
+ *   </Sidebar>
+ *   <SidebarInset>
+ *     <SidebarTrigger />
+ *     {children}
+ *   </SidebarInset>
+ * </SidebarProvider>
+ */
 "use client"
 
 import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
+import { Slot } from "@radix-ui/react-slot"
+import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeftIcon } from "lucide-react"
-import { Slot } from "radix-ui"
 
 import { useIsMobile } from "@/hooks/use-mobile"
-import { cn } from "@/lib/utils"
+import { cn } from "@/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
@@ -265,7 +291,7 @@ function SidebarTrigger({
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
       variant="ghost"
-      size="icon"
+      isIcon
       className={cn("size-7", className)}
       onClick={(event) => {
         onClick?.(event)
@@ -343,6 +369,17 @@ function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sidebar-footer"
+      data-sidebar="footer"
+      className={cn("flex flex-col gap-2 p-2", className)}
+      {...props}
+    />
+  )
+}
+
 function SidebarSeparator({
   className,
   ...props
@@ -387,7 +424,7 @@ function SidebarGroupLabel({
   asChild = false,
   ...props
 }: React.ComponentProps<"div"> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot.Root : "div"
+  const Comp = asChild ? Slot : "div"
 
   return (
     <Comp
@@ -408,7 +445,7 @@ function SidebarGroupAction({
   asChild = false,
   ...props
 }: React.ComponentProps<"button"> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot.Root : "button"
+  const Comp = asChild ? Slot : "button"
 
   return (
     <Comp
@@ -497,7 +534,7 @@ function SidebarMenuButton({
   isActive?: boolean
   tooltip?: string | React.ComponentProps<typeof TooltipContent>
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
-  const Comp = asChild ? Slot.Root : "button"
+  const Comp = asChild ? Slot : "button"
   const { isMobile, state } = useSidebar()
 
   const button = (
@@ -543,7 +580,7 @@ function SidebarMenuAction({
   asChild?: boolean
   showOnHover?: boolean
 }) {
-  const Comp = asChild ? Slot.Root : "button"
+  const Comp = asChild ? Slot : "button"
 
   return (
     <Comp
@@ -595,10 +632,15 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean
 }) {
-  // Random width between 50 to 90%.
+  const skeletonId = React.useId()
   const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
-  }, [])
+    let hash = 0
+    for (let i = 0; i < skeletonId.length; i += 1) {
+      hash = (hash * 31 + skeletonId.charCodeAt(i)) >>> 0
+    }
+
+    return `${50 + (hash % 41)}%`
+  }, [skeletonId])
 
   return (
     <div
@@ -666,7 +708,7 @@ function SidebarMenuSubButton({
   size?: "sm" | "md"
   isActive?: boolean
 }) {
-  const Comp = asChild ? Slot.Root : "a"
+  const Comp = asChild ? Slot : "a"
 
   return (
     <Comp
@@ -690,6 +732,7 @@ function SidebarMenuSubButton({
 export {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupAction,
   SidebarGroupContent,

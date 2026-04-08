@@ -10,4 +10,3 @@ export * from './array';
 export * from './validation';
 export * from './cn';
 export * from './event-bus';
-export * from './audio';

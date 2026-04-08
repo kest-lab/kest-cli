@@ -1,36 +1,32 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryCache, MutationCache } from '@tanstack/react-query';
+import { handleError } from '@/http/error-handler';
 
-/**
- * TanStack Query Configuration
- * Optimized for performance
- */
-
+// Create a React Query client.
 export const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            // Stale time: data considered fresh for 1 minute
-            staleTime: 1000 * 60,
-
-            // Cache time: unused data kept for 5 minutes
-            gcTime: 1000 * 60 * 5,
-
-            // Retry failed requests
-            retry: 1,
-            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-
-            // Refetch configuration
-            refetchOnWindowFocus: false,
-            refetchOnReconnect: true,
-            refetchOnMount: true,
-
-            // Network mode
-            networkMode: 'online',
-        },
-        mutations: {
-            retry: 0,
-            networkMode: 'online',
-        },
+  queryCache: new QueryCache({
+    onError: (error) => {
+      // Background query errors
+      handleError(error);
     },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => {
+      // Global mutation errors (as a safety net)
+      handleError(error);
+    },
+  }),
+  defaultOptions: {
+    queries: {
+      // Baseline defaults.
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000,
+    },
+    mutations: {
+      // Baseline defaults.
+      retry: 1,
+    },
+  },
 });
 
 export default queryClient;

@@ -1,7 +1,21 @@
-import * as React from "react"
-import { Label as LabelPrimitive } from "radix-ui"
+/**
+ * @component Label
+ * @category UI
+ * @status Stable
+ * @description An accessible label component for form inputs.
+ * @usage Use with Input, Checkbox, or other form controls to provide descriptive text.
+ * @example
+ * <div className="grid gap-1.5">
+ *   <Label htmlFor="email">Email</Label>
+ *   <Input id="email" type="email" />
+ * </div>
+ */
+"use client"
 
-import { cn } from "@/lib/utils"
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+
+import { cn } from "@/utils"
 
 function Label({
   className,
