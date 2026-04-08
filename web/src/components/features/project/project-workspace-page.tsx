@@ -120,12 +120,7 @@ export function ProjectWorkspacePage({
 
   switch (module) {
     case 'collections':
-      return (
-        <CollectionsWorkspaceSection
-          projectId={projectId}
-          projectName={projectName}
-        />
-      );
+      return <CollectionsWorkspaceSection projectId={projectId} />;
     case 'api-specs':
       return (
         <ApiSpecsWorkspaceSection
@@ -424,12 +419,10 @@ function ApiSpecsWorkspaceSection({
 
 function CollectionsWorkspaceSection({
   projectId,
-  projectName,
 }: {
   projectId: number;
-  projectName: string;
 }) {
-  return <ApiRequestWorkbench projectId={projectId} projectName={projectName} />;
+  return <ApiRequestWorkbench projectId={projectId} />;
 }
 
 function EnvironmentsWorkspaceSection({

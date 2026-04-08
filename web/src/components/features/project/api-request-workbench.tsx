@@ -44,6 +44,8 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useDeleteCollection, useUpdateCollection } from '@/hooks/use-collections';
+import { useCreateRequest } from '@/hooks/use-requests';
+import type { ProjectRequest, RequestAuthConfig, RequestKeyValue } from '@/types/request';
 import { cn } from '@/utils';
 
 type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -150,6 +152,76 @@ const createEmptyResponse = (): ResponseDraft => ({
   body: '',
   error: null,
 });
+
+const DEFAULT_NEW_REQUEST_TITLE = 'New Request';
+const DEFAULT_NEW_REQUEST_URL = 'https://localhost:3000/health';
+
+const isPersistedCollectionId = (value: string) => {
+  const numericValue = Number(value);
+  return Number.isInteger(numericValue) && numericValue > 0;
+};
+
+const toRequestMethod = (method: string): RequestMethod =>
+  METHOD_OPTIONS.includes(method as RequestMethod) ? (method as RequestMethod) : 'GET';
+
+const toBodyMode = (bodyType: string): BodyMode =>
+  BODY_MODE_OPTIONS.includes(bodyType as BodyMode) ? (bodyType as BodyMode) : 'json';
+
+const toAuthorizationMode = (auth?: RequestAuthConfig | null): AuthorizationMode => {
+  if (!auth?.type) {
+    return 'none';
+  }
+
+  return AUTHORIZATION_OPTIONS.includes(auth.type as AuthorizationMode)
+    ? (auth.type as AuthorizationMode)
+    : 'none';
+};
+
+const toAuthorizationValue = (auth?: RequestAuthConfig | null) => {
+  switch (auth?.type) {
+    case 'basic':
+      return auth.basic ? `${auth.basic.username}:${auth.basic.password}` : '';
+    case 'bearer':
+      return auth.bearer?.token ?? '';
+    case 'api-key':
+      return auth.api_key ? `${auth.api_key.key}: ${auth.api_key.value}` : '';
+    default:
+      return '';
+  }
+};
+
+const toKeyValueRows = (rows: RequestKeyValue[] | undefined) =>
+  rows && rows.length > 0
+    ? rows.map((row) => createKeyValueRow(row.key, row.value, row.description ?? ''))
+    : [createKeyValueRow()];
+
+const toScriptsValue = (request: ProjectRequest) =>
+  [request.pre_request, request.test].filter(Boolean).join('\n\n');
+
+const toRequestPageTab = (request: ProjectRequest): RequestPageTab => {
+  const paramsRows = toKeyValueRows(request.query_params);
+  const headersRows = toKeyValueRows(request.headers);
+  const method = toRequestMethod(request.method);
+
+  return createRequestPageTab(request.id, {
+    id: `request-${request.id}`,
+    title: request.name,
+    collectionId: String(request.collection_id),
+    method,
+    url: request.url || DEFAULT_NEW_REQUEST_URL,
+    activeSection:
+      method === 'POST' || method === 'PUT' || method === 'PATCH' ? 'body' : 'params',
+    paramsRows,
+    paramsBulk: rowsToBulkText(paramsRows),
+    authorizationMode: toAuthorizationMode(request.auth),
+    authorizationValue: toAuthorizationValue(request.auth),
+    headersRows,
+    headersBulk: rowsToBulkText(headersRows),
+    bodyMode: toBodyMode(request.body_type),
+    bodyContent: request.body,
+    scripts: toScriptsValue(request),
+  });
+};
 
 const createRequestPageTab = (
   index: number,
@@ -371,10 +443,8 @@ const getInitialWorkbenchState = (): InitialWorkbenchState => {
 
 export function ApiRequestWorkbench({
   projectId,
-  projectName,
 }: {
   projectId: number;
-  projectName: string;
 }) {
   const initialState = useMemo(() => getInitialWorkbenchState(), []);
   const [tabs, setTabs] = useState<RequestPageTab[]>(initialState.tabs);
@@ -392,10 +462,14 @@ export function ApiRequestWorkbench({
   const [sidebarQuery, setSidebarQuery] = useState('');
   const [deletingCollectionId, setDeletingCollectionId] = useState<string | null>(null);
   const [renamingCollectionId, setRenamingCollectionId] = useState<string | null>(null);
+  const [creatingRequestCollectionId, setCreatingRequestCollectionId] = useState<string | null>(
+    null
+  );
   const [renameDialogCollectionId, setRenameDialogCollectionId] = useState<string | null>(null);
   const [renameDraftName, setRenameDraftName] = useState('');
   const deleteCollectionMutation = useDeleteCollection(projectId);
   const updateCollectionMutation = useUpdateCollection(projectId);
+  const createRequestMutation = useCreateRequest(projectId);
 
   const deferredSidebarQuery = useDeferredValue(sidebarQuery);
 
@@ -466,16 +540,6 @@ export function ApiRequestWorkbench({
     }
 
     updateTab(activeTab.id, updater);
-  };
-
-  const createStandaloneTab = () => {
-    const nextTab = createRequestPageTab(nextTabIndex);
-
-    startTransition(() => {
-      setTabs((current) => [...current, nextTab]);
-      setActiveTabId(nextTab.id);
-      setNextTabIndex((current) => current + 1);
-    });
   };
 
   const createCollection = () => {
@@ -690,6 +754,73 @@ export function ApiRequestWorkbench({
     }, 700);
   };
 
+  const attachRequestTabToCollection = (collectionId: string, tab: RequestPageTab) => {
+    startTransition(() => {
+      setTabs((current) => [...current, tab]);
+      setCollections((current) =>
+        current.map((collection) =>
+          collection.id === collectionId
+            ? {
+                ...collection,
+                requestIds: [tab.id, ...collection.requestIds],
+              }
+            : collection
+        )
+      );
+      setExpandedCollectionIds((current) =>
+        current.includes(collectionId) ? current : [...current, collectionId]
+      );
+      setActiveCollectionId(collectionId);
+      setActiveTabId(tab.id);
+      setNextTabIndex((current) => current + 1);
+    });
+  };
+
+  const handleCreateRequest = async (collection: CollectionNode) => {
+    if (creatingRequestCollectionId) {
+      return;
+    }
+
+    const localTab = createRequestPageTab(nextTabIndex, {
+      title: DEFAULT_NEW_REQUEST_TITLE,
+      collectionId: collection.id,
+      url: DEFAULT_NEW_REQUEST_URL,
+    });
+
+    if (!isPersistedCollectionId(collection.id)) {
+      attachRequestTabToCollection(collection.id, localTab);
+      return;
+    }
+
+    setCreatingRequestCollectionId(collection.id);
+
+    try {
+      const persistedCollectionId = Number(collection.id);
+      const createdRequest = await createRequestMutation.mutateAsync({
+        collectionId: persistedCollectionId,
+        data: {
+          collection_id: persistedCollectionId,
+          name: DEFAULT_NEW_REQUEST_TITLE,
+          description: '',
+          method: localTab.method,
+          url: localTab.url,
+          headers: [],
+          query_params: [],
+          path_params: {},
+          body: '',
+          body_type: 'none',
+          pre_request: '',
+          test: '',
+          sort_order: collection.requestIds.length,
+        },
+      });
+
+      attachRequestTabToCollection(collection.id, toRequestPageTab(createdRequest));
+    } finally {
+      setCreatingRequestCollectionId(null);
+    }
+  };
+
   if (!activeTab) {
     return null;
   }
@@ -697,8 +828,8 @@ export function ApiRequestWorkbench({
   return (
     <main className="flex h-full min-h-0 flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.10),_transparent_28%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(244,247,251,0.98))]">
       <div className="border-b border-border/60 bg-white/80 backdrop-blur">
-        <div className="flex flex-col gap-3 px-4 py-4 md:px-6">
-          <div className="flex items-center gap-3">
+        <div className="px-4 py-3 md:px-6">
+          <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1 overflow-hidden">
               <RequestTabs
                 tabs={tabs}
@@ -706,24 +837,12 @@ export function ApiRequestWorkbench({
                 onSelectTab={(tabId) => selectRequest(tabId, tabMap.get(tabId)?.collectionId ?? null)}
               />
             </div>
-            <Button type="button" variant="outline" size="sm" isIcon onClick={createStandaloneTab}>
-              <Plus className="h-4 w-4" />
-            </Button>
             <EnvironmentSwitcher
               environment={environment}
               onEnvironmentChange={(value) =>
                 setEnvironment(value as (typeof ENVIRONMENT_OPTIONS)[number])
               }
             />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
-            <span className="rounded-full border border-border/60 bg-background/80 px-2.5 py-1">
-              {projectName}
-            </span>
-            <span className="rounded-full border border-border/60 bg-background/80 px-2.5 py-1">
-              Environment: {environment}
-            </span>
           </div>
         </div>
       </div>
@@ -736,11 +855,13 @@ export function ApiRequestWorkbench({
             activeTabId={activeTabId}
             deletingCollectionId={deletingCollectionId}
             renamingCollectionId={renamingCollectionId}
+            creatingRequestCollectionId={creatingRequestCollectionId}
             expandedCollectionIds={expandedCollectionIds}
             scratchpadTabs={visibleScratchpadTabs}
             query={sidebarQuery}
             onQueryChange={setSidebarQuery}
             onCreateCollection={createCollection}
+            onCreateRequest={handleCreateRequest}
             onDeleteCollection={handleDeleteCollection}
             onRenameCollection={openRenameCollectionDialog}
             onToggleCollection={toggleCollection}
@@ -834,11 +955,13 @@ function CollectionsSidebar({
   activeTabId,
   deletingCollectionId,
   renamingCollectionId,
+  creatingRequestCollectionId,
   expandedCollectionIds,
   scratchpadTabs,
   query,
   onQueryChange,
   onCreateCollection,
+  onCreateRequest,
   onDeleteCollection,
   onRenameCollection,
   onToggleCollection,
@@ -849,11 +972,13 @@ function CollectionsSidebar({
   activeTabId: string;
   deletingCollectionId: string | null;
   renamingCollectionId: string | null;
+  creatingRequestCollectionId: string | null;
   expandedCollectionIds: string[];
   scratchpadTabs: RequestPageTab[];
   query: string;
   onQueryChange: (value: string) => void;
   onCreateCollection: () => void;
+  onCreateRequest: (collection: CollectionNode) => Promise<void>;
   onDeleteCollection: (collection: CollectionNode) => void;
   onRenameCollection: (collection: CollectionNode) => void;
   onToggleCollection: (collectionId: string) => void;
@@ -923,8 +1048,10 @@ function CollectionsSidebar({
                   </button>
 
                   <CollectionActionsMenu
+                    isCreatingRequest={creatingRequestCollectionId === collection.id}
                     isDeleting={deletingCollectionId === collection.id}
                     isRenaming={renamingCollectionId === collection.id}
+                    onCreateRequest={() => void onCreateRequest(collection)}
                     onRename={() => onRenameCollection(collection)}
                     onDelete={() => void onDeleteCollection(collection)}
                   />
@@ -988,13 +1115,17 @@ function CollectionsSidebar({
 }
 
 function CollectionActionsMenu({
+  isCreatingRequest,
   isDeleting,
   isRenaming,
+  onCreateRequest,
   onRename,
   onDelete,
 }: {
+  isCreatingRequest: boolean;
   isDeleting: boolean;
   isRenaming: boolean;
+  onCreateRequest: () => void;
   onRename: () => void;
   onDelete: () => void;
 }) {
@@ -1013,7 +1144,9 @@ function CollectionActionsMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44 rounded-xl">
-        <DropdownMenuItem>New request</DropdownMenuItem>
+        <DropdownMenuItem disabled={isCreatingRequest} onSelect={onCreateRequest}>
+          {isCreatingRequest ? 'Creating...' : 'New request'}
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem>Import</DropdownMenuItem>
         <DropdownMenuItem>Export</DropdownMenuItem>
@@ -1104,7 +1237,7 @@ function RequestTabs({
             type="button"
             onClick={() => onSelectTab(tab.id)}
             className={cn(
-              'group inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm transition-all',
+              'group inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm transition-all',
               tab.id === activeTabId
                 ? 'border-primary/30 bg-primary/10 text-text-main shadow-sm'
                 : 'border-border/60 bg-white/75 text-text-muted hover:border-border hover:bg-white hover:text-text-main'
@@ -1132,17 +1265,20 @@ function EnvironmentSwitcher({
   onEnvironmentChange: (value: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-white/85 px-3 py-1.5 shadow-sm">
-      <span className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+    <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border/60 bg-white/85 px-2.5 py-1 shadow-sm">
+      <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-text-muted">
         Environment
       </span>
       <Select value={environment} onValueChange={onEnvironmentChange}>
-        <SelectTrigger className="h-8 min-w-[156px] border-0 bg-transparent px-2 shadow-none">
+        <SelectTrigger
+          size="sm"
+          className="h-7 min-w-[132px] border-0 bg-transparent px-1.5 text-sm shadow-none"
+        >
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="min-w-[132px] rounded-xl">
           {ENVIRONMENT_OPTIONS.map((option) => (
-            <SelectItem key={option} value={option}>
+            <SelectItem key={option} value={option} className="py-1 text-xs">
               {option}
             </SelectItem>
           ))}
