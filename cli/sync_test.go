@@ -37,3 +37,27 @@ func TestBuildSpecSyncEndpoint(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSyncResponse(t *testing.T) {
+	t.Run("wrapped api response", func(t *testing.T) {
+		body := []byte(`{"code":0,"message":"success","data":{"created":1,"updated":2,"skipped":3,"errors":["x"]}}`)
+		got, err := parseSyncResponse(body)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got.Created != 1 || got.Updated != 2 || got.Skipped != 3 || len(got.Errors) != 1 {
+			t.Fatalf("unexpected response: %+v", got)
+		}
+	})
+
+	t.Run("flat response", func(t *testing.T) {
+		body := []byte(`{"created":4,"updated":5,"skipped":6}`)
+		got, err := parseSyncResponse(body)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got.Created != 4 || got.Updated != 5 || got.Skipped != 6 {
+			t.Fatalf("unexpected response: %+v", got)
+		}
+	})
+}

@@ -89,6 +89,9 @@ func (r *repository) GetSpecByMethodAndPath(ctx context.Context, projectID uint,
 	if err := r.db.WithContext(ctx).
 		Where("project_id = ? AND method = ? AND path = ?", projectID, method, path).
 		First(&spec).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &spec, nil

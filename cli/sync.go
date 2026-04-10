@@ -119,6 +119,13 @@ type SyncResponse struct {
 	Errors  []string `json:"errors,omitempty"`
 }
 
+type apiEnvelope struct {
+	Code    int             `json:"code"`
+	Message string          `json:"message"`
+	Data    json.RawMessage `json:"data"`
+	Error   string          `json:"error,omitempty"`
+}
+
 func runSyncPush() error {
 	logger.StartSession("sync_push")
 	defer logger.EndSession()
@@ -357,9 +364,13 @@ func pushToPlatform(apiURL, token, projectID string, specs []APISpecSync, conf *
 		return fmt.Errorf("platform returned error: %d - %s", resp.StatusCode, string(body))
 	}
 
-	// Parse response
-	var syncResp SyncResponse
-	if err := json.NewDecoder(resp.Body).Decode(&syncResp); err != nil {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response: %w", err)
+	}
+
+	syncResp, err := parseSyncResponse(body)
+	if err != nil {
 		return fmt.Errorf("failed to parse response: %w", err)
 	}
 
@@ -386,6 +397,23 @@ func pushToPlatform(apiURL, token, projectID string, specs []APISpecSync, conf *
 	}
 
 	return nil
+}
+
+func parseSyncResponse(body []byte) (SyncResponse, error) {
+	var wrapped apiEnvelope
+	if err := json.Unmarshal(body, &wrapped); err == nil && len(wrapped.Data) > 0 {
+		var syncResp SyncResponse
+		if err := json.Unmarshal(wrapped.Data, &syncResp); err != nil {
+			return SyncResponse{}, err
+		}
+		return syncResp, nil
+	}
+
+	var syncResp SyncResponse
+	if err := json.Unmarshal(body, &syncResp); err != nil {
+		return SyncResponse{}, err
+	}
+	return syncResp, nil
 }
 
 func runSyncConfig() error {
