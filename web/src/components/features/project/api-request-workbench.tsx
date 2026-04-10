@@ -51,6 +51,7 @@ import {
   useUpdateCollection,
 } from '@/hooks/use-collections';
 import { collectionService } from '@/services/collection';
+import { localRunnerService } from '@/services/local-runner';
 import { useCreateRequest, useDeleteRequest, useUpdateRequest } from '@/hooks/use-requests';
 import { requestService } from '@/services/request';
 import type { ProjectCollection, ProjectCollectionTreeNode } from '@/types/collection';
@@ -320,7 +321,7 @@ const createRequestPageTab = (
   settings:
     overrides.settings ?? {
       followRedirects: true,
-      strictTls: false,
+      strictTls: true,
       persistCookies: false,
     },
   response: overrides.response ?? createEmptyResponse(),
@@ -563,64 +564,6 @@ const buildDirectRequestBody = (request: ProjectRequest) => {
   }
 
   return request.body.trim() ? request.body : undefined;
-};
-
-const executeRequestInBrowser = async (
-  request: ProjectRequest,
-  settings: RequestPageTab['settings']
-): Promise<RunRequestResponse> => {
-  const targetUrl = buildExecutableRequestUrl(request);
-  const targetOrigin = new URL(targetUrl).origin;
-  const currentOrigin =
-    typeof window !== 'undefined' ? window.location.origin : '';
-  const isCrossOrigin = Boolean(currentOrigin) && currentOrigin !== targetOrigin;
-  const requestHeaders = buildDirectRequestHeaders(request);
-  const requestBody = buildDirectRequestBody(request);
-  const startedAt =
-    typeof performance !== 'undefined' && typeof performance.now === 'function'
-      ? performance.now()
-      : Date.now();
-
-  try {
-    const response = await fetch(targetUrl, {
-      method: request.method,
-      headers: requestHeaders,
-      body: requestBody,
-      redirect: settings.followRedirects ? 'follow' : 'manual',
-      credentials: settings.persistCookies ? 'include' : 'same-origin',
-    });
-    const responseBody = await response.text();
-    const finishedAt =
-      typeof performance !== 'undefined' && typeof performance.now === 'function'
-        ? performance.now()
-        : Date.now();
-    const responseHeaders = headersToObject(response.headers);
-
-    return {
-      status: response.status,
-      status_text: response.statusText || `${response.status}`,
-      headers: responseHeaders,
-      body: responseBody,
-      time: Math.max(0, Math.round(finishedAt - startedAt)),
-      size:
-        Number(response.headers.get('content-length') ?? '') ||
-        byteLength(responseBody),
-    };
-  } catch (error) {
-    if (error instanceof TypeError) {
-      if (isCrossOrigin && settings.persistCookies) {
-        throw new Error(
-          'Direct browser request failed. This is a cross-origin request with cookie credentials enabled. Disable Persist cookies, or configure the target API to allow this exact origin and credentials in CORS.'
-        );
-      }
-
-      throw new Error(
-        'Direct browser request failed. The target may not allow CORS from this origin, or the request was blocked by the browser network policy.'
-      );
-    }
-
-    throw error;
-  }
 };
 
 const flattenCollectionTree = (nodes: ProjectCollectionTreeNode[]): ProjectCollectionTreeNode[] =>
@@ -1491,7 +1434,20 @@ export function ApiRequestWorkbench({
         isSending: true,
       });
 
-      const response = await executeRequestInBrowser(persistedRequest, tabSnapshot.settings);
+      if (tabSnapshot.settings.persistCookies) {
+        throw new Error(
+          'Persist cookies is not available in local runner mode. Add a Cookie header explicitly if this request depends on cookies.'
+        );
+      }
+
+      const response = await localRunnerService.execute({
+        method: persistedRequest.method,
+        url: buildExecutableRequestUrl(persistedRequest),
+        headers: headersToObject(buildDirectRequestHeaders(persistedRequest)),
+        body: buildDirectRequestBody(persistedRequest),
+        follow_redirects: tabSnapshot.settings.followRedirects,
+        strict_tls: tabSnapshot.settings.strictTls,
+      });
 
       updateTab(tabId, (tab) => ({
         ...tab,
@@ -1728,7 +1684,7 @@ export function ApiRequestWorkbench({
                       <div>
                         <CardTitle className="text-xl tracking-tight">{activeTab.title}</CardTitle>
                         <CardDescription className="mt-1">
-                          Execute collection requests directly from your browser and inspect the live response locally.
+                          Execute collection requests through your local Kest runner so local APIs can be tested without browser CORS limits.
                         </CardDescription>
                       </div>
                     </div>
@@ -2882,17 +2838,17 @@ function SettingsPanel({
     {
       key: 'followRedirects',
       title: 'Follow redirects',
-      description: 'Keep request execution aligned with browser-like redirect behavior.',
+      description: 'Handled by the local runner. Turn this off to inspect 3xx responses directly.',
     },
     {
       key: 'strictTls',
       title: 'Strict TLS validation',
-      description: 'Control certificate verification once the runner supports stricter transport options.',
+      description: 'Keep this on for normal HTTPS. Turn it off only for local self-signed certificates.',
     },
     {
       key: 'persistCookies',
       title: 'Persist cookies',
-      description: 'Enable only for cookie-based sessions. Cross-origin cookie requests need explicit CORS allow-origin and allow-credentials support.',
+      description: 'Not supported by the local runner. Send Cookie headers explicitly when the target API requires them.',
     },
   ];
 
@@ -2963,7 +2919,7 @@ function ResponsePanel({
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
             <p className="mt-4 text-sm font-medium text-text-main">Sending request...</p>
             <p className="mt-1 text-sm text-text-muted">
-              The response panel updates as soon as the browser receives the target API response.
+              The response panel updates as soon as your local Kest runner finishes the request.
             </p>
           </div>
         ) : response.error ? (
@@ -2975,7 +2931,7 @@ function ResponsePanel({
           <div className="flex flex-1 flex-col items-center justify-center rounded-[24px] border border-dashed border-border/70 bg-slate-50/80 text-center">
             <p className="text-base font-semibold text-text-main">Click Send to get a response</p>
             <p className="mt-2 max-w-xl text-sm leading-6 text-text-muted">
-              Once you trigger the request, this panel will render the latest response body, headers, and browser transport metadata.
+              Once you trigger the request, this panel will render the latest response body, headers, and timing returned by your local runner.
             </p>
           </div>
         ) : (
