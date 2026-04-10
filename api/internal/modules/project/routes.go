@@ -37,5 +37,16 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 			Name("projects.stats").
 			WhereNumber("id").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleRead))
+		auth.POST("/projects/:id/cli-tokens", h.GenerateCLIToken).
+			Name("projects.cli_tokens.create").
+			WhereNumber("id").
+			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
+	})
+
+	r.Group("", func(cli *router.Router) {
+		cli.POST("/projects/:id/cli/spec-sync", h.SyncSpecsFromCLI).
+			Name("projects.cli.spec_sync").
+			WhereNumber("id").
+			Middleware(middleware.RequireProjectCLIToken(h.service, CLITokenScopeSpecWrite))
 	})
 }

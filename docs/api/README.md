@@ -13,10 +13,16 @@ Development: http://localhost:8025
 
 ## Authentication
 
-Kest uses JWT (JSON Web Token) for authentication. Include the token in the Authorization header:
+Most Kest API endpoints use JWT (JSON Web Token) authentication. Include the token in the Authorization header:
 
 ```
 Authorization: Bearer <your-jwt-token>
+```
+
+Project-scoped CLI upload endpoints use a generated CLI token instead:
+
+```
+Authorization: Bearer <kest_pat_...>
 ```
 
 ## Rate Limiting
@@ -102,6 +108,9 @@ All API responses follow a consistent format:
    
 10. [System](./10-system.md)
     - System health and utilities
+
+11. [CLI Sync](./11-cli-sync.md)
+    - Project-scoped CLI tokens and spec upload
 
 ## SDKs and Tools
 

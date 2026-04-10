@@ -3,6 +3,8 @@ import type {
   ApiProject,
   CreateProjectRequest,
   DeleteProjectResponse,
+  GenerateProjectCliTokenRequest,
+  GenerateProjectCliTokenResponse,
   ProjectListParams,
   ProjectListResponse,
   ProjectStats,
@@ -38,6 +40,12 @@ export const projectService = {
 
   update: (id: number | string, data: UpdateProjectRequest) =>
     request.patch<ApiProject>(`/projects/${id}`, normalizeProjectPayload(data)),
+
+  generateCliToken: (id: number | string, data: GenerateProjectCliTokenRequest = {}) =>
+    request.post<GenerateProjectCliTokenResponse>(
+      `/projects/${id}/cli-tokens`,
+      normalizeProjectPayload(data)
+    ),
 
   delete: (id: number | string) => request.delete<DeleteProjectResponse>(`/projects/${id}`),
 };

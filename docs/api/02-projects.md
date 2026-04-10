@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Projects module manages API projects, including creation, configuration, and DSN (Data Source Name) generation.
+The Projects module manages API projects, including creation, configuration, project stats, and CLI sync credentials.
 
 ## Base Path
 
@@ -259,31 +259,80 @@ Delete a project and all associated data.
 |-----------|------|----------|-------------|
 | `id` | integer | ✅ Yes | Project ID |
 
-#### Response (200 OK)
+---
+
+## 7. Generate CLI Token
+
+### POST /projects/:id/cli-tokens
+
+Generate a project-scoped CLI token for `kest sync` uploads.
+
+**Authentication**: Required + project write access
+
+#### Request Body
+
+```json
+{
+  "name": "Catalog API CLI sync",
+  "scopes": ["spec:write"]
+}
+```
+
+#### Response (201 Created)
 
 ```json
 {
   "code": 0,
-  "message": "Project deleted successfully",
-  "data": null
+  "message": "success",
+  "data": {
+    "token": "kest_pat_3f3b7c...",
+    "token_type": "bearer",
+    "project_id": 12,
+    "token_info": {
+      "id": 5,
+      "project_id": 12,
+      "name": "Catalog API CLI sync",
+      "token_prefix": "kest_pat_3f3b7c12",
+      "scopes": ["spec:write"],
+      "created_at": "2026-04-09T10:00:00Z"
+    }
+  }
 }
 ```
 
+#### Notes
+
+- The full token value is returned once.
+- Supported scopes: `spec:write`, `run:write`
+- Use the returned token with `Authorization: Bearer <kest_pat_...>`
+
 ---
 
-## 7. Get Project DSN
+## 8. Upload Specs From CLI
 
-### GET /projects/:id/dsn
+### POST /projects/:id/cli/spec-sync
 
-Get the Data Source Name (DSN) for a project. This is used to configure SDKs and send data to Kest.
+Upload API specs inferred from local CLI history.
 
-**Authentication**: Required
+**Authentication**: Project-scoped CLI token with `spec:write`
 
-#### Path Parameters
+#### Request Body
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `id` | integer | ✅ Yes | Project ID |
+```json
+{
+  "project_id": 12,
+  "source": "cli",
+  "specs": [
+    {
+      "method": "GET",
+      "path": "/v1/users",
+      "title": "List users",
+      "summary": "List users",
+      "version": "v1"
+    }
+  ]
+}
+```
 
 #### Response (200 OK)
 
@@ -292,26 +341,27 @@ Get the Data Source Name (DSN) for a project. This is used to configure SDKs and
   "code": 0,
   "message": "success",
   "data": {
-    "dsn": "https://api.kest.com/v1/ingest?public_key=pk_live_51H2K3j...kLmN&project_id=1",
-    "public_key": "pk_live_51H2K3j...kLmN",
-    "project_id": 1,
-    "environment": "production"
+    "created": 1,
+    "updated": 0,
+    "skipped": 0,
+    "errors": []
   }
 }
 ```
 
-#### DSN Format
+#### Notes
 
-The DSN contains all necessary information to connect your application to Kest:
+- The URL project ID and token scope must match.
+- Common auth headers and secret-shaped JSON fields are redacted before examples are stored.
 
-```
-https://api.kest.com/v1/ingest?public_key=<public_key>&project_id=<project_id>
-```
+#### Response (200 OK)
 
-For development environment:
-
-```
-https://api-dev.kest.com/v1/ingest?public_key=<public_key>&project_id=<project_id>
+```json
+{
+  "code": 0,
+  "message": "Project deleted successfully",
+  "data": null
+}
 ```
 
 ---
@@ -355,17 +405,23 @@ const listProjects = async () => {
   return data.data;
 };
 
-// Get project DSN
-const getProjectDSN = async (projectId) => {
-  const response = await fetch(`http://localhost:8025/projects/${projectId}/dsn`, {
+// Generate a CLI token
+const createCliToken = async (projectId) => {
+  const response = await fetch(`http://localhost:8025/v1/projects/${projectId}/cli-tokens`, {
+    method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
-    }
+    },
+    body: JSON.stringify({
+      name: 'Payments API CLI sync',
+      scopes: ['spec:write']
+    })
   });
   
   const data = await response.json();
-  console.log('DSN:', data.data.dsn);
-  return data.data.dsn;
+  console.log('CLI token:', data.data.token);
+  return data.data;
 };
 ```
 
@@ -398,45 +454,33 @@ curl -X PUT http://localhost:8025/projects/1 \
     "rate_limit_per_minute": 5000
   }'
 
-# Get DSN
-curl -X GET http://localhost:8025/projects/1/dsn \
-  -H "Authorization: Bearer TOKEN"
+# Generate CLI token
+curl -X POST http://localhost:8025/v1/projects/1/cli-tokens \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TOKEN" \
+  -d '{
+    "name": "Payments API CLI sync",
+    "scopes": ["spec:write"]
+  }'
 ```
 
 ---
 
-## SDK Configuration
+## CLI Configuration
 
-Once you have your project's DSN, you can configure the Kest SDK in your application:
+After generating a project-scoped CLI token, run this inside your Kest project:
 
-### JavaScript/TypeScript
-
-```javascript
-import Kest from '@kest-lab/kest-js';
-
-const kest = new Kest({
-  dsn: 'https://api.kest.com/v1/ingest?public_key=pk_live_51H2K3j...kLmN&project_id=1'
-});
+```bash
+kest sync config \
+  --platform-url "https://api.kest.dev/v1" \
+  --platform-token "kest_pat_..." \
+  --project-id "1"
 ```
 
-### Go
+Then push local request history:
 
-```go
-import "github.com/kest-lab/kest-go"
-
-kest.Init(kest.Config{
-    DSN: "https://api.kest.com/v1/ingest?public_key=pk_live_51H2K3j...kLmN&project_id=1",
-})
-```
-
-### Python
-
-```python
-from kest import Kest
-
-kest = Kest(
-    dsn="https://api.kest.com/v1/ingest?public_key=pk_live_51H2K3j...kLmN&project_id=1"
-)
+```bash
+kest sync push
 ```
 
 ---
@@ -461,10 +505,11 @@ X-RateLimit-Reset: 1641234567
 
 ## Security Considerations
 
-1. **Public Key**: Treat your project's public key like a password
-2. **HTTPS**: Always use HTTPS for production DSNs
-3. **Environment Separation**: Use different projects for different environments
-4. **Access Control**: Only authorized users should be able to view/update projects
+1. **CLI Token Scope**: Generate CLI tokens per project and keep them scoped as tightly as possible.
+2. **One-Time Copy**: The full CLI token is only returned once. Store it securely in `.kest/config.yaml`.
+3. **HTTPS**: Always use HTTPS for production CLI uploads.
+4. **Environment Separation**: Use different projects for dev, staging, and production.
+5. **Access Control**: Only members with project write access should generate upload tokens.
 
 ---
 

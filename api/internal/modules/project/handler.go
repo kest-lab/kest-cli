@@ -16,6 +16,7 @@ type Handler struct {
 	contracts.BaseModule
 	service       Service
 	memberService member.Service
+	specSyncer    SpecSyncer
 }
 
 // Name returns the module name
@@ -29,6 +30,10 @@ func NewHandler(service Service, memberService member.Service) *Handler {
 		service:       service,
 		memberService: memberService,
 	}
+}
+
+func (h *Handler) SetSpecSyncer(syncer SpecSyncer) {
+	h.specSyncer = syncer
 }
 
 // Create handles POST /projects
@@ -164,4 +169,68 @@ func (h *Handler) GetStats(c *gin.Context) {
 	}
 
 	response.Success(c, stats)
+}
+
+// GenerateCLIToken handles POST /projects/:id/cli-tokens
+func (h *Handler) GenerateCLIToken(c *gin.Context) {
+	projectID, ok := handler.ParseID(c, "id")
+	if !ok {
+		return
+	}
+
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		return
+	}
+
+	var req GenerateProjectCLITokenRequest
+	if !handler.BindJSON(c, &req) {
+		return
+	}
+
+	token, err := h.service.GenerateCLIToken(c.Request.Context(), projectID, userID, &req)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrProjectNotFound):
+			response.NotFound(c, err.Error())
+		case errors.Is(err, ErrUnsupportedCLITokenScope):
+			response.BadRequest(c, err.Error(), err)
+		default:
+			response.InternalServerError(c, err.Error(), err)
+		}
+		return
+	}
+
+	response.Created(c, token)
+}
+
+// SyncSpecsFromCLI handles POST /projects/:id/cli/spec-sync
+func (h *Handler) SyncSpecsFromCLI(c *gin.Context) {
+	projectID, ok := handler.ParseID(c, "id")
+	if !ok {
+		return
+	}
+
+	if h.specSyncer == nil {
+		response.Error(c, http.StatusServiceUnavailable, "CLI spec sync is not configured")
+		return
+	}
+
+	var req CLISpecSyncRequest
+	if !handler.BindJSON(c, &req) {
+		return
+	}
+
+	if req.ProjectID != nil && *req.ProjectID != projectID {
+		response.BadRequest(c, "project_id in body must match URL project id")
+		return
+	}
+
+	result, err := h.specSyncer.SyncSpecsFromCLI(c.Request.Context(), projectID, &req)
+	if err != nil {
+		response.InternalServerError(c, err.Error(), err)
+		return
+	}
+
+	response.Success(c, result)
 }

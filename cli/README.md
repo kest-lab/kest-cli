@@ -37,6 +37,57 @@ kest get /api/profile -H "Authorization: Bearer {{token}}"   # Use it instantly
 
 ---
 
+## 🔄 Sync To Kest Platform
+
+Kest CLI can upload local API history back to the Kest Web Console. The recommended flow is:
+
+1. Open the project in the Web Console.
+2. Open the project detail page.
+3. In the `CLI Sync` card, click `Generate CLI Token`.
+4. Copy the one-line setup command or run:
+
+```bash
+kest sync config \
+  --platform-url "https://api.kest.dev/v1" \
+  --platform-token "kest_pat_..." \
+  --project-id "12"
+```
+
+This writes `platform_url`, `platform_token`, and `platform_project_id` into `.kest/config.yaml` when run inside a Kest project.
+
+You can verify the saved config:
+
+```bash
+kest config list
+```
+
+Preview the upload first:
+
+```bash
+kest sync push --dry-run
+```
+
+Then upload your local history-derived specs:
+
+```bash
+kest sync push
+```
+
+CLI uploads use a project-scoped token, not your OpenAI `sk-...` key.
+
+What gets uploaded:
+
+- API method + path inferred from local history
+- summary / version / simple response schema stubs
+- sanitized examples derived from request history
+
+What is redacted before storage:
+
+- `Authorization`, `Cookie`, `X-API-Key` and similar sensitive headers
+- common secret-shaped JSON fields such as `password`, `token`, `secret`, `api_key`, `client_secret`
+
+---
+
 ## ⚡ Why Kest?
 
 Kest is designed for **Vibe Coding** — the workflow where you and an AI copilot build together in the terminal.

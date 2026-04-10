@@ -44,7 +44,7 @@ func NewStore() (*Store, error) {
 		return nil, err
 	}
 
-	db, err := sql.Open("sqlite3", dbPath+"?_journal_mode=WAL&parseTime=true")
+	db, err := sql.Open("sqlite", dbPath+"?_journal_mode=WAL&parseTime=true")
 	if err != nil {
 		return nil, err
 	}

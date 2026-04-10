@@ -69,13 +69,11 @@ func LoadConfig() (*Config, error) {
 }
 
 func SaveConfig(conf *Config) error {
-	projectRoot, _ := findProjectRoot()
-	if projectRoot != "" {
-		return SaveToPath(conf, filepath.Join(projectRoot, ".kest", "config.yaml"))
+	configPath, err := ResolveConfigPath()
+	if err != nil {
+		return err
 	}
-
-	home, _ := os.UserHomeDir()
-	return SaveToPath(conf, filepath.Join(home, ".kest", "config.yaml"))
+	return SaveToPath(conf, configPath)
 }
 
 func SaveToPath(conf *Config, configPath string) error {
@@ -121,6 +119,22 @@ func findProjectRoot() (string, error) {
 		curr = parent
 	}
 	return "", nil
+}
+
+func ResolveConfigPath() (string, error) {
+	projectRoot, err := findProjectRoot()
+	if err != nil {
+		return "", err
+	}
+	if projectRoot != "" {
+		return filepath.Join(projectRoot, ".kest", "config.yaml"), nil
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".kest", "config.yaml"), nil
 }
 
 func (c *Config) GetActiveEnv() Environment {

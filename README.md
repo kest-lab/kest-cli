@@ -35,6 +35,56 @@ kest post /api/login -d '{"user":"admin"}' -c "token=data.token"  # Capture toke
 kest run auth.flow.md                                        # Run a Markdown flow
 ```
 
+### 3. Connect CLI To The Web Console
+
+Use this flow when you want to push local CLI history back into a Kest project as API Specs.
+
+1. Open the target project in the Web Console.
+2. Go to the project detail page.
+3. In the `CLI Sync` card, click `Generate CLI Token`.
+4. Copy the one-time token or the generated setup command.
+
+Then configure the CLI once inside your local Kest project:
+
+```bash
+kest sync config \
+  --platform-url "https://api.kest.dev/v1" \
+  --platform-token "kest_pat_..." \
+  --project-id "12"
+```
+
+This writes the following fields into `.kest/config.yaml`:
+
+```yaml
+platform_url: https://api.kest.dev/v1
+platform_token: kest_pat_...
+platform_project_id: "12"
+```
+
+Check the saved configuration:
+
+```bash
+kest config list
+```
+
+Preview what will be uploaded:
+
+```bash
+kest sync push --dry-run
+```
+
+Then run the real upload:
+
+```bash
+kest sync push
+```
+
+Notes:
+
+- `platform_token` is a Kest project token, not an OpenAI `sk-...` key.
+- The token is scoped to a single project and is checked against the URL project ID on upload.
+- The CLI upload endpoint is `POST /v1/projects/:id/cli/spec-sync`.
+
 ---
 
 ## 🧠 Built for Vibe Coding
