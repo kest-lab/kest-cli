@@ -53,6 +53,7 @@ type Service interface {
 
 	// Batch operations
 	ImportSpecs(ctx context.Context, projectID uint, specs []*CreateAPISpecRequest) error
+	SyncSpecsFromCLI(ctx context.Context, projectID uint, req *CLISpecSyncInput) (*CLISpecSyncResult, error)
 	ExportSpecs(ctx context.Context, projectID uint, format string) (interface{}, error)
 	BatchGenDoc(ctx context.Context, projectID uint, req *BatchGenDocRequest) (*BatchGenDocResponse, error)
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/kest-labs/kest/cli/internal/config"
@@ -19,6 +20,9 @@ var (
 	syncPushAPIURL    string
 	syncPushToken     string
 	syncDryRun        bool
+	syncConfigAPIURL  string
+	syncConfigToken   string
+	syncConfigProject string
 )
 
 var syncCmd = &cobra.Command{
@@ -57,6 +61,10 @@ func init() {
 	syncPushCmd.Flags().StringVar(&syncPushAPIURL, "api-url", "", "Platform API URL (override config)")
 	syncPushCmd.Flags().StringVar(&syncPushToken, "token", "", "Platform API token (override config)")
 	syncPushCmd.Flags().BoolVar(&syncDryRun, "dry-run", false, "Preview what would be synced without actually syncing")
+
+	syncConfigCmd.Flags().StringVar(&syncConfigAPIURL, "platform-url", "", "Platform API URL (for example: https://api.kest.dev/v1)")
+	syncConfigCmd.Flags().StringVar(&syncConfigToken, "platform-token", "", "Project-scoped CLI token")
+	syncConfigCmd.Flags().StringVar(&syncConfigProject, "project-id", "", "Default platform project ID")
 }
 
 // APISpecSync represents an API spec for syncing
@@ -328,7 +336,7 @@ func pushToPlatform(apiURL, token, projectID string, specs []APISpecSync, conf *
 	// TODO: Use a proper HTTP client library
 	client := &http.Client{Timeout: 30 * time.Second}
 
-	req, err := http.NewRequest("POST", apiURL+"/api/v1/sync/apis", bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest("POST", buildSpecSyncEndpoint(apiURL, projectID), bytes.NewBuffer(reqBody))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -386,32 +394,41 @@ func runSyncConfig() error {
 		conf = &config.Config{}
 	}
 
-	// Interactive configuration
-	fmt.Println("🔧 Configure Kest Platform Connection")
-	fmt.Println()
+	if syncConfigAPIURL != "" || syncConfigToken != "" || syncConfigProject != "" {
+		if syncConfigAPIURL != "" {
+			conf.PlatformURL = syncConfigAPIURL
+		}
+		if syncConfigToken != "" {
+			conf.PlatformToken = syncConfigToken
+		}
+		if syncConfigProject != "" {
+			conf.PlatformProjectID = syncConfigProject
+		}
+	} else {
+		// Interactive configuration
+		fmt.Println("🔧 Configure Kest Platform Connection")
+		fmt.Println()
 
-	// Platform URL
-	fmt.Print("Platform URL (e.g., https://kest.company.com): ")
-	var url string
-	fmt.Scanln(&url)
-	if url != "" {
-		conf.PlatformURL = url
-	}
+		fmt.Print("Platform URL (e.g., https://api.kest.dev/v1): ")
+		var url string
+		fmt.Scanln(&url)
+		if url != "" {
+			conf.PlatformURL = url
+		}
 
-	// Platform Token
-	fmt.Print("API Token: ")
-	var token string
-	fmt.Scanln(&token)
-	if token != "" {
-		conf.PlatformToken = token
-	}
+		fmt.Print("CLI Token: ")
+		var token string
+		fmt.Scanln(&token)
+		if token != "" {
+			conf.PlatformToken = token
+		}
 
-	// Project ID
-	fmt.Print("Default Project ID: ")
-	var projectID string
-	fmt.Scanln(&projectID)
-	if projectID != "" {
-		conf.PlatformProjectID = projectID
+		fmt.Print("Default Project ID: ")
+		var projectID string
+		fmt.Scanln(&projectID)
+		if projectID != "" {
+			conf.PlatformProjectID = projectID
+		}
 	}
 
 	// Save config
@@ -419,8 +436,27 @@ func runSyncConfig() error {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
+	configPath, _ := config.ResolveConfigPath()
+
 	fmt.Println("\n✅ Configuration saved!")
+	if configPath != "" {
+		fmt.Printf("📄 Config file: %s\n", configPath)
+	}
 	fmt.Println("\n💡 Now you can run: kest sync push")
 
 	return nil
+}
+
+func buildSpecSyncEndpoint(apiURL, projectID string) string {
+	base := strings.TrimSpace(apiURL)
+	base = strings.TrimRight(base, "/")
+
+	switch {
+	case strings.HasSuffix(base, "/v1"):
+		return fmt.Sprintf("%s/projects/%s/cli/spec-sync", base, projectID)
+	case strings.HasSuffix(base, "/api/v1"):
+		return fmt.Sprintf("%s/projects/%s/cli/spec-sync", base, projectID)
+	default:
+		return fmt.Sprintf("%s/v1/projects/%s/cli/spec-sync", base, projectID)
+	}
 }

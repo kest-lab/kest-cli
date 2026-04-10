@@ -16,8 +16,19 @@ func RegisterAPI(r *router.Router, handlers *app.Handlers) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "version": "v1"})
 	}).Name("health")
 
+	if handlers == nil {
+		return
+	}
+
+	if handlers.Project != nil && handlers.APISpec != nil {
+		handlers.Project.SetSpecSyncer(handlers.APISpec)
+	}
+
 	// 2. Register Module Routes
 	for _, m := range handlers.Modules() {
+		if m == nil {
+			continue
+		}
 		log.Printf("[ROUTER] Registering module: %s", m.Name())
 		m.RegisterRoutes(r)
 	}

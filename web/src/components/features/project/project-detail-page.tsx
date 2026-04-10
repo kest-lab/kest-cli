@@ -6,18 +6,22 @@ import { useState } from 'react';
 import {
   ArrowLeft,
   BarChart3,
+  Copy,
   FileJson2,
   FlaskConical,
   FolderKanban,
   Globe,
+  Key,
   Layers3,
   Pencil,
   ShieldCheck,
   Tags,
+  Terminal,
   Trash2,
   Users,
   Workflow,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,7 +34,7 @@ import {
   resolvePlatformLabel,
 } from '@/components/features/project/project-shared';
 import { StatCard, StatCardSkeleton } from '@/components/features/console/dashboard-stats';
-import { buildApiPath } from '@/config/api';
+import { apiExternalBaseUrl, buildApiPath } from '@/config/api';
 import {
   buildProjectApiSpecsRoute,
   buildProjectCategoriesRoute,
@@ -38,8 +42,18 @@ import {
   buildProjectTestCasesRoute,
   ROUTES,
 } from '@/constants/routes';
-import { useDeleteProject, useProject, useProjectStats, useUpdateProject } from '@/hooks/use-projects';
-import type { ApiProject, UpdateProjectRequest } from '@/types/project';
+import {
+  useDeleteProject,
+  useGenerateProjectCliToken,
+  useProject,
+  useProjectStats,
+  useUpdateProject,
+} from '@/hooks/use-projects';
+import type {
+  ApiProject,
+  GenerateProjectCliTokenResponse,
+  UpdateProjectRequest,
+} from '@/types/project';
 import { formatDate } from '@/utils';
 
 /**
@@ -58,16 +72,27 @@ export function ProjectDetailPage({
   const [formMode, setFormMode] = useState<ProjectFormMode>('edit');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ApiProject | null>(null);
+  const [generatedCliToken, setGeneratedCliToken] = useState<GenerateProjectCliTokenResponse | null>(null);
 
   const projectQuery = useProject(projectId);
   const projectStatsQuery = useProjectStats(projectId);
   const updateProjectMutation = useUpdateProject();
   const deleteProjectMutation = useDeleteProject();
+  const generateCliTokenMutation = useGenerateProjectCliToken();
 
   const project = projectQuery.data;
   const projectStats = projectStatsQuery.data;
   const projectPath = buildApiPath(`/projects/${projectId}`);
   const projectStatsPath = buildApiPath(`/projects/${projectId}/stats`);
+  const cliPlatformUrl = (apiExternalBaseUrl || buildApiPath('/')).replace(/\/$/, '');
+  const cliConfigCommand = generatedCliToken && project
+    ? [
+        'kest sync config \\',
+        `  --platform-url '${cliPlatformUrl}' \\`,
+        `  --platform-token '${generatedCliToken.token}' \\`,
+        `  --project-id '${project.id}'`,
+      ].join('\n')
+    : '';
 
   // 项目详情页只支持编辑已有记录，因此固定进入 edit 模式。
   const openEditDialog = () => {
@@ -106,6 +131,34 @@ export function ProjectDetailPage({
       await deleteProjectMutation.mutateAsync(deleteTarget.id);
       setDeleteTarget(null);
       router.replace(ROUTES.CONSOLE.PROJECTS);
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  const handleCopyText = async (value: string, successMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(successMessage);
+    } catch {
+      toast.error('Failed to copy to clipboard');
+    }
+  };
+
+  const handleGenerateCliToken = async () => {
+    if (!project) {
+      return;
+    }
+
+    try {
+      const token = await generateCliTokenMutation.mutateAsync({
+        id: project.id,
+        data: {
+          name: `${project.name} CLI sync`,
+          scopes: ['spec:write'],
+        },
+      });
+      setGeneratedCliToken(token);
     } catch {
       // Global HTTP error handling already surfaces failure feedback.
     }
@@ -339,75 +392,186 @@ export function ProjectDetailPage({
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 shadow-premium">
-          <CardHeader className="border-b bg-muted/20">
-            <CardTitle>Project Stats</CardTitle>
-            <CardDescription>
-              Aggregated counts used as a quick health snapshot for the project workspace.
-            </CardDescription>
-          </CardHeader>
+        <div className="space-y-6">
+          <Card className="border-border/50 shadow-premium">
+            <CardHeader className="border-b bg-muted/20">
+              <CardTitle>Project Stats</CardTitle>
+              <CardDescription>
+                Aggregated counts used as a quick health snapshot for the project workspace.
+              </CardDescription>
+            </CardHeader>
 
-          <CardContent className="space-y-4 pt-6">
-            {projectStatsQuery.isLoading ? (
-              <div className="space-y-3">
-                <div className="h-20 animate-pulse rounded-xl bg-muted" />
-                <div className="h-20 animate-pulse rounded-xl bg-muted" />
-                <div className="h-20 animate-pulse rounded-xl bg-muted" />
-              </div>
-            ) : projectStats ? (
-              <>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">API Specs</div>
-                    <div className="mt-2 text-2xl font-semibold">{projectStats.api_spec_count}</div>
-                  </div>
-                  <div className="rounded-xl border p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Flows</div>
-                    <div className="mt-2 text-2xl font-semibold">{projectStats.flow_count}</div>
-                  </div>
-                  <div className="rounded-xl border p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Environments</div>
-                    <div className="mt-2 text-2xl font-semibold">{projectStats.environment_count}</div>
-                  </div>
-                  <div className="rounded-xl border p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Members</div>
-                    <div className="mt-2 text-2xl font-semibold">{projectStats.member_count}</div>
-                  </div>
+            <CardContent className="space-y-4 pt-6">
+              {projectStatsQuery.isLoading ? (
+                <div className="space-y-3">
+                  <div className="h-20 animate-pulse rounded-xl bg-muted" />
+                  <div className="h-20 animate-pulse rounded-xl bg-muted" />
+                  <div className="h-20 animate-pulse rounded-xl bg-muted" />
                 </div>
+              ) : projectStats ? (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl border p-4">
+                      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">API Specs</div>
+                      <div className="mt-2 text-2xl font-semibold">{projectStats.api_spec_count}</div>
+                    </div>
+                    <div className="rounded-xl border p-4">
+                      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Flows</div>
+                      <div className="mt-2 text-2xl font-semibold">{projectStats.flow_count}</div>
+                    </div>
+                    <div className="rounded-xl border p-4">
+                      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Environments</div>
+                      <div className="mt-2 text-2xl font-semibold">{projectStats.environment_count}</div>
+                    </div>
+                    <div className="rounded-xl border p-4">
+                      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Members</div>
+                      <div className="mt-2 text-2xl font-semibold">{projectStats.member_count}</div>
+                    </div>
+                  </div>
 
+                  <div className="rounded-xl border p-4">
+                    <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                      <ShieldCheck className="h-4 w-4" />
+                      Usage Snapshot
+                    </div>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div>
+                        Categories:
+                        {' '}
+                        <span className="font-medium text-foreground">{projectStats.category_count}</span>
+                      </div>
+                      <div>
+                        API specs per member:
+                        {' '}
+                        <span className="font-medium text-foreground">
+                          {projectStats.member_count > 0
+                            ? (projectStats.api_spec_count / projectStats.member_count).toFixed(1)
+                            : '0.0'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <Alert>
+                  <AlertTitle>Stats unavailable</AlertTitle>
+                  <AlertDescription>
+                    The backend did not return project stats for this record.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50 shadow-premium">
+            <CardHeader className="border-b bg-muted/20">
+              <CardTitle>CLI Sync</CardTitle>
+              <CardDescription>
+                Generate a project-scoped CLI token and wire `kest sync` to this workspace.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4 pt-6">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border p-4">
-                  <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                    <ShieldCheck className="h-4 w-4" />
-                    Usage Snapshot
-                  </div>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div>
-                      Categories:
-                      {' '}
-                      <span className="font-medium text-foreground">{projectStats.category_count}</span>
-                    </div>
-                    <div>
-                      API specs per member:
-                      {' '}
-                      <span className="font-medium text-foreground">
-                        {projectStats.member_count > 0
-                          ? (projectStats.api_spec_count / projectStats.member_count).toFixed(1)
-                          : '0.0'}
-                      </span>
-                    </div>
-                  </div>
+                  <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Platform URL</div>
+                  <div className="mt-2 break-all font-mono text-xs">{cliPlatformUrl}</div>
                 </div>
-              </>
-            ) : (
-              <Alert>
-                <AlertTitle>Stats unavailable</AlertTitle>
-                <AlertDescription>
-                  The backend did not return project stats for this record.
-                </AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
+                <div className="rounded-xl border p-4">
+                  <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Project Scope</div>
+                  <div className="mt-2 font-mono text-sm">{project?.id ?? projectId}</div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  onClick={() => void handleGenerateCliToken()}
+                  disabled={!project || generateCliTokenMutation.isPending}
+                >
+                  <Key className="h-4 w-4" />
+                  {generateCliTokenMutation.isPending ? 'Generating...' : 'Generate CLI Token'}
+                </Button>
+                {generatedCliToken ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => void handleCopyText(cliConfigCommand, 'Copied sync command')}
+                  >
+                    <Terminal className="h-4 w-4" />
+                    Copy Sync Command
+                  </Button>
+                ) : null}
+              </div>
+
+              {generatedCliToken ? (
+                <Alert>
+                  <AlertTitle>Copy this token now</AlertTitle>
+                  <AlertDescription className="space-y-4">
+                    <p>This is the only time the full CLI token will be shown. It is scoped to this project.</p>
+
+                    <div className="rounded-xl border bg-background p-4">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">CLI Token</div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => void handleCopyText(generatedCliToken.token, 'Copied CLI token')}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                          Copy
+                        </Button>
+                      </div>
+                      <code className="block break-all text-xs">{generatedCliToken.token}</code>
+                    </div>
+
+                    <div className="rounded-xl border bg-background p-4">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Setup Command</div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => void handleCopyText(cliConfigCommand, 'Copied sync command')}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                          Copy
+                        </Button>
+                      </div>
+                      <pre className="overflow-x-auto whitespace-pre-wrap text-xs">{cliConfigCommand}</pre>
+                    </div>
+
+                    <div className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">
+                      <div>
+                        Token prefix:
+                        {' '}
+                        <span className="font-mono text-foreground">
+                          {generatedCliToken.token_info.token_prefix}
+                        </span>
+                      </div>
+                      <div>
+                        Scopes:
+                        {' '}
+                        <span className="font-mono text-foreground">
+                          {generatedCliToken.token_info.scopes.join(', ')}
+                        </span>
+                      </div>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert>
+                  <AlertTitle>Recommended CLI flow</AlertTitle>
+                  <AlertDescription>
+                    Generate a token here, then run `kest sync config` once in your project. The CLI writes
+                    `platform_url`, `platform_token`, and `platform_project_id` into `.kest/config.yaml`.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <ProjectFormDialog

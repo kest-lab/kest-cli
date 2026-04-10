@@ -45,6 +45,8 @@ var configSetCmd = &cobra.Command{
 			conf.PlatformURL = value
 		case "platform_token":
 			conf.PlatformToken = value
+		case "platform_project_id":
+			conf.PlatformProjectID = value
 		default:
 			return fmt.Errorf("unknown config key: %s", key)
 		}
@@ -72,6 +74,8 @@ var configListCmd = &cobra.Command{
 		fmt.Printf("  ai_model:     %s\n", conf.AIModel)
 		fmt.Printf("  ai_base_url:  %s\n", conf.AIBaseURL)
 		fmt.Printf("  platform_url: %s\n", conf.PlatformURL)
+		fmt.Printf("  platform_token: %s\n", mask(conf.PlatformToken))
+		fmt.Printf("  platform_project_id: %s\n", conf.PlatformProjectID)
 		fmt.Printf("  active_env:   %s\n", conf.ActiveEnv)
 
 		return nil

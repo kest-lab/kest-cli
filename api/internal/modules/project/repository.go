@@ -3,6 +3,7 @@ package project
 import (
 	"context"
 	"errors"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -25,6 +26,9 @@ type Repository interface {
 	Delete(ctx context.Context, id uint) error
 	List(ctx context.Context, userID uint, offset, limit int) ([]*Project, int64, error)
 	GetStats(ctx context.Context, projectID uint) (*ProjectStats, error)
+	CreateCLIToken(ctx context.Context, token *ProjectCLIToken, tokenHash string) error
+	GetCLITokenByHash(ctx context.Context, tokenHash string) (*ProjectCLIToken, error)
+	TouchCLIToken(ctx context.Context, id uint, usedAt time.Time) error
 }
 
 // repository implements Repository interface

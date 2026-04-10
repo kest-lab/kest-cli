@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { projectService } from '@/services/project';
 import type {
   CreateProjectRequest,
+  GenerateProjectCliTokenRequest,
   ProjectListParams,
   ProjectStats,
   UpdateProjectRequest,
@@ -96,6 +97,23 @@ export function useDeleteProject() {
       queryClient.removeQueries({ queryKey: projectKeys.detail(id) });
       queryClient.removeQueries({ queryKey: projectKeys.projectStats(id) });
       toast.success('Project deleted');
+    },
+  });
+}
+
+// 生成 CLI token mutation。
+// 作用：为当前项目签发一次性展示的 project-scoped CLI token，供 `kest sync` 上传使用。
+export function useGenerateProjectCliToken() {
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number | string;
+      data?: GenerateProjectCliTokenRequest;
+    }) => projectService.generateCliToken(id, data),
+    onSuccess: () => {
+      toast.success('Generated CLI token');
     },
   });
 }

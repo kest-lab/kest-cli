@@ -20,6 +20,30 @@ export interface ProjectStats {
   category_count: number;
 }
 
+export interface ProjectCliTokenInfo {
+  id: number;
+  project_id: number;
+  name: string;
+  token_prefix: string;
+  scopes: string[];
+  last_used_at?: string | null;
+  expires_at?: string | null;
+  created_at: string;
+}
+
+export interface GenerateProjectCliTokenRequest {
+  name?: string;
+  scopes?: string[];
+  expires_at?: string | null;
+}
+
+export interface GenerateProjectCliTokenResponse {
+  token: string;
+  token_type: string;
+  project_id: number;
+  token_info: ProjectCliTokenInfo;
+}
+
 export interface ProjectListMeta {
   total: number;
   page: number;

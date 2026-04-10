@@ -13,6 +13,12 @@ Development: http://localhost:8025
 Authorization: Bearer <jwt-token>
 ```
 
+CLI upload endpoints accept a project-scoped CLI token:
+
+```
+Authorization: Bearer <kest_pat_...>
+```
+
 ## Quick Endpoints Summary
 
 ### Authentication & Users
@@ -38,7 +44,9 @@ Authorization: Bearer <jwt-token>
 | GET | `/projects/:id` | Get project | Yes |
 | PUT | `/projects/:id` | Update project | Yes |
 | DELETE | `/projects/:id` | Delete project | Yes |
-| GET | `/projects/:id/dsn` | Get DSN | Yes |
+| GET | `/projects/:id/stats` | Get project stats | Yes |
+| POST | `/projects/:id/cli-tokens` | Generate project CLI token | Yes |
+| POST | `/projects/:id/cli/spec-sync` | Upload specs from CLI history | CLI Token |
 
 ### API Specifications
 
