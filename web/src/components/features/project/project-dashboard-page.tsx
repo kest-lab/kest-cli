@@ -1,18 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useDeferredValue, useMemo, useState } from 'react';
+import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowRight,
-  FileJson2,
   FolderKanban,
-  Globe,
   Plus,
   Search,
-  Tags,
-  Trash2,
-  Users,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -20,33 +16,28 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { StatCard, StatCardSkeleton } from '@/components/features/console/dashboard-stats';
-import { flattenProjectCategories } from '@/components/features/project/category-helpers';
 import {
-  DeleteProjectDialog,
   ProjectFormDialog,
   type ProjectFormMode,
   ProjectStatusBadge,
-  resolvePlatformLabel,
 } from '@/components/features/project/project-shared';
 import {
   buildProjectApiSpecsRoute,
-  buildProjectCategoriesRoute,
+  buildProjectCollectionsRoute,
   buildProjectDetailRoute,
   buildProjectEnvironmentsRoute,
   buildProjectTestCasesRoute,
 } from '@/constants/routes';
-import { useApiSpecs } from '@/hooks/use-api-specs';
-import { useProjectCategories } from '@/hooks/use-categories';
-import { useEnvironments } from '@/hooks/use-environments';
+import { apiSpecKeys, useApiSpecs } from '@/hooks/use-api-specs';
 import {
+  projectKeys,
   useCreateProject,
-  useDeleteProject,
-  useProject,
   useProjectStats,
   useProjects,
   useUpdateProject,
 } from '@/hooks/use-projects';
+import { apiSpecService } from '@/services/api-spec';
+import { projectService } from '@/services/project';
 import type { ApiProject, CreateProjectRequest, UpdateProjectRequest } from '@/types/project';
 import { formatDate } from '@/utils';
 
@@ -59,12 +50,18 @@ const getProjectCreatedAt = (project: ApiProject) => project.created_at || '';
 const sortProjectsByCreatedAtDesc = (left: ApiProject, right: ApiProject) =>
   getProjectCreatedAt(right).localeCompare(getProjectCreatedAt(left));
 
-const formatProjectCreatedAt = (project: ApiProject) =>
-  project.created_at ? formatDate(project.created_at, 'YYYY-MM-DD') : 'Unknown';
-
 const parseProjectId = (value: string | null) => {
   const numericValue = Number(value);
   return Number.isInteger(numericValue) && numericValue > 0 ? numericValue : null;
+};
+
+const formatProjectTimestamp = (value?: string | null) => {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : formatDate(value, 'YYYY-MM-DD HH:mm');
 };
 
 const buildDashboardHref = (
@@ -88,19 +85,19 @@ export function ProjectDashboardPage() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [formMode, setFormMode] = useState<ProjectFormMode>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ApiProject | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<ApiProject | null>(null);
+  const [hasAutoSelectedProject, setHasAutoSelectedProject] = useState(false);
 
   const deferredSearch = useDeferredValue(searchQuery);
 
   const projectsQuery = useProjects({ page: 1, perPage: PROJECTS_PAGE_SIZE });
   const createProjectMutation = useCreateProject();
   const updateProjectMutation = useUpdateProject();
-  const deleteProjectMutation = useDeleteProject();
 
   const projects = projectsQuery.data?.items ?? EMPTY_PROJECTS;
   const previewProjectId = parseProjectId(searchParams.get('preview'));
@@ -109,24 +106,75 @@ export function ProjectDashboardPage() {
     const normalizedQuery = deferredSearch.trim().toLowerCase();
 
     if (!normalizedQuery) {
-      return projects;
+      return [...projects].sort(sortProjectsByCreatedAtDesc);
     }
 
-    return projects.filter((project) =>
-      [project.name, project.slug, project.platform]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(normalizedQuery))
-    );
+    return projects
+      .filter((project) =>
+        [project.name, project.slug, project.platform]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(normalizedQuery))
+      )
+      .sort(sortProjectsByCreatedAtDesc);
   }, [deferredSearch, projects]);
 
   const selectedProject =
     previewProjectId !== null
       ? projects.find((project) => project.id === previewProjectId) ?? null
       : null;
+  const fallbackProject = useMemo(
+    () => [...projects].sort(sortProjectsByCreatedAtDesc)[0] ?? null,
+    [projects]
+  );
+
+  const prefetchProjectPreview = (projectId: number) => {
+    void queryClient.prefetchQuery({
+      queryKey: projectKeys.projectStats(projectId),
+      queryFn: () => projectService.getStats(projectId),
+    });
+
+    void queryClient.prefetchQuery({
+      queryKey: apiSpecKeys.list({ projectId, page: 1, pageSize: MAX_PREVIEW_SPECS }),
+      queryFn: () =>
+        apiSpecService.list({
+          projectId,
+          page: 1,
+          pageSize: MAX_PREVIEW_SPECS,
+        }),
+    });
+  };
 
   const navigateToPreview = (projectId?: number | null) => {
-    router.replace(buildDashboardHref(pathname, new URLSearchParams(searchParams.toString()), projectId));
+    if (projectId) {
+      prefetchProjectPreview(projectId);
+    }
+
+    startTransition(() => {
+      router.replace(
+        buildDashboardHref(pathname, new URLSearchParams(searchParams.toString()), projectId)
+      );
+    });
   };
+
+  useEffect(() => {
+    filteredProjects.slice(0, 3).forEach((project) => {
+      prefetchProjectPreview(project.id);
+    });
+  }, [filteredProjects, queryClient]);
+
+  useEffect(() => {
+    if (
+      hasAutoSelectedProject ||
+      projectsQuery.isLoading ||
+      previewProjectId !== null ||
+      !fallbackProject
+    ) {
+      return;
+    }
+
+    setHasAutoSelectedProject(true);
+    navigateToPreview(fallbackProject.id);
+  }, [fallbackProject, hasAutoSelectedProject, previewProjectId, projectsQuery.isLoading]);
 
   const openCreateDialog = () => {
     setFormMode('create');
@@ -155,24 +203,6 @@ export function ProjectDashboardPage() {
 
       setIsFormOpen(false);
       setEditingProject(null);
-    } catch {
-      // Global HTTP error handling already surfaces failure feedback.
-    }
-  };
-
-  const handleDeleteProject = async () => {
-    if (!deleteTarget) {
-      return;
-    }
-
-    try {
-      await deleteProjectMutation.mutateAsync(deleteTarget.id);
-
-      if (previewProjectId === deleteTarget.id) {
-        navigateToPreview(null);
-      }
-
-      setDeleteTarget(null);
     } catch {
       // Global HTTP error handling already surfaces failure feedback.
     }
@@ -262,7 +292,11 @@ export function ProjectDashboardPage() {
                       key={project.id}
                       type="button"
                       onClick={() => navigateToPreview(project.id)}
-                      className={`w-full rounded-2xl border p-3 text-left transition-colors ${
+                      onMouseEnter={() => prefetchProjectPreview(project.id)}
+                      onFocus={() => prefetchProjectPreview(project.id)}
+                      onTouchStart={() => prefetchProjectPreview(project.id)}
+                      aria-pressed={isActive}
+                      className={`group w-full rounded-2xl border p-3 text-left transition-colors ${
                         isActive
                           ? 'border-primary/30 bg-primary/10 shadow-sm'
                           : 'border-transparent bg-background/60 hover:border-border/60 hover:bg-background'
@@ -276,8 +310,19 @@ export function ProjectDashboardPage() {
                         <ProjectStatusBadge status={project.status} />
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
-                        <Badge variant="outline">{resolvePlatformLabel(project.platform)}</Badge>
-                        <span>Created {formatProjectCreatedAt(project)}</span>
+                        {isActive ? (
+                          <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+                            Selected
+                          </Badge>
+                        ) : null}
+                        {project.created_at ? (
+                          <span>Created {formatDate(project.created_at, 'YYYY-MM-DD')}</span>
+                        ) : null}
+                        {!isActive ? (
+                          <span className="transition-opacity group-hover:opacity-100 lg:opacity-0">
+                            Preview
+                          </span>
+                        ) : null}
                       </div>
                     </button>
                   );
@@ -294,7 +339,6 @@ export function ProjectDashboardPage() {
             <ProjectPreviewPanel
               project={selectedProject}
               onEdit={() => openEditDialog(selectedProject)}
-              onDelete={() => setDeleteTarget(selectedProject)}
             />
           ) : (
             <ProjectDashboardWelcome
@@ -313,18 +357,6 @@ export function ProjectDashboardPage() {
         isSubmitting={createProjectMutation.isPending || updateProjectMutation.isPending}
         onOpenChange={setIsFormOpen}
         onSubmit={handleProjectSubmit}
-      />
-
-      <DeleteProjectDialog
-        open={Boolean(deleteTarget)}
-        project={deleteTarget}
-        isDeleting={deleteProjectMutation.isPending}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteTarget(null);
-          }
-        }}
-        onConfirm={handleDeleteProject}
       />
     </div>
   );
@@ -396,7 +428,7 @@ function ProjectDashboardWelcome({
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{project.name}</p>
                     <p className="truncate text-xs text-text-muted">
-                      {project.slug} · {resolvePlatformLabel(project.platform)}
+                      {project.slug}
                     </p>
                   </div>
                   <ArrowRight className="h-4 w-4 text-text-muted" />
@@ -436,31 +468,94 @@ function ProjectDashboardWelcome({
 function ProjectPreviewPanel({
   project,
   onEdit,
-  onDelete,
 }: {
   project: ApiProject;
   onEdit: () => void;
-  onDelete: () => void;
 }) {
-  const projectQuery = useProject(project.id);
+  const [isSlowPreview, setIsSlowPreview] = useState(false);
   const statsQuery = useProjectStats(project.id);
-  const environmentsQuery = useEnvironments(project.id);
   const apiSpecsQuery = useApiSpecs({
     projectId: project.id,
     page: 1,
     pageSize: MAX_PREVIEW_SPECS,
   });
-  const categoriesQuery = useProjectCategories({
-    projectId: project.id,
-    tree: true,
-  });
 
-  const projectDetail = projectQuery.data ?? project;
-  const environments = environmentsQuery.data?.items ?? [];
+  const projectDetail = project;
   const apiSpecs = apiSpecsQuery.data?.items ?? [];
-  const flatCategories = flattenProjectCategories(categoriesQuery.data?.items);
-  const categoryCount = categoriesQuery.data?.total ?? flatCategories.length;
   const stats = statsQuery.data;
+  const apiSpecCount = stats?.api_spec_count ?? apiSpecs.length;
+  const environmentCount = stats?.environment_count ?? 0;
+  const memberCount = stats?.member_count ?? 0;
+  const createdAtLabel = formatProjectTimestamp(projectDetail.created_at);
+  const hasResolvedReadiness = Boolean(stats);
+  const hasReadinessError =
+    !hasResolvedReadiness &&
+    Boolean(statsQuery.error);
+  const nextStep = hasResolvedReadiness
+    ? resolveDashboardNextStep({
+        projectId: project.id,
+        apiSpecCount,
+        environmentCount,
+      })
+    : null;
+  const readinessItems = hasResolvedReadiness
+    ? ([
+        {
+          label: 'Source of truth',
+          value:
+            apiSpecCount > 0
+              ? `${apiSpecCount} spec${apiSpecCount === 1 ? '' : 's'} ready`
+              : 'Missing',
+          tone: apiSpecCount > 0 ? 'ready' : 'pending',
+          detail:
+            apiSpecCount > 0
+              ? 'The interface inventory exists and can drive docs and tests.'
+              : 'Start in API Specs so the project has a stable interface inventory.',
+        },
+        {
+          label: 'Runtime context',
+          value:
+            environmentCount > 0
+              ? `${environmentCount} environment${environmentCount === 1 ? '' : 's'} configured`
+              : 'Missing',
+          tone: environmentCount > 0 ? 'ready' : 'pending',
+          detail:
+            environmentCount > 0
+              ? 'Base URLs, headers, and variables are ready for execution.'
+              : 'Add one environment before running requests against real targets.',
+        },
+        {
+          label: 'Validation',
+          value:
+            apiSpecCount > 0 && environmentCount > 0 ? 'Ready to generate' : 'Waiting on setup',
+          tone: apiSpecCount > 0 && environmentCount > 0 ? 'ready' : 'pending',
+          detail:
+            apiSpecCount > 0 && environmentCount > 0
+              ? 'Move into Test Cases when you want the first runnable coverage.'
+              : 'Test generation becomes useful after the spec and environment baseline exist.',
+        },
+      ] as const)
+    : [];
+
+  const handleRetryPreview = () => {
+    void statsQuery.refetch();
+    void apiSpecsQuery.refetch();
+  };
+
+  useEffect(() => {
+    if (hasResolvedReadiness || hasReadinessError) {
+      setIsSlowPreview(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsSlowPreview(true);
+    }, 2500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [hasReadinessError, hasResolvedReadiness]);
 
   return (
     <div className="space-y-6">
@@ -470,171 +565,144 @@ function ProjectPreviewPanel({
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                  Dashboard preview
+                  Selected project
                 </Badge>
                 <ProjectStatusBadge status={projectDetail.status} />
-                <Badge variant="outline">{resolvePlatformLabel(projectDetail.platform)}</Badge>
-                <Badge variant="outline" className="font-mono">
-                  {projectDetail.slug}
-                </Badge>
               </div>
               <div>
                 <CardTitle className="text-2xl tracking-tight">{projectDetail.name}</CardTitle>
+                <CardDescription className="mt-2 max-w-3xl text-sm leading-6">
+                  {hasReadinessError
+                    ? 'Some project signals failed to load. Retry this preview or open the workspace directly.'
+                    : isSlowPreview
+                      ? 'Loading project status is taking longer than usual. You can retry or open the workspace directly.'
+                    : nextStep?.summary ??
+                      'Loading project status so the next step reflects real project data.'}
+                </CardDescription>
+              </div>
+              <div className="flex flex-wrap items-center gap-5 text-sm text-text-muted">
+                <span>Slug: {projectDetail.slug}</span>
+                {createdAtLabel ? <span>Created {createdAtLabel}</span> : null}
+                {typeof stats?.member_count === 'number' ? (
+                  <span>
+                    {memberCount} team member{memberCount === 1 ? '' : 's'}
+                  </span>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onEdit}
+                  className="h-auto px-0 text-sm text-text-muted hover:bg-transparent hover:text-text-main"
+                >
+                  Edit details
+                </Button>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button asChild>
+              <Button asChild variant="outline">
                 <Link href={buildProjectDetailRoute(project.id)}>
-                  Project Overview
+                  Open workspace
                   <ArrowRight className="h-4 w-4" />
                 </Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href={`${buildProjectApiSpecsRoute(project.id)}?ai=create`}>
-                  AI Draft API
-                </Link>
-              </Button>
-              <Button type="button" variant="outline" onClick={onEdit}>
-                Edit Project
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                onClick={onDelete}
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
               </Button>
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {statsQuery.isLoading ? (
-          <>
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-          </>
-        ) : (
-          <>
-            <StatCard
-              title="API Specs"
-              value={stats?.api_spec_count ?? apiSpecs.length}
-              description="Saved API definitions"
-              icon={FileJson2}
-              variant="primary"
-            />
-            <StatCard
-              title="Environments"
-              value={stats?.environment_count ?? environments.length}
-              description="Configured runtime targets"
-              icon={Globe}
-            />
-            <StatCard
-              title="Categories"
-              value={stats?.category_count ?? categoryCount}
-              description="Tree groups available in this project"
-              icon={Tags}
-              variant="success"
-            />
-            <StatCard
-              title="Members"
-              value={stats?.member_count ?? '0'}
-              description="People who can work in this project"
-              icon={Users}
-              variant="warning"
-            />
-          </>
-        )}
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <Card className="border-border/60">
           <CardHeader>
-            <CardTitle>Environments summary</CardTitle>
-            <CardDescription>
-              Preview available environments before entering the workspace.
-            </CardDescription>
+            <CardTitle>Progress</CardTitle>
+            <CardDescription>Three checks are enough to understand project readiness.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {environmentsQuery.isLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="h-16 animate-pulse rounded-2xl bg-muted" />
-                ))}
-              </div>
-            ) : environments.length === 0 ? (
-              <EmptyPreviewState
-                title="No environments yet"
-                description="Add at least one base URL and shared variables before running requests against real targets."
-                actionHref={`${buildProjectEnvironmentsRoute(project.id)}?mode=manage`}
-                actionLabel="Manage environments"
-              />
-            ) : (
-              <>
-                {environments.slice(0, 4).map((environment) => (
-                  <div
-                    key={environment.id}
-                    className="rounded-2xl border border-border/60 bg-background/70 p-4"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
-                          {environment.display_name || environment.name}
-                        </p>
-                        <p className="truncate text-xs text-text-muted">{environment.base_url || 'Base URL not set'}</p>
-                      </div>
-                      <Badge variant="outline">
-                        {Object.keys(environment.variables || {}).length} vars
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-                <Button asChild variant="ghost" className="px-0">
-                  <Link href={buildProjectEnvironmentsRoute(project.id)}>
-                    Open environments workspace
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
+            {hasReadinessError ? (
+              <Alert>
+                <AlertTitle>Unable to load project readiness</AlertTitle>
+                <AlertDescription className="mt-2">
+                  The preview could not determine whether the project is ready for setup or testing.
+                </AlertDescription>
+                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={handleRetryPreview}>
+                  Retry preview
                 </Button>
+              </Alert>
+            ) : !hasResolvedReadiness ? (
+              <>
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-18 animate-pulse rounded-2xl border border-border/60 bg-muted/40"
+                    />
+                  ))}
+                </div>
+                {isSlowPreview ? (
+                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-border/70 bg-background/70 px-4 py-3 text-sm text-text-muted">
+                    <span>Still loading readiness signals.</span>
+                    <Button type="button" variant="outline" size="sm" onClick={handleRetryPreview}>
+                      Retry
+                    </Button>
+                  </div>
+                ) : null}
               </>
+            ) : (
+              readinessItems.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-2xl border border-border/60 bg-background/70 p-4"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-text-main">{item.label}</p>
+                      <p className="mt-1 text-sm text-text-muted">{item.detail}</p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={
+                        item.tone === 'ready'
+                          ? 'border-emerald-200 bg-emerald-500/10 text-emerald-700'
+                          : 'border-amber-200 bg-amber-500/10 text-amber-700'
+                      }
+                    >
+                      {item.value}
+                    </Badge>
+                  </div>
+                </div>
+              ))
             )}
-          </CardContent>
-        </Card>
 
-        <Card className="border-border/60">
-          <CardHeader>
-            <CardTitle>API specs summary</CardTitle>
-            <CardDescription>
-              Preview specs here. Enter the project to inspect individual records in the content area.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
             {apiSpecsQuery.isLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div key={index} className="h-16 animate-pulse rounded-2xl bg-muted" />
+              <div className="space-y-2 pt-2">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="h-14 animate-pulse rounded-2xl bg-muted" />
                 ))}
               </div>
-            ) : apiSpecs.length === 0 ? (
-              <EmptyPreviewState
-                title="No API specs yet"
-                description="Import or define the project's APIs first so documentation and tests have a stable source of truth."
-                actionHref={`${buildProjectApiSpecsRoute(project.id)}?mode=manage`}
-                actionLabel="Manage API specs"
-              />
-            ) : (
-              <>
-                {apiSpecs.map((spec) => (
-                  <div
-                    key={spec.id}
-                    className="rounded-2xl border border-border/60 bg-background/70 p-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
+            ) : apiSpecs.length > 0 ? (
+              <div className="space-y-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-text-main">Recent API specs</p>
+                    <p className="mt-1 text-sm text-text-muted">
+                      Keep this preview short. Inspect the rest inside the workspace.
+                    </p>
+                  </div>
+                  <Button asChild variant="ghost" className="px-0">
+                    <Link href={buildProjectApiSpecsRoute(project.id)}>
+                      Open API Specs
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  {apiSpecs.slice(0, 3).map((spec) => (
+                    <div
+                      key={spec.id}
+                      className="flex items-start justify-between gap-3 rounded-2xl border border-border/60 bg-background/80 px-4 py-3"
+                    >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">
                           {spec.method} {spec.path}
@@ -645,146 +713,202 @@ function ProjectPreviewPanel({
                       </div>
                       <Badge variant="outline">{spec.version}</Badge>
                     </div>
-                  </div>
-                ))}
-                <Button asChild variant="ghost" className="px-0">
-                  <Link href={buildProjectApiSpecsRoute(project.id)}>
-                    Open API specs workspace
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </>
-            )}
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 
-        <Card className="border-border/60">
+        <Card className="border-border/60 bg-linear-to-br from-primary/5 via-background to-background">
           <CardHeader>
-            <CardTitle>Categories summary</CardTitle>
+            <CardTitle>
+              {hasReadinessError ? 'Preview needs attention' : nextStep?.title ?? 'Loading next step'}
+            </CardTitle>
             <CardDescription>
-              Nested categories remain previewable here and become itemized in the workspace sidebar.
+              {hasReadinessError
+                ? 'The dashboard cannot recommend the next step until the preview data loads successfully.'
+                : nextStep?.description ??
+                  'Waiting for project readiness so this recommendation is not guessed.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {categoriesQuery.isLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div key={index} className="h-12 animate-pulse rounded-2xl bg-muted" />
-                ))}
-              </div>
-            ) : flatCategories.length === 0 ? (
-              <EmptyPreviewState
-                title="No categories yet"
-                description="Create categories only when the surface area is large enough to need taxonomy and ownership grouping."
-                actionHref={`${buildProjectCategoriesRoute(project.id)}?mode=manage`}
-                actionLabel="Manage categories"
-              />
+            {hasReadinessError ? (
+              <Alert>
+                <AlertTitle>Recommendation unavailable</AlertTitle>
+                <AlertDescription className="mt-2">
+                  Retry the preview, or continue in the workspace if you already know the next action.
+                </AlertDescription>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={handleRetryPreview}>
+                    Retry preview
+                  </Button>
+                  <Button asChild size="sm">
+                    <Link href={buildProjectDetailRoute(project.id)}>
+                      Open workspace
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </Alert>
+            ) : !nextStep ? (
+              <>
+                <div className="space-y-3">
+                  <div className="h-28 animate-pulse rounded-2xl border border-border/60 bg-muted/40" />
+                  <div className="h-40 animate-pulse rounded-2xl border border-border/60 bg-muted/40" />
+                </div>
+                {isSlowPreview ? (
+                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-border/70 bg-background/70 px-4 py-3 text-sm text-text-muted">
+                    <span>Recommendation is taking longer than usual.</span>
+                    <Button type="button" variant="outline" size="sm" onClick={handleRetryPreview}>
+                      Retry
+                    </Button>
+                  </div>
+                ) : null}
+              </>
             ) : (
               <>
-                {flatCategories.slice(0, 5).map((category) => (
-                  <div
-                    key={category.id}
-                    className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">
-                        {category.depth > 0 ? `${'· '.repeat(category.depth)}${category.name}` : category.name}
-                      </p>
-                      <p className="truncate text-xs text-text-muted">
-                        {category.description || 'No description provided'}
-                      </p>
-                    </div>
-                    <Badge variant="outline">#{category.sort_order}</Badge>
+                <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                    Why now
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-text-muted">{nextStep.reason}</p>
+                </div>
+
+                <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+                    To unlock this step
+                  </p>
+                  <div className="mt-3 space-y-3">
+                    {nextStep.blockers.map((blocker) => (
+                      <div key={blocker.label} className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-text-main">{blocker.label}</p>
+                          <p className="mt-1 text-sm text-text-muted">{blocker.detail}</p>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={
+                            blocker.tone === 'ready'
+                              ? 'border-emerald-200 bg-emerald-500/10 text-emerald-700'
+                              : 'border-amber-200 bg-amber-500/10 text-amber-700'
+                          }
+                        >
+                          {blocker.state}
+                        </Badge>
+                      </div>
+                    ))}
                   </div>
-                ))}
-                <Button asChild variant="ghost" className="px-0">
-                  <Link href={buildProjectCategoriesRoute(project.id)}>
-                    Open categories workspace
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild>
+                    <Link href={nextStep.primaryHref}>
+                      {nextStep.primaryLabel}
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  {nextStep.secondaryHref && nextStep.secondaryLabel ? (
+                    <Button asChild variant="outline">
+                      <Link href={nextStep.secondaryHref}>
+                        {nextStep.secondaryLabel}
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
               </>
             )}
           </CardContent>
         </Card>
-
-        <div className="space-y-6">
-          <Card className="border-border/60">
-            <CardHeader>
-              <CardTitle>Recommended next steps</CardTitle>
-              <CardDescription>
-                Use the current project state to decide what the next operator action should be.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                <p className="text-sm font-medium text-text-main">Build the source of truth</p>
-                <p className="mt-1 text-sm text-text-muted">
-                  {apiSpecs.length === 0
-                    ? 'The project should start in API Specs with AI draft. There is no interface inventory yet.'
-                    : 'The project already has API Specs. Expand or refine them before generating test coverage.'}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                <p className="text-sm font-medium text-text-main">Prepare runtime configuration</p>
-                <p className="mt-1 text-sm text-text-muted">
-                  {environments.length === 0
-                    ? 'No environments are configured. Add development or staging targets before execution starts.'
-                    : 'Environment setup exists. Keep headers and variables current so test runs stay reproducible.'}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                <p className="text-sm font-medium text-text-main">Move into validation</p>
-                <p className="mt-1 text-sm text-text-muted">
-                  Open Test Cases once the interface and environment baseline are stable enough to automate.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button asChild>
-                  <Link href={`${buildProjectApiSpecsRoute(project.id)}?ai=create`}>
-                    AI Draft API
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href={buildProjectEnvironmentsRoute(project.id)}>
-                    Environments
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href={buildProjectTestCasesRoute(project.id)}>
-                    Test Cases
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );
 }
 
-function EmptyPreviewState({
-  title,
-  description,
-  actionHref,
-  actionLabel,
+function resolveDashboardNextStep({
+  projectId,
+  apiSpecCount,
+  environmentCount,
 }: {
-  title: string;
-  description: string;
-  actionHref: string;
-  actionLabel: string;
+  projectId: number;
+  apiSpecCount: number;
+  environmentCount: number;
 }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-border/70 bg-background/60 p-5">
-      <p className="text-sm font-medium text-text-main">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-text-muted">{description}</p>
-      <Button asChild variant="outline" size="sm" className="mt-4">
-        <Link href={actionHref}>{actionLabel}</Link>
-      </Button>
-    </div>
-  );
+  if (apiSpecCount === 0) {
+    return {
+      summary: 'No API spec exists yet. Start with AI Draft before setting up secondary surfaces.',
+      title: 'Define the first API surface',
+      description: 'Describe one endpoint, create the first spec, then come back for runtime setup.',
+      reason: 'The project needs one concrete interface before environments or validation become useful.',
+      primaryHref: `${buildProjectApiSpecsRoute(projectId)}?ai=create`,
+      primaryLabel: 'AI Draft API',
+      blockers: [
+        {
+          label: 'API source of truth',
+          detail: 'No API spec exists yet, so documentation and tests have nothing stable to build from.',
+          state: 'Missing',
+          tone: 'pending' as const,
+        },
+        {
+          label: 'Runtime setup',
+          detail: 'Environments can wait until the first endpoint is defined.',
+          state: 'Not started',
+          tone: 'pending' as const,
+        },
+      ],
+    };
+  }
+
+  if (environmentCount === 0) {
+    return {
+      summary: `This project already has ${apiSpecCount} API spec${apiSpecCount === 1 ? '' : 's'}, but execution still has no runtime target.`,
+      title: 'Add the first environment',
+      description: 'Add one development or staging target so requests and tests can run somewhere real.',
+      reason: 'You already defined the surface. One environment unlocks requests, examples, and the first test runs.',
+      primaryHref: buildProjectEnvironmentsRoute(projectId),
+      primaryLabel: 'Configure Environment',
+      secondaryHref: buildProjectApiSpecsRoute(projectId),
+      secondaryLabel: 'Review API Specs',
+      blockers: [
+        {
+          label: 'Execution target',
+          detail: 'No base URL, variables, or shared headers are configured yet.',
+          state: 'Missing',
+          tone: 'pending' as const,
+        },
+        {
+          label: 'Spec baseline',
+          detail: `The project already has ${apiSpecCount} API spec${apiSpecCount === 1 ? '' : 's'} ready for downstream work.`,
+          state: 'Ready',
+          tone: 'ready' as const,
+        },
+      ],
+    };
+  }
+
+  return {
+    summary: `The project has ${apiSpecCount} API spec${apiSpecCount === 1 ? '' : 's'} and ${environmentCount} runtime environment${environmentCount === 1 ? '' : 's'}. Move into validation instead of adding more dashboard detail.`,
+    title: 'Generate validation coverage',
+    description: 'Generate test cases from the existing specs, then use Collections only for debugging.',
+    reason: 'The spec and environment baseline exists. The next real value comes from runnable coverage.',
+    primaryHref: buildProjectTestCasesRoute(projectId),
+    primaryLabel: 'Open Test Cases',
+    secondaryHref: buildProjectCollectionsRoute(projectId),
+    secondaryLabel: 'Open Collections',
+    blockers: [
+      {
+        label: 'API source of truth',
+        detail: 'API Specs are already in place and can drive generated coverage.',
+        state: 'Ready',
+        tone: 'ready' as const,
+      },
+      {
+        label: 'Runtime setup',
+        detail: `At least ${environmentCount} environment${environmentCount === 1 ? '' : 's'} is configured for execution.`,
+        state: 'Ready',
+        tone: 'ready' as const,
+      },
+    ],
+  };
 }
