@@ -81,6 +81,9 @@ const buildDashboardHref = (
   return queryString ? `${pathname}?${queryString}` : pathname;
 };
 
+const buildQuickRequestHref = (projectId: number) =>
+  `${buildProjectCollectionsRoute(projectId)}?quickRequest=1`;
+
 export function ProjectDashboardPage() {
   const pathname = usePathname();
   const router = useRouter();
@@ -382,14 +385,14 @@ function ProjectDashboardWelcome({
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-2">
               <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                Dashboard overview
+                Start here
               </Badge>
               <CardTitle className="text-2xl tracking-tight">
-                Choose a project and continue where work happens
+                Create a project, then choose how you want to start
               </CardTitle>
               <CardDescription className="max-w-3xl">
-                The left sidebar is your project inventory. The right panel is a launchpad:
-                inspect the project, then jump into AI-assisted API Specs, Environments, or Test Cases.
+                After the first project exists, the dashboard will immediately open its preview and
+                point you to either AI-assisted API design or a quick request surface.
               </CardDescription>
             </div>
 
@@ -404,9 +407,10 @@ function ProjectDashboardWelcome({
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card className="border-border/60">
           <CardHeader>
-            <CardTitle>Recent projects</CardTitle>
+            <CardTitle>Create the first project</CardTitle>
             <CardDescription>
-              Start by previewing one of the projects below.
+              The dashboard becomes useful after one project exists. Then it will auto-open the
+              latest project and show the next recommended action.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -440,23 +444,19 @@ function ProjectDashboardWelcome({
 
         <Card className="border-dashed border-border/70">
           <CardHeader>
-            <CardTitle>Recommended workflow</CardTitle>
+            <CardTitle>Two ways to start</CardTitle>
             <CardDescription>
-              Keep the user journey simple: define interfaces, set runtime context, then validate behavior.
+              Once a project exists, keep the first decision small: either model the API or probe it.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-text-muted">
             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-              <p className="font-medium text-text-main">1. Define interfaces</p>
-              <p className="mt-1">Start in API Specs and use AI draft to turn product intent into a structured endpoint.</p>
+              <p className="font-medium text-text-main">1. Design with AI</p>
+              <p className="mt-1">Use AI Draft API to turn product intent into a structured endpoint and start building the source of truth.</p>
             </div>
             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-              <p className="font-medium text-text-main">2. Configure runtime context</p>
-              <p className="mt-1">Add Environments and Collections once requests need real endpoints and reusable drafts.</p>
-            </div>
-            <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-              <p className="font-medium text-text-main">3. Validate and iterate</p>
-              <p className="mt-1">Move to Test Cases after the spec and environment baseline is clear.</p>
+              <p className="font-medium text-text-main">2. Quick Request</p>
+              <p className="mt-1">If you already know the endpoint, open the request workbench and send a probe immediately, then save it back into structured assets.</p>
             </div>
           </CardContent>
         </Card>
@@ -575,7 +575,7 @@ function ProjectPreviewPanel({
                   {hasReadinessError
                     ? 'Some project signals failed to load. Retry this preview or open the workspace directly.'
                     : isSlowPreview
-                      ? 'Loading project status is taking longer than usual. You can retry or open the workspace directly.'
+                      ? 'Loading project status is taking longer than usual. Use Quick Request or open the workspace while the richer preview catches up.'
                     : nextStep?.summary ??
                       'Loading project status so the next step reflects real project data.'}
                 </CardDescription>
@@ -601,6 +601,14 @@ function ProjectPreviewPanel({
             </div>
 
             <div className="flex flex-wrap gap-2">
+              {isSlowPreview && !nextStep && !hasReadinessError ? (
+                <Button asChild>
+                  <Link href={buildProjectCollectionsRoute(project.id)}>
+                    Quick Request
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              ) : null}
               <Button asChild variant="outline">
                 <Link href={buildProjectDetailRoute(project.id)}>
                   Open workspace
@@ -723,11 +731,17 @@ function ProjectPreviewPanel({
         <Card className="border-border/60 bg-linear-to-br from-primary/5 via-background to-background">
           <CardHeader>
             <CardTitle>
-              {hasReadinessError ? 'Preview needs attention' : nextStep?.title ?? 'Loading next step'}
+              {hasReadinessError
+                ? 'Preview needs attention'
+                : isSlowPreview && !nextStep
+                  ? 'Move now, refine later'
+                  : nextStep?.title ?? 'Loading next step'}
             </CardTitle>
             <CardDescription>
               {hasReadinessError
                 ? 'The dashboard cannot recommend the next step until the preview data loads successfully.'
+                : isSlowPreview && !nextStep
+                  ? 'The rich preview is still loading. Use a quick request or enter the workspace instead of waiting on the dashboard.'
                 : nextStep?.description ??
                   'Waiting for project readiness so this recommendation is not guessed.'}
             </CardDescription>
@@ -758,11 +772,27 @@ function ProjectPreviewPanel({
                   <div className="h-40 animate-pulse rounded-2xl border border-border/60 bg-muted/40" />
                 </div>
                 {isSlowPreview ? (
-                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-border/70 bg-background/70 px-4 py-3 text-sm text-text-muted">
-                    <span>Recommendation is taking longer than usual.</span>
-                    <Button type="button" variant="outline" size="sm" onClick={handleRetryPreview}>
-                      Retry
-                    </Button>
+                  <div className="space-y-3 rounded-2xl border border-dashed border-border/70 bg-background/70 p-4">
+                    <p className="text-sm text-text-muted">
+                      Recommendation is taking longer than usual. Do not block the user on the dashboard.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button asChild size="sm">
+                        <Link href={buildProjectCollectionsRoute(project.id)}>
+                          Quick Request
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button asChild size="sm" variant="outline">
+                        <Link href={buildProjectDetailRoute(project.id)}>
+                          Open workspace
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={handleRetryPreview}>
+                        Retry
+                      </Button>
+                    </div>
                   </div>
                 ) : null}
               </>
@@ -840,9 +870,11 @@ function resolveDashboardNextStep({
       summary: 'No API spec exists yet. Start with AI Draft before setting up secondary surfaces.',
       title: 'Define the first API surface',
       description: 'Describe one endpoint, create the first spec, then come back for runtime setup.',
-      reason: 'The project needs one concrete interface before environments or validation become useful.',
+      reason: 'The project needs one concrete interface before environments or validation become useful. If you just need to probe an endpoint, use Quick Request instead of reshaping the dashboard.',
       primaryHref: `${buildProjectApiSpecsRoute(projectId)}?ai=create`,
       primaryLabel: 'AI Draft API',
+      secondaryHref: buildQuickRequestHref(projectId),
+      secondaryLabel: 'Quick Request',
       blockers: [
         {
           label: 'API source of truth',
@@ -890,12 +922,12 @@ function resolveDashboardNextStep({
   return {
     summary: `The project has ${apiSpecCount} API spec${apiSpecCount === 1 ? '' : 's'} and ${environmentCount} runtime environment${environmentCount === 1 ? '' : 's'}. Move into validation instead of adding more dashboard detail.`,
     title: 'Generate validation coverage',
-    description: 'Generate test cases from the existing specs, then use Collections only for debugging.',
-    reason: 'The spec and environment baseline exists. The next real value comes from runnable coverage.',
+    description: 'Generate test cases from the existing specs, then use Quick Request only for one-off debugging.',
+    reason: 'The spec and environment baseline exists. The next real value comes from runnable coverage, while Quick Request stays available for ad hoc inspection.',
     primaryHref: buildProjectTestCasesRoute(projectId),
     primaryLabel: 'Open Test Cases',
-    secondaryHref: buildProjectCollectionsRoute(projectId),
-    secondaryLabel: 'Open Collections',
+    secondaryHref: buildQuickRequestHref(projectId),
+    secondaryLabel: 'Quick Request',
     blockers: [
       {
         label: 'API source of truth',

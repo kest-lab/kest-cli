@@ -1,7 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   ChevronDown,
   ChevronRight,
@@ -794,7 +795,10 @@ export function ApiRequestWorkbench({
 }: {
   projectId: number;
 }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const initialState = useMemo(() => getInitialWorkbenchState(), []);
+  const quickRequestIntentConsumedRef = useRef(false);
   const [tabs, setTabs] = useState<RequestPageTab[]>(initialState.tabs);
   const [collections, setCollections] = useState<CollectionNode[]>(initialState.collections);
   const [activeTabId, setActiveTabId] = useState<string | null>(initialState.activeTabId);
@@ -1505,6 +1509,22 @@ export function ApiRequestWorkbench({
     });
   };
 
+  useEffect(() => {
+    if (searchParams.get('quickRequest') !== '1' || quickRequestIntentConsumedRef.current) {
+      return;
+    }
+
+    quickRequestIntentConsumedRef.current = true;
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete('quickRequest');
+
+    const nextHref = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname;
+
+    window.history.replaceState(window.history.state, '', nextHref);
+    createScratchpadRequest();
+  }, [createScratchpadRequest, pathname, searchParams]);
+
   const handleCloseTab = (tabId: string) => {
     const nextOpenTabIds = openTabIds.filter((id) => id !== tabId);
     const nextActiveTabId = resolveNextActiveTabId(openTabIds, nextOpenTabIds, activeTabId);
@@ -1694,7 +1714,7 @@ export function ApiRequestWorkbench({
                             {collections.find((collection) => collection.id === activeTab.collectionId)?.name || 'Collection'}
                           </Badge>
                         ) : (
-                          <Badge variant="secondary">Scratchpad</Badge>
+                          <Badge variant="secondary">Quick Request</Badge>
                         )}
                       </div>
                       <div>
@@ -1768,7 +1788,7 @@ export function ApiRequestWorkbench({
                   Start a request workspace
                 </p>
                 <p className="mt-3 text-base leading-7 text-text-muted">
-                  Create a saved collection for reusable requests, or open a scratchpad request for one-off debugging.
+                  Create a saved collection for reusable requests, or open a quick request for one-off debugging.
                 </p>
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                   <Button type="button" onClick={createCollection}>
@@ -1777,7 +1797,7 @@ export function ApiRequestWorkbench({
                   </Button>
                   <Button type="button" variant="outline" onClick={createScratchpadRequest}>
                     <Plus className="h-4 w-4" />
-                    Scratchpad Request
+                    Quick Request
                   </Button>
                 </div>
               </div>
@@ -1858,9 +1878,9 @@ function CollectionsSidebar({
       <div className="space-y-4 p-4">
         {isEmpty ? (
           <div className="rounded-[24px] border border-dashed border-border/70 bg-white/70 p-4">
-            <p className="text-sm font-semibold text-text-main">Start with a collection or scratchpad</p>
+            <p className="text-sm font-semibold text-text-main">Start with a collection or quick request</p>
             <p className="mt-2 text-sm leading-6 text-text-muted">
-              Collections hold reusable requests. Scratchpad tabs are for quick experiments that do not need project structure yet.
+              Collections hold reusable requests. Quick requests are for one-off experiments that do not need project structure yet.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button type="button" size="sm" onClick={onCreateCollection}>
@@ -1869,7 +1889,7 @@ function CollectionsSidebar({
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={onCreateScratchpadRequest}>
                 <Plus className="h-4 w-4" />
-                Scratchpad
+                Quick Request
               </Button>
             </div>
           </div>
@@ -1968,7 +1988,7 @@ function CollectionsSidebar({
           {scratchpadTabs.length > 0 ? (
             <div className="pt-4">
               <div className="mb-2 px-2 text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                Scratchpad
+                Quick Requests
               </div>
               <div className="space-y-1.5">
                 {scratchpadTabs.map((tab) => (
