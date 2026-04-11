@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/kest-labs/kest/cli/internal/config"
+	"github.com/kest-labs/kest/cli/internal/logger"
 	"github.com/kest-labs/kest/cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -84,5 +85,12 @@ func init() {
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		output.Quiet = QuietMode
 		output.JSONOutput = OutputFormat == "json"
+
+		if shouldAutoStartBridge(cmd, os.Args[1:]) {
+			if err := ensureBridgeRunning(); err != nil {
+				logger.LogToSession("auto bridge startup warning: %v", err)
+				fmt.Fprintf(os.Stderr, "⚠️  Warning: local bridge auto-start failed: %v\n", err)
+			}
+		}
 	}
 }
