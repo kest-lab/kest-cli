@@ -2,17 +2,23 @@ package category
 
 import (
 	"context"
+	"errors"
 	"fmt"
+)
+
+var (
+	ErrCategoryNotFound      = errors.New("category not found")
+	ErrInvalidParentCategory = errors.New("invalid parent category")
 )
 
 // Service defines the interface for category business logic
 type Service interface {
 	CreateCategory(ctx context.Context, projectID uint, req *CreateCategoryRequest) (*CategoryResponse, error)
-	GetCategory(ctx context.Context, id uint) (*CategoryResponse, error)
+	GetCategory(ctx context.Context, projectID, id uint) (*CategoryResponse, error)
 	ListCategories(ctx context.Context, projectID uint) ([]*CategoryResponse, error)
 	GetCategoryTree(ctx context.Context, projectID uint) ([]*CategoryResponse, error)
-	UpdateCategory(ctx context.Context, id uint, req *UpdateCategoryRequest) (*CategoryResponse, error)
-	DeleteCategory(ctx context.Context, id uint) error
+	UpdateCategory(ctx context.Context, projectID, id uint, req *UpdateCategoryRequest) (*CategoryResponse, error)
+	DeleteCategory(ctx context.Context, projectID, id uint) error
 	SortCategories(ctx context.Context, projectID uint, req *SortCategoriesRequest) error
 }
 
@@ -26,6 +32,16 @@ func NewService(repo Repository) Service {
 }
 
 func (s *service) CreateCategory(ctx context.Context, projectID uint, req *CreateCategoryRequest) (*CategoryResponse, error) {
+	if req.ParentID != nil {
+		parent, err := s.repo.GetByIDAndProject(ctx, *req.ParentID, projectID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get parent category: %w", err)
+		}
+		if parent == nil {
+			return nil, ErrInvalidParentCategory
+		}
+	}
+
 	category := ToCategoryPO(projectID, req)
 	if err := s.repo.Create(ctx, category); err != nil {
 		return nil, fmt.Errorf("failed to create category: %w", err)
@@ -33,13 +49,13 @@ func (s *service) CreateCategory(ctx context.Context, projectID uint, req *Creat
 	return FromCategoryPO(category), nil
 }
 
-func (s *service) GetCategory(ctx context.Context, id uint) (*CategoryResponse, error) {
-	category, err := s.repo.GetByID(ctx, id)
+func (s *service) GetCategory(ctx context.Context, projectID, id uint) (*CategoryResponse, error) {
+	category, err := s.repo.GetByIDAndProject(ctx, id, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get category: %w", err)
 	}
 	if category == nil {
-		return nil, fmt.Errorf("category not found")
+		return nil, ErrCategoryNotFound
 	}
 	return FromCategoryPO(category), nil
 }
@@ -77,19 +93,34 @@ func buildTree(categories []*CategoryResponse, parentID *uint) []*CategoryRespon
 	return tree
 }
 
-func (s *service) UpdateCategory(ctx context.Context, id uint, req *UpdateCategoryRequest) (*CategoryResponse, error) {
-	category, err := s.repo.GetByID(ctx, id)
+func (s *service) UpdateCategory(ctx context.Context, projectID, id uint, req *UpdateCategoryRequest) (*CategoryResponse, error) {
+	category, err := s.repo.GetByIDAndProject(ctx, id, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get category for update: %w", err)
 	}
 	if category == nil {
-		return nil, fmt.Errorf("category not found")
+		return nil, ErrCategoryNotFound
 	}
 
 	if req.Name != nil {
 		category.Name = *req.Name
 	}
 	if req.ParentID != nil {
+		if *req.ParentID != nil {
+			parentID := **req.ParentID
+			if parentID == id {
+				return nil, ErrInvalidParentCategory
+			}
+
+			parent, err := s.repo.GetByIDAndProject(ctx, parentID, projectID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get parent category for update: %w", err)
+			}
+			if parent == nil {
+				return nil, ErrInvalidParentCategory
+			}
+		}
+
 		category.ParentID = *req.ParentID
 	}
 	if req.Description != nil {
@@ -105,13 +136,13 @@ func (s *service) UpdateCategory(ctx context.Context, id uint, req *UpdateCatego
 	return FromCategoryPO(category), nil
 }
 
-func (s *service) DeleteCategory(ctx context.Context, id uint) error {
-	category, err := s.repo.GetByID(ctx, id)
+func (s *service) DeleteCategory(ctx context.Context, projectID, id uint) error {
+	category, err := s.repo.GetByIDAndProject(ctx, id, projectID)
 	if err != nil {
 		return err
 	}
 	if category == nil {
-		return fmt.Errorf("category not found")
+		return ErrCategoryNotFound
 	}
 	return s.repo.Delete(ctx, id)
 }

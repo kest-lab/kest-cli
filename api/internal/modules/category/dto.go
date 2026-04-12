@@ -22,6 +22,21 @@ type SortCategoriesRequest struct {
 	CategoryIDs []uint `json:"category_ids" binding:"required"`
 }
 
+type CategoryPagination struct {
+	Page       int  `json:"page"`
+	PerPage    int  `json:"per_page"`
+	Total      int  `json:"total"`
+	TotalPages int  `json:"total_pages"`
+	HasNext    bool `json:"has_next"`
+	HasPrev    bool `json:"has_prev"`
+}
+
+type CategoryListResponse struct {
+	Items      []*CategoryResponse `json:"items"`
+	Total      int                 `json:"total"`
+	Pagination *CategoryPagination `json:"pagination,omitempty"`
+}
+
 // ========== Response DTOs ==========
 
 type CategoryResponse struct {

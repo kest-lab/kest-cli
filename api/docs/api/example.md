@@ -1,6 +1,6 @@
 # Example API
 
-> Generated: 2026-02-26 14:24:48
+> Generated: 2026-04-12 23:33:37
 
 ## Base URL
 
@@ -10,13 +10,13 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/examples` | Create example | 🔓 |
-| `GET` | `/v1/projects/:id/collections/:cid/requests/:rid/examples` | List examples | 🔓 |
-| `GET` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid` | Get example details | 🔓 |
-| `PUT` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid` | Update example | 🔓 |
-| `DELETE` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid` | Delete example | 🔓 |
-| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid/response` | Save Response example | 🔓 |
-| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid/default` | Set Default example | 🔓 |
+| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/examples` | Create example | 🔒 |
+| `GET` | `/v1/projects/:id/collections/:cid/requests/:rid/examples` | List examples | 🔒 |
+| `GET` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid` | Get example details | 🔒 |
+| `PUT` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid` | Update example | 🔒 |
+| `DELETE` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid` | Delete example | 🔒 |
+| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid/response` | Save Response example | 🔒 |
+| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid/default` | Set Default example | 🔒 |
 
 ---
 
@@ -28,7 +28,7 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `examples.create` |
 
 #### Path Parameters
@@ -68,7 +68,8 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/requests/:rid/examples'
+curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -79,7 +80,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/reques
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `examples.list` |
 
 #### Path Parameters
@@ -119,7 +120,8 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/reques
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/requests/:rid/examples'
+curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -130,7 +132,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/request
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `examples.show` |
 
 #### Path Parameters
@@ -171,7 +173,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/request
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/requests/:rid/examples/:eid'
+curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -182,7 +185,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/request
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `examples.update` |
 
 #### Path Parameters
@@ -223,7 +226,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/request
 #### Example
 
 ```bash
-curl -X PUT 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/requests/:rid/examples/:eid'
+curl -X PUT 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -234,7 +238,7 @@ curl -X PUT 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/request
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `examples.delete` |
 
 #### Path Parameters
@@ -275,7 +279,8 @@ curl -X PUT 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/request
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/requests/:rid/examples/:eid'
+curl -X DELETE 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -286,7 +291,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/requ
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `examples.save_response` |
 
 #### Request Body
@@ -345,7 +350,8 @@ curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/requ
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/requests/:rid/examples/:eid/response' \
+curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples/1/response' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"response_body": "string","response_headers": "object","response_status": 1,"response_time": 1}'
 ```
@@ -358,7 +364,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/reques
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `examples.set_default` |
 
 #### Path Parameters
@@ -399,7 +405,8 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/reques
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/requests/:rid/examples/:eid/default'
+curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples/1/default' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---

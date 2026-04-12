@@ -530,7 +530,7 @@ export function CategoryManagementPage({
               <CardTitle>Category Registry</CardTitle>
               <CardDescription>
                 Hierarchy sourced from <code>{buildApiPath('/projects/:id/categories')}</code> and
-                paginated locally for faster scanning.
+                rendered as a local tree snapshot so hierarchy-aware sorting and selection stay stable.
               </CardDescription>
             </div>
             <div className="text-sm text-muted-foreground">
@@ -858,11 +858,11 @@ export function CategoryManagementPage({
                 </div>
 
                 <Alert>
-                  <AlertTitle>Current backend behavior</AlertTitle>
+                  <AlertTitle>Workspace behavior</AlertTitle>
                   <AlertDescription>
-                    Server-side search, pagination, and delete reassignment are not exposed by the current
-                    category module, so this page handles search/pagination locally and keeps delete actions
-                    conservative.
+                    This workspace keeps the full category tree loaded so search, sorting, and parent-child
+                    details remain consistent during edits. Delete actions still stay conservative and avoid
+                    automatic reassignment.
                   </AlertDescription>
                 </Alert>
               </>

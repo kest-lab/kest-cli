@@ -1,6 +1,6 @@
 # Collection API
 
-> Generated: 2026-02-26 14:24:48
+> Generated: 2026-04-12 23:33:37
 
 ## Base URL
 
@@ -10,13 +10,13 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/v1/projects/:id/collections` | Create collection | 🔓 |
-| `GET` | `/v1/projects/:id/collections` | List collections | 🔓 |
-| `GET` | `/v1/projects/:id/collections/tree` | Get Tree collection | 🔓 |
-| `GET` | `/v1/projects/:id/collections/:cid` | Get collection details | 🔓 |
-| `PUT` | `/v1/projects/:id/collections/:cid` | Update collection | 🔓 |
-| `DELETE` | `/v1/projects/:id/collections/:cid` | Delete collection | 🔓 |
-| `PATCH` | `/v1/projects/:id/collections/:cid/move` | Move collection | 🔓 |
+| `POST` | `/v1/projects/:id/collections` | Create collection | 🔒 |
+| `GET` | `/v1/projects/:id/collections` | List collections | 🔒 |
+| `GET` | `/v1/projects/:id/collections/tree` | Get Tree collection | 🔒 |
+| `GET` | `/v1/projects/:id/collections/:cid` | Get collection details | 🔒 |
+| `PUT` | `/v1/projects/:id/collections/:cid` | Update collection | 🔒 |
+| `DELETE` | `/v1/projects/:id/collections/:cid` | Delete collection | 🔒 |
+| `PATCH` | `/v1/projects/:id/collections/:cid/move` | Move collection | 🔒 |
 
 ---
 
@@ -28,8 +28,7 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
-| Route Name | `collections.create` |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -57,7 +56,8 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections'
+curl -X POST 'http://localhost:8025/api/v1/projects/1/collections' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -68,8 +68,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
-| Route Name | `collections.list` |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -97,7 +96,8 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections'
+curl -X GET 'http://localhost:8025/api/v1/projects/1/collections' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -108,8 +108,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
-| Route Name | `collections.tree` |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -137,7 +136,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/tree'
+curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/tree' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -148,8 +148,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/tree'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
-| Route Name | `collections.show` |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -178,7 +177,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/tree'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid'
+curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -189,8 +189,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
-| Route Name | `collections.update` |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -219,7 +218,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid'
 #### Example
 
 ```bash
-curl -X PUT 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid'
+curl -X PUT 'http://localhost:8025/api/v1/projects/1/collections/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -230,8 +230,7 @@ curl -X PUT 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
-| Route Name | `collections.delete` |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -260,7 +259,8 @@ curl -X PUT 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid'
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid'
+curl -X DELETE 'http://localhost:8025/api/v1/projects/1/collections/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -271,8 +271,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
-| Route Name | `collections.move` |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -301,7 +300,8 @@ curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid'
 #### Example
 
 ```bash
-curl -X PATCH 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/move'
+curl -X PATCH 'http://localhost:8025/api/v1/projects/1/collections/1/move' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---

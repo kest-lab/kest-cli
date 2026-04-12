@@ -1,6 +1,6 @@
 # Category API
 
-> Generated: 2026-02-26 14:24:48
+> Generated: 2026-04-12 23:33:37
 
 ## Base URL
 
@@ -10,12 +10,12 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `GET` | `/v1/projects/:id/categories` | List categorys | 🔓 |
-| `POST` | `/v1/projects/:id/categories` | Create category | 🔓 |
-| `PUT` | `/v1/projects/:id/categories/sort` | Sort category | 🔓 |
-| `GET` | `/v1/projects/:id/categories/:cid` | Get category details | 🔓 |
-| `PATCH` | `/v1/projects/:id/categories/:cid` | Update category | 🔓 |
-| `DELETE` | `/v1/projects/:id/categories/:cid` | Delete category | 🔓 |
+| `GET` | `/v1/projects/:id/categories` | List categorys | 🔒 |
+| `POST` | `/v1/projects/:id/categories` | Create category | 🔒 |
+| `PUT` | `/v1/projects/:id/categories/sort` | Sort category | 🔒 |
+| `GET` | `/v1/projects/:id/categories/:cid` | Get category details | 🔒 |
+| `PATCH` | `/v1/projects/:id/categories/:cid` | Update category | 🔒 |
+| `DELETE` | `/v1/projects/:id/categories/:cid` | Delete category | 🔒 |
 
 ---
 
@@ -27,7 +27,7 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -35,10 +35,21 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 |-----------|------|-------------|
 | `id` | `integer` | Resource identifier |
 
+#### Response
+
+```json
+{
+  "items": [],
+  "pagination": null,
+  "total": 1
+}
+```
+
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/categories'
+curl -X GET 'http://localhost:8025/api/v1/projects/1/categories' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -49,7 +60,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/categories'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -60,7 +71,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/categories'
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/categories'
+curl -X POST 'http://localhost:8025/api/v1/projects/1/categories' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -71,7 +83,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/categories'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -82,7 +94,8 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/categories'
 #### Example
 
 ```bash
-curl -X PUT 'http://localhost:8025/api/v1/v1/projects/1/categories/sort'
+curl -X PUT 'http://localhost:8025/api/v1/projects/1/categories/sort' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -93,7 +106,7 @@ curl -X PUT 'http://localhost:8025/api/v1/v1/projects/1/categories/sort'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -105,7 +118,8 @@ curl -X PUT 'http://localhost:8025/api/v1/v1/projects/1/categories/sort'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/categories/:cid'
+curl -X GET 'http://localhost:8025/api/v1/projects/1/categories/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -116,7 +130,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/categories/:cid'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -128,7 +142,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/categories/:cid'
 #### Example
 
 ```bash
-curl -X PATCH 'http://localhost:8025/api/v1/v1/projects/1/categories/:cid'
+curl -X PATCH 'http://localhost:8025/api/v1/projects/1/categories/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -139,7 +154,7 @@ curl -X PATCH 'http://localhost:8025/api/v1/v1/projects/1/categories/:cid'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -151,7 +166,8 @@ curl -X PATCH 'http://localhost:8025/api/v1/v1/projects/1/categories/:cid'
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/categories/:cid'
+curl -X DELETE 'http://localhost:8025/api/v1/projects/1/categories/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---

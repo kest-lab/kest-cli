@@ -1,6 +1,6 @@
 # Run API
 
-> Generated: 2026-02-26 14:24:48
+> Generated: 2026-04-12 23:33:37
 
 ## Base URL
 
@@ -10,7 +10,7 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/run` | Run run | 🔓 |
+| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/run` | Run run | 🔒 |
 
 ---
 
@@ -22,8 +22,7 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
-| Route Name | `run.execute` |
+| Auth | 🔒 JWT Required |
 
 #### Request Body
 
@@ -50,7 +49,8 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/collections/:cid/requests/:rid/run' \
+curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/run' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"environment_id": null,"variables": "object"}'
 ```

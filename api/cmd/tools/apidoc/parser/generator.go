@@ -3,8 +3,10 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -201,12 +203,10 @@ func generateCurlExample(ep Endpoint, config APIConfig) string {
 	baseURL = strings.TrimSuffix(baseURL, "/")
 
 	path := ep.Route.Path
-	// Replace path parameters with example values
-	path = strings.ReplaceAll(path, ":id", "1")
-	path = strings.ReplaceAll(path, ":organization_id", "1")
+	path = replacePathParamsWithExamples(path)
 
 	var parts []string
-	parts = append(parts, fmt.Sprintf("curl -X %s '%s%s'", ep.Route.Method, baseURL, path))
+	parts = append(parts, fmt.Sprintf("curl -X %s '%s'", ep.Route.Method, joinBaseURLAndPath(baseURL, path)))
 
 	if !ep.Route.IsPublic {
 		parts = append(parts, "  -H 'Authorization: Bearer <token>'")
@@ -222,6 +222,42 @@ func generateCurlExample(ep Endpoint, config APIConfig) string {
 	}
 
 	return strings.Join(parts, " \\\n")
+}
+
+var pathParamPattern = regexp.MustCompile(`:[A-Za-z_]+`)
+
+func replacePathParamsWithExamples(path string) string {
+	return pathParamPattern.ReplaceAllStringFunc(path, func(param string) string {
+		if param == ":slug" {
+			return "example"
+		}
+		return "1"
+	})
+}
+
+func joinBaseURLAndPath(baseURL, path string) string {
+	baseURL = strings.TrimSuffix(baseURL, "/")
+	if path == "" {
+		return baseURL
+	}
+
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return baseURL + path
+	}
+
+	basePath := strings.TrimSuffix(parsed.Path, "/")
+	for _, overlap := range []string{"/api/v1", "/v1"} {
+		if strings.HasSuffix(basePath, overlap) && strings.HasPrefix(path, overlap) {
+			return baseURL + strings.TrimPrefix(path, overlap)
+		}
+	}
+
+	return baseURL + path
 }
 
 // GenerateModuleDocs generates separate markdown files for each module

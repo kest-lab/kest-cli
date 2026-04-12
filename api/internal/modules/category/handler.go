@@ -1,8 +1,10 @@
 package category
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kest-labs/kest/api/internal/contracts"
@@ -58,9 +60,25 @@ func (h *Handler) ListCategories(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{
-		"items": categories,
-		"total": len(categories),
+	if c.Query("tree") == "true" {
+		response.Success(c, &CategoryListResponse{
+			Items: categories,
+			Total: countCategories(categories),
+		})
+		return
+	}
+
+	filteredCategories := filterCategories(categories, c.Query("search"))
+	items, pagination := paginateCategories(
+		filteredCategories,
+		parsePositiveIntQuery(c, "page", 1),
+		parsePositiveIntQuery(c, "per_page", 20),
+	)
+
+	response.Success(c, &CategoryListResponse{
+		Items:      items,
+		Total:      len(filteredCategories),
+		Pagination: pagination,
 	})
 }
 
@@ -81,6 +99,10 @@ func (h *Handler) CreateCategory(c *gin.Context) {
 
 	category, err := h.service.CreateCategory(c.Request.Context(), uint(projectID), &req)
 	if err != nil {
+		if errors.Is(err, ErrInvalidParentCategory) {
+			response.Error(c, http.StatusBadRequest, err.Error())
+			return
+		}
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -90,6 +112,13 @@ func (h *Handler) CreateCategory(c *gin.Context) {
 
 // GetCategory handles GET /api/v1/projects/:id/categories/:cid
 func (h *Handler) GetCategory(c *gin.Context) {
+	projectIDStr := c.Param("id")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid project ID")
+		return
+	}
+
 	idStr := c.Param("cid")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -97,9 +126,9 @@ func (h *Handler) GetCategory(c *gin.Context) {
 		return
 	}
 
-	category, err := h.service.GetCategory(c.Request.Context(), uint(id))
+	category, err := h.service.GetCategory(c.Request.Context(), uint(projectID), uint(id))
 	if err != nil {
-		if err.Error() == "category not found" {
+		if errors.Is(err, ErrCategoryNotFound) {
 			response.Error(c, http.StatusNotFound, err.Error())
 			return
 		}
@@ -112,6 +141,13 @@ func (h *Handler) GetCategory(c *gin.Context) {
 
 // UpdateCategory handles PATCH /api/v1/projects/:id/categories/:cid
 func (h *Handler) UpdateCategory(c *gin.Context) {
+	projectIDStr := c.Param("id")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid project ID")
+		return
+	}
+
 	idStr := c.Param("cid")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -125,10 +161,14 @@ func (h *Handler) UpdateCategory(c *gin.Context) {
 		return
 	}
 
-	category, err := h.service.UpdateCategory(c.Request.Context(), uint(id), &req)
+	category, err := h.service.UpdateCategory(c.Request.Context(), uint(projectID), uint(id), &req)
 	if err != nil {
-		if err.Error() == "category not found" {
+		if errors.Is(err, ErrCategoryNotFound) {
 			response.Error(c, http.StatusNotFound, err.Error())
+			return
+		}
+		if errors.Is(err, ErrInvalidParentCategory) {
+			response.Error(c, http.StatusBadRequest, err.Error())
 			return
 		}
 		response.Error(c, http.StatusInternalServerError, err.Error())
@@ -140,6 +180,13 @@ func (h *Handler) UpdateCategory(c *gin.Context) {
 
 // DeleteCategory handles DELETE /api/v1/projects/:id/categories/:cid
 func (h *Handler) DeleteCategory(c *gin.Context) {
+	projectIDStr := c.Param("id")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid project ID")
+		return
+	}
+
 	idStr := c.Param("cid")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
@@ -147,8 +194,8 @@ func (h *Handler) DeleteCategory(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteCategory(c.Request.Context(), uint(id)); err != nil {
-		if err.Error() == "category not found" {
+	if err := h.service.DeleteCategory(c.Request.Context(), uint(projectID), uint(id)); err != nil {
+		if errors.Is(err, ErrCategoryNotFound) {
 			response.Error(c, http.StatusNotFound, err.Error())
 			return
 		}
@@ -205,4 +252,103 @@ func (h *Handler) Delete(c *gin.Context) {
 
 func (h *Handler) Sort(c *gin.Context) {
 	h.SortCategories(c)
+}
+
+func parsePositiveIntQuery(c *gin.Context, key string, defaultValue int) int {
+	value := strings.TrimSpace(c.Query(key))
+	if value == "" {
+		return defaultValue
+	}
+
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed <= 0 {
+		return defaultValue
+	}
+
+	return parsed
+}
+
+func filterCategories(categories []*CategoryResponse, search string) []*CategoryResponse {
+	keyword := strings.ToLower(strings.TrimSpace(search))
+	if keyword == "" {
+		return categories
+	}
+
+	categoryNames := make(map[uint]string, len(categories))
+	for _, category := range categories {
+		categoryNames[category.ID] = category.Name
+	}
+
+	filtered := make([]*CategoryResponse, 0, len(categories))
+	for _, category := range categories {
+		parentName := ""
+		if category.ParentID != nil {
+			parentName = categoryNames[*category.ParentID]
+		}
+
+		if strings.Contains(strings.ToLower(category.Name), keyword) ||
+			strings.Contains(strings.ToLower(category.Description), keyword) ||
+			strings.Contains(strings.ToLower(parentName), keyword) {
+			filtered = append(filtered, category)
+		}
+	}
+
+	return filtered
+}
+
+func paginateCategories(categories []*CategoryResponse, page, perPage int) ([]*CategoryResponse, *CategoryPagination) {
+	if perPage <= 0 {
+		perPage = 20
+	}
+	if perPage > 100 {
+		perPage = 100
+	}
+	if page <= 0 {
+		page = 1
+	}
+
+	total := len(categories)
+	totalPages := 1
+	if total > 0 {
+		totalPages = (total + perPage - 1) / perPage
+	}
+	if page > totalPages {
+		page = totalPages
+	}
+
+	start := (page - 1) * perPage
+	if start > total {
+		start = total
+	}
+	end := start + perPage
+	if end > total {
+		end = total
+	}
+
+	return categories[start:end], &CategoryPagination{
+		Page:       page,
+		PerPage:    perPage,
+		Total:      total,
+		TotalPages: totalPages,
+		HasNext:    page < totalPages,
+		HasPrev:    page > 1,
+	}
+}
+
+func countCategories(categories []*CategoryResponse) int {
+	total := 0
+	for _, category := range categories {
+		total++
+		total += countCategoryChildren(category.Children)
+	}
+	return total
+}
+
+func countCategoryChildren(categories []CategoryResponse) int {
+	total := 0
+	for _, category := range categories {
+		total++
+		total += countCategoryChildren(category.Children)
+	}
+	return total
 }

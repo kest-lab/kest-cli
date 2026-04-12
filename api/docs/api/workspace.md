@@ -1,6 +1,6 @@
 # Workspace API
 
-> Generated: 2026-02-26 14:24:48
+> Generated: 2026-04-12 23:33:37
 
 ## Base URL
 
@@ -10,15 +10,15 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/v1/workspaces` | Create Workspace workspace | 🔓 |
-| `GET` | `/v1/workspaces` | List Workspaces workspace | 🔓 |
-| `GET` | `/v1/workspaces/:id` | Get Workspace workspace | 🔓 |
-| `PATCH` | `/v1/workspaces/:id` | Update Workspace workspace | 🔓 |
-| `DELETE` | `/v1/workspaces/:id` | Delete Workspace workspace | 🔓 |
-| `POST` | `/v1/workspaces/:id/members` | Add Member workspace | 🔓 |
-| `GET` | `/v1/workspaces/:id/members` | List Members workspace | 🔓 |
-| `PATCH` | `/v1/workspaces/:id/members/:uid` | Update Member Role workspace | 🔓 |
-| `DELETE` | `/v1/workspaces/:id/members/:uid` | Remove Member workspace | 🔓 |
+| `POST` | `/v1/workspaces` | Create Workspace workspace | 🔒 |
+| `GET` | `/v1/workspaces` | List Workspaces workspace | 🔒 |
+| `GET` | `/v1/workspaces/:id` | Get Workspace workspace | 🔒 |
+| `PATCH` | `/v1/workspaces/:id` | Update Workspace workspace | 🔒 |
+| `DELETE` | `/v1/workspaces/:id` | Delete Workspace workspace | 🔒 |
+| `POST` | `/v1/workspaces/:id/members` | Add Member workspace | 🔒 |
+| `GET` | `/v1/workspaces/:id/members` | List Members workspace | 🔒 |
+| `PATCH` | `/v1/workspaces/:id/members/:uid` | Update Member Role workspace | 🔒 |
+| `DELETE` | `/v1/workspaces/:id/members/:uid` | Remove Member workspace | 🔒 |
 
 ---
 
@@ -30,7 +30,7 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `workspaces.create` |
 
 #### Request Body
@@ -73,7 +73,8 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/workspaces' \
+curl -X POST 'http://localhost:8025/api/v1/workspaces' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"description": "string","name": "John Doe","slug": "string","type": "string","visibility": "string"}'
 ```
@@ -86,7 +87,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/workspaces' \
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `workspaces.index` |
 
 #### Response
@@ -109,7 +110,8 @@ curl -X POST 'http://localhost:8025/api/v1/v1/workspaces' \
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/workspaces'
+curl -X GET 'http://localhost:8025/api/v1/workspaces' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -120,7 +122,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/workspaces'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `workspaces.show` |
 
 #### Path Parameters
@@ -149,7 +151,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/workspaces'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/workspaces/1'
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -160,7 +163,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/workspaces/1'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `workspaces.update` |
 
 #### Request Body
@@ -205,7 +208,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/workspaces/1'
 #### Example
 
 ```bash
-curl -X PATCH 'http://localhost:8025/api/v1/v1/workspaces/1' \
+curl -X PATCH 'http://localhost:8025/api/v1/workspaces/1' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"description": null,"name": null,"visibility": null}'
 ```
@@ -218,7 +222,7 @@ curl -X PATCH 'http://localhost:8025/api/v1/v1/workspaces/1' \
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `workspaces.delete` |
 
 #### Path Parameters
@@ -247,7 +251,8 @@ curl -X PATCH 'http://localhost:8025/api/v1/v1/workspaces/1' \
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/v1/workspaces/1'
+curl -X DELETE 'http://localhost:8025/api/v1/workspaces/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -258,7 +263,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/v1/workspaces/1'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `workspaces.members.add` |
 
 #### Request Body
@@ -301,7 +306,8 @@ curl -X DELETE 'http://localhost:8025/api/v1/v1/workspaces/1'
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/workspaces/1/members' \
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/members' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"role": "string","user_id": 1}'
 ```
@@ -314,7 +320,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/workspaces/1/members' \
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `workspaces.members.list` |
 
 #### Path Parameters
@@ -343,7 +349,8 @@ curl -X POST 'http://localhost:8025/api/v1/v1/workspaces/1/members' \
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/workspaces/1/members'
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/members' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -354,7 +361,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/workspaces/1/members'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `workspaces.members.update` |
 
 #### Request Body
@@ -396,7 +403,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/workspaces/1/members'
 #### Example
 
 ```bash
-curl -X PATCH 'http://localhost:8025/api/v1/v1/workspaces/1/members/:uid' \
+curl -X PATCH 'http://localhost:8025/api/v1/workspaces/1/members/1' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"role": "string"}'
 ```
@@ -409,7 +417,7 @@ curl -X PATCH 'http://localhost:8025/api/v1/v1/workspaces/1/members/:uid' \
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `workspaces.members.remove` |
 
 #### Path Parameters
@@ -439,7 +447,8 @@ curl -X PATCH 'http://localhost:8025/api/v1/v1/workspaces/1/members/:uid' \
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/v1/workspaces/1/members/:uid'
+curl -X DELETE 'http://localhost:8025/api/v1/workspaces/1/members/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---

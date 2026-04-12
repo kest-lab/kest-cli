@@ -1,6 +1,6 @@
 # System API
 
-> Generated: 2026-02-26 14:24:48
+> Generated: 2026-04-12 23:33:37
 
 ## Base URL
 
@@ -28,7 +28,7 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/system-features'
+curl -X GET 'http://localhost:8025/api/v1/system-features'
 ```
 
 ---
@@ -44,7 +44,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/system-features'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/setup-status'
+curl -X GET 'http://localhost:8025/api/v1/setup-status'
 ```
 
 ---

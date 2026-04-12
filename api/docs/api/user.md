@@ -1,6 +1,6 @@
 # User API
 
-> Generated: 2026-02-26 14:24:48
+> Generated: 2026-04-12 23:33:37
 
 ## Base URL
 
@@ -13,14 +13,14 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 | `POST` | `/v1/register` | Register new user | 🔓 |
 | `POST` | `/v1/login` | user login | 🔓 |
 | `POST` | `/v1/password/reset` | Reset password | 🔓 |
-| `GET` | `/v1/users/profile` | Get current user profile | 🔓 |
-| `PUT` | `/v1/users/profile` | Update current user profile | 🔓 |
-| `PUT` | `/v1/users/password` | Change password | 🔓 |
-| `DELETE` | `/v1/users/account` | Delete account | 🔓 |
-| `GET` | `/v1/users` | List users | 🔓 |
-| `GET` | `/v1/users/search` | Search Users user | 🔓 |
-| `GET` | `/v1/users/:id` | Get user details | 🔓 |
-| `GET` | `/v1/users/:id/info` | Get User Info user | 🔓 |
+| `GET` | `/v1/users/profile` | Get current user profile | 🔒 |
+| `PUT` | `/v1/users/profile` | Update current user profile | 🔒 |
+| `PUT` | `/v1/users/password` | Change password | 🔒 |
+| `DELETE` | `/v1/users/account` | Delete account | 🔒 |
+| `GET` | `/v1/users` | List users | 🔒 |
+| `GET` | `/v1/users/search` | Search Users user | 🔒 |
+| `GET` | `/v1/users/:id` | Get user details | 🔒 |
+| `GET` | `/v1/users/:id/info` | Get User Info user | 🔒 |
 
 ---
 
@@ -58,7 +58,7 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/register' \
+curl -X POST 'http://localhost:8025/api/v1/register' \
   -H 'Content-Type: application/json' \
   -d '{"email": "user@example.com","nickname": "John Doe","password": "********","phone": "+1234567890","username": "John Doe"}'
 ```
@@ -100,7 +100,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/register' \
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/login' \
+curl -X POST 'http://localhost:8025/api/v1/login' \
   -H 'Content-Type: application/json' \
   -d '{"password": "********","username": "John Doe"}'
 ```
@@ -131,7 +131,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/login' \
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/password/reset' \
+curl -X POST 'http://localhost:8025/api/v1/password/reset' \
   -H 'Content-Type: application/json' \
   -d '{"email": "user@example.com"}'
 ```
@@ -144,13 +144,14 @@ curl -X POST 'http://localhost:8025/api/v1/v1/password/reset' \
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `users.profile` |
 
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/users/profile'
+curl -X GET 'http://localhost:8025/api/v1/users/profile' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -161,7 +162,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/users/profile'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `users.profile.update` |
 
 #### Request Body
@@ -185,7 +186,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/users/profile'
 #### Example
 
 ```bash
-curl -X PUT 'http://localhost:8025/api/v1/v1/users/profile' \
+curl -X PUT 'http://localhost:8025/api/v1/users/profile' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"avatar": "https://example.com/avatar.jpg","bio": "string","nickname": "John Doe","phone": "+1234567890"}'
 ```
@@ -198,7 +200,7 @@ curl -X PUT 'http://localhost:8025/api/v1/v1/users/profile' \
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `users.password.update` |
 
 #### Request Body
@@ -218,7 +220,8 @@ curl -X PUT 'http://localhost:8025/api/v1/v1/users/profile' \
 #### Example
 
 ```bash
-curl -X PUT 'http://localhost:8025/api/v1/v1/users/password' \
+curl -X PUT 'http://localhost:8025/api/v1/users/password' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"new_password": "********","old_password": "********"}'
 ```
@@ -231,13 +234,14 @@ curl -X PUT 'http://localhost:8025/api/v1/v1/users/password' \
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `users.account.delete` |
 
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/v1/users/account'
+curl -X DELETE 'http://localhost:8025/api/v1/users/account' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -248,13 +252,14 @@ curl -X DELETE 'http://localhost:8025/api/v1/v1/users/account'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `users.index` |
 
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/users'
+curl -X GET 'http://localhost:8025/api/v1/users' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -265,13 +270,14 @@ curl -X GET 'http://localhost:8025/api/v1/v1/users'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `users.search` |
 
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/users/search'
+curl -X GET 'http://localhost:8025/api/v1/users/search' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -282,7 +288,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/users/search'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `users.show` |
 
 #### Path Parameters
@@ -294,7 +300,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/users/search'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/users/1'
+curl -X GET 'http://localhost:8025/api/v1/users/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -305,7 +312,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/users/1'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `users.info` |
 
 #### Path Parameters
@@ -317,7 +324,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/users/1'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/users/1/info'
+curl -X GET 'http://localhost:8025/api/v1/users/1/info' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---

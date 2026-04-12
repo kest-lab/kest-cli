@@ -1,6 +1,6 @@
 # Testcase API
 
-> Generated: 2026-02-26 14:24:48
+> Generated: 2026-04-12 23:33:37
 
 ## Base URL
 
@@ -10,14 +10,14 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `GET` | `/v1/projects/:id/test-cases` | Require Project Role testcase | 🔓 |
-| `POST` | `/v1/projects/:id/test-cases` | Require Project Role testcase | 🔓 |
-| `GET` | `/v1/projects/:id/test-cases/:tcid` | Require Project Role testcase | 🔓 |
-| `PATCH` | `/v1/projects/:id/test-cases/:tcid` | Require Project Role testcase | 🔓 |
-| `DELETE` | `/v1/projects/:id/test-cases/:tcid` | Require Project Role testcase | 🔓 |
-| `POST` | `/v1/projects/:id/test-cases/:tcid/duplicate` | Require Project Role testcase | 🔓 |
-| `POST` | `/v1/projects/:id/test-cases/from-spec` | Require Project Role testcase | 🔓 |
-| `POST` | `/v1/projects/:id/test-cases/:tcid/run` | Require Project Role testcase | 🔓 |
+| `GET` | `/v1/projects/:id/test-cases` | Require Project Role testcase | 🔒 |
+| `POST` | `/v1/projects/:id/test-cases` | Require Project Role testcase | 🔒 |
+| `GET` | `/v1/projects/:id/test-cases/:tcid` | Require Project Role testcase | 🔒 |
+| `PATCH` | `/v1/projects/:id/test-cases/:tcid` | Require Project Role testcase | 🔒 |
+| `DELETE` | `/v1/projects/:id/test-cases/:tcid` | Require Project Role testcase | 🔒 |
+| `POST` | `/v1/projects/:id/test-cases/:tcid/duplicate` | Require Project Role testcase | 🔒 |
+| `POST` | `/v1/projects/:id/test-cases/from-spec` | Require Project Role testcase | 🔒 |
+| `POST` | `/v1/projects/:id/test-cases/:tcid/run` | Require Project Role testcase | 🔒 |
 
 ---
 
@@ -29,7 +29,7 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -40,7 +40,8 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/test-cases'
+curl -X GET 'http://localhost:8025/api/v1/projects/1/test-cases' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -51,7 +52,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/test-cases'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -62,7 +63,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/test-cases'
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/test-cases'
+curl -X POST 'http://localhost:8025/api/v1/projects/1/test-cases' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -73,7 +75,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/test-cases'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -85,7 +87,8 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/test-cases'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid'
+curl -X GET 'http://localhost:8025/api/v1/projects/1/test-cases/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -96,7 +99,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -108,7 +111,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid'
 #### Example
 
 ```bash
-curl -X PATCH 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid'
+curl -X PATCH 'http://localhost:8025/api/v1/projects/1/test-cases/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -119,7 +123,7 @@ curl -X PATCH 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -131,7 +135,8 @@ curl -X PATCH 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid'
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid'
+curl -X DELETE 'http://localhost:8025/api/v1/projects/1/test-cases/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -142,7 +147,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -154,7 +159,8 @@ curl -X DELETE 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid'
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid/duplicate'
+curl -X POST 'http://localhost:8025/api/v1/projects/1/test-cases/1/duplicate' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -165,7 +171,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid/duplic
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -176,7 +182,8 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid/duplic
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/test-cases/from-spec'
+curl -X POST 'http://localhost:8025/api/v1/projects/1/test-cases/from-spec' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -187,7 +194,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/test-cases/from-spec'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 
 #### Path Parameters
 
@@ -199,7 +206,8 @@ curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/test-cases/from-spec'
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/projects/1/test-cases/:tcid/run'
+curl -X POST 'http://localhost:8025/api/v1/projects/1/test-cases/1/run' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---

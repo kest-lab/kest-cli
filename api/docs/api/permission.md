@@ -1,6 +1,6 @@
 # Permission API
 
-> Generated: 2026-02-26 14:24:48
+> Generated: 2026-04-12 23:33:37
 
 ## Base URL
 
@@ -10,15 +10,15 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/v1/roles` | Create Role permission | 🔓 |
-| `GET` | `/v1/roles` | List Roles permission | 🔓 |
-| `GET` | `/v1/roles/:id` | Get Role permission | 🔓 |
-| `PUT` | `/v1/roles/:id` | Update Role permission | 🔓 |
-| `DELETE` | `/v1/roles/:id` | Delete Role permission | 🔓 |
-| `POST` | `/v1/roles/assign` | Assign Role permission | 🔓 |
-| `POST` | `/v1/roles/remove` | Remove Role permission | 🔓 |
-| `GET` | `/v1/users/:id/roles` | Get User Roles permission | 🔓 |
-| `GET` | `/v1/permissions` | List Permissions permission | 🔓 |
+| `POST` | `/v1/roles` | Create Role permission | 🔒 |
+| `GET` | `/v1/roles` | List Roles permission | 🔒 |
+| `GET` | `/v1/roles/:id` | Get Role permission | 🔒 |
+| `PUT` | `/v1/roles/:id` | Update Role permission | 🔒 |
+| `DELETE` | `/v1/roles/:id` | Delete Role permission | 🔒 |
+| `POST` | `/v1/roles/assign` | Assign Role permission | 🔒 |
+| `POST` | `/v1/roles/remove` | Remove Role permission | 🔒 |
+| `GET` | `/v1/users/:id/roles` | Get User Roles permission | 🔒 |
+| `GET` | `/v1/permissions` | List Permissions permission | 🔒 |
 
 ---
 
@@ -30,7 +30,7 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `roles.store` |
 
 #### Request Body
@@ -69,7 +69,8 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/roles' \
+curl -X POST 'http://localhost:8025/api/v1/roles' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"description": "string","display_name": "John Doe","is_default": true,"name": "John Doe"}'
 ```
@@ -82,7 +83,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/roles' \
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `roles.index` |
 
 #### Response
@@ -103,7 +104,8 @@ curl -X POST 'http://localhost:8025/api/v1/v1/roles' \
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/roles'
+curl -X GET 'http://localhost:8025/api/v1/roles' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -114,7 +116,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/roles'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `roles.show` |
 
 #### Path Parameters
@@ -141,7 +143,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/roles'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/roles/1'
+curl -X GET 'http://localhost:8025/api/v1/roles/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -152,7 +155,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/roles/1'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `roles.update` |
 
 #### Request Body
@@ -195,7 +198,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/roles/1'
 #### Example
 
 ```bash
-curl -X PUT 'http://localhost:8025/api/v1/v1/roles/1' \
+curl -X PUT 'http://localhost:8025/api/v1/roles/1' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"description": "string","display_name": "John Doe","name": "John Doe"}'
 ```
@@ -208,7 +212,7 @@ curl -X PUT 'http://localhost:8025/api/v1/v1/roles/1' \
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `roles.destroy` |
 
 #### Path Parameters
@@ -235,7 +239,8 @@ curl -X PUT 'http://localhost:8025/api/v1/v1/roles/1' \
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/v1/roles/1'
+curl -X DELETE 'http://localhost:8025/api/v1/roles/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -246,7 +251,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/v1/roles/1'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `roles.assign` |
 
 #### Request Body
@@ -281,7 +286,8 @@ curl -X DELETE 'http://localhost:8025/api/v1/v1/roles/1'
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/roles/assign' \
+curl -X POST 'http://localhost:8025/api/v1/roles/assign' \
+  -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"role_id": 1,"user_id": 1}'
 ```
@@ -294,7 +300,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/roles/assign' \
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `roles.remove` |
 
 #### Response
@@ -315,7 +321,8 @@ curl -X POST 'http://localhost:8025/api/v1/v1/roles/assign' \
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/v1/roles/remove'
+curl -X POST 'http://localhost:8025/api/v1/roles/remove' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -326,7 +333,7 @@ curl -X POST 'http://localhost:8025/api/v1/v1/roles/remove'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `users.roles` |
 
 #### Path Parameters
@@ -353,7 +360,8 @@ curl -X POST 'http://localhost:8025/api/v1/v1/roles/remove'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/users/1/roles'
+curl -X GET 'http://localhost:8025/api/v1/users/1/roles' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -364,7 +372,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/users/1/roles'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `permissions.index` |
 
 #### Response
@@ -385,7 +393,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/users/1/roles'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/permissions'
+curl -X GET 'http://localhost:8025/api/v1/permissions' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---

@@ -48,6 +48,11 @@ func parseModuleRoutesFile(filename string, apiPrefix string) ([]Route, error) {
 		"router": "",
 		"rg":     "",
 	}
+	varMiddlewares := map[string][]string{
+		"r":      nil,
+		"router": nil,
+		"rg":     nil,
+	}
 
 	groupWithFuncPattern := regexp.MustCompile(`(\w+)\.Group\s*\(\s*"([^"]*)"\s*,\s*func\s*\(\s*(\w+)`)
 	groupAssignPattern := regexp.MustCompile(`(\w+)\s*:=\s*(\w+)\.Group\s*\(\s*"([^"]*)"\s*\)`)
@@ -55,6 +60,8 @@ func parseModuleRoutesFile(filename string, apiPrefix string) ([]Route, error) {
 	handlerPattern := regexp.MustCompile(`,\s*([A-Za-z_][\w]*)\.([A-Za-z_][\w]*)`)
 	namePattern := regexp.MustCompile(`\.Name\s*\(\s*"([^"]+)"\s*\)`)
 	withMiddlewarePattern := regexp.MustCompile(`WithMiddleware\s*\(\s*"([^"]+)"\s*\)`)
+	groupMiddlewarePattern := regexp.MustCompile(`(\w+)\.WithMiddleware\s*\(\s*"([^"]+)"\s*\)`)
+	groupUsePattern := regexp.MustCompile(`(\w+)\.Use\s*\((.+)\)`)
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -66,6 +73,7 @@ func parseModuleRoutesFile(filename string, apiPrefix string) ([]Route, error) {
 			parent := matches[2]
 			segment := matches[3]
 			varPrefix[child] = normalizePath(varPrefix[parent] + segment)
+			varMiddlewares[child] = append([]string(nil), varMiddlewares[parent]...)
 		}
 
 		// r.Group("/projects/:id", func(projects *router.Router) {
@@ -74,6 +82,20 @@ func parseModuleRoutesFile(filename string, apiPrefix string) ([]Route, error) {
 			segment := matches[2]
 			child := matches[3]
 			varPrefix[child] = normalizePath(varPrefix[parent] + segment)
+			varMiddlewares[child] = append([]string(nil), varMiddlewares[parent]...)
+		}
+
+		if matches := groupMiddlewarePattern.FindStringSubmatch(line); len(matches) == 3 {
+			groupVar := matches[1]
+			middlewareName := matches[2]
+			varMiddlewares[groupVar] = appendUniqueMiddleware(varMiddlewares[groupVar], middlewareName)
+		}
+
+		if matches := groupUsePattern.FindStringSubmatch(line); len(matches) == 3 {
+			groupVar := matches[1]
+			if strings.Contains(matches[2], "RequireProjectRole") {
+				varMiddlewares[groupVar] = appendUniqueMiddleware(varMiddlewares[groupVar], "auth")
+			}
 		}
 
 		// projects.GET("/:sid", handler.GetSpec)
@@ -83,10 +105,13 @@ func parseModuleRoutesFile(filename string, apiPrefix string) ([]Route, error) {
 			routePath := matches[3]
 
 			fullPath := normalizePath(apiPrefix + varPrefix[groupVar] + routePath)
+			middlewares := append([]string(nil), varMiddlewares[groupVar]...)
 			r := Route{
-				Method: method,
-				Path:   fullPath,
-				Module: module,
+				Method:      method,
+				Path:        fullPath,
+				Module:      module,
+				Middlewares: middlewares,
+				IsPublic:    !hasMiddleware(middlewares, "auth"),
 			}
 
 			if name := namePattern.FindStringSubmatch(line); len(name) == 2 {
@@ -97,18 +122,15 @@ func parseModuleRoutesFile(filename string, apiPrefix string) ([]Route, error) {
 				r.Handler = handler[1] + "." + handler[2]
 			}
 
-			if strings.Contains(line, "WithMiddleware(\"auth\")") {
-				r.IsPublic = false
-				r.Middlewares = append(r.Middlewares, "auth")
-			} else {
-				r.IsPublic = true
-			}
-
 			if middleware := withMiddlewarePattern.FindStringSubmatch(line); len(middleware) == 2 {
 				if middleware[1] == "auth" {
 					r.IsPublic = false
 				}
-				r.Middlewares = append(r.Middlewares, middleware[1])
+				r.Middlewares = appendUniqueMiddleware(r.Middlewares, middleware[1])
+			}
+			if strings.Contains(line, "RequireProjectRole") {
+				r.IsPublic = false
+				r.Middlewares = appendUniqueMiddleware(r.Middlewares, "auth")
 			}
 
 			routes = append(routes, r)
@@ -130,6 +152,24 @@ func normalizePath(path string) string {
 		path = strings.TrimSuffix(path, "/")
 	}
 	return path
+}
+
+func hasMiddleware(middlewares []string, name string) bool {
+	for _, middleware := range middlewares {
+		if middleware == name {
+			return true
+		}
+	}
+
+	return false
+}
+
+func appendUniqueMiddleware(middlewares []string, name string) []string {
+	if hasMiddleware(middlewares, name) {
+		return middlewares
+	}
+
+	return append(middlewares, name)
 }
 
 // RouteGroup represents a route group with its prefix

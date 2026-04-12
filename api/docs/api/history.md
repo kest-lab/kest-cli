@@ -1,6 +1,6 @@
 # History API
 
-> Generated: 2026-02-26 14:24:48
+> Generated: 2026-04-12 23:33:37
 
 ## Base URL
 
@@ -10,8 +10,8 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `GET` | `/v1/projects/:id/history` | List historys | 🔓 |
-| `GET` | `/v1/projects/:id/history/:hid` | Get history details | 🔓 |
+| `GET` | `/v1/projects/:id/history` | List historys | 🔒 |
+| `GET` | `/v1/projects/:id/history/:hid` | Get history details | 🔒 |
 
 ---
 
@@ -23,7 +23,7 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `history.list` |
 
 #### Path Parameters
@@ -52,7 +52,8 @@ See [API Documentation](./api.md) for environment-specific base URLs.
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/history'
+curl -X GET 'http://localhost:8025/api/v1/projects/1/history' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---
@@ -63,7 +64,7 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/history'
 
 | Property | Value |
 |----------|-------|
-| Auth | 🔓 Not required |
+| Auth | 🔒 JWT Required |
 | Route Name | `history.show` |
 
 #### Path Parameters
@@ -93,7 +94,8 @@ curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/history'
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/v1/projects/1/history/:hid'
+curl -X GET 'http://localhost:8025/api/v1/projects/1/history/1' \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ---

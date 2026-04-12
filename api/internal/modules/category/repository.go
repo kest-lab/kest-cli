@@ -10,6 +10,7 @@ import (
 type Repository interface {
 	Create(ctx context.Context, category *CategoryPO) error
 	GetByID(ctx context.Context, id uint) (*CategoryPO, error)
+	GetByIDAndProject(ctx context.Context, id, projectID uint) (*CategoryPO, error)
 	ListByProject(ctx context.Context, projectID uint) ([]*CategoryPO, error)
 	Update(ctx context.Context, category *CategoryPO) error
 	Delete(ctx context.Context, id uint) error
@@ -37,6 +38,20 @@ func (r *repository) GetByID(ctx context.Context, id uint) (*CategoryPO, error) 
 		}
 		return nil, err
 	}
+	return &category, nil
+}
+
+func (r *repository) GetByIDAndProject(ctx context.Context, id, projectID uint) (*CategoryPO, error) {
+	var category CategoryPO
+	if err := r.db.WithContext(ctx).
+		Where("id = ? AND project_id = ?", id, projectID).
+		First(&category).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
 	return &category, nil
 }
 
