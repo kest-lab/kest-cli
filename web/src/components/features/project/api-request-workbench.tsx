@@ -56,9 +56,12 @@ import {
 } from '@/hooks/use-collections';
 import {
   useCreateRequestExample,
+  useDeleteRequestExample,
+  useRequestExample,
   useRequestExamples,
   useSaveRequestExampleResponse,
   useSetDefaultRequestExample,
+  useUpdateRequestExample,
 } from '@/hooks/use-example';
 import { collectionService } from '@/services/collection';
 import { localRunnerService } from '@/services/local-runner';
@@ -69,6 +72,7 @@ import type {
   CreateExampleRequest,
   RequestExample,
   SaveExampleResponseRequest,
+  UpdateExampleRequest,
 } from '@/types/example';
 import type {
   CreateRequestRequest,
@@ -512,6 +516,12 @@ const getExampleFormDraft = (requestLabel: string): ExampleFormDraft => ({
   isDefault: false,
 });
 
+const toExampleFormDraft = (example: RequestExample): ExampleFormDraft => ({
+  name: example.name,
+  description: example.description ?? '',
+  isDefault: example.is_default,
+});
+
 const toCreateExamplePayload = (
   tab: RequestPageTab,
   draft: ExampleFormDraft
@@ -528,6 +538,12 @@ const toCreateExamplePayload = (
   is_default: draft.isDefault,
 });
 
+const toUpdateExamplePayload = (draft: ExampleFormDraft): UpdateExampleRequest => ({
+  name: draft.name.trim(),
+  description: draft.description.trim(),
+  is_default: draft.isDefault,
+});
+
 const toSaveExampleResponsePayload = (
   response: ResponseDraft
 ): SaveExampleResponseRequest | null => {
@@ -541,6 +557,62 @@ const toSaveExampleResponsePayload = (
     response_body: response.body,
     response_time: response.durationMs ?? 0,
   };
+};
+
+const maskSecret = (value: string) => {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return '(empty)';
+  }
+
+  if (trimmed.length <= 6) {
+    return '••••';
+  }
+
+  return `${trimmed.slice(0, 3)}••••${trimmed.slice(-2)}`;
+};
+
+const formatExampleKeyValues = (rows: RequestKeyValue[] | undefined, emptyState: string) =>
+  rows && rows.length > 0
+    ? rows
+        .map((row) => `${row.key}: ${row.value}${row.description ? ` # ${row.description}` : ''}`)
+        .join('\n')
+    : emptyState;
+
+const formatExampleResponseHeaders = (headers: Record<string, string> | undefined) => {
+  const entries = Object.entries(headers ?? {});
+  return entries.length > 0
+    ? entries.map(([key, value]) => `${key}: ${value}`).join('\n')
+    : 'No response headers captured.';
+};
+
+const formatExampleAuth = (auth?: RequestAuthConfig | null) => {
+  switch (auth?.type) {
+    case 'bearer':
+      return auth.bearer?.token ? `Bearer ${maskSecret(auth.bearer.token)}` : 'Bearer token';
+    case 'basic':
+      return auth.basic
+        ? `${auth.basic.username || '(user)'}:${maskSecret(auth.basic.password ?? '')}`
+        : 'Basic auth';
+    case 'api-key':
+      return auth.api_key
+        ? `${auth.api_key.key || 'X-API-Key'} (${auth.api_key.in ?? 'header'}): ${maskSecret(
+            auth.api_key.value ?? ''
+          )}`
+        : 'API key';
+    default:
+      return 'None';
+  }
+};
+
+const formatExampleTimestamp = (value: string) => {
+  if (!value) {
+    return 'Unknown';
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
 };
 
 const applyExampleToTab = (tab: RequestPageTab, example: RequestExample): RequestPageTab => {
@@ -917,8 +989,12 @@ export function ApiRequestWorkbench({
   const [renameDialogRequestTabId, setRenameDialogRequestTabId] = useState<string | null>(null);
   const [renameRequestDraftName, setRenameRequestDraftName] = useState('');
   const [isExampleDialogOpen, setIsExampleDialogOpen] = useState(false);
+  const [viewingExampleId, setViewingExampleId] = useState<number | null>(null);
+  const [editingExampleId, setEditingExampleId] = useState<number | null>(null);
+  const [deleteExampleTarget, setDeleteExampleTarget] = useState<RequestExample | null>(null);
   const [savingResponseExampleId, setSavingResponseExampleId] = useState<number | null>(null);
   const [defaultingExampleId, setDefaultingExampleId] = useState<number | null>(null);
+  const [deletingExampleId, setDeletingExampleId] = useState<number | null>(null);
   const createCollectionMutation = useCreateCollection(projectId);
   const deleteCollectionMutation = useDeleteCollection(projectId);
   const updateCollectionMutation = useUpdateCollection(projectId);
@@ -926,6 +1002,8 @@ export function ApiRequestWorkbench({
   const updateRequestMutation = useUpdateRequest(projectId);
   const deleteRequestMutation = useDeleteRequest(projectId);
   const createExampleMutation = useCreateRequestExample(projectId);
+  const updateExampleMutation = useUpdateRequestExample(projectId);
+  const deleteExampleMutation = useDeleteRequestExample(projectId);
   const saveExampleResponseMutation = useSaveRequestExampleResponse(projectId);
   const setDefaultExampleMutation = useSetDefaultRequestExample(projectId);
   const collectionTreeQuery = useQuery({
@@ -1013,6 +1091,28 @@ export function ApiRequestWorkbench({
       }),
     [examplesQuery.data]
   );
+  const selectedExampleId = viewingExampleId ?? editingExampleId;
+  const exampleDetailQuery = useRequestExample(
+    persistedActiveCollectionId && persistedActiveRequestId && selectedExampleId
+      ? {
+          projectId,
+          collectionId: persistedActiveCollectionId,
+          requestId: persistedActiveRequestId,
+          exampleId: selectedExampleId,
+        }
+      : undefined
+  );
+  const selectedExample = useMemo(() => {
+    if (!selectedExampleId) {
+      return null;
+    }
+
+    return (
+      exampleDetailQuery.data ??
+      requestExamples.find((example) => example.id === selectedExampleId) ??
+      null
+    );
+  }, [exampleDetailQuery.data, requestExamples, selectedExampleId]);
   const scratchpadTabs = useMemo(
     () => tabs.filter((tab) => !tab.collectionId),
     [tabs]
@@ -1138,6 +1238,13 @@ export function ApiRequestWorkbench({
     serverCollections,
     tabs,
   ]);
+
+  useEffect(() => {
+    setViewingExampleId(null);
+    setEditingExampleId(null);
+    setDeleteExampleTarget(null);
+    setDeletingExampleId(null);
+  }, [persistedActiveCollectionId, persistedActiveRequestId]);
 
   const updateActiveTab = (updater: (tab: RequestPageTab) => RequestPageTab) => {
     if (!activeTab) {
@@ -1423,6 +1530,84 @@ export function ApiRequestWorkbench({
       }
     } finally {
       setDefaultingExampleId(null);
+    }
+  };
+
+  const openViewExampleDialog = (example: RequestExample) => {
+    setEditingExampleId(null);
+    setViewingExampleId(example.id);
+  };
+
+  const closeViewExampleDialog = (open: boolean) => {
+    if (!open) {
+      setViewingExampleId(null);
+    }
+  };
+
+  const openEditExampleDialog = (example: RequestExample) => {
+    setViewingExampleId(null);
+    setEditingExampleId(example.id);
+  };
+
+  const closeEditExampleDialog = (open: boolean) => {
+    if (!open) {
+      setEditingExampleId(null);
+    }
+  };
+
+  const openDeleteExampleDialog = (example: RequestExample) => {
+    setViewingExampleId(null);
+    setEditingExampleId(null);
+    setDeleteExampleTarget(example);
+  };
+
+  const closeDeleteExampleDialog = (open: boolean) => {
+    if (!open) {
+      setDeleteExampleTarget(null);
+      setDeletingExampleId(null);
+    }
+  };
+
+  const handleUpdateExample = async (draft: ExampleFormDraft) => {
+    if (!editingExampleId || !persistedActiveCollectionId || !persistedActiveRequestId) {
+      toast.error('Select a saved example before editing it.');
+      return;
+    }
+
+    try {
+      await updateExampleMutation.mutateAsync({
+        collectionId: persistedActiveCollectionId,
+        requestId: persistedActiveRequestId,
+        exampleId: editingExampleId,
+        data: toUpdateExamplePayload(draft),
+      });
+      setEditingExampleId(null);
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      }
+    }
+  };
+
+  const handleDeleteExample = async () => {
+    if (!deleteExampleTarget || !persistedActiveCollectionId || !persistedActiveRequestId) {
+      return;
+    }
+
+    try {
+      setDeletingExampleId(deleteExampleTarget.id);
+      await deleteExampleMutation.mutateAsync({
+        collectionId: persistedActiveCollectionId,
+        requestId: persistedActiveRequestId,
+        exampleId: deleteExampleTarget.id,
+      });
+      setDeleteExampleTarget(null);
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      }
+    } finally {
+      setDeletingExampleId(null);
     }
   };
 
@@ -2057,9 +2242,12 @@ export function ApiRequestWorkbench({
                       onRefresh={() => {
                         void examplesQuery.refetch();
                       }}
+                      onViewExample={openViewExampleDialog}
                       onApplyExample={handleApplyExample}
                       onSaveLatestResponse={handleSaveLatestResponseToExample}
+                      onEditExample={openEditExampleDialog}
                       onSetDefault={handleSetDefaultExample}
+                      onDeleteExample={openDeleteExampleDialog}
                     />
                   ) : (
                     <RequestSectionPanel
@@ -2114,6 +2302,33 @@ export function ApiRequestWorkbench({
         isSubmitting={createExampleMutation.isPending || saveExampleResponseMutation.isPending}
         onOpenChange={setIsExampleDialogOpen}
         onSubmit={handleCreateExample}
+      />
+      <ExampleDetailDialog
+        open={viewingExampleId !== null}
+        example={viewingExampleId !== null ? selectedExample : null}
+        isLoading={viewingExampleId !== null && exampleDetailQuery.isLoading && !selectedExample}
+        isRefreshing={viewingExampleId !== null && exampleDetailQuery.isFetching}
+        isError={viewingExampleId !== null && Boolean(exampleDetailQuery.error) && !selectedExample}
+        onOpenChange={closeViewExampleDialog}
+        onApplyExample={handleApplyExample}
+        onEditExample={openEditExampleDialog}
+        onDeleteExample={openDeleteExampleDialog}
+      />
+      <EditExampleDialog
+        key={`${editingExampleId ?? 'edit-none'}-${editingExampleId !== null ? 'open' : 'closed'}`}
+        open={editingExampleId !== null}
+        example={editingExampleId !== null ? selectedExample : null}
+        isLoading={editingExampleId !== null && exampleDetailQuery.isLoading && !selectedExample}
+        isSubmitting={updateExampleMutation.isPending}
+        onOpenChange={closeEditExampleDialog}
+        onSubmit={handleUpdateExample}
+      />
+      <DeleteExampleDialog
+        open={deleteExampleTarget !== null}
+        exampleName={deleteExampleTarget?.name ?? ''}
+        isSubmitting={deleteExampleMutation.isPending && deletingExampleId !== null}
+        onOpenChange={closeDeleteExampleDialog}
+        onConfirm={handleDeleteExample}
       />
       <RenameCollectionDialog
         open={renameDialogCollectionId !== null}
@@ -2673,6 +2888,323 @@ function ExampleFormDialog({
   );
 }
 
+function EditExampleDialog({
+  open,
+  example,
+  isLoading,
+  isSubmitting,
+  onOpenChange,
+  onSubmit,
+}: {
+  open: boolean;
+  example: RequestExample | null;
+  isLoading: boolean;
+  isSubmitting: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (draft: ExampleFormDraft) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState<ExampleFormDraft>(() =>
+    example ? toExampleFormDraft(example) : getExampleFormDraft('')
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!draft.name.trim()) {
+      setError('Example name is required.');
+      return;
+    }
+
+    setError(null);
+    await onSubmit(draft);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="default">
+        <DialogHeader>
+          <DialogTitle>Edit Example</DialogTitle>
+          <DialogDescription>
+            Update the saved example metadata. The stored request and response snapshots stay attached
+            to this example.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          {isLoading && !example ? (
+            <div className="space-y-3 py-1">
+              <div className="h-10 animate-pulse rounded-2xl bg-muted" />
+              <div className="h-28 animate-pulse rounded-2xl bg-muted" />
+              <div className="h-20 animate-pulse rounded-[24px] bg-muted" />
+            </div>
+          ) : !example ? (
+            <div className="rounded-[24px] border border-rose-200 bg-rose-50/70 p-4 text-sm text-rose-700">
+              Unable to load this example. Close the dialog and try again.
+            </div>
+          ) : (
+            <form id="request-example-edit-form" className="space-y-4 py-1" onSubmit={handleSubmit}>
+              <div className="space-y-2">
+                <Label htmlFor="request-example-edit-name">Example name</Label>
+                <Input
+                  id="request-example-edit-name"
+                  value={draft.name}
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, name: event.target.value }))
+                  }
+                  placeholder="Create user - happy path"
+                  errorText={error ?? undefined}
+                  root
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="request-example-edit-description">Description</Label>
+                <Textarea
+                  id="request-example-edit-description"
+                  value={draft.description}
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, description: event.target.value }))
+                  }
+                  rows={5}
+                  placeholder="What scenario does this example cover?"
+                />
+              </div>
+
+              <div className="rounded-[24px] border border-border/60 bg-slate-50/80 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-text-main">Set as default example</p>
+                    <p className="mt-1 text-sm text-text-muted">
+                      Mark this example as the primary saved scenario for the request.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={draft.isDefault}
+                    disabled={example.is_default}
+                    onCheckedChange={(checked) =>
+                      setDraft((current) => ({ ...current, isDefault: checked }))
+                    }
+                  />
+                </div>
+                {example.is_default ? (
+                  <p className="mt-3 text-xs leading-5 text-text-muted">
+                    This example is already the default. Promote another example if you want to change
+                    the default selection.
+                  </p>
+                ) : null}
+              </div>
+            </form>
+          )}
+        </DialogBody>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="request-example-edit-form"
+            loading={isSubmitting}
+            disabled={!example}
+          >
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteExampleDialog({
+  open,
+  exampleName,
+  isSubmitting,
+  onOpenChange,
+  onConfirm,
+}: {
+  open: boolean;
+  exampleName: string;
+  isSubmitting: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => Promise<void>;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="sm">
+        <DialogHeader>
+          <DialogTitle>Delete Example</DialogTitle>
+          <DialogDescription>
+            Remove this saved example from the request. This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <div className="rounded-[24px] border border-rose-200 bg-rose-50/70 p-4 text-sm leading-6 text-rose-700">
+            <span className="font-medium text-rose-800">{exampleName || 'This example'}</span> will be
+            deleted permanently.
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="button" variant="destructive" loading={isSubmitting} onClick={() => void onConfirm()}>
+            Delete Example
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ExampleDetailDialog({
+  open,
+  example,
+  isLoading,
+  isRefreshing,
+  isError,
+  onOpenChange,
+  onApplyExample,
+  onEditExample,
+  onDeleteExample,
+}: {
+  open: boolean;
+  example: RequestExample | null;
+  isLoading: boolean;
+  isRefreshing: boolean;
+  isError: boolean;
+  onOpenChange: (open: boolean) => void;
+  onApplyExample: (example: RequestExample) => void;
+  onEditExample: (example: RequestExample) => void;
+  onDeleteExample: (example: RequestExample) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>Example Details</DialogTitle>
+          <DialogDescription>
+            Inspect the saved request and response snapshot behind this example.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody className="space-y-4 overflow-y-auto">
+          {isLoading && !example ? (
+            <div className="space-y-4 py-1">
+              <div className="h-28 animate-pulse rounded-[24px] bg-muted" />
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="h-44 animate-pulse rounded-[24px] bg-muted" />
+                <div className="h-44 animate-pulse rounded-[24px] bg-muted" />
+              </div>
+              <div className="h-56 animate-pulse rounded-[24px] bg-muted" />
+            </div>
+          ) : isError && !example ? (
+            <div className="rounded-[24px] border border-rose-200 bg-rose-50/70 p-4 text-sm text-rose-700">
+              Unable to load the latest example details. Close the dialog and try again.
+            </div>
+          ) : example ? (
+            <>
+              <div className="rounded-[24px] border border-border/60 bg-white/90 p-5 shadow-sm">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-lg font-semibold text-text-main">{example.name}</p>
+                      {example.is_default ? (
+                        <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+                          Default
+                        </Badge>
+                      ) : null}
+                      <Badge variant="secondary">
+                        {example.method} {example.url || 'No URL'}
+                      </Badge>
+                    </div>
+                    {example.description ? (
+                      <p className="text-sm leading-6 text-text-muted">{example.description}</p>
+                    ) : null}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-text-muted">
+                    {isRefreshing ? <RefreshCw className="h-4 w-4 animate-spin" /> : null}
+                    <span>
+                      {isRefreshing
+                        ? 'Refreshing example details...'
+                        : `Updated ${formatExampleTimestamp(example.updated_at)}`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <MetricBadge label="Headers" value={`${example.headers?.length ?? 0}`} />
+                  <MetricBadge label="Params" value={`${example.query_params?.length ?? 0}`} />
+                  <MetricBadge
+                    label="Body"
+                    value={example.body?.trim() ? example.body_type : 'none'}
+                  />
+                  <MetricBadge label="Auth" value={example.auth?.type ?? 'none'} />
+                  <MetricBadge
+                    label="Response"
+                    value={
+                      example.response_status > 0
+                        ? `${example.response_status} / ${example.response_time} ms`
+                        : 'Not captured'
+                    }
+                  />
+                  <MetricBadge label="Created" value={formatExampleTimestamp(example.created_at)} />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <ExampleSnapshotBlock
+                  title="Headers"
+                  value={formatExampleKeyValues(example.headers, 'No headers saved.')}
+                />
+                <ExampleSnapshotBlock
+                  title="Query Params"
+                  value={formatExampleKeyValues(example.query_params, 'No query params saved.')}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <ExampleSnapshotBlock title="Auth" value={formatExampleAuth(example.auth)} />
+                <ExampleSnapshotBlock
+                  title="Response Headers"
+                  value={formatExampleResponseHeaders(example.response_headers)}
+                />
+              </div>
+
+              <ExampleSnapshotBlock
+                title="Request Body"
+                value={example.body || '(empty body)'}
+                tone={example.body?.trim() ? 'dark' : 'light'}
+              />
+              <ExampleSnapshotBlock
+                title="Response Body"
+                value={example.response_body || '(empty body)'}
+                tone={example.response_body?.trim() ? 'dark' : 'light'}
+              />
+            </>
+          ) : null}
+        </DialogBody>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+          {example ? (
+            <>
+              <Button type="button" variant="destructive" onClick={() => onDeleteExample(example)}>
+                Delete
+              </Button>
+              <Button type="button" variant="outline" onClick={() => onEditExample(example)}>
+                Edit
+              </Button>
+              <Button type="button" onClick={() => onApplyExample(example)}>
+                Apply to Request
+              </Button>
+            </>
+          ) : null}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ExamplesPanel({
   canCreateExamples,
   requestPersisted,
@@ -2685,9 +3217,12 @@ function ExamplesPanel({
   defaultingExampleId,
   onCreateExample,
   onRefresh,
+  onViewExample,
   onApplyExample,
   onSaveLatestResponse,
+  onEditExample,
   onSetDefault,
+  onDeleteExample,
 }: {
   canCreateExamples: boolean;
   requestPersisted: boolean;
@@ -2700,9 +3235,12 @@ function ExamplesPanel({
   defaultingExampleId: number | null;
   onCreateExample: () => void;
   onRefresh: () => void;
+  onViewExample: (example: RequestExample) => void;
   onApplyExample: (example: RequestExample) => void;
   onSaveLatestResponse: (example: RequestExample) => Promise<void>;
+  onEditExample: (example: RequestExample) => void;
   onSetDefault: (example: RequestExample) => Promise<void>;
+  onDeleteExample: (example: RequestExample) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -2825,6 +3363,9 @@ function ExamplesPanel({
                     </div>
 
                     <div className="flex flex-wrap gap-2 xl:max-w-[460px] xl:justify-end">
+                      <Button type="button" variant="outline" size="sm" onClick={() => onViewExample(example)}>
+                        View
+                      </Button>
                       <Button type="button" variant="outline" size="sm" onClick={() => onApplyExample(example)}>
                         <Copy className="h-4 w-4" />
                         Apply
@@ -2851,6 +3392,25 @@ function ExamplesPanel({
                         <Star className="h-4 w-4" />
                         Set Default
                       </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button type="button" variant="outline" size="sm" isIcon noScale aria-label="More actions">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                          <DropdownMenuItem onSelect={() => onEditExample(example)}>
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => onDeleteExample(example)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>
@@ -2859,6 +3419,32 @@ function ExamplesPanel({
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function ExampleSnapshotBlock({
+  title,
+  value,
+  tone = 'light',
+}: {
+  title: string;
+  value: string;
+  tone?: 'light' | 'dark';
+}) {
+  return (
+    <div className="rounded-[24px] border border-border/60 bg-white/90 p-4 shadow-sm">
+      <p className="text-sm font-medium text-text-main">{title}</p>
+      <pre
+        className={cn(
+          'mt-3 max-h-64 overflow-auto rounded-[20px] border p-4 text-xs leading-6 whitespace-pre-wrap',
+          tone === 'dark'
+            ? 'border-slate-900/70 bg-slate-950/95 text-slate-100'
+            : 'border-border/60 bg-slate-50/80 text-slate-700'
+        )}
+      >
+        {value}
+      </pre>
     </div>
   );
 }
