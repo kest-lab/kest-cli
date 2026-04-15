@@ -5,19 +5,31 @@ interface ProjectHistoriesPageProps {
   params: Promise<{
     projectId: string;
   }>;
+  searchParams: Promise<{
+    item?: string;
+  }>;
 }
 
 // 项目 histories 工作区入口。
-// 作用：承载新的 histories 模块占位页，确保双层导航结构完整可用。
+// 作用：挂载项目历史工作区，并通过 `?item=` 支持选中具体记录。
 export default async function ProjectHistoriesPage({
   params,
+  searchParams,
 }: ProjectHistoriesPageProps) {
   const { projectId } = await params;
+  const { item } = await searchParams;
   const numericProjectId = Number(projectId);
+  const selectedItemId = Number(item);
 
   if (!Number.isInteger(numericProjectId) || numericProjectId <= 0) {
     notFound();
   }
 
-  return <ProjectWorkspacePage projectId={numericProjectId} module="histories" />;
+  return (
+    <ProjectWorkspacePage
+      projectId={numericProjectId}
+      module="histories"
+      selectedItemId={Number.isInteger(selectedItemId) && selectedItemId > 0 ? selectedItemId : null}
+    />
+  );
 }

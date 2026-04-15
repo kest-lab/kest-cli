@@ -77,7 +77,7 @@ export const PROJECT_WORKSPACE_MODULES: ProjectWorkspaceModuleMeta[] = [
     shortLabel: 'History',
     description: 'Review activity and execution records scoped to this project.',
     icon: History,
-    status: 'planned',
+    status: 'ready',
   },
   {
     value: 'flows',

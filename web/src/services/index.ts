@@ -14,5 +14,7 @@ export { collectionService } from './collection';
 export type { CollectionService } from './collection';
 export { environmentService } from './environment';
 export type { EnvironmentService } from './environment';
+export { historyService } from './history';
+export type { HistoryService } from './history';
 export { testCaseService } from './test-case';
 export type { TestCaseService } from './test-case';

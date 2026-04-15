@@ -72,6 +72,7 @@ import {
   buildProjectCategoriesRoute,
   buildProjectDetailRoute,
   buildProjectEnvironmentsRoute,
+  buildProjectHistoriesRoute,
   buildProjectTestCasesRoute,
 } from '@/constants/routes';
 import {
@@ -85,14 +86,17 @@ import {
 } from '@/hooks/use-api-specs';
 import { useProjectCategories, useProjectCategory } from '@/hooks/use-categories';
 import { useEnvironment, useEnvironments } from '@/hooks/use-environments';
+import { useProjectHistories, useProjectHistory } from '@/hooks/use-histories';
 import { useProject } from '@/hooks/use-projects';
 import type { ApiSpec, CreateApiSpecRequest, HttpMethod } from '@/types/api-spec';
 import type { ProjectEnvironment } from '@/types/environment';
+import type { ProjectHistory } from '@/types/history';
 import { cn, formatDate } from '@/utils';
 
 const MAX_MODULE_ITEMS = 500;
 const EMPTY_SPECS: ApiSpec[] = [];
 const EMPTY_ENVIRONMENTS: ProjectEnvironment[] = [];
+const EMPTY_HISTORIES: ProjectHistory[] = [];
 const SPEC_METHOD_OPTIONS: HttpMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
 
 const buildModuleHref = (
@@ -160,7 +164,13 @@ export function ProjectWorkspacePage({
         />
       );
     case 'histories':
-      return <PlaceholderWorkspaceSection projectId={projectId} projectName={projectName} module={module} />;
+      return (
+        <HistoryWorkspaceSection
+          projectId={projectId}
+          projectName={projectName}
+          selectedItemId={selectedItemId}
+        />
+      );
     case 'flows':
       return <PlaceholderWorkspaceSection projectId={projectId} projectName={projectName} module={module} />;
     default:
@@ -930,6 +940,254 @@ function CategoriesWorkspaceSection({
                     )}
                   </CardContent>
                 </Card>
+              </div>
+            </div>
+          )}
+        </ResourceContent>
+      }
+    />
+  );
+}
+
+function HistoryWorkspaceSection({
+  projectId,
+  projectName,
+  selectedItemId,
+}: {
+  projectId: number;
+  projectName: string;
+  selectedItemId?: number | null;
+}) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [entityTypeFilter, setEntityTypeFilter] = useState('all');
+  const deferredSearch = useDeferredValue(searchQuery);
+
+  const historiesQuery = useProjectHistories({
+    projectId,
+    page: 1,
+    pageSize: MAX_MODULE_ITEMS,
+    entityType: entityTypeFilter !== 'all' ? entityTypeFilter : undefined,
+  });
+  const selectedHistoryQuery = useProjectHistory(projectId, selectedItemId ?? undefined);
+
+  const histories = historiesQuery.data?.items ?? EMPTY_HISTORIES;
+  const entityTypeOptions = useMemo(
+    () => Array.from(new Set(histories.map((history) => history.entity_type).filter(Boolean))).sort(),
+    [histories]
+  );
+  const filteredHistories = useMemo(() => {
+    const normalizedQuery = deferredSearch.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return histories;
+    }
+
+    return histories.filter((history) =>
+      [
+        history.message || '',
+        history.action,
+        history.entity_type,
+        String(history.id),
+        String(history.entity_id),
+        String(history.user_id),
+      ].some((value) => value.toLowerCase().includes(normalizedQuery))
+    );
+  }, [deferredSearch, histories]);
+
+  const selectedHistoryFromList = histories.find((history) => history.id === selectedItemId) ?? null;
+  const selectedHistory = selectedHistoryQuery.data ?? selectedHistoryFromList;
+  const isFiltered = entityTypeFilter !== 'all' || deferredSearch.trim().length > 0;
+  const refreshActionItems: ActionMenuItem[] = [
+    {
+      key: 'histories-refresh',
+      label: historiesQuery.isFetching || selectedHistoryQuery.isFetching ? 'Refreshing...' : 'Refresh',
+      icon: RefreshCw,
+      disabled: historiesQuery.isFetching || selectedHistoryQuery.isFetching,
+      onSelect: () => {
+        void historiesQuery.refetch();
+
+        if (selectedItemId) {
+          void selectedHistoryQuery.refetch();
+        }
+      },
+    },
+  ];
+
+  return (
+    <WorkspaceFrame
+      sidebar={
+        <ResourceSidebar
+          module="histories"
+          title="History"
+          description="Inspect persisted project activity, entity snapshots, and recorded diffs."
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search history"
+          count={filteredHistories.length}
+          loading={historiesQuery.isLoading}
+          error={historiesQuery.error}
+          headerActions={
+            <Select value={entityTypeFilter} onValueChange={setEntityTypeFilter}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filter by entity type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All entity types</SelectItem>
+                {entityTypeOptions.map((entityType) => (
+                  <SelectItem key={entityType} value={entityType}>
+                    {entityType}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+          emptyState={
+            <SidebarEmptyState
+              icon={FileClock}
+              title={isFiltered ? 'No matching history' : 'No history yet'}
+              description={
+                isFiltered
+                  ? 'Try a different keyword or entity type filter.'
+                  : 'History records will appear here once project activity is being recorded.'
+              }
+            />
+          }
+        >
+          {filteredHistories.map((history) => (
+            <ResourceListItem
+              key={history.id}
+              href={buildModuleHref(projectId, 'histories', history.id)}
+              active={history.id === selectedHistory?.id}
+              title={`${history.entity_type} #${history.entity_id}`}
+              description={
+                history.message ||
+                `${history.action} recorded for ${history.entity_type} #${history.entity_id}`
+              }
+              meta={
+                <>
+                  <Badge variant="outline">{history.action}</Badge>
+                  <span>User #{history.user_id}</span>
+                  <span>{formatDate(history.created_at, 'YYYY-MM-DD HH:mm')}</span>
+                </>
+              }
+            />
+          ))}
+        </ResourceSidebar>
+      }
+      content={
+        <ResourceContent
+          projectId={projectId}
+          projectName={projectName}
+          module="histories"
+          currentTitle={
+            selectedHistory
+              ? `${selectedHistory.entity_type} #${selectedHistory.entity_id}`
+              : 'Project history'
+          }
+          description={
+            selectedHistory
+              ? 'History detail loaded from the selected project-scoped record.'
+              : 'Select a history record in the sidebar to inspect its snapshot and recorded diff.'
+          }
+          actions={
+            <ActionMenu
+              items={refreshActionItems}
+              ariaLabel="Open history workspace actions"
+              triggerVariant="outline"
+            />
+          }
+        >
+          {selectedItemId && selectedHistoryQuery.isLoading ? (
+            <DetailSkeleton />
+          ) : selectedItemId && !selectedHistory ? (
+            <MissingDetailState
+              moduleLabel="history record"
+              clearHref={buildProjectHistoriesRoute(projectId)}
+            />
+          ) : historiesQuery.isLoading ? (
+            <DetailSkeleton />
+          ) : histories.length === 0 ? (
+            <GuideState
+              icon={FileClock}
+              title={isFiltered ? 'No matching history record' : 'No history recorded'}
+              description={
+                isFiltered
+                  ? 'No history records matched the current filters. Clear the filter or try a broader search.'
+                  : 'This project does not have any persisted history records yet.'
+              }
+            />
+          ) : !selectedHistory ? (
+            <GuideState
+              icon={FileClock}
+              title="Choose a history record"
+              description="The content area stays focused on a single history record. Pick one from the sidebar to inspect the stored snapshot and diff."
+            />
+          ) : (
+            <div className="space-y-6">
+              <Card className="border-border/60">
+                <CardHeader>
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+                          {selectedHistory.entity_type}
+                        </Badge>
+                        <Badge variant="outline">{selectedHistory.action}</Badge>
+                        <Badge variant="secondary">Record #{selectedHistory.id}</Badge>
+                      </div>
+                      <div>
+                        <CardTitle className="text-2xl tracking-tight">
+                          {selectedHistory.entity_type} #{selectedHistory.entity_id}
+                        </CardTitle>
+                        <CardDescription className="mt-2 max-w-4xl leading-6">
+                          {selectedHistory.message || 'No message was recorded for this history entry.'}
+                        </CardDescription>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <InfoBadge label="User" value={`#${selectedHistory.user_id}`} />
+                      <InfoBadge
+                        label="Created"
+                        value={formatDate(selectedHistory.created_at, 'YYYY-MM-DD HH:mm')}
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+                <Card className="border-border/60">
+                  <CardHeader>
+                    <CardTitle>History metadata</CardTitle>
+                    <CardDescription>Core fields captured for the selected history record.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4 md:grid-cols-2">
+                    <DetailField label="Record ID">{selectedHistory.id}</DetailField>
+                    <DetailField label="Project ID">{selectedHistory.project_id}</DetailField>
+                    <DetailField label="Entity type">{selectedHistory.entity_type}</DetailField>
+                    <DetailField label="Entity ID">{selectedHistory.entity_id}</DetailField>
+                    <DetailField label="Action">{selectedHistory.action}</DetailField>
+                    <DetailField label="User ID">{selectedHistory.user_id}</DetailField>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/60">
+                  <CardHeader>
+                    <CardTitle>Recorded note</CardTitle>
+                    <CardDescription>Optional message attached to this history entry.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-2xl border border-border/60 bg-background/70 p-4 text-sm leading-6 text-text-muted">
+                      {selectedHistory.message || 'No message recorded.'}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-6 xl:grid-cols-2">
+                <JsonCard title="Snapshot data" value={selectedHistory.data} />
+                <JsonCard title="Diff" value={selectedHistory.diff} />
               </div>
             </div>
           )}
