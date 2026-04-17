@@ -251,6 +251,7 @@ const DEFAULT_NEW_REQUEST_URL = '';
 // back to an empty field in the UI.
 const PERSISTED_DRAFT_URL_PLACEHOLDER = 'https://placeholder.invalid';
 const WORKBENCH_PAGE_SIZE = 100;
+const SIDEBAR_COLLECTIONS_PAGE_SIZE = 24;
 
 const isPersistedCollectionId = (value: string) => {
   const numericValue = Number(value);
@@ -2796,6 +2797,24 @@ function CollectionsSidebar({
   onToggleCollection: (collectionId: string) => void;
   onSelectRequest: (tabId: string, collectionId: string | null) => void;
 }) {
+  const [page, setPage] = useState(1);
+  const isSearchMode = query.trim().length > 0;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(collections.length / SIDEBAR_COLLECTIONS_PAGE_SIZE)
+  );
+  const currentPage = isSearchMode ? 1 : Math.min(page, totalPages);
+  const canGoPrev = !isSearchMode && currentPage > 1;
+  const canGoNext = !isSearchMode && currentPage < totalPages;
+  const visibleCollections = useMemo(() => {
+    if (isSearchMode) {
+      return collections;
+    }
+
+    const startIndex = (currentPage - 1) * SIDEBAR_COLLECTIONS_PAGE_SIZE;
+    return collections.slice(startIndex, startIndex + SIDEBAR_COLLECTIONS_PAGE_SIZE);
+  }, [collections, currentPage, isSearchMode]);
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="space-y-4 p-4">
@@ -2806,7 +2825,14 @@ function CollectionsSidebar({
               Collections hold reusable requests. Quick requests are for one-off experiments that do not need project structure yet.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button type="button" size="sm" onClick={onCreateCollection}>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setPage(1);
+                  onCreateCollection();
+                }}
+              >
                 <Plus className="h-4 w-4" />
                 New Collection
               </Button>
@@ -2833,12 +2859,24 @@ function CollectionsSidebar({
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
             <Input
               value={query}
-              onChange={(event) => onQueryChange(event.target.value)}
+              onChange={(event) => {
+                setPage(1);
+                onQueryChange(event.target.value);
+              }}
               placeholder="Filter collections or requests"
               className="pl-9"
             />
           </div>
-          <Button type="button" variant="outline" size="sm" isIcon onClick={onCreateCollection}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            isIcon
+            onClick={() => {
+              setPage(1);
+              onCreateCollection();
+            }}
+          >
             <Plus className="h-4 w-4" />
           </Button>
           <Button
@@ -2856,7 +2894,7 @@ function CollectionsSidebar({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
         <div className="space-y-2">
-          {collections.map(({ collection, requests }) => {
+          {visibleCollections.map(({ collection, requests }) => {
             const isExpanded = expandedCollectionIds.includes(collection.id);
             const isActiveCollection = activeCollectionId === collection.id;
 
@@ -2955,6 +2993,34 @@ function CollectionsSidebar({
           ) : null}
         </div>
       </div>
+
+      {!isSearchMode && totalPages > 1 ? (
+        <div className="flex items-center justify-between border-t border-border/60 px-4 py-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+            disabled={!canGoPrev}
+          >
+            Previous
+          </Button>
+          <span className="text-xs font-medium text-text-muted">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setPage((currentPage) => Math.min(totalPages, currentPage + 1))
+            }
+            disabled={!canGoNext}
+          >
+            Next
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }
