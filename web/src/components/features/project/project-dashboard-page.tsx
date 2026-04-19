@@ -1,7 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import {
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -94,7 +102,7 @@ export function ProjectDashboardPage() {
   const [formMode, setFormMode] = useState<ProjectFormMode>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ApiProject | null>(null);
-  const [hasAutoSelectedProject, setHasAutoSelectedProject] = useState(false);
+  const hasAutoSelectedProjectRef = useRef(false);
 
   const deferredSearch = useDeferredValue(searchQuery);
 
@@ -130,7 +138,7 @@ export function ProjectDashboardPage() {
     [projects]
   );
 
-  const prefetchProjectPreview = (projectId: number) => {
+  const prefetchProjectPreview = useCallback((projectId: number) => {
     void queryClient.prefetchQuery({
       queryKey: projectKeys.projectStats(projectId),
       queryFn: () => projectService.getStats(projectId),
@@ -145,9 +153,9 @@ export function ProjectDashboardPage() {
           pageSize: MAX_PREVIEW_SPECS,
         }),
     });
-  };
+  }, [queryClient]);
 
-  const navigateToPreview = (projectId?: number | null) => {
+  const navigateToPreview = useCallback((projectId?: number | null) => {
     if (projectId) {
       prefetchProjectPreview(projectId);
     }
@@ -157,17 +165,17 @@ export function ProjectDashboardPage() {
         buildDashboardHref(pathname, new URLSearchParams(searchParams.toString()), projectId)
       );
     });
-  };
+  }, [pathname, prefetchProjectPreview, router, searchParams]);
 
   useEffect(() => {
     filteredProjects.slice(0, 3).forEach((project) => {
       prefetchProjectPreview(project.id);
     });
-  }, [filteredProjects, queryClient]);
+  }, [filteredProjects, prefetchProjectPreview]);
 
   useEffect(() => {
     if (
-      hasAutoSelectedProject ||
+      hasAutoSelectedProjectRef.current ||
       projectsQuery.isLoading ||
       previewProjectId !== null ||
       !fallbackProject
@@ -175,9 +183,9 @@ export function ProjectDashboardPage() {
       return;
     }
 
-    setHasAutoSelectedProject(true);
+    hasAutoSelectedProjectRef.current = true;
     navigateToPreview(fallbackProject.id);
-  }, [fallbackProject, hasAutoSelectedProject, previewProjectId, projectsQuery.isLoading]);
+  }, [fallbackProject, navigateToPreview, previewProjectId, projectsQuery.isLoading]);
 
   const openCreateDialog = () => {
     setFormMode('create');
@@ -472,7 +480,7 @@ function ProjectPreviewPanel({
   project: ApiProject;
   onEdit: () => void;
 }) {
-  const [isSlowPreview, setIsSlowPreview] = useState(false);
+  const [slowPreviewKey, setSlowPreviewKey] = useState('');
   const statsQuery = useProjectStats(project.id);
   const apiSpecsQuery = useApiSpecs({
     projectId: project.id,
@@ -491,6 +499,11 @@ function ProjectPreviewPanel({
   const hasReadinessError =
     !hasResolvedReadiness &&
     Boolean(statsQuery.error);
+  const slowPreviewLoadKey = `${project.id}:${statsQuery.fetchStatus}:${statsQuery.dataUpdatedAt}`;
+  const isSlowPreview =
+    !hasResolvedReadiness &&
+    !hasReadinessError &&
+    slowPreviewKey === slowPreviewLoadKey;
   const nextStep = hasResolvedReadiness
     ? resolveDashboardNextStep({
         projectId: project.id,
@@ -544,18 +557,17 @@ function ProjectPreviewPanel({
 
   useEffect(() => {
     if (hasResolvedReadiness || hasReadinessError) {
-      setIsSlowPreview(false);
       return;
     }
 
     const timeoutId = window.setTimeout(() => {
-      setIsSlowPreview(true);
+      setSlowPreviewKey(slowPreviewLoadKey);
     }, 2500);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [hasReadinessError, hasResolvedReadiness]);
+  }, [hasReadinessError, hasResolvedReadiness, slowPreviewLoadKey]);
 
   return (
     <div className="space-y-6">

@@ -48,7 +48,7 @@ export default function StyleguidePage() {
           </ul>
         </div>
         <div className="text-sm max-w-xs leading-relaxed italic">
-          "The details are not the details. They make the design." — Charles Eames
+          &quot;The details are not the details. They make the design.&quot; - Charles Eames
         </div>
       </footer>
     </div>

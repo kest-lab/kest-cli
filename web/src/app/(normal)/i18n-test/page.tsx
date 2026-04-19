@@ -49,7 +49,7 @@ export default function I18nTestPage() {
             <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border border-border/50 group-hover:border-primary/20 transition-colors">
               <CheckCircle2 className="w-5 h-5 text-success" />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-muted-foreground mb-1 uppercase tracking-wider">t('title')</p>
+                <p className="text-sm font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{"t('title')"}</p>
                 <p className="text-xl font-medium">{tLevel1('title')}</p>
               </div>
             </div>
@@ -75,11 +75,11 @@ export default function I18nTestPage() {
           <CardContent className="pt-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 rounded-lg bg-background/50 border border-border/50 group-hover:border-info/20 transition-colors">
-                <p className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-tighter">t('title')</p>
+                <p className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-tighter">{"t('title')"}</p>
                 <p className="text-lg font-semibold">{tLevel2('title')}</p>
               </div>
               <div className="p-4 rounded-lg bg-background/50 border border-border/50 group-hover:border-info/20 transition-colors">
-                <p className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-tighter">t('message')</p>
+                <p className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-tighter">{"t('message')"}</p>
                 <p className="text-lg font-medium">{tLevel2('message')}</p>
               </div>
             </div>

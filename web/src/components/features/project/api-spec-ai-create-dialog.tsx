@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Bot, FileJson2, HelpCircle, Sparkles, WandSparkles } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -129,19 +129,7 @@ const normalizeTags = (value: string) =>
     )
   );
 
-export function ApiSpecAICreateDialog({
-  open,
-  onOpenChange,
-  projectId,
-  categories,
-  isSubmittingDraft,
-  isSubmittingRefine,
-  isSubmittingAccept,
-  onCreateDraft,
-  onRefineDraft,
-  onAcceptDraft,
-  onAccepted,
-}: {
+interface ApiSpecAICreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: number;
@@ -159,7 +147,32 @@ export function ApiSpecAICreateDialog({
     payload: AcceptApiSpecAIDraftRequest
   ) => Promise<AcceptApiSpecAIDraftResponse>;
   onAccepted: (result: { specId: number; continueToTests: boolean }) => void;
-}) {
+}
+
+export function ApiSpecAICreateDialog({
+  open,
+  onOpenChange,
+  ...props
+}: ApiSpecAICreateDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open ? <ApiSpecAICreateDialogContent {...props} onOpenChange={onOpenChange} /> : null}
+    </Dialog>
+  );
+}
+
+function ApiSpecAICreateDialogContent({
+  onOpenChange,
+  projectId,
+  categories,
+  isSubmittingDraft,
+  isSubmittingRefine,
+  isSubmittingAccept,
+  onCreateDraft,
+  onRefineDraft,
+  onAcceptDraft,
+  onAccepted,
+}: Omit<ApiSpecAICreateDialogProps, 'open'>) {
   const [intent, setIntent] = useState('');
   const [seedMethod, setSeedMethod] = useState<HttpMethod>('GET');
   const [seedPath, setSeedPath] = useState('');
@@ -174,25 +187,6 @@ export function ApiSpecAICreateDialog({
   const [generateTest, setGenerateTest] = useState(false);
   const [continueToTests, setContinueToTests] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!open) {
-      setIntent('');
-      setSeedMethod('GET');
-      setSeedPath('');
-      setSeedCategoryId('');
-      setLang('en');
-      setUseProjectConventions(true);
-      setDraft(null);
-      setEditableDraft(createEmptyEditableDraft());
-      setRefineInstruction('');
-      setRefineField('all');
-      setGenerateDoc(true);
-      setGenerateTest(false);
-      setContinueToTests(true);
-      setValidationError(null);
-    }
-  }, [open]);
 
   const updateEditableDraft = <K extends keyof EditableDraftState>(key: K, value: EditableDraftState[K]) => {
     setEditableDraft((current) => ({ ...current, [key]: value }));
@@ -291,8 +285,7 @@ export function ApiSpecAICreateDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="xl">
+    <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
@@ -398,7 +391,7 @@ export function ApiSpecAICreateDialog({
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Use project conventions</div>
                   <div className="text-sm text-muted-foreground">
-                    Reuse the current project's versioning, tags, and response code patterns.
+                    Reuse the current project&apos;s versioning, tags, and response code patterns.
                   </div>
                 </div>
                 <Switch checked={useProjectConventions} onCheckedChange={setUseProjectConventions} />
@@ -747,7 +740,6 @@ export function ApiSpecAICreateDialog({
             </Button>
           </div>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogContent>
   );
 }

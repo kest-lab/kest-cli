@@ -10,7 +10,7 @@
  */
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { SearchIcon, EyeIcon, EyeOffIcon, AlertCircleIcon } from "lucide-react"
+import { SearchIcon, EyeIcon, EyeOffIcon } from "lucide-react"
 import { DatePicker } from "./date-picker"
 
 import { cn } from "@/utils"
@@ -41,6 +41,32 @@ interface InputProps extends React.ComponentProps<"input">, VariantProps<typeof 
   root?: boolean
 }
 
+const padDateInputNumber = (value: number) => String(value).padStart(2, "0")
+
+const formatDateInputValue = (date: Date, type: React.HTMLInputTypeAttribute | undefined) => {
+  const baseValue = [
+    date.getFullYear(),
+    padDateInputNumber(date.getMonth() + 1),
+    padDateInputNumber(date.getDate()),
+  ].join("-")
+
+  if (type !== "datetime-local") {
+    return baseValue
+  }
+
+  return `${baseValue}T${padDateInputNumber(date.getHours())}:${padDateInputNumber(date.getMinutes())}:${padDateInputNumber(date.getSeconds())}`
+}
+
+const createDateInputChangeEvent = (
+  value: string,
+  name?: string,
+  id?: string
+): React.ChangeEvent<HTMLInputElement> =>
+  ({
+    target: { value, name, id },
+    currentTarget: { value, name, id },
+  }) as unknown as React.ChangeEvent<HTMLInputElement>
+
 function Input({
   className,
   variant,
@@ -53,6 +79,9 @@ function Input({
   ...props
 }: InputProps) {
   if (type === "date" || type === "datetime-local") {
+    const dateValue =
+      props.value instanceof Date || typeof props.value === "string" ? props.value : undefined
+
     return (
       <DatePicker 
         showTime={type === "datetime-local"} 
@@ -60,8 +89,16 @@ function Input({
         errorText={typeof errorText === 'string' ? errorText : undefined}
         placeholder={props.placeholder}
         className={className}
-        value={props.value as any}
-        onChange={props.onChange as any}
+        value={dateValue}
+        onChange={(date) => {
+          props.onChange?.(
+            createDateInputChangeEvent(
+              formatDateInputValue(date, type),
+              props.name,
+              props.id
+            )
+          )
+        }}
       />
     )
   }

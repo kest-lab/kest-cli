@@ -1,5 +1,4 @@
 import { env } from '@/config/env';
-import { useAuthStore } from '@/store/auth-store';
 
 interface ErrorMetadata {
   userId?: string;
@@ -12,6 +11,7 @@ type ErrorHandler = (error: Error, metadata?: ErrorMetadata) => void;
 class ErrorTrackingService {
   private static instance: ErrorTrackingService;
   private handlers: ErrorHandler[] = [];
+  private defaultMetadata: ErrorMetadata = {};
 
   public static getInstance(): ErrorTrackingService {
     if (!ErrorTrackingService.instance) {
@@ -21,6 +21,8 @@ class ErrorTrackingService {
   }
 
   public init(defaultMetadata: Partial<ErrorMetadata> = {}): void {
+    this.defaultMetadata = { ...defaultMetadata };
+
     if (typeof window !== 'undefined') {
       window.addEventListener('error', (e) => this.captureError(e.error));
       window.addEventListener('unhandledrejection', (e) => this.captureError(e.reason));
@@ -31,11 +33,18 @@ class ErrorTrackingService {
     this.handlers.push(handler);
   }
 
-  public captureError(error: any, metadata?: ErrorMetadata): void {
+  public captureError(error: unknown, metadata?: ErrorMetadata): void {
+    const normalizedError =
+      error instanceof Error
+        ? error
+        : new Error(typeof error === 'string' ? error : 'Unknown error');
+    const mergedMetadata = { ...this.defaultMetadata, ...metadata };
+
     if (env.NODE_ENV === 'development') {
-      console.error('[ErrorTracking]', error, metadata);
+      console.error('[ErrorTracking]', normalizedError, mergedMetadata);
     }
-    this.handlers.forEach(h => h(error, metadata));
+
+    this.handlers.forEach((handler) => handler(normalizedError, mergedMetadata));
   }
 }
 
