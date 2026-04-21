@@ -73,6 +73,7 @@ func (h *Handler) CreateInvitation(c *gin.Context) {
 		return
 	}
 
+	baseURL := resolveInvitationBaseURL(c.Request)
 	invitation, err := h.service.CreateInvitation(c.Request.Context(), projectID, userID, &req)
 	if err != nil {
 		switch {
@@ -86,7 +87,7 @@ func (h *Handler) CreateInvitation(c *gin.Context) {
 		return
 	}
 
-	response.Created(c, invitation)
+	response.Created(c, invitation.withBaseURL(baseURL))
 }
 
 func (h *Handler) ListInvitations(c *gin.Context) {
@@ -95,12 +96,16 @@ func (h *Handler) ListInvitations(c *gin.Context) {
 		return
 	}
 
+	baseURL := resolveInvitationBaseURL(c.Request)
 	invitations, err := h.service.ListInvitations(c.Request.Context(), projectID)
 	if err != nil {
 		response.InternalServerError(c, err.Error(), err)
 		return
 	}
 
+	for _, invitation := range invitations {
+		invitation.withBaseURL(baseURL)
+	}
 	response.Success(c, invitations)
 }
 

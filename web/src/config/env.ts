@@ -14,6 +14,7 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .transform((value) => value === 'true'),
+  NEXT_PUBLIC_APP_URL: z.string().optional(),
   NEXT_PUBLIC_LOCAL_RUNNER_URL: z.string().default('http://127.0.0.1:8788'),
   NEXT_PUBLIC_DEBUG_API_ERRORS: z
     .enum(['true', 'false'])
@@ -32,6 +33,7 @@ const parsed = envSchema.safeParse({
   NEXT_PUBLIC_API_BASE_PATH: process.env.NEXT_PUBLIC_API_BASE_PATH,
   NEXT_PUBLIC_API_PROXY_PATH: process.env.NEXT_PUBLIC_API_PROXY_PATH,
   NEXT_PUBLIC_API_USE_PROXY: process.env.NEXT_PUBLIC_API_USE_PROXY,
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   NEXT_PUBLIC_LOCAL_RUNNER_URL: process.env.NEXT_PUBLIC_LOCAL_RUNNER_URL,
   NEXT_PUBLIC_DEBUG_API_ERRORS: process.env.NEXT_PUBLIC_DEBUG_API_ERRORS,
   NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,

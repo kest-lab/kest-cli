@@ -52,6 +52,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { buildApiPath } from '@/config/api';
+import { env } from '@/config/env';
 import { buildProjectDetailRoute, buildProjectInviteRoute } from '@/constants/routes';
 import {
   useCreateProjectMember,
@@ -91,6 +92,20 @@ import { formatDate } from '@/utils';
 
 const EMPTY_MEMBERS: ProjectMember[] = [];
 const EMPTY_INVITATIONS: ProjectInvitation[] = [];
+const configuredInviteBaseUrl = env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, '') ?? '';
+
+const isLoopbackHostname = (hostname: string) => {
+  const normalized = hostname.trim().toLowerCase();
+
+  return (
+    normalized === 'localhost' ||
+    normalized.endsWith('.localhost') ||
+    normalized === '127.0.0.1' ||
+    normalized === '0.0.0.0' ||
+    normalized === '::1' ||
+    normalized === '[::1]'
+  );
+};
 const ROLE_FILTER_OPTIONS: Array<{ value: 'all' | ProjectMemberRole; label: string }> = [
   { value: 'all', label: 'All roles' },
   { value: 'owner', label: 'Owner' },
@@ -308,15 +323,30 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
   };
 
   const resolveInviteLink = (invitation: ProjectInvitation) => {
-    if (invitation.invite_url) {
-      return invitation.invite_url;
+    const invitePath = buildProjectInviteRoute(invitation.slug);
+
+    if (configuredInviteBaseUrl) {
+      return `${configuredInviteBaseUrl}${invitePath}`;
     }
 
-    if (typeof window !== 'undefined') {
-      return `${window.location.origin}${buildProjectInviteRoute(invitation.slug)}`;
+    if (typeof window === 'undefined') {
+      return invitation.invite_url || invitePath;
     }
 
-    return buildProjectInviteRoute(invitation.slug);
+    const browserInviteUrl = `${window.location.origin}${invitePath}`;
+    if (!invitation.invite_url) {
+      return browserInviteUrl;
+    }
+
+    try {
+      const resolvedInviteUrl = new URL(invitation.invite_url, window.location.origin);
+      if (isLoopbackHostname(resolvedInviteUrl.hostname)) {
+        return browserInviteUrl;
+      }
+      return resolvedInviteUrl.toString();
+    } catch {
+      return browserInviteUrl;
+    }
   };
 
   const copyInviteLink = async (invitation: ProjectInvitation) => {
@@ -1218,8 +1248,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
             <Alert>
               <AlertTitle>Link access will be disabled immediately</AlertTitle>
               <AlertDescription>
-                {revokeTarget?.invite_url ||
-                  (revokeTarget ? buildProjectInviteRoute(revokeTarget.slug) : '')}
+                {revokeTarget ? resolveInviteLink(revokeTarget) : ''}
               </AlertDescription>
             </Alert>
             {revokeTarget ? (

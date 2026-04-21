@@ -3,10 +3,7 @@ package projectinvite
 import (
 	"fmt"
 	"net/url"
-	"strings"
 	"time"
-
-	"github.com/kest-labs/kest/api/internal/infra/config"
 )
 
 type CreateProjectInvitationRequest struct {
@@ -83,6 +80,15 @@ func toProjectInvitationResponse(invitation *ProjectInvitation, now time.Time) *
 	}
 }
 
+func (r *ProjectInvitationResponse) withBaseURL(baseURL string) *ProjectInvitationResponse {
+	if r == nil {
+		return nil
+	}
+
+	r.InviteURL = buildProjectInvitationURLForBase(r.Slug, baseURL)
+	return r
+}
+
 func toPublicProjectInvitationResponse(
 	invitation *ProjectInvitation,
 	project *ProjectSummary,
@@ -105,12 +111,18 @@ func toPublicProjectInvitationResponse(
 }
 
 func buildProjectInvitationURL(slug string) string {
+	return buildProjectInvitationURLForBase(slug, "")
+}
+
+func buildProjectInvitationURLForBase(slug, baseURL string) string {
 	path := fmt.Sprintf("/invite/project/%s", url.PathEscape(slug))
-	if cfg := config.GlobalConfig; cfg != nil {
-		base := strings.TrimRight(strings.TrimSpace(cfg.App.URL), "/")
-		if base != "" {
-			return base + path
-		}
+	base := resolveConfiguredInvitationBaseURL()
+	if base != "" {
+		return base + path
+	}
+	base = normalizeInvitationBaseURL(baseURL, false)
+	if base != "" {
+		return base + path
 	}
 	return path
 }
