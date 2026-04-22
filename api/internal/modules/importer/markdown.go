@@ -227,6 +227,16 @@ func parseMarkdownDocument(filename string, content []byte) (*markdownDocument, 
 	}
 
 	if len(doc.Modules) == 0 {
+		module, ok, err := parseSingleEndpointDocument(title, text, doc.BaseURL)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			doc.Modules = append(doc.Modules, module)
+		}
+	}
+
+	if len(doc.Modules) == 0 {
 		return nil, ErrNoImportableEndpoints
 	}
 
@@ -347,8 +357,8 @@ func normalizeSingleModuleName(title string) string {
 
 func extractDocumentBaseURL(content string) string {
 	for _, section := range splitByHeadingLevel(content, 2) {
-		title := strings.TrimSpace(section.Title)
-		if title != "基础 URL" && title != "Base URL" {
+		title := normalizeSectionTitle(section.Title)
+		if title != "基础 url" && title != "基础 urls" && title != "base url" && title != "base urls" {
 			continue
 		}
 
@@ -415,12 +425,308 @@ func parseHeading(line string) (int, string, bool) {
 	return level, strings.TrimSpace(trimmed[level+1:]), true
 }
 
+func normalizeSectionTitle(title string) string {
+	return strings.ToLower(strings.Join(strings.Fields(strings.TrimSpace(title)), " "))
+}
+
 func extractBoldSummary(content string) string {
 	match := boldLinePattern.FindStringSubmatch(content)
 	if len(match) != 2 {
 		return ""
 	}
 	return strings.TrimSpace(match[1])
+}
+
+func parseSingleEndpointDocument(title, content, baseURL string) (markdownModule, bool, error) {
+	sections := splitByHeadingLevel(content, 2)
+	if len(sections) == 0 {
+		return markdownModule{}, false, nil
+	}
+
+	sectionMap := make(map[string]string, len(sections))
+	for _, section := range sections {
+		sectionMap[normalizeSectionTitle(section.Title)] = section.Body
+	}
+
+	endpointSection := findSectionBody(sectionMap, "Endpoint", "API Endpoint", "接口")
+	if endpointSection == "" {
+		return markdownModule{}, false, nil
+	}
+
+	method, path, ok := parseEndpointSnippet(endpointSection)
+	if !ok {
+		return markdownModule{}, false, nil
+	}
+
+	requestSection := findSectionBody(sectionMap, "Request", "请求")
+	requestSubsections := subsectionMap(requestSection, 3)
+	headers := mergeHeaders(
+		parseHeaderKeyValues(findSectionBody(requestSubsections, "Headers", "请求头")),
+		filterNonAuthHeaders(parseCurlExample(resolveCurlSection(content, sectionMap)).Headers),
+	)
+
+	requestBodyLang, requestBody := firstAvailableCodeBlock(
+		findSectionBody(requestSubsections, "Example Request", "Request Body", "Body", "请求体", "请求示例"),
+	)
+
+	curlExample := parseCurlExample(resolveCurlSection(content, sectionMap))
+	finalURL, err := buildAbsoluteEndpointURL(baseURL, curlExample.URL, path)
+	if err != nil {
+		return markdownModule{}, false, err
+	}
+
+	summary := normalizeSingleEndpointSummary(title)
+	description := firstNonEmpty(firstParagraph(findSectionBody(sectionMap, "Overview", "概览")), summary)
+	endpoint := markdownEndpoint{
+		Name:        summary,
+		Description: description,
+		Method:      method,
+		Path:        path,
+		URL:         finalURL,
+		Headers:     headers,
+		QueryParams: parseQueryParamsFromExample(curlExample.URL),
+		PathParams:  extractPathParamsFromExample(path, curlExample.URL),
+		Body:        requestBody,
+		BodyType:    "none",
+	}
+
+	if endpoint.Body != "" {
+		endpoint.BodyType = deriveBodyType(requestBodyLang, endpoint.Headers)
+	}
+
+	if endpoint.Body == "" && curlExample.Body != "" {
+		endpoint.Body = curlExample.Body
+		endpoint.BodyType = deriveBodyType("", endpoint.Headers)
+	}
+
+	if requiresJWTAuth(content) {
+		endpoint.Headers = append(endpoint.Headers, request.KeyValue{
+			Key:     "Authorization",
+			Value:   "Bearer <token>",
+			Enabled: false,
+		})
+	}
+
+	if len(endpoint.PathParams) == 0 {
+		endpoint.PathParams = nil
+	}
+
+	return markdownModule{
+		Name:      normalizeSingleEndpointModuleName(title),
+		Endpoints: []markdownEndpoint{endpoint},
+	}, true, nil
+}
+
+func findSectionBody(sectionMap map[string]string, titles ...string) string {
+	for _, title := range titles {
+		if body := strings.TrimSpace(sectionMap[normalizeSectionTitle(title)]); body != "" {
+			return body
+		}
+	}
+	return ""
+}
+
+func subsectionMap(content string, level int) map[string]string {
+	sections := splitByHeadingLevel(content, level)
+	result := make(map[string]string, len(sections))
+	for _, section := range sections {
+		result[normalizeSectionTitle(section.Title)] = section.Body
+	}
+	return result
+}
+
+func parseEndpointSnippet(section string) (string, string, bool) {
+	_, code := firstCodeBlock(section)
+	if code == "" {
+		code = section
+	}
+
+	for _, line := range strings.Split(code, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		parts := strings.Fields(trimmed)
+		if len(parts) < 2 {
+			continue
+		}
+
+		method := strings.ToUpper(strings.TrimSpace(parts[0]))
+		if !endpointHeadingPattern.MatchString(method + " `" + strings.TrimSpace(parts[1]) + "`") {
+			if !isSupportedHTTPMethod(method) {
+				continue
+			}
+		}
+
+		path := strings.TrimSpace(parts[1])
+		if !strings.HasPrefix(path, "/") {
+			continue
+		}
+
+		return method, path, true
+	}
+
+	return "", "", false
+}
+
+func isSupportedHTTPMethod(method string) bool {
+	switch method {
+	case "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS":
+		return true
+	default:
+		return false
+	}
+}
+
+func parseHeaderKeyValues(section string) []request.KeyValue {
+	if strings.TrimSpace(section) == "" {
+		return nil
+	}
+
+	_, code := firstCodeBlock(section)
+	if code == "" {
+		code = section
+	}
+
+	headers := make([]request.KeyValue, 0)
+	for _, line := range strings.Split(code, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		key, value, ok := strings.Cut(trimmed, ":")
+		if !ok {
+			continue
+		}
+
+		headers = append(headers, request.KeyValue{
+			Key:     strings.TrimSpace(key),
+			Value:   strings.TrimSpace(value),
+			Enabled: true,
+		})
+	}
+
+	if len(headers) == 0 {
+		return nil
+	}
+
+	return headers
+}
+
+func mergeHeaders(groups ...[]request.KeyValue) []request.KeyValue {
+	merged := make([]request.KeyValue, 0)
+	seen := make(map[string]struct{})
+
+	for _, group := range groups {
+		for _, header := range group {
+			key := strings.ToLower(strings.TrimSpace(header.Key))
+			if key == "" {
+				continue
+			}
+			if _, exists := seen[key]; exists {
+				continue
+			}
+			seen[key] = struct{}{}
+			merged = append(merged, header)
+		}
+	}
+
+	if len(merged) == 0 {
+		return nil
+	}
+
+	return merged
+}
+
+func resolveCurlSection(content string, sectionMap map[string]string) string {
+	for _, candidate := range []string{"Usage Examples", "Examples", "示例"} {
+		section := findSectionBody(sectionMap, candidate)
+		if section == "" {
+			continue
+		}
+
+		subsections := subsectionMap(section, 3)
+		for _, title := range []string{"cURL", "Curl", "curl"} {
+			if subsection := findSectionBody(subsections, title); subsection != "" {
+				return subsection
+			}
+		}
+	}
+
+	if strings.Contains(strings.ToLower(content), "curl -x ") || strings.Contains(strings.ToLower(content), "\ncurl ") {
+		return content
+	}
+
+	return ""
+}
+
+func firstAvailableCodeBlock(sections ...string) (string, string) {
+	for _, section := range sections {
+		lang, body := firstCodeBlock(section)
+		if body != "" {
+			return lang, body
+		}
+	}
+	return "", ""
+}
+
+func normalizeSingleEndpointSummary(title string) string {
+	trimmed := strings.TrimSpace(title)
+	for _, suffix := range []string{" API Documentation", " API Doc", " API Docs", " Documentation", " 文档"} {
+		if strings.HasSuffix(trimmed, suffix) {
+			trimmed = strings.TrimSpace(strings.TrimSuffix(trimmed, suffix))
+		}
+	}
+	if trimmed == "" {
+		return "Imported endpoint"
+	}
+	return trimmed
+}
+
+func normalizeSingleEndpointModuleName(title string) string {
+	trimmed := normalizeSingleEndpointSummary(title)
+	for _, suffix := range []string{" API", " 接口"} {
+		if strings.HasSuffix(trimmed, suffix) {
+			trimmed = strings.TrimSpace(strings.TrimSuffix(trimmed, suffix))
+		}
+	}
+	return trimmed
+}
+
+func firstParagraph(content string) string {
+	for _, block := range strings.Split(content, "\n\n") {
+		trimmed := strings.TrimSpace(block)
+		if trimmed == "" {
+			continue
+		}
+		lines := strings.Split(trimmed, "\n")
+		clean := make([]string, 0, len(lines))
+		for _, line := range lines {
+			line = strings.TrimSpace(strings.TrimPrefix(line, ">"))
+			if line == "" {
+				continue
+			}
+			clean = append(clean, line)
+		}
+		if len(clean) > 0 {
+			return strings.Join(clean, " ")
+		}
+	}
+	return ""
+}
+
+func requiresJWTAuth(content string) bool {
+	normalized := strings.ToLower(content)
+	if strings.Contains(normalized, "not required") ||
+		strings.Contains(normalized, "无需认证") ||
+		strings.Contains(normalized, "public endpoint") {
+		return false
+	}
+
+	return strings.Contains(normalized, "jwt required") ||
+		strings.Contains(normalized, "protected endpoint") ||
+		strings.Contains(normalized, "protected endpoints")
 }
 
 func parseParameterDefaults(section string) map[string]string {

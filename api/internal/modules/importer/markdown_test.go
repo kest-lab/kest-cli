@@ -227,6 +227,90 @@ func TestImportMarkdownSingleModuleDerivesURLAndQueryParamsFromCurlExample(t *te
 	}
 }
 
+func TestParseMarkdownDocumentSupportsSingleEndpointDocumentationFormat(t *testing.T) {
+	doc, err := parseMarkdownDocument("register.md", markdown(
+		"# User Registration API Documentation",
+		"",
+		"## Base URLs",
+		"",
+		"| Environment | URL |",
+		"|-------------|-----|",
+		"| Local | `http://localhost:8025/api/v1` |",
+		"",
+		"## Overview",
+		"",
+		"Register a new user account in the Kest platform.",
+		"",
+		"## Endpoint",
+		"",
+		"```",
+		"POST /v1/register",
+		"```",
+		"",
+		"**Authentication**: Not required (Public endpoint)",
+		"",
+		"## Request",
+		"",
+		"### Headers",
+		"",
+		"```",
+		"Content-Type: application/json",
+		"```",
+		"",
+		"### Example Request",
+		"",
+		"```json",
+		`{"username":"john_doe"}`,
+		"```",
+		"",
+		"## Usage Examples",
+		"",
+		"### cURL",
+		"",
+		"```bash",
+		"curl -X POST 'http://localhost:8025/api/v1/register' \\",
+		"  -H 'Content-Type: application/json' \\",
+		`  -d '{"username":"john_doe"}'`,
+		"```",
+	))
+	if err != nil {
+		t.Fatalf("expected single endpoint markdown to parse, got %v", err)
+	}
+
+	if doc.BaseURL != "http://localhost:8025/api/v1" {
+		t.Fatalf("expected Base URLs heading to be parsed, got %q", doc.BaseURL)
+	}
+	if len(doc.Modules) != 1 {
+		t.Fatalf("expected 1 module, got %d", len(doc.Modules))
+	}
+	if doc.Modules[0].Name != "User Registration" {
+		t.Fatalf("expected module name User Registration, got %q", doc.Modules[0].Name)
+	}
+	if len(doc.Modules[0].Endpoints) != 1 {
+		t.Fatalf("expected 1 endpoint, got %d", len(doc.Modules[0].Endpoints))
+	}
+
+	endpoint := doc.Modules[0].Endpoints[0]
+	if endpoint.Name != "User Registration" {
+		t.Fatalf("expected endpoint name User Registration, got %q", endpoint.Name)
+	}
+	if endpoint.Description != "Register a new user account in the Kest platform." {
+		t.Fatalf("expected overview to become description, got %q", endpoint.Description)
+	}
+	if endpoint.URL != "http://localhost:8025/api/v1/register" {
+		t.Fatalf("expected URL to be built from base URL, got %q", endpoint.URL)
+	}
+	if endpoint.BodyType != "json" {
+		t.Fatalf("expected body type json, got %q", endpoint.BodyType)
+	}
+	if endpoint.Body != `{"username":"john_doe"}` {
+		t.Fatalf("expected request body from Example Request, got %q", endpoint.Body)
+	}
+	if len(endpoint.Headers) != 1 || endpoint.Headers[0].Key != "Content-Type" {
+		t.Fatalf("expected content-type header only, got %#v", endpoint.Headers)
+	}
+}
+
 func TestParseMarkdownDocumentReturnsNoImportableEndpoints(t *testing.T) {
 	_, err := parseMarkdownDocument("empty.md", markdown(
 		"# Empty API",
