@@ -7,6 +7,8 @@ import (
 // RegisterRoutes registers permission module routes
 // It uses the injected handler instance
 func (h *Handler) RegisterRoutes(r *router.Router) {
+	// Reminder: this module is mounted, but the current project authorization flow
+	// still relies on the member module's project-scoped roles instead of these routes.
 	// Role routes (admin only)
 	r.Group("", func(auth *router.Router) {
 		auth.WithMiddleware("auth")

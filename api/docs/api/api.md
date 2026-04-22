@@ -2594,6 +2594,8 @@ curl -X POST 'http://localhost:8025/api/v1/project-invitations/pji_example/rejec
 
 ## Permission
 
+> ⚠️ Reminder: mounted but currently unused in the main project authorization flow. Project-level access control is still enforced by the `Member` module (`/v1/projects/:id/members` + project role checks).
+
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
 | `POST` | `/v1/roles` | Create Role permission | 🔒 |
@@ -3738,6 +3740,8 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/r
 ---
 
 ## System
+
+> ⚠️ Pending: mounted, but no active caller was found and both endpoints currently return static placeholder data.
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|

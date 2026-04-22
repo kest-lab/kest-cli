@@ -27,7 +27,8 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 	RegisterRoutes(r, h)
 }
 
-// GetSystemFeatures returns system feature flags
+// GetSystemFeatures returns system feature flags.
+// TODO: pending real integration; current response is static placeholder data.
 func (h *Handler) GetSystemFeatures(c *gin.Context) {
 	features := SystemFeatures{
 		EnableEmailPasswordLogin: true,
@@ -40,7 +41,8 @@ func (h *Handler) GetSystemFeatures(c *gin.Context) {
 	response.Success(c, features)
 }
 
-// GetSetupStatus returns system setup status
+// GetSetupStatus returns system setup status.
+// TODO: pending real integration; current response is static placeholder data.
 func (h *Handler) GetSetupStatus(c *gin.Context) {
 	status := SetupStatus{
 		Step:     "finished",
