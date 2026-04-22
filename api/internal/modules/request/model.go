@@ -64,6 +64,53 @@ type KeyValue struct {
 	Description string `json:"description,omitempty"` // optional description
 }
 
+// MarshalJSON always emits the enabled flag so disabled rows can be persisted.
+func (kv KeyValue) MarshalJSON() ([]byte, error) {
+	type keyValueJSON struct {
+		Key         string `json:"key"`
+		Value       string `json:"value"`
+		Type        string `json:"type,omitempty"`
+		Enabled     bool   `json:"enabled"`
+		Description string `json:"description,omitempty"`
+	}
+
+	return json.Marshal(keyValueJSON{
+		Key:         kv.Key,
+		Value:       kv.Value,
+		Type:        kv.Type,
+		Enabled:     kv.Enabled,
+		Description: kv.Description,
+	})
+}
+
+// UnmarshalJSON defaults enabled to true when the field is omitted.
+func (kv *KeyValue) UnmarshalJSON(data []byte) error {
+	type keyValueJSON struct {
+		Key         string `json:"key"`
+		Value       string `json:"value"`
+		Type        string `json:"type,omitempty"`
+		Enabled     *bool  `json:"enabled"`
+		Description string `json:"description,omitempty"`
+	}
+
+	var payload keyValueJSON
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return err
+	}
+
+	kv.Key = payload.Key
+	kv.Value = payload.Value
+	kv.Type = payload.Type
+	kv.Description = payload.Description
+	if payload.Enabled == nil {
+		kv.Enabled = true
+	} else {
+		kv.Enabled = *payload.Enabled
+	}
+
+	return nil
+}
+
 // AuthConfig represents authentication configuration
 type AuthConfig struct {
 	Type   string        `json:"type"` // none, basic, bearer, api-key, oauth2

@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronRight,
   Copy,
+  FileText,
   FolderOpen,
   MoreHorizontal,
   Plus,
@@ -66,7 +67,7 @@ import {
   useUpdateRequestExample,
 } from '@/hooks/use-example';
 import { useCreateProjectHistory } from '@/hooks/use-histories';
-import { useImportPostmanCollection } from '@/hooks/use-importer';
+import { useImportMarkdownCollection, useImportPostmanCollection } from '@/hooks/use-importer';
 import { collectionService } from '@/services/collection';
 import { localRunnerService } from '@/services/local-runner';
 import { useCreateRequest, useDeleteRequest, useUpdateRequest } from '@/hooks/use-requests';
@@ -79,7 +80,10 @@ import type {
   UpdateExampleRequest,
 } from '@/types/example';
 import type { CreateHistoryRequest } from '@/types/history';
-import type { ImportPostmanCollectionRequest } from '@/types/importer';
+import type {
+  ImportMarkdownCollectionRequest,
+  ImportPostmanCollectionRequest,
+} from '@/types/importer';
 import type {
   CreateRequestRequest,
   ProjectRequest,
@@ -172,9 +176,12 @@ interface ExampleFormDraft {
 }
 
 interface ImportDialogTarget {
+  kind: ImportDialogKind;
   parentCollectionId: string | null;
   parentCollectionName: string | null;
 }
+
+type ImportDialogKind = 'postman' | 'markdown';
 
 const METHOD_OPTIONS: RequestMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 const ENVIRONMENT_OPTIONS = ['development', 'staging', 'production'] as const;
@@ -1182,7 +1189,7 @@ export function ApiRequestWorkbench({
   const [renameDialogRequestTabId, setRenameDialogRequestTabId] = useState<string | null>(null);
   const [renameRequestDraftName, setRenameRequestDraftName] = useState('');
   const [importDialogTarget, setImportDialogTarget] = useState<ImportDialogTarget | null>(null);
-  const [importPostmanFile, setImportPostmanFile] = useState<File | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
   const [isExampleDialogOpen, setIsExampleDialogOpen] = useState(false);
   const [viewingExampleId, setViewingExampleId] = useState<number | null>(null);
   const [editingExampleId, setEditingExampleId] = useState<number | null>(null);
@@ -1194,6 +1201,7 @@ export function ApiRequestWorkbench({
   const deleteCollectionMutation = useDeleteCollection(projectId);
   const updateCollectionMutation = useUpdateCollection(projectId);
   const importPostmanMutation = useImportPostmanCollection(projectId);
+  const importMarkdownMutation = useImportMarkdownCollection(projectId);
   const createRequestMutation = useCreateRequest(projectId);
   const updateRequestMutation = useUpdateRequest(projectId);
   const deleteRequestMutation = useDeleteRequest(projectId);
@@ -1901,46 +1909,52 @@ export function ApiRequestWorkbench({
     } catch {}
   };
 
-  const openRootImportDialog = () => {
-    setImportDialogTarget({
-      parentCollectionId: null,
-      parentCollectionName: null,
-    });
-    setImportPostmanFile(null);
-  };
-
-  const openCollectionImportDialog = (collection: CollectionNode) => {
+  const openCollectionImportDialog = (collection: CollectionNode, kind: ImportDialogKind) => {
     if (!collection.isFolder) {
-      toast.error('Import Postman can only target a folder collection or the project root.');
+      toast.error('Import can only target a folder collection or the project root.');
       return;
     }
 
     setImportDialogTarget({
+      kind,
       parentCollectionId: collection.id,
       parentCollectionName: collection.name,
     });
-    setImportPostmanFile(null);
+    setImportFile(null);
+  };
+
+  const openRootImportDialog = (kind: ImportDialogKind) => {
+    setImportDialogTarget({
+      kind,
+      parentCollectionId: null,
+      parentCollectionName: null,
+    });
+    setImportFile(null);
   };
 
   const closeImportDialog = (open: boolean) => {
     if (!open) {
       setImportDialogTarget(null);
-      setImportPostmanFile(null);
+      setImportFile(null);
     }
   };
 
-  const handleImportPostman = async () => {
+  const handleImportCollection = async () => {
     if (!importDialogTarget) {
       return;
     }
 
-    if (!importPostmanFile) {
-      toast.error('Choose a Postman collection file before importing.');
+    if (!importFile) {
+      toast.error(
+        importDialogTarget.kind === 'markdown'
+          ? 'Choose an API Markdown file before importing.'
+          : 'Choose a Postman collection file before importing.'
+      );
       return;
     }
 
-    const payload: ImportPostmanCollectionRequest = {
-      file: importPostmanFile,
+    const payload: ImportPostmanCollectionRequest | ImportMarkdownCollectionRequest = {
+      file: importFile,
     };
 
     if (importDialogTarget.parentCollectionId) {
@@ -1949,7 +1963,7 @@ export function ApiRequestWorkbench({
       );
 
       if (!targetCollection?.isFolder) {
-        toast.error('Import Postman can only target a folder collection or the project root.');
+        toast.error('Import can only target a folder collection or the project root.');
         return;
       }
 
@@ -1962,7 +1976,11 @@ export function ApiRequestWorkbench({
     }
 
     try {
-      await importPostmanMutation.mutateAsync(payload);
+      if (importDialogTarget.kind === 'markdown') {
+        await importMarkdownMutation.mutateAsync(payload as ImportMarkdownCollectionRequest);
+      } else {
+        await importPostmanMutation.mutateAsync(payload as ImportPostmanCollectionRequest);
+      }
       await refreshWorkbenchFromServer();
 
       if (importDialogTarget.parentCollectionId) {
@@ -2483,6 +2501,15 @@ export function ApiRequestWorkbench({
     Boolean(activeTab?.collectionId && isPersistedCollectionId(activeTab.collectionId));
   const requestIsPersisted = persistedActiveRequestId !== null;
   const activeResponseCanBeCaptured = activeTab ? canCaptureResponse(activeTab.response) : false;
+  const isImportingPostmanRoot =
+    importPostmanMutation.isPending && importDialogTarget?.parentCollectionId === null;
+  const isImportingMarkdownRoot =
+    importMarkdownMutation.isPending && importDialogTarget?.parentCollectionId === null;
+  const isAnyImportPending = importPostmanMutation.isPending || importMarkdownMutation.isPending;
+  const importingCollectionId = isAnyImportPending
+    ? (importDialogTarget?.parentCollectionId ?? null)
+    : null;
+  const importingKind = isAnyImportPending ? (importDialogTarget?.kind ?? null) : null;
 
   return (
     <main className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.10),_transparent_28%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(244,247,251,0.98))]">
@@ -2514,12 +2541,11 @@ export function ApiRequestWorkbench({
             activeCollectionId={activeCollectionId}
             activeTabId={activeTabId}
             deletingCollectionId={deletingCollectionId}
-            importingCollectionId={
-              importPostmanMutation.isPending ? (importDialogTarget?.parentCollectionId ?? null) : null
-            }
-            isImportingRoot={
-              importPostmanMutation.isPending && importDialogTarget?.parentCollectionId === null
-            }
+            importingCollectionId={importingCollectionId}
+            importingKind={importingKind}
+            isImportingAny={isAnyImportPending}
+            isImportingRootPostman={isImportingPostmanRoot}
+            isImportingRootMarkdown={isImportingMarkdownRoot}
             renamingCollectionId={renamingCollectionId}
             creatingRequestCollectionId={creatingRequestCollectionId}
             deletingRequestTabId={deletingRequestTabId}
@@ -2531,10 +2557,12 @@ export function ApiRequestWorkbench({
             onQueryChange={setSidebarQuery}
             onCreateCollection={createCollection}
             onCreateScratchpadRequest={createScratchpadRequest}
-            onImportRootCollection={openRootImportDialog}
+            onImportRootPostman={() => openRootImportDialog('postman')}
+            onImportRootMarkdown={() => openRootImportDialog('markdown')}
             onCreateRequest={handleCreateRequest}
             onDeleteCollection={handleDeleteCollection}
-            onImportCollection={openCollectionImportDialog}
+            onImportCollectionPostman={(collection) => openCollectionImportDialog(collection, 'postman')}
+            onImportCollectionMarkdown={(collection) => openCollectionImportDialog(collection, 'markdown')}
             onDeleteRequest={handleDeleteRequest}
             onRenameCollection={openRenameCollectionDialog}
             onRenameRequest={openRenameRequestDialog}
@@ -2733,15 +2761,16 @@ export function ApiRequestWorkbench({
         onValueChange={setRenameRequestDraftName}
         onConfirm={handleRenameRequest}
       />
-      <ImportPostmanDialog
-        key={`${importDialogTarget?.parentCollectionId ?? 'root'}-${importDialogTarget ? 'open' : 'closed'}`}
+      <ImportCollectionDialog
+        key={`${importDialogTarget?.kind ?? 'postman'}-${importDialogTarget?.parentCollectionId ?? 'root'}-${importDialogTarget ? 'open' : 'closed'}`}
         open={importDialogTarget !== null}
+        kind={importDialogTarget?.kind ?? null}
         targetLabel={importDialogTarget?.parentCollectionName ?? null}
-        file={importPostmanFile}
-        isSubmitting={importPostmanMutation.isPending}
+        file={importFile}
+        isSubmitting={isAnyImportPending}
         onOpenChange={closeImportDialog}
-        onFileChange={setImportPostmanFile}
-        onSubmit={handleImportPostman}
+        onFileChange={setImportFile}
+        onSubmit={handleImportCollection}
       />
     </main>
   );
@@ -2753,7 +2782,10 @@ function CollectionsSidebar({
   activeTabId,
   deletingCollectionId,
   importingCollectionId,
-  isImportingRoot,
+  importingKind,
+  isImportingAny,
+  isImportingRootPostman,
+  isImportingRootMarkdown,
   renamingCollectionId,
   creatingRequestCollectionId,
   deletingRequestTabId,
@@ -2765,10 +2797,12 @@ function CollectionsSidebar({
   onQueryChange,
   onCreateCollection,
   onCreateScratchpadRequest,
-  onImportRootCollection,
+  onImportRootPostman,
+  onImportRootMarkdown,
   onCreateRequest,
   onDeleteCollection,
-  onImportCollection,
+  onImportCollectionPostman,
+  onImportCollectionMarkdown,
   onDeleteRequest,
   onRenameCollection,
   onRenameRequest,
@@ -2780,7 +2814,10 @@ function CollectionsSidebar({
   activeTabId: string | null;
   deletingCollectionId: string | null;
   importingCollectionId: string | null;
-  isImportingRoot: boolean;
+  importingKind: ImportDialogKind | null;
+  isImportingAny: boolean;
+  isImportingRootPostman: boolean;
+  isImportingRootMarkdown: boolean;
   renamingCollectionId: string | null;
   creatingRequestCollectionId: string | null;
   deletingRequestTabId: string | null;
@@ -2792,10 +2829,12 @@ function CollectionsSidebar({
   onQueryChange: (value: string) => void;
   onCreateCollection: () => void;
   onCreateScratchpadRequest: () => void;
-  onImportRootCollection: () => void;
+  onImportRootPostman: () => void;
+  onImportRootMarkdown: () => void;
   onCreateRequest: (collection: CollectionNode) => Promise<void>;
   onDeleteCollection: (collection: CollectionNode) => void;
-  onImportCollection: (collection: CollectionNode) => void;
+  onImportCollectionPostman: (collection: CollectionNode) => void;
+  onImportCollectionMarkdown: (collection: CollectionNode) => void;
   onDeleteRequest: (request: RequestPageTab) => Promise<void>;
   onRenameCollection: (collection: CollectionNode) => void;
   onRenameRequest: (request: RequestPageTab) => void;
@@ -2845,11 +2884,23 @@ function CollectionsSidebar({
                 type="button"
                 size="sm"
                 variant="outline"
-                loading={isImportingRoot}
-                onClick={onImportRootCollection}
+                loading={isImportingRootPostman}
+                disabled={isImportingAny}
+                onClick={onImportRootPostman}
               >
                 <Upload className="h-4 w-4" />
                 Import Postman
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                loading={isImportingRootMarkdown}
+                disabled={isImportingAny}
+                onClick={onImportRootMarkdown}
+              >
+                <FileText className="h-4 w-4" />
+                Import API Markdown
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={onCreateScratchpadRequest}>
                 <Plus className="h-4 w-4" />
@@ -2889,10 +2940,22 @@ function CollectionsSidebar({
             variant="outline"
             size="sm"
             isIcon
-            loading={isImportingRoot}
-            onClick={onImportRootCollection}
+            loading={isImportingRootPostman}
+            disabled={isImportingAny}
+            onClick={onImportRootPostman}
           >
             <Upload className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            isIcon
+            loading={isImportingRootMarkdown}
+            disabled={isImportingAny}
+            onClick={onImportRootMarkdown}
+          >
+            <FileText className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -2945,10 +3008,16 @@ function CollectionsSidebar({
                     isFolder={collection.isFolder}
                     isCreatingRequest={creatingRequestCollectionId === collection.id}
                     isDeleting={deletingCollectionId === collection.id}
-                    isImporting={importingCollectionId === collection.id}
+                    isImportingPostman={
+                      importingCollectionId === collection.id && importingKind === 'postman'
+                    }
+                    isImportingMarkdown={
+                      importingCollectionId === collection.id && importingKind === 'markdown'
+                    }
                     isRenaming={renamingCollectionId === collection.id}
                     onCreateRequest={() => void onCreateRequest(collection)}
-                    onImport={() => onImportCollection(collection)}
+                    onImportPostman={() => onImportCollectionPostman(collection)}
+                    onImportMarkdown={() => onImportCollectionMarkdown(collection)}
                     onRename={() => onRenameCollection(collection)}
                     onDelete={() => void onDeleteCollection(collection)}
                   />
@@ -3125,20 +3194,24 @@ function CollectionActionsMenu({
   isFolder,
   isCreatingRequest,
   isDeleting,
-  isImporting,
+  isImportingPostman,
+  isImportingMarkdown,
   isRenaming,
   onCreateRequest,
-  onImport,
+  onImportPostman,
+  onImportMarkdown,
   onRename,
   onDelete,
 }: {
   isFolder: boolean;
   isCreatingRequest: boolean;
   isDeleting: boolean;
-  isImporting: boolean;
+  isImportingPostman: boolean;
+  isImportingMarkdown: boolean;
   isRenaming: boolean;
   onCreateRequest: () => void;
-  onImport: () => void;
+  onImportPostman: () => void;
+  onImportMarkdown: () => void;
   onRename: () => void;
   onDelete: () => void;
 }) {
@@ -3161,8 +3234,11 @@ function CollectionActionsMenu({
           {isCreatingRequest ? 'Creating...' : 'New request'}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled={!isFolder || isImporting} onSelect={onImport}>
-          {isImporting ? 'Importing...' : 'Import Postman'}
+        <DropdownMenuItem disabled={!isFolder || isImportingPostman} onSelect={onImportPostman}>
+          {isImportingPostman ? 'Importing...' : 'Import Postman'}
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!isFolder || isImportingMarkdown} onSelect={onImportMarkdown}>
+          {isImportingMarkdown ? 'Importing...' : 'Import API Markdown'}
         </DropdownMenuItem>
         <DropdownMenuItem>Export</DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -3177,8 +3253,9 @@ function CollectionActionsMenu({
   );
 }
 
-function ImportPostmanDialog({
+function ImportCollectionDialog({
   open,
+  kind,
   targetLabel,
   file,
   isSubmitting,
@@ -3187,6 +3264,7 @@ function ImportPostmanDialog({
   onSubmit,
 }: {
   open: boolean;
+  kind: ImportDialogKind | null;
   targetLabel: string | null;
   file: File | null;
   isSubmitting: boolean;
@@ -3194,34 +3272,47 @@ function ImportPostmanDialog({
   onFileChange: (file: File | null) => void;
   onSubmit: () => Promise<void>;
 }) {
+  const activeKind = kind ?? 'postman';
+  const isMarkdownImport = activeKind === 'markdown';
+  const title = isMarkdownImport ? 'Import API Markdown' : 'Import Postman Collection';
+  const description = isMarkdownImport
+    ? targetLabel
+      ? `Upload an API Markdown file and import requests into module collections under "${targetLabel}".`
+      : 'Upload an API Markdown file and import requests into module collections at the project root.'
+    : targetLabel
+      ? `Upload a Postman collection JSON file and import all requests into one collection under "${targetLabel}".`
+      : 'Upload a Postman collection JSON file and import all requests into one collection at the project root.';
+  const inputId = isMarkdownImport ? 'import-markdown-file' : 'import-postman-file';
+  const accept = isMarkdownImport
+    ? '.md,.markdown,text/markdown,text/plain'
+    : '.json,application/json';
+  const fileLabel = isMarkdownImport ? 'Markdown file' : 'Collection file';
+  const emptyStateLabel = isMarkdownImport
+    ? 'Choose an api.md or module Markdown document to import requests.'
+    : 'Choose a Postman collection export in JSON format.';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>Import Postman Collection</DialogTitle>
-          <DialogDescription>
-            {targetLabel
-              ? `Upload a Postman collection JSON file and import all requests into one collection under "${targetLabel}".`
-              : 'Upload a Postman collection JSON file and import all requests into one collection at the project root.'}
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <DialogBody>
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="import-postman-file">Collection file</Label>
+              <Label htmlFor={inputId}>{fileLabel}</Label>
               <Input
-                id="import-postman-file"
+                id={inputId}
                 type="file"
-                accept=".json,application/json"
+                accept={accept}
                 className="h-auto cursor-pointer py-2"
                 onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
               />
             </div>
             <p className="text-sm text-text-muted">
-              {file
-                ? `Selected file: ${file.name}`
-                : 'Choose a Postman collection export in JSON format.'}
+              {file ? `Selected file: ${file.name}` : emptyStateLabel}
             </p>
           </div>
         </DialogBody>

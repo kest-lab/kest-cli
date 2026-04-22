@@ -55,3 +55,35 @@ func (h *Handler) ImportPostman(c *gin.Context) {
 
 	response.Success(c, gin.H{"message": "import successful"})
 }
+
+// ImportMarkdown handles POST /projects/:id/collections/import/markdown
+func (h *Handler) ImportMarkdown(c *gin.Context) {
+	projectID, ok := handler.ParseID(c, "id")
+	if !ok {
+		return
+	}
+
+	parentID := handler.QueryInt(c, "parent_id", 0)
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		response.BadRequest(c, "file is required")
+		return
+	}
+
+	result, err := h.service.ImportMarkdown(c.Request.Context(), projectID, uint(parentID), file)
+	if err != nil {
+		if errors.Is(err, ErrInvalidMarkdownDocument) ||
+			errors.Is(err, ErrMarkdownBaseURLNotFound) ||
+			errors.Is(err, ErrNoImportableEndpoints) ||
+			errors.Is(err, collection.ErrInvalidParent) ||
+			errors.Is(err, request.ErrInvalidCollection) {
+			response.Error(c, http.StatusBadRequest, err.Error())
+			return
+		}
+		response.InternalServerError(c, err.Error(), err)
+		return
+	}
+
+	response.Success(c, result)
+}
