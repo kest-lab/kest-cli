@@ -66,6 +66,7 @@ import {
   useSetDefaultRequestExample,
   useUpdateRequestExample,
 } from '@/hooks/use-example';
+import { useEnvironments } from '@/hooks/use-environments';
 import { useCreateProjectHistory } from '@/hooks/use-histories';
 import { useImportMarkdownCollection, useImportPostmanCollection } from '@/hooks/use-importer';
 import { collectionService } from '@/services/collection';
@@ -79,6 +80,7 @@ import type {
   SaveExampleResponseRequest,
   UpdateExampleRequest,
 } from '@/types/example';
+import type { ProjectEnvironment } from '@/types/environment';
 import type { CreateHistoryRequest } from '@/types/history';
 import type {
   ImportMarkdownCollectionRequest,
@@ -130,6 +132,7 @@ interface RequestPageTab {
   collectionId: string | null;
   method: RequestMethod;
   url: string;
+  pathParams: Record<string, string>;
   activeSection: RequestSection;
   paramsMode: BulkMode;
   paramsRows: KeyValueRow[];
@@ -182,9 +185,7 @@ interface ImportDialogTarget {
 }
 
 type ImportDialogKind = 'postman' | 'markdown';
-
 const METHOD_OPTIONS: RequestMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
-const ENVIRONMENT_OPTIONS = ['development', 'staging', 'production'] as const;
 const SECTION_ITEMS: Array<{ value: RequestSection; label: string }> = [
   { value: 'params', label: 'Params' },
   { value: 'authorization', label: 'Authorization' },
@@ -197,6 +198,7 @@ const SECTION_ITEMS: Array<{ value: RequestSection; label: string }> = [
 const BODY_MODE_OPTIONS: BodyMode[] = ['json', 'raw', 'form-data'];
 const AUTHORIZATION_OPTIONS: AuthorizationMode[] = ['none', 'bearer', 'basic', 'api-key'];
 const COLLECTION_COLORS = ['#2563eb', '#0f766e', '#ea580c', '#7c3aed', '#dc2626'];
+const REQUEST_TEMPLATE_PATTERN = /\{\{([^}]+)\}\}/g;
 const METHOD_BADGE_STYLES: Record<RequestMethod, string> = {
   GET: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
   POST: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300',
@@ -333,6 +335,7 @@ const toRequestPageTab = (request: ProjectRequest): RequestPageTab => {
     method,
     url:
       request.url === PERSISTED_DRAFT_URL_PLACEHOLDER ? DEFAULT_NEW_REQUEST_URL : request.url || '',
+    pathParams: request.path_params ?? {},
     activeSection:
       method === 'POST' || method === 'PUT' || method === 'PATCH' ? 'body' : 'params',
     paramsRows,
@@ -356,6 +359,7 @@ const createRequestPageTab = (
   collectionId: overrides.collectionId ?? null,
   method: overrides.method ?? 'GET',
   url: overrides.url ?? DEFAULT_NEW_REQUEST_URL,
+  pathParams: overrides.pathParams ?? {},
   activeSection: overrides.activeSection ?? 'params',
   paramsMode: overrides.paramsMode ?? 'table',
   paramsRows: overrides.paramsRows ?? [createKeyValueRow()],
@@ -808,6 +812,70 @@ const isEnabledRequestKeyValue = (row: RequestKeyValue) => row.enabled !== false
 const headersToObject = (headers: Headers) =>
   Object.fromEntries(Array.from(headers.entries()));
 
+const toEnvironmentVariableValue = (value: unknown) => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  return JSON.stringify(value);
+};
+
+const buildExecutionVariables = (environment?: ProjectEnvironment | null) => {
+  const variables: Record<string, string> = {};
+
+  Object.entries(environment?.variables ?? {}).forEach(([key, value]) => {
+    variables[key] = toEnvironmentVariableValue(value);
+  });
+
+  const baseUrl = environment?.base_url?.trim();
+  if (baseUrl && !variables.base_url) {
+    variables.base_url = baseUrl;
+  }
+
+  return variables;
+};
+
+const resolveTemplateValue = (value: string, variables: Record<string, string>) =>
+  value.replace(REQUEST_TEMPLATE_PATTERN, (match, key: string) => {
+    const resolved = variables[key.trim()];
+    return resolved === undefined ? match : resolved;
+  });
+
+const findUnresolvedTemplateKeys = (value: string) =>
+  Array.from(new Set(Array.from(value.matchAll(REQUEST_TEMPLATE_PATTERN)).map((match) => match[1].trim())));
+
+const getMissingVariableMessage = (keys: string[], environment?: ProjectEnvironment | null) => {
+  if (keys.length === 0) {
+    return null;
+  }
+
+  if (keys.includes('base_url')) {
+    if (!environment) {
+      return 'Select an environment before sending a request that uses {{base_url}}.';
+    }
+
+    return `Environment "${environment.display_name || environment.name}" is missing base_url.`;
+  }
+
+  return `Set environment variables before sending this request: ${keys.join(', ')}.`;
+};
+
+const resolveExecutionPathParams = (
+  pathParams: Record<string, string>,
+  variables: Record<string, string>
+) =>
+  Object.fromEntries(
+    Object.entries(pathParams).map(([key, value]) => [key, resolveTemplateValue(value, variables)])
+  );
+
 const applyPathParamsToUrl = (url: string, pathParams: Record<string, string>) => {
   let resolvedUrl = url;
 
@@ -821,14 +889,39 @@ const applyPathParamsToUrl = (url: string, pathParams: Record<string, string>) =
   return resolvedUrl;
 };
 
-const buildExecutableRequestUrl = (request: ProjectRequest) => {
-  const resolvedUrl = applyPathParamsToUrl(request.url, request.path_params ?? {});
-  const targetUrl = new URL(resolvedUrl);
+const buildExecutableRequestUrl = (
+  request: ProjectRequest,
+  environment?: ProjectEnvironment | null
+) => {
+  const variables = buildExecutionVariables(environment);
+  const resolvedPathParams = resolveExecutionPathParams(request.path_params ?? {}, variables);
+  const resolvedUrl = resolveTemplateValue(
+    applyPathParamsToUrl(request.url, resolvedPathParams),
+    variables
+  );
+  const missingVariableMessage = getMissingVariableMessage(
+    findUnresolvedTemplateKeys(resolvedUrl),
+    environment
+  );
+  if (missingVariableMessage) {
+    throw new Error(missingVariableMessage);
+  }
+
+  let targetUrl: URL;
+  try {
+    targetUrl = new URL(resolvedUrl);
+  } catch {
+    throw new Error(
+      'The resolved URL is not valid. Select an environment with base_url or use an absolute URL.'
+    );
+  }
 
   request.query_params
     .filter(isEnabledRequestKeyValue)
     .forEach((queryParam) => {
-      targetUrl.searchParams.append(queryParam.key.trim(), queryParam.value);
+      const key = resolveTemplateValue(queryParam.key.trim(), variables);
+      const value = resolveTemplateValue(queryParam.value, variables);
+      targetUrl.searchParams.append(key, value);
     });
 
   if (request.auth?.type === 'api-key') {
@@ -838,30 +931,46 @@ const buildExecutableRequestUrl = (request: ProjectRequest) => {
       request.auth.api_key?.key?.trim() &&
       request.auth.api_key.value
     ) {
-      targetUrl.searchParams.set(request.auth.api_key.key.trim(), request.auth.api_key.value);
+      targetUrl.searchParams.set(
+        resolveTemplateValue(request.auth.api_key.key.trim(), variables),
+        resolveTemplateValue(request.auth.api_key.value, variables)
+      );
     }
   }
 
   return targetUrl.toString();
 };
 
-const buildDirectRequestHeaders = (request: ProjectRequest) => {
+const buildDirectRequestHeaders = (
+  request: ProjectRequest,
+  environment?: ProjectEnvironment | null
+) => {
   const headers = new Headers();
+  const variables = buildExecutionVariables(environment);
+
+  Object.entries(environment?.headers ?? {}).forEach(([key, value]) => {
+    headers.set(resolveTemplateValue(key.trim(), variables), resolveTemplateValue(value, variables));
+  });
 
   request.headers
     .filter(isEnabledRequestKeyValue)
     .forEach((header) => {
-      headers.set(header.key.trim(), header.value);
+      headers.set(
+        resolveTemplateValue(header.key.trim(), variables),
+        resolveTemplateValue(header.value, variables)
+      );
     });
 
   if (request.auth?.type === 'bearer' && request.auth.bearer?.token && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${request.auth.bearer.token}`);
+    headers.set('Authorization', `Bearer ${resolveTemplateValue(request.auth.bearer.token, variables)}`);
   }
 
   if (request.auth?.type === 'basic' && request.auth.basic && !headers.has('Authorization')) {
     headers.set(
       'Authorization',
-      `Basic ${encodeBase64(`${request.auth.basic.username}:${request.auth.basic.password}`)}`
+      `Basic ${encodeBase64(
+        `${resolveTemplateValue(request.auth.basic.username, variables)}:${resolveTemplateValue(request.auth.basic.password, variables)}`
+      )}`
     );
   }
 
@@ -872,7 +981,10 @@ const buildDirectRequestHeaders = (request: ProjectRequest) => {
       request.auth.api_key?.key?.trim() &&
       request.auth.api_key.value
     ) {
-      headers.set(request.auth.api_key.key.trim(), request.auth.api_key.value);
+      headers.set(
+        resolveTemplateValue(request.auth.api_key.key.trim(), variables),
+        resolveTemplateValue(request.auth.api_key.value, variables)
+      );
     }
   }
 
@@ -887,12 +999,16 @@ const buildDirectRequestHeaders = (request: ProjectRequest) => {
   return headers;
 };
 
-const buildDirectRequestBody = (request: ProjectRequest) => {
+const buildDirectRequestBody = (
+  request: ProjectRequest,
+  environment?: ProjectEnvironment | null
+) => {
   if (request.method === 'GET' || request.method === 'HEAD') {
     return undefined;
   }
 
-  return request.body.trim() ? request.body : undefined;
+  const resolvedBody = resolveTemplateValue(request.body, buildExecutionVariables(environment));
+  return resolvedBody.trim() ? resolvedBody : undefined;
 };
 
 const flattenCollectionTree = (nodes: ProjectCollectionTreeNode[]): ProjectCollectionTreeNode[] =>
@@ -1138,7 +1254,8 @@ const areTabsEquivalent = (left: RequestPageTab[], right: RequestPageTab[]) =>
       tab.title === other.title &&
       tab.collectionId === other.collectionId &&
       tab.method === other.method &&
-      tab.url === other.url
+      tab.url === other.url &&
+      JSON.stringify(tab.pathParams) === JSON.stringify(other.pathParams)
     );
   });
 
@@ -1174,8 +1291,7 @@ export function ApiRequestWorkbench({
     initialState.expandedCollectionIds
   );
   const [nextTabIndex, setNextTabIndex] = useState(initialState.nextTabIndex);
-  const [environment, setEnvironment] =
-    useState<(typeof ENVIRONMENT_OPTIONS)[number]>('development');
+  const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<string>('');
   const [sidebarQuery, setSidebarQuery] = useState('');
   const [deletingCollectionId, setDeletingCollectionId] = useState<string | null>(null);
   const [renamingCollectionId, setRenamingCollectionId] = useState<string | null>(null);
@@ -1202,6 +1318,7 @@ export function ApiRequestWorkbench({
   const updateCollectionMutation = useUpdateCollection(projectId);
   const importPostmanMutation = useImportPostmanCollection(projectId);
   const importMarkdownMutation = useImportMarkdownCollection(projectId);
+  const environmentsQuery = useEnvironments(projectId);
   const createRequestMutation = useCreateRequest(projectId);
   const updateRequestMutation = useUpdateRequest(projectId);
   const deleteRequestMutation = useDeleteRequest(projectId);
@@ -1220,6 +1337,17 @@ export function ApiRequestWorkbench({
   });
 
   const deferredSidebarQuery = useDeferredValue(sidebarQuery);
+  const environments = useMemo(
+    () => environmentsQuery.data?.items ?? [],
+    [environmentsQuery.data?.items]
+  );
+  const selectedEnvironment = useMemo(
+    () =>
+      !selectedEnvironmentId || selectedEnvironmentId === 'none'
+        ? null
+        : environments.find((environment) => String(environment.id) === selectedEnvironmentId) ?? null,
+    [environments, selectedEnvironmentId]
+  );
   const serverCollections = useMemo(
     () => flattenCollectionTree(collectionTreeQuery.data ?? []),
     [collectionTreeQuery.data]
@@ -1515,6 +1643,37 @@ export function ApiRequestWorkbench({
     setDeletingExampleId(null);
   }, [persistedActiveCollectionId, persistedActiveRequestId]);
 
+  useEffect(() => {
+    if (environments.length === 0) {
+      if (selectedEnvironmentId !== 'none') {
+        setSelectedEnvironmentId('none');
+      }
+      return;
+    }
+
+    if (selectedEnvironmentId === '') {
+      const preferredEnvironment =
+        environments.find((environment) => environment.base_url?.trim()) ?? environments[0];
+      setSelectedEnvironmentId(String(preferredEnvironment.id));
+      return;
+    }
+
+    if (selectedEnvironmentId === 'none') {
+      return;
+    }
+
+    const exists = environments.some(
+      (environment) => String(environment.id) === selectedEnvironmentId
+    );
+    if (exists) {
+      return;
+    }
+
+    const preferredEnvironment =
+      environments.find((environment) => environment.base_url?.trim()) ?? environments[0];
+    setSelectedEnvironmentId(String(preferredEnvironment.id));
+  }, [environments, selectedEnvironmentId]);
+
   const updateActiveTab = (updater: (tab: RequestPageTab) => RequestPageTab) => {
     if (!activeTab) {
       return;
@@ -1539,7 +1698,7 @@ export function ApiRequestWorkbench({
       url: tab.url.trim() || PERSISTED_DRAFT_URL_PLACEHOLDER,
       headers: toRequestKeyValues(tab.headersMode, tab.headersRows, tab.headersBulk),
       query_params: toRequestKeyValues(tab.paramsMode, tab.paramsRows, tab.paramsBulk),
-      path_params: {},
+      path_params: tab.pathParams,
       body: tab.bodyContent,
       body_type: requestBodyTypeFromMode(tab.bodyMode, tab.bodyContent),
       auth: toRequestAuthConfig(tab.authorizationMode, tab.authorizationValue),
@@ -1562,7 +1721,7 @@ export function ApiRequestWorkbench({
       url: tab.url.trim() || PERSISTED_DRAFT_URL_PLACEHOLDER,
       headers: toRequestKeyValues(tab.headersMode, tab.headersRows, tab.headersBulk),
       query_params: toRequestKeyValues(tab.paramsMode, tab.paramsRows, tab.paramsBulk),
-      path_params: {},
+      path_params: tab.pathParams,
       body: tab.bodyContent,
       body_type: requestBodyTypeFromMode(tab.bodyMode, tab.bodyContent),
       auth: toRequestAuthConfig(tab.authorizationMode, tab.authorizationValue),
@@ -1636,12 +1795,6 @@ export function ApiRequestWorkbench({
     if (options.requireRunnableUrl) {
       if (!tab.url.trim()) {
         throw new Error('Enter a request URL before sending.');
-      }
-
-      try {
-        new URL(tab.url);
-      } catch {
-        throw new Error('The URL is not valid. Try a value like https://localhost:3000/health.');
       }
     }
 
@@ -2256,9 +2409,11 @@ export function ApiRequestWorkbench({
         );
       }
 
-      executableUrl = buildExecutableRequestUrl(persistedRequest);
-      executableHeaders = headersToObject(buildDirectRequestHeaders(persistedRequest));
-      executableBody = buildDirectRequestBody(persistedRequest);
+      executableUrl = buildExecutableRequestUrl(persistedRequest, selectedEnvironment);
+      executableHeaders = headersToObject(
+        buildDirectRequestHeaders(persistedRequest, selectedEnvironment)
+      );
+      executableBody = buildDirectRequestBody(persistedRequest, selectedEnvironment);
       const response = await localRunnerService.execute({
         method: persistedRequest.method,
         url: executableUrl,
@@ -2300,9 +2455,11 @@ export function ApiRequestWorkbench({
 
       if (persistedRequest) {
         if (!executableUrl) {
-          executableUrl = buildExecutableRequestUrl(persistedRequest);
-          executableHeaders = headersToObject(buildDirectRequestHeaders(persistedRequest));
-          executableBody = buildDirectRequestBody(persistedRequest);
+          executableUrl = buildExecutableRequestUrl(persistedRequest, selectedEnvironment);
+          executableHeaders = headersToObject(
+            buildDirectRequestHeaders(persistedRequest, selectedEnvironment)
+          );
+          executableBody = buildDirectRequestBody(persistedRequest, selectedEnvironment);
         }
 
         void createHistoryMutation
@@ -2525,10 +2682,10 @@ export function ApiRequestWorkbench({
               />
             </div>
             <EnvironmentSwitcher
-              environment={environment}
-              onEnvironmentChange={(value) =>
-                setEnvironment(value as (typeof ENVIRONMENT_OPTIONS)[number])
-              }
+              environments={environments}
+              selectedEnvironmentId={selectedEnvironmentId}
+              isLoading={environmentsQuery.isLoading}
+              onEnvironmentChange={setSelectedEnvironmentId}
             />
           </div>
         </div>
@@ -4174,10 +4331,14 @@ function RequestTabs({
 }
 
 function EnvironmentSwitcher({
-  environment,
+  environments,
+  selectedEnvironmentId,
+  isLoading,
   onEnvironmentChange,
 }: {
-  environment: (typeof ENVIRONMENT_OPTIONS)[number];
+  environments: ProjectEnvironment[];
+  selectedEnvironmentId: string;
+  isLoading: boolean;
   onEnvironmentChange: (value: string) => void;
 }) {
   return (
@@ -4185,17 +4346,24 @@ function EnvironmentSwitcher({
       <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-text-muted">
         Environment
       </span>
-      <Select value={environment} onValueChange={onEnvironmentChange}>
+      <Select value={selectedEnvironmentId} onValueChange={onEnvironmentChange}>
         <SelectTrigger
           size="sm"
           className="h-7 min-w-[132px] border-0 bg-transparent px-1.5 text-sm shadow-none"
         >
-          <SelectValue />
+          <SelectValue placeholder={isLoading ? 'Loading...' : 'No environment'} />
         </SelectTrigger>
         <SelectContent className="min-w-[132px] rounded-xl">
-          {ENVIRONMENT_OPTIONS.map((option) => (
-            <SelectItem key={option} value={option} className="py-1 text-xs">
-              {option}
+          <SelectItem value="none" className="py-1 text-xs">
+            No environment
+          </SelectItem>
+          {environments.map((environment) => (
+            <SelectItem
+              key={environment.id}
+              value={String(environment.id)}
+              className="py-1 text-xs"
+            >
+              {environment.display_name || environment.name}
             </SelectItem>
           ))}
         </SelectContent>
@@ -4238,7 +4406,7 @@ function RequestToolbar({
         <Input
           value={tab.url}
           onChange={(event) => onUrlChange(event.target.value)}
-          placeholder="Paste API URL"
+          placeholder="Paste API URL or use {{base_url}}/path"
           className="h-11 rounded-2xl border-border/70 bg-white px-4 text-sm shadow-none"
         />
 

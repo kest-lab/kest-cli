@@ -17,7 +17,7 @@ import (
 
 var (
 	ErrInvalidMarkdownDocument = errors.New("invalid markdown API document")
-	ErrMarkdownBaseURLNotFound = errors.New("unable to derive absolute request URLs from markdown document")
+	ErrMarkdownBaseURLNotFound = errors.New("unable to derive request URLs from markdown document")
 	ErrNoImportableEndpoints   = errors.New("no importable endpoints found in markdown document")
 )
 
@@ -286,7 +286,7 @@ func parseEndpointSection(method, path, body, baseURL string) (markdownEndpoint,
 	pathDefaults := parseParameterDefaults(sectionMap["path parameters"])
 	example := parseCurlExample(sectionMap["example"])
 
-	finalURL, err := buildAbsoluteEndpointURL(baseURL, example.URL, endpoint.Path)
+	finalURL, err := buildImportedEndpointURL(baseURL, example.URL, endpoint.Path)
 	if err != nil {
 		return markdownEndpoint{}, err
 	}
@@ -470,7 +470,7 @@ func parseSingleEndpointDocument(title, content, baseURL string) (markdownModule
 	)
 
 	curlExample := parseCurlExample(resolveCurlSection(content, sectionMap))
-	finalURL, err := buildAbsoluteEndpointURL(baseURL, curlExample.URL, path)
+	finalURL, err := buildImportedEndpointURL(baseURL, curlExample.URL, path)
 	if err != nil {
 		return markdownModule{}, false, err
 	}
@@ -879,18 +879,18 @@ func firstCodeBlock(content string) (string, string) {
 	return "", ""
 }
 
-func buildAbsoluteEndpointURL(baseURL, exampleURL, endpointPath string) (string, error) {
+func buildImportedEndpointURL(baseURL, exampleURL, endpointPath string) (string, error) {
 	switch {
 	case strings.TrimSpace(baseURL) != "":
-		return buildAbsoluteURLFromBase(baseURL, endpointPath)
+		return buildImportedURLFromBase(baseURL, endpointPath)
 	case strings.TrimSpace(exampleURL) != "":
-		return buildAbsoluteURLFromExample(exampleURL, endpointPath)
+		return buildImportedURLFromExample(exampleURL, endpointPath)
 	default:
 		return "", ErrMarkdownBaseURLNotFound
 	}
 }
 
-func buildAbsoluteURLFromBase(baseURL, endpointPath string) (string, error) {
+func buildImportedURLFromBase(baseURL, endpointPath string) (string, error) {
 	parsedBase, err := url.Parse(strings.TrimSpace(baseURL))
 	if err != nil || parsedBase.Scheme == "" || parsedBase.Host == "" {
 		return "", ErrInvalidMarkdownDocument
@@ -898,18 +898,16 @@ func buildAbsoluteURLFromBase(baseURL, endpointPath string) (string, error) {
 
 	baseSegments := splitPathSegments(parsedBase.Path)
 	templateSegments := splitPathSegments(endpointPath)
-	if len(baseSegments) > 0 && len(templateSegments) > 0 && baseSegments[len(baseSegments)-1] == templateSegments[0] {
-		baseSegments = baseSegments[:len(baseSegments)-1]
+	requestSegments := append([]string(nil), baseSegments...)
+	if len(requestSegments) > 0 && len(templateSegments) > 0 && requestSegments[len(requestSegments)-1] == templateSegments[0] {
+		requestSegments = requestSegments[:len(requestSegments)-1]
 	}
+	requestSegments = append(requestSegments, templateSegments...)
 
-	parsedBase.Path = joinPathSegments(append(baseSegments, templateSegments...))
-	parsedBase.RawPath = ""
-	parsedBase.RawQuery = ""
-
-	return parsedBase.String(), nil
+	return buildBaseURLTemplate(baseSegments, requestSegments), nil
 }
 
-func buildAbsoluteURLFromExample(exampleURL, endpointPath string) (string, error) {
+func buildImportedURLFromExample(exampleURL, endpointPath string) (string, error) {
 	parsedExample, err := url.Parse(strings.TrimSpace(exampleURL))
 	if err != nil || parsedExample.Scheme == "" || parsedExample.Host == "" {
 		return "", ErrInvalidMarkdownDocument
@@ -923,11 +921,34 @@ func buildAbsoluteURLFromExample(exampleURL, endpointPath string) (string, error
 		prefixSegments = append(prefixSegments, exampleSegments[:start]...)
 	}
 
-	parsedExample.Path = joinPathSegments(append(prefixSegments, templateSegments...))
-	parsedExample.RawPath = ""
-	parsedExample.RawQuery = ""
+	requestSegments := templateSegments
+	if !ok {
+		requestSegments = exampleSegments
+	}
 
-	return parsedExample.String(), nil
+	return buildBaseURLTemplate(prefixSegments, requestSegments), nil
+}
+
+func buildBaseURLTemplate(baseSegments, requestSegments []string) string {
+	remainingSegments := requestSegments
+	if len(baseSegments) > 0 && len(requestSegments) >= len(baseSegments) {
+		isPrefix := true
+		for index, segment := range baseSegments {
+			if requestSegments[index] != segment {
+				isPrefix = false
+				break
+			}
+		}
+		if isPrefix {
+			remainingSegments = requestSegments[len(baseSegments):]
+		}
+	}
+
+	if len(remainingSegments) == 0 {
+		return "{{base_url}}"
+	}
+
+	return "{{base_url}}" + joinPathSegments(remainingSegments)
 }
 
 func splitPathSegments(path string) []string {

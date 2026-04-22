@@ -136,8 +136,8 @@ func TestImportMarkdownAggregateDocumentCreatesModuleCollectionsAndRequests(t *t
 	}
 
 	getProject := requestService.created[0]
-	if getProject.URL != "http://localhost:8025/api/v1/projects/:id" {
-		t.Fatalf("expected aggregate URL to be rebuilt from base URL, got %q", getProject.URL)
+	if getProject.URL != "{{base_url}}/projects/:id" {
+		t.Fatalf("expected aggregate URL to be templated from base URL, got %q", getProject.URL)
 	}
 	if getProject.PathParams.(map[string]string)["id"] != "1" {
 		t.Fatalf("expected path param id=1, got %#v", getProject.PathParams)
@@ -216,8 +216,8 @@ func TestImportMarkdownSingleModuleDerivesURLAndQueryParamsFromCurlExample(t *te
 	}
 
 	endpoint := doc.Modules[0].Endpoints[0]
-	if endpoint.URL != "http://localhost:8025/api/v1/projects/:id/api-specs/export" {
-		t.Fatalf("expected URL to preserve placeholder path, got %q", endpoint.URL)
+	if endpoint.URL != "{{base_url}}/v1/projects/:id/api-specs/export" {
+		t.Fatalf("expected URL to preserve placeholder path under base_url template, got %q", endpoint.URL)
 	}
 	if endpoint.PathParams["id"] != "7" {
 		t.Fatalf("expected path param id=7 from example URL, got %#v", endpoint.PathParams)
@@ -297,8 +297,8 @@ func TestParseMarkdownDocumentSupportsSingleEndpointDocumentationFormat(t *testi
 	if endpoint.Description != "Register a new user account in the Kest platform." {
 		t.Fatalf("expected overview to become description, got %q", endpoint.Description)
 	}
-	if endpoint.URL != "http://localhost:8025/api/v1/register" {
-		t.Fatalf("expected URL to be built from base URL, got %q", endpoint.URL)
+	if endpoint.URL != "{{base_url}}/register" {
+		t.Fatalf("expected URL to be built from base_url template, got %q", endpoint.URL)
 	}
 	if endpoint.BodyType != "json" {
 		t.Fatalf("expected body type json, got %q", endpoint.BodyType)
