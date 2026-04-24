@@ -95,7 +95,7 @@ export const PROJECT_WORKSPACE_MODULES: ProjectWorkspaceModuleMeta[] = [
     shortLabel: 'Flows',
     description: 'Open reusable workflow assets and orchestration definitions.',
     icon: FolderGit2,
-    status: 'planned',
+    status: 'ready',
   },
 ];
 

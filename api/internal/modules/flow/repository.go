@@ -45,6 +45,7 @@ type Repository interface {
 	// Batch operations
 	BatchCreateSteps(ctx context.Context, steps []*FlowStepPO) error
 	BatchCreateEdges(ctx context.Context, edges []*FlowEdgePO) error
+	WithTransaction(ctx context.Context, fn func(Repository) error) error
 }
 
 type repository struct {
@@ -216,4 +217,10 @@ func (r *repository) BatchCreateEdges(ctx context.Context, edges []*FlowEdgePO) 
 		return nil
 	}
 	return r.db.WithContext(ctx).Create(&edges).Error
+}
+
+func (r *repository) WithTransaction(ctx context.Context, fn func(Repository) error) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return fn(&repository{db: tx})
+	})
 }

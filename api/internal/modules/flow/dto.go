@@ -52,6 +52,7 @@ func ToFlowResponse(po *FlowPO) *FlowResponse {
 
 // CreateStepRequest represents the request to create a step
 type CreateStepRequest struct {
+	ClientKey string  `json:"client_key"`
 	Name      string  `json:"name" binding:"required"`
 	SortOrder int     `json:"sort_order"`
 	Method    string  `json:"method" binding:"required"`
@@ -66,6 +67,7 @@ type CreateStepRequest struct {
 
 // UpdateStepRequest represents the request to update a step
 type UpdateStepRequest struct {
+	ClientKey *string  `json:"client_key"`
 	Name      *string  `json:"name"`
 	SortOrder *int     `json:"sort_order"`
 	Method    *string  `json:"method"`
@@ -82,6 +84,7 @@ type UpdateStepRequest struct {
 type StepResponse struct {
 	ID        uint      `json:"id"`
 	FlowID    uint      `json:"flow_id"`
+	ClientKey string    `json:"client_key"`
 	Name      string    `json:"name"`
 	SortOrder int       `json:"sort_order"`
 	Method    string    `json:"method"`
@@ -101,6 +104,7 @@ func ToStepResponse(po *FlowStepPO) *StepResponse {
 	return &StepResponse{
 		ID:        po.ID,
 		FlowID:    po.FlowID,
+		ClientKey: normalizeStepClientKey(po.ID, po.ClientKey),
 		Name:      po.Name,
 		SortOrder: po.SortOrder,
 		Method:    po.Method,
@@ -134,25 +138,28 @@ type UpdateEdgeRequest struct {
 
 // EdgeResponse represents the API response for an edge
 type EdgeResponse struct {
-	ID              uint      `json:"id"`
-	FlowID          uint      `json:"flow_id"`
-	SourceStepID    uint      `json:"source_step_id"`
-	TargetStepID    uint      `json:"target_step_id"`
-	VariableMapping string    `json:"variable_mapping"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID                   uint                  `json:"id"`
+	FlowID               uint                  `json:"flow_id"`
+	SourceStepID         uint                  `json:"source_step_id"`
+	TargetStepID         uint                  `json:"target_step_id"`
+	VariableMapping      string                `json:"variable_mapping"`
+	VariableMappingRules []VariableMappingRule `json:"variable_mapping_rules,omitempty"`
+	CreatedAt            time.Time             `json:"created_at"`
+	UpdatedAt            time.Time             `json:"updated_at"`
 }
 
 // ToEdgeResponse converts FlowEdgePO to EdgeResponse
 func ToEdgeResponse(po *FlowEdgePO) *EdgeResponse {
+	rules, _ := parseVariableMappingRules(po.VariableMapping)
 	return &EdgeResponse{
-		ID:              po.ID,
-		FlowID:          po.FlowID,
-		SourceStepID:    po.SourceStepID,
-		TargetStepID:    po.TargetStepID,
-		VariableMapping: po.VariableMapping,
-		CreatedAt:       po.CreatedAt,
-		UpdatedAt:       po.UpdatedAt,
+		ID:                   po.ID,
+		FlowID:               po.FlowID,
+		SourceStepID:         po.SourceStepID,
+		TargetStepID:         po.TargetStepID,
+		VariableMapping:      po.VariableMapping,
+		VariableMappingRules: rules,
+		CreatedAt:            po.CreatedAt,
+		UpdatedAt:            po.UpdatedAt,
 	}
 }
 
@@ -219,10 +226,32 @@ func ToStepResultResponse(po *FlowStepResultPO) *StepResultResponse {
 
 // --- Batch Save DTOs ---
 
+// SaveStepRequest represents a React Flow node save payload.
+type SaveStepRequest struct {
+	ClientKey string  `json:"client_key"`
+	Name      string  `json:"name"`
+	SortOrder int     `json:"sort_order"`
+	Method    string  `json:"method"`
+	URL       string  `json:"url"`
+	Headers   string  `json:"headers"`
+	Body      string  `json:"body"`
+	Captures  string  `json:"captures"`
+	Asserts   string  `json:"asserts"`
+	PositionX float64 `json:"position_x"`
+	PositionY float64 `json:"position_y"`
+}
+
+// SaveEdgeRequest represents a React Flow edge save payload.
+type SaveEdgeRequest struct {
+	SourceClientKey string `json:"source_client_key"`
+	TargetClientKey string `json:"target_client_key"`
+	VariableMapping string `json:"variable_mapping"`
+}
+
 // SaveFlowRequest represents a full flow save (steps + edges in one request)
 type SaveFlowRequest struct {
-	Name        *string            `json:"name"`
-	Description *string            `json:"description"`
-	Steps       []CreateStepRequest `json:"steps"`
-	Edges       []CreateEdgeRequest `json:"edges"`
+	Name        *string           `json:"name"`
+	Description *string           `json:"description"`
+	Steps       []SaveStepRequest `json:"steps"`
+	Edges       []SaveEdgeRequest `json:"edges"`
 }

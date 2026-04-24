@@ -1,0 +1,1822 @@
+'use client';
+
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  addEdge,
+  applyEdgeChanges,
+  applyNodeChanges,
+  Background,
+  BackgroundVariant,
+  Controls,
+  Handle,
+  MarkerType,
+  Position,
+  ReactFlow,
+  type Connection,
+  type Edge,
+  type EdgeChange,
+  type Node,
+  type NodeChange,
+  type NodeProps,
+  type ReactFlowInstance,
+} from '@xyflow/react';
+import {
+  ArrowRight,
+  FileClock,
+  FolderGit2,
+  Play,
+  Plus,
+  RefreshCw,
+  Save,
+  Search,
+  Trash2,
+  Workflow,
+} from 'lucide-react';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { buildProjectFlowsRoute, buildProjectDetailRoute } from '@/constants/routes';
+import {
+  useCreateFlow,
+  useDeleteFlow,
+  useFlow,
+  useFlowRun,
+  useFlowRuns,
+  useFlows,
+  useRunFlow,
+  useSaveFlow,
+} from '@/hooks/use-flows';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useProjectMemberRole } from '@/hooks/use-members';
+import { useProject } from '@/hooks/use-projects';
+import { flowService } from '@/services/flow';
+import type {
+  CreateFlowRequest,
+  FlowDetail,
+  FlowEdge,
+  FlowRun,
+  FlowRunStatus,
+  FlowStep,
+  FlowStepResult,
+  FlowVariableMappingRule,
+  SaveFlowRequest,
+} from '@/types/flow';
+import { PROJECT_MEMBER_WRITE_ROLES } from '@/types/member';
+import { cn, formatDate } from '@/utils';
+
+const WRITE_ROLES = PROJECT_MEMBER_WRITE_ROLES;
+const EMPTY_RUNS: FlowRun[] = [];
+const FLOW_METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const;
+
+type FlowNodeData = {
+  backendStepId?: number;
+  clientKey: string;
+  name: string;
+  method: string;
+  url: string;
+  headers: string;
+  body: string;
+  captures: string;
+  asserts: string;
+  status: FlowRunStatus | 'idle';
+  latestResult?: FlowStepResult | null;
+};
+
+type FlowCanvasNode = Node<FlowNodeData, 'http-step'>;
+type FlowEdgeData = {
+  backendEdgeId?: number;
+  mappings: FlowVariableMappingRule[];
+};
+type FlowCanvasEdge = Edge<FlowEdgeData>;
+
+const getStatusBadgeClassName = (status: FlowRunStatus | 'idle') => {
+  switch (status) {
+    case 'running':
+      return 'border-sky-200 bg-sky-500/10 text-sky-700';
+    case 'passed':
+      return 'border-emerald-200 bg-emerald-500/10 text-emerald-700';
+    case 'failed':
+      return 'border-rose-200 bg-rose-500/10 text-rose-700';
+    case 'canceled':
+      return 'border-amber-200 bg-amber-500/10 text-amber-700';
+    case 'pending':
+      return 'border-slate-200 bg-slate-500/10 text-slate-700';
+    default:
+      return 'border-border/60 bg-background text-text-muted';
+  }
+};
+
+const getStatusLabel = (status: FlowRunStatus | 'idle') => {
+  switch (status) {
+    case 'passed':
+      return 'Passed';
+    case 'failed':
+      return 'Failed';
+    case 'running':
+      return 'Running';
+    case 'canceled':
+      return 'Canceled';
+    case 'pending':
+      return 'Pending';
+    default:
+      return 'Idle';
+  }
+};
+
+const getMethodBadgeClassName = (method: string) => {
+  switch (method) {
+    case 'GET':
+      return 'border-emerald-200 bg-emerald-500/10 text-emerald-700';
+    case 'POST':
+      return 'border-sky-200 bg-sky-500/10 text-sky-700';
+    case 'PUT':
+      return 'border-amber-200 bg-amber-500/10 text-amber-700';
+    case 'PATCH':
+      return 'border-violet-200 bg-violet-500/10 text-violet-700';
+    case 'DELETE':
+      return 'border-rose-200 bg-rose-500/10 text-rose-700';
+    default:
+      return 'border-border/60 bg-background text-text-muted';
+  }
+};
+
+const buildEdgeLabel = (mappings: FlowVariableMappingRule[]) => {
+  if (mappings.length === 0) {
+    return 'Dependency';
+  }
+
+  const preview = mappings.slice(0, 2).map((mapping) => `${mapping.source} -> ${mapping.target}`);
+  if (mappings.length > 2) {
+    preview.push(`+${mappings.length - 2}`);
+  }
+
+  return preview.join(', ');
+};
+
+const parseVariableMapping = (raw: string, parsed?: FlowVariableMappingRule[]) => {
+  if (parsed?.length) {
+    return parsed;
+  }
+
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  try {
+    const value = JSON.parse(trimmed) as FlowVariableMappingRule[];
+    return Array.isArray(value)
+      ? value.filter((item) => item && item.source && item.target)
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+const stringifyVariableMapping = (mappings: FlowVariableMappingRule[]) =>
+  JSON.stringify(
+    mappings
+      .map((mapping) => ({
+        source: mapping.source.trim(),
+        target: mapping.target.trim(),
+      }))
+      .filter((mapping) => mapping.source && mapping.target)
+  );
+
+const parseJsonString = (value?: string | null) => {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return trimmed;
+  }
+};
+
+const buildClientKey = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `step-${crypto.randomUUID()}`;
+  }
+
+  return `step-${Date.now()}-${Math.round(Math.random() * 1000)}`;
+};
+
+const getStepNodeBaseId = (step: FlowStep) => {
+  if (typeof step.client_key === 'string') {
+    const trimmed = step.client_key.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+  }
+
+  return `step-${step.id}`;
+};
+
+const collectNodeStatus = (
+  step: FlowStep,
+  run: FlowRun | null | undefined,
+  liveStepResults: Record<number, FlowStepResult>
+): { status: FlowRunStatus | 'idle'; latestResult?: FlowStepResult | null } => {
+  const liveResult = liveStepResults[step.id];
+  if (liveResult) {
+    return { status: liveResult.status, latestResult: liveResult };
+  }
+
+  const runResult = run?.step_results?.find((item) => item.step_id === step.id) ?? null;
+  if (runResult) {
+    return { status: runResult.status, latestResult: runResult };
+  }
+
+  return { status: 'idle', latestResult: null };
+};
+
+const createCanvasNode = (
+  step: FlowStep,
+  nodeId: string,
+  run: FlowRun | null | undefined,
+  liveStepResults: Record<number, FlowStepResult>
+): FlowCanvasNode => {
+  const status = collectNodeStatus(step, run, liveStepResults);
+  return {
+    id: nodeId,
+    type: 'http-step',
+    position: { x: step.position_x, y: step.position_y },
+    data: {
+      backendStepId: step.id,
+      clientKey: nodeId,
+      name: step.name,
+      method: step.method,
+      url: step.url,
+      headers: step.headers,
+      body: step.body,
+      captures: step.captures,
+      asserts: step.asserts,
+      status: status.status,
+      latestResult: status.latestResult,
+    },
+  };
+};
+
+const createCanvasEdge = (edge: FlowEdge, stepNodeIds: Map<number, string>): FlowCanvasEdge => {
+  const mappings = parseVariableMapping(edge.variable_mapping, edge.variable_mapping_rules);
+
+  return {
+    id: `edge-${edge.id}`,
+    source: stepNodeIds.get(edge.source_step_id) ?? `step-${edge.source_step_id}`,
+    target: stepNodeIds.get(edge.target_step_id) ?? `step-${edge.target_step_id}`,
+    markerEnd: { type: MarkerType.ArrowClosed, color: 'currentColor' },
+    label: buildEdgeLabel(mappings),
+    labelStyle: { fontSize: 11, fontWeight: 600 },
+    data: {
+      backendEdgeId: edge.id,
+      mappings,
+    },
+  };
+};
+
+const buildCanvasGraph = (
+  steps: FlowStep[],
+  edges: FlowEdge[],
+  run: FlowRun | null | undefined,
+  liveStepResults: Record<number, FlowStepResult>
+) => {
+  const usedNodeIds = new Set<string>();
+  const stepNodeIds = new Map<number, string>();
+
+  const canvasNodes = steps.map((step) => {
+    const rawKey = getStepNodeBaseId(step);
+    let nodeId = rawKey;
+
+    if (usedNodeIds.has(nodeId)) {
+      nodeId = `step-${step.id}`;
+    }
+    if (usedNodeIds.has(nodeId)) {
+      let suffix = 2;
+      let candidate = `${nodeId}-${suffix}`;
+      while (usedNodeIds.has(candidate)) {
+        suffix += 1;
+        candidate = `${nodeId}-${suffix}`;
+      }
+      nodeId = candidate;
+    }
+
+    usedNodeIds.add(nodeId);
+    stepNodeIds.set(step.id, nodeId);
+    return createCanvasNode(step, nodeId, run, liveStepResults);
+  });
+
+  return {
+    nodes: canvasNodes,
+    edges: edges.map((edge) => createCanvasEdge(edge, stepNodeIds)),
+  };
+};
+
+const applyRunStateToCanvasNodes = (
+  currentNodes: FlowCanvasNode[],
+  run: FlowRun | null | undefined,
+  liveStepResults: Record<number, FlowStepResult>
+): FlowCanvasNode[] =>
+  currentNodes.map((node): FlowCanvasNode => {
+    const backendStepId = node.data.backendStepId;
+    if (!backendStepId) {
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          status: 'idle' as const,
+          latestResult: null,
+        },
+      };
+    }
+
+    const liveResult = liveStepResults[backendStepId];
+    const runResult = run?.step_results?.find((item) => item.step_id === backendStepId) ?? null;
+    const latestResult = liveResult ?? runResult ?? null;
+    const status: FlowRunStatus | 'idle' = latestResult?.status ?? 'idle';
+
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        status,
+        latestResult,
+      },
+    };
+  });
+
+const mergeSavedGraphIntoCanvas = (
+  currentNodes: FlowCanvasNode[],
+  currentEdges: FlowCanvasEdge[],
+  saved: FlowDetail,
+  run: FlowRun | null | undefined,
+  liveStepResults: Record<number, FlowStepResult>
+) => {
+  const savedStepsByClientKey = new Map<string, FlowStep>();
+  for (const step of saved.steps) {
+    savedStepsByClientKey.set(getStepNodeBaseId(step), step);
+  }
+
+  const savedEdgesByNodePair = new Map<string, FlowEdge>();
+  for (const edge of saved.edges) {
+    const sourceStep = saved.steps.find((step) => step.id === edge.source_step_id);
+    const targetStep = saved.steps.find((step) => step.id === edge.target_step_id);
+    if (!sourceStep || !targetStep) {
+      continue;
+    }
+
+    savedEdgesByNodePair.set(
+      `${getStepNodeBaseId(sourceStep)}->${getStepNodeBaseId(targetStep)}`,
+      edge
+    );
+  }
+
+  const nextNodes = currentNodes.map((node) => {
+    const savedStep = savedStepsByClientKey.get(node.id);
+    if (!savedStep) {
+      return node;
+    }
+
+    const status = collectNodeStatus(savedStep, run, liveStepResults);
+    return {
+      ...node,
+      position: { x: savedStep.position_x, y: savedStep.position_y },
+      data: {
+        ...node.data,
+        backendStepId: savedStep.id,
+        name: savedStep.name,
+        method: savedStep.method,
+        url: savedStep.url,
+        headers: savedStep.headers,
+        body: savedStep.body,
+        captures: savedStep.captures,
+        asserts: savedStep.asserts,
+        status: status.status,
+        latestResult: status.latestResult,
+      },
+    };
+  });
+
+  const nextEdges = currentEdges.map((edge) => {
+    const savedEdge = savedEdgesByNodePair.get(`${edge.source}->${edge.target}`);
+    if (!savedEdge) {
+      return edge;
+    }
+
+    const mappings = parseVariableMapping(savedEdge.variable_mapping, savedEdge.variable_mapping_rules);
+    return {
+      ...edge,
+      id: `edge-${savedEdge.id}`,
+      label: buildEdgeLabel(mappings),
+      data: {
+        backendEdgeId: savedEdge.id,
+        mappings,
+      },
+    };
+  });
+
+  return {
+    nodes: nextNodes,
+    edges: nextEdges,
+  };
+};
+
+const serializeFlow = (
+  meta: { name: string; description: string },
+  nodes: FlowCanvasNode[],
+  edges: FlowCanvasEdge[]
+): SaveFlowRequest => ({
+  name: meta.name.trim(),
+  description: meta.description.trim(),
+  steps: nodes.map((node, index) => ({
+    client_key: node.id,
+    name: node.data.name.trim(),
+    sort_order: index,
+    method: node.data.method.trim(),
+    url: node.data.url.trim(),
+    headers: node.data.headers,
+    body: node.data.body,
+    captures: node.data.captures,
+    asserts: node.data.asserts,
+    position_x: node.position.x,
+    position_y: node.position.y,
+  })),
+  edges: edges.map((edge) => ({
+    source_client_key: edge.source,
+    target_client_key: edge.target,
+    variable_mapping: stringifyVariableMapping(edge.data?.mappings ?? []),
+  })),
+});
+
+const buildEdge = (
+  source: string,
+  target: string,
+  mappings: FlowVariableMappingRule[] = []
+): FlowCanvasEdge => ({
+  id: `edge-${source}-${target}-${Date.now()}`,
+  source,
+  target,
+  label: buildEdgeLabel(mappings),
+  markerEnd: { type: MarkerType.ArrowClosed, color: 'currentColor' },
+  labelStyle: { fontSize: 11, fontWeight: 600 },
+  data: { mappings },
+});
+
+const createsCycle = (nodes: FlowCanvasNode[], edges: FlowCanvasEdge[], next: Connection) => {
+  if (!next.source || !next.target) {
+    return false;
+  }
+
+  if (next.source === next.target) {
+    return true;
+  }
+
+  const adjacency = new Map<string, string[]>();
+  for (const node of nodes) {
+    adjacency.set(node.id, []);
+  }
+  for (const edge of edges) {
+    const current = adjacency.get(edge.source) ?? [];
+    current.push(edge.target);
+    adjacency.set(edge.source, current);
+  }
+  const sourceTargets = adjacency.get(next.source) ?? [];
+  sourceTargets.push(next.target);
+  adjacency.set(next.source, sourceTargets);
+
+  const stack = [next.target];
+  const visited = new Set<string>();
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current || visited.has(current)) {
+      continue;
+    }
+    if (current === next.source) {
+      return true;
+    }
+    visited.add(current);
+    for (const target of adjacency.get(current) ?? []) {
+      stack.push(target);
+    }
+  }
+
+  return false;
+};
+
+const HttpStepNode = ({ data, selected }: NodeProps) => {
+  const flowData = data as FlowNodeData;
+
+  return (
+    <div
+      className={cn(
+        'w-[260px] rounded-3xl border bg-background/95 p-4 shadow-lg transition-colors',
+        selected ? 'border-primary/40 ring-2 ring-primary/20' : 'border-border/60'
+      )}
+    >
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!h-3 !w-3 !border-2 !border-background !bg-primary"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!h-3 !w-3 !border-2 !border-background !bg-primary"
+      />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-text-main">
+            {flowData.name || 'Untitled step'}
+          </p>
+          <p className="mt-1 line-clamp-2 text-xs leading-5 text-text-muted">
+            {flowData.url || 'Configure request URL'}
+          </p>
+        </div>
+        <Badge
+          variant="outline"
+          className={cn('shrink-0', getStatusBadgeClassName(flowData.status))}
+        >
+          {getStatusLabel(flowData.status)}
+        </Badge>
+      </div>
+      <div className="mt-4 flex items-center justify-between">
+        <Badge variant="outline" className={getMethodBadgeClassName(flowData.method)}>
+          {flowData.method}
+        </Badge>
+        <p className="text-[11px] uppercase tracking-[0.16em] text-text-muted">
+          {flowData.clientKey}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const nodeTypes = {
+  'http-step': HttpStepNode,
+};
+
+function CreateFlowDialog({
+  open,
+  isSubmitting,
+  onOpenChange,
+  onSubmit,
+}: {
+  open: boolean;
+  isSubmitting: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (payload: CreateFlowRequest) => Promise<void>;
+}) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setName('');
+      setDescription('');
+      setError('');
+    }
+  }, [open]);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError('Flow name is required.');
+      return;
+    }
+
+    await onSubmit({
+      name: trimmedName,
+      description: description.trim() || undefined,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="default">
+        <DialogHeader>
+          <DialogTitle>Create Flow</DialogTitle>
+          <DialogDescription>
+            Add a new HTTP test flow, then design the execution graph in the canvas.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <form id="create-flow-form" className="space-y-5 py-1" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="create-flow-name">Name</Label>
+              <Input
+                id="create-flow-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Auth chain"
+                errorText={error || undefined}
+                root
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-flow-description">Description</Label>
+              <Textarea
+                id="create-flow-description"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Describe what this flow validates and how variables move between steps."
+                rows={6}
+                root
+              />
+            </div>
+          </form>
+        </DialogBody>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="submit" form="create-flow-form" loading={isSubmitting}>
+            Create Flow
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FlowInspector({
+  flowName,
+  flowDescription,
+  onFlowMetaChange,
+  selectedNode,
+  selectedEdge,
+  onNodeChange,
+  onEdgeMappingsChange,
+  canEdit,
+  runs,
+  selectedRunId,
+  onSelectRun,
+  selectedStepResult,
+}: {
+  flowName: string;
+  flowDescription: string;
+  onFlowMetaChange: (key: 'name' | 'description', value: string) => void;
+  selectedNode: FlowCanvasNode | null;
+  selectedEdge: FlowCanvasEdge | null;
+  onNodeChange: (nodeId: string, patch: Partial<FlowNodeData>) => void;
+  onEdgeMappingsChange: (edgeId: string, mappings: FlowVariableMappingRule[]) => void;
+  canEdit: boolean;
+  runs: FlowRun[];
+  selectedRunId: number | null;
+  onSelectRun: (runId: number) => void;
+  selectedStepResult: FlowStepResult | null;
+}) {
+  if (selectedNode) {
+    return (
+      <div className="space-y-6">
+        <Card className="border-border/60">
+          <CardHeader>
+            <CardTitle>Step inspector</CardTitle>
+            <CardDescription>Configure the selected HTTP request node.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="request" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="request">Request</TabsTrigger>
+                <TabsTrigger value="captures">Captures</TabsTrigger>
+                <TabsTrigger value="asserts">Asserts</TabsTrigger>
+              </TabsList>
+              <TabsContent value="request" className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="step-name">Name</Label>
+                  <Input
+                    id="step-name"
+                    value={selectedNode.data.name}
+                    disabled={!canEdit}
+                    onChange={(event) => onNodeChange(selectedNode.id, { name: event.target.value })}
+                    root
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="step-method">Method</Label>
+                  <Select
+                    value={selectedNode.data.method}
+                    disabled={!canEdit}
+                    onValueChange={(value) => onNodeChange(selectedNode.id, { method: value })}
+                  >
+                    <SelectTrigger id="step-method" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FLOW_METHOD_OPTIONS.map((method) => (
+                        <SelectItem key={method} value={method}>
+                          {method}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="step-url">URL</Label>
+                  <Input
+                    id="step-url"
+                    value={selectedNode.data.url}
+                    disabled={!canEdit}
+                    onChange={(event) => onNodeChange(selectedNode.id, { url: event.target.value })}
+                    placeholder="/v1/auth/login"
+                    root
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="step-headers">Headers (JSON)</Label>
+                  <Textarea
+                    id="step-headers"
+                    value={selectedNode.data.headers}
+                    disabled={!canEdit}
+                    onChange={(event) => onNodeChange(selectedNode.id, { headers: event.target.value })}
+                    placeholder='{"Authorization":"Bearer {{token}}"}'
+                    rows={6}
+                    root
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="step-body">Body</Label>
+                  <Textarea
+                    id="step-body"
+                    value={selectedNode.data.body}
+                    disabled={!canEdit}
+                    onChange={(event) => onNodeChange(selectedNode.id, { body: event.target.value })}
+                    placeholder='{"email":"demo@example.com"}'
+                    rows={8}
+                    root
+                  />
+                </div>
+              </TabsContent>
+              <TabsContent value="captures" className="space-y-2">
+                <Label htmlFor="step-captures">Captures DSL</Label>
+                <Textarea
+                  id="step-captures"
+                  value={selectedNode.data.captures}
+                  disabled={!canEdit}
+                  onChange={(event) => onNodeChange(selectedNode.id, { captures: event.target.value })}
+                  placeholder={'token: data.access_token\nuserId: data.user.id'}
+                  rows={12}
+                  root
+                />
+              </TabsContent>
+              <TabsContent value="asserts" className="space-y-2">
+                <Label htmlFor="step-asserts">Asserts DSL</Label>
+                <Textarea
+                  id="step-asserts"
+                  value={selectedNode.data.asserts}
+                  disabled={!canEdit}
+                  onChange={(event) => onNodeChange(selectedNode.id, { asserts: event.target.value })}
+                  placeholder={'status == 200\nbody.data.access_token exists'}
+                  rows={12}
+                  root
+                />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        <RunHistoryPanel
+          runs={runs}
+          selectedRunId={selectedRunId}
+          onSelectRun={onSelectRun}
+          selectedStepResult={selectedStepResult}
+        />
+      </div>
+    );
+  }
+
+  if (selectedEdge) {
+    const mappings = selectedEdge.data?.mappings ?? [];
+    return (
+      <div className="space-y-6">
+        <Card className="border-border/60">
+          <CardHeader>
+            <CardTitle>Edge mappings</CardTitle>
+            <CardDescription>Move captured variables from the upstream step into the downstream step scope.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Tabs defaultValue="mappings" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-1">
+                <TabsTrigger value="mappings">Mappings</TabsTrigger>
+              </TabsList>
+              <TabsContent value="mappings" className="space-y-4">
+                {mappings.length === 0 ? (
+                  <Alert>
+                    <AlertTitle>No mappings yet</AlertTitle>
+                    <AlertDescription>
+                      Add at least one mapping so the downstream step can reference upstream captures.
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+
+                <div className="space-y-3">
+                  {mappings.map((mapping, index) => (
+                    <div key={`${selectedEdge.id}-${index}`} className="grid grid-cols-[1fr_auto_1fr_auto] gap-2">
+                      <Input
+                        value={mapping.source}
+                        disabled={!canEdit}
+                        onChange={(event) => {
+                          const nextMappings = mappings.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, source: event.target.value } : item
+                          );
+                          onEdgeMappingsChange(selectedEdge.id, nextMappings);
+                        }}
+                        placeholder="token"
+                        root
+                      />
+                      <div className="flex items-center justify-center text-sm text-text-muted">-&gt;</div>
+                      <Input
+                        value={mapping.target}
+                        disabled={!canEdit}
+                        onChange={(event) => {
+                          const nextMappings = mappings.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, target: event.target.value } : item
+                          );
+                          onEdgeMappingsChange(selectedEdge.id, nextMappings);
+                        }}
+                        placeholder="authToken"
+                        root
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={!canEdit}
+                        onClick={() =>
+                          onEdgeMappingsChange(
+                            selectedEdge.id,
+                            mappings.filter((_, itemIndex) => itemIndex !== index)
+                          )
+                        }
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!canEdit}
+                  onClick={() =>
+                    onEdgeMappingsChange(selectedEdge.id, [...mappings, { source: '', target: '' }])
+                  }
+                >
+                  <Plus className="h-4 w-4" />
+                  Add mapping
+                </Button>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        <RunHistoryPanel
+          runs={runs}
+          selectedRunId={selectedRunId}
+          onSelectRun={onSelectRun}
+          selectedStepResult={null}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-border/60">
+        <CardHeader>
+          <CardTitle>Flow settings</CardTitle>
+          <CardDescription>Update the graph metadata and review recent runs.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="flow-name">Name</Label>
+            <Input
+              id="flow-name"
+              value={flowName}
+              disabled={!canEdit}
+              onChange={(event) => onFlowMetaChange('name', event.target.value)}
+              root
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="flow-description">Description</Label>
+            <Textarea
+              id="flow-description"
+              value={flowDescription}
+              disabled={!canEdit}
+              onChange={(event) => onFlowMetaChange('description', event.target.value)}
+              rows={8}
+              root
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <RunHistoryPanel
+        runs={runs}
+        selectedRunId={selectedRunId}
+        onSelectRun={onSelectRun}
+        selectedStepResult={null}
+      />
+    </div>
+  );
+}
+
+function RunHistoryPanel({
+  runs,
+  selectedRunId,
+  onSelectRun,
+  selectedStepResult,
+}: {
+  runs: FlowRun[];
+  selectedRunId: number | null;
+  onSelectRun: (runId: number) => void;
+  selectedStepResult: FlowStepResult | null;
+}) {
+  return (
+    <div className="space-y-6">
+      <Card className="border-border/60">
+        <CardHeader>
+          <CardTitle>Run history</CardTitle>
+          <CardDescription>Select a run to overlay status and inspect step results.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {runs.length === 0 ? (
+            <Alert>
+              <AlertTitle>No runs yet</AlertTitle>
+              <AlertDescription>Save the flow, then start the first run from the toolbar.</AlertDescription>
+            </Alert>
+          ) : (
+            <div className="space-y-3">
+              {runs.map((run) => (
+                <button
+                  key={run.id}
+                  type="button"
+                  onClick={() => onSelectRun(run.id)}
+                  className={cn(
+                    'w-full rounded-2xl border px-4 py-3 text-left transition-colors',
+                    selectedRunId === run.id
+                      ? 'border-primary/30 bg-primary/10'
+                      : 'border-border/60 bg-background/60 hover:bg-background'
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-text-main">Run #{run.id}</p>
+                      <p className="mt-1 text-xs text-text-muted">{formatDate(run.created_at)}</p>
+                    </div>
+                    <Badge variant="outline" className={getStatusBadgeClassName(run.status)}>
+                      {getStatusLabel(run.status)}
+                    </Badge>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {selectedStepResult ? (
+        <Card className="border-border/60">
+          <CardHeader>
+            <CardTitle>Step run result</CardTitle>
+            <CardDescription>Latest payload captured for the selected node in the active run.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ResultField label="Status">
+              <Badge variant="outline" className={getStatusBadgeClassName(selectedStepResult.status)}>
+                {getStatusLabel(selectedStepResult.status)}
+              </Badge>
+            </ResultField>
+            <ResultField label="Duration">{selectedStepResult.duration_ms} ms</ResultField>
+            <ResultJsonCard title="Request" value={parseJsonString(selectedStepResult.request)} />
+            <ResultJsonCard title="Response" value={parseJsonString(selectedStepResult.response)} />
+            <ResultJsonCard title="Assert results" value={parseJsonString(selectedStepResult.assert_results)} />
+            <ResultJsonCard
+              title="Captured variables"
+              value={parseJsonString(selectedStepResult.variables_captured)}
+            />
+            {selectedStepResult.error_message ? (
+              <Alert>
+                <AlertTitle>Failure detail</AlertTitle>
+                <AlertDescription>{selectedStepResult.error_message}</AlertDescription>
+              </Alert>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
+    </div>
+  );
+}
+
+function ResultField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+      <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">{label}</p>
+      <div className="mt-2 text-sm text-text-main">{children}</div>
+    </div>
+  );
+}
+
+function ResultJsonCard({
+  title,
+  value,
+}: {
+  title: string;
+  value: unknown;
+}) {
+  return (
+    <Card className="border-border/60">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <pre className="max-h-[280px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+          {JSON.stringify(value, null, 2)}
+        </pre>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function ProjectFlowManagementPage({
+  projectId,
+  selectedItemId,
+}: {
+  projectId: number;
+  selectedItemId?: number | null;
+}) {
+  const router = useRouter();
+  const isMobile = useIsMobile();
+  const projectQuery = useProject(projectId);
+  const projectName = projectQuery.data?.name || `Project #${projectId}`;
+  const memberRoleQuery = useProjectMemberRole(projectId);
+  const flowListQuery = useFlows(projectId);
+  const createFlowMutation = useCreateFlow(projectId);
+  const deleteFlowMutation = useDeleteFlow(projectId);
+  const saveFlowMutation = useSaveFlow(projectId);
+  const runFlowMutation = useRunFlow(projectId);
+
+  const [searchValue, setSearchValue] = useState('');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [selectedFlowId, setSelectedFlowId] = useState<number | null>(selectedItemId ?? null);
+  const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
+  const [flowMeta, setFlowMeta] = useState({ name: '', description: '' });
+  const [dirty, setDirty] = useState(false);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [liveStepResults, setLiveStepResults] = useState<Record<number, FlowStepResult>>({});
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance<FlowCanvasNode, FlowCanvasEdge> | null>(
+    null
+  );
+  const deferredSearch = useDeferredValue(searchValue);
+  const streamAbortRef = useRef<AbortController | null>(null);
+  const skipNextHydrationRef = useRef(false);
+
+  const [nodes, setNodes] = useState<FlowCanvasNode[]>([]);
+  const [edges, setEdges] = useState<FlowCanvasEdge[]>([]);
+
+  useEffect(() => {
+    setSelectedFlowId(selectedItemId ?? null);
+  }, [selectedItemId]);
+
+  const selectedFlowQuery = useFlow(projectId, selectedFlowId ?? undefined);
+  const flowRunsQuery = useFlowRuns(projectId, selectedFlowId ?? undefined);
+
+  const latestRun = flowRunsQuery.data?.items?.[0] ?? null;
+  const effectiveRunId = selectedRunId ?? latestRun?.id ?? null;
+  const selectedRunQuery = useFlowRun(projectId, selectedFlowId ?? undefined, effectiveRunId ?? undefined);
+  const selectedRun = selectedRunQuery.data ?? latestRun;
+
+  const canEdit = WRITE_ROLES.includes(memberRoleQuery.data?.role ?? 'read');
+  const flows = flowListQuery.data?.items ?? [];
+  const filteredFlows = useMemo(() => {
+    const keyword = deferredSearch.trim().toLowerCase();
+    if (!keyword) {
+      return flows;
+    }
+
+    return flows.filter((flow) =>
+      [flow.name, flow.description]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(keyword))
+    );
+  }, [deferredSearch, flows]);
+
+  useEffect(() => {
+    const detail = selectedFlowQuery.data;
+    if (!detail) {
+      return;
+    }
+    if (skipNextHydrationRef.current) {
+      skipNextHydrationRef.current = false;
+      return;
+    }
+
+    const canvasGraph = buildCanvasGraph(detail.steps, detail.edges, selectedRun, liveStepResults);
+    setFlowMeta({
+      name: detail.name,
+      description: detail.description,
+    });
+    setNodes(canvasGraph.nodes);
+    setEdges(canvasGraph.edges);
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
+    setDirty(false);
+    setLiveStepResults({});
+  }, [selectedFlowQuery.data?.updated_at]);
+
+  useEffect(() => {
+    if (!selectedFlowQuery.data) {
+      return;
+    }
+
+    setNodes((current) => applyRunStateToCanvasNodes(current, selectedRun, liveStepResults));
+  }, [liveStepResults, selectedFlowQuery.data, selectedRun?.id]);
+
+  useEffect(() => {
+    if (!selectedFlowId) {
+      setSelectedRunId(null);
+      setLiveStepResults({});
+    }
+  }, [selectedFlowId]);
+
+  useEffect(() => {
+    return () => {
+      streamAbortRef.current?.abort();
+    };
+  }, []);
+
+  const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
+  const selectedEdge = edges.find((edge) => edge.id === selectedEdgeId) ?? null;
+  const selectedStepResult = selectedNode?.data.backendStepId
+    ? liveStepResults[selectedNode.data.backendStepId] ??
+      selectedRun?.step_results?.find((item) => item.step_id === selectedNode.data.backendStepId) ??
+      null
+    : null;
+
+  const navigateToFlow = (flowId: number | null) => {
+    setSelectedFlowId(flowId);
+    setSelectedRunId(null);
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
+    setLiveStepResults({});
+    const baseHref = buildProjectFlowsRoute(projectId);
+    router.replace(flowId ? `${baseHref}?item=${flowId}` : baseHref);
+  };
+
+  const handleCreateFlow = async (payload: CreateFlowRequest) => {
+    try {
+      const createdFlow = await createFlowMutation.mutateAsync(payload);
+      setIsCreateOpen(false);
+      navigateToFlow(createdFlow.id);
+    } catch {
+      // Global error handler surfaces API failure details.
+    }
+  };
+
+  const handleDeleteFlow = async (flowId: number, flowName: string) => {
+    if (!window.confirm(`Delete flow "${flowName}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteFlowMutation.mutateAsync(flowId);
+      if (selectedFlowId === flowId) {
+        navigateToFlow(null);
+      } else {
+        void flowListQuery.refetch();
+      }
+    } catch {
+      // Global error handler surfaces API failure details.
+    }
+  };
+
+  const handleNodesChange = (changes: NodeChange<FlowCanvasNode>[]) => {
+    if (changes.some((change) => change.type !== 'select')) {
+      setDirty(true);
+    }
+    setNodes((current) => applyNodeChanges(changes, current));
+  };
+
+  const handleEdgesChange = (changes: EdgeChange<FlowCanvasEdge>[]) => {
+    if (changes.some((change) => change.type !== 'select')) {
+      setDirty(true);
+    }
+    setEdges((current) => applyEdgeChanges(changes, current));
+  };
+
+  const handleNodesDelete = (deletedNodes: FlowCanvasNode[]) => {
+    setEdges((current) =>
+      current.filter(
+        (edge) => !deletedNodes.some((node) => node.id === edge.source || node.id === edge.target)
+      )
+    );
+    setDirty(true);
+  };
+
+  const handleConnect = (connection: Connection) => {
+    if (!connection.source || !connection.target) {
+      return;
+    }
+
+    if (connection.source === connection.target) {
+      return;
+    }
+    if (createsCycle(nodes, edges, connection)) {
+      return;
+    }
+
+    setEdges((current) => addEdge(buildEdge(connection.source!, connection.target!), current) as FlowCanvasEdge[]);
+    setDirty(true);
+  };
+
+  const handleNodeChange = (nodeId: string, patch: Partial<FlowNodeData>) => {
+    setNodes((current) =>
+      current.map((node) =>
+        node.id === nodeId
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                ...patch,
+              },
+            }
+          : node
+      )
+    );
+    setDirty(true);
+  };
+
+  const handleEdgeMappingsChange = (edgeId: string, mappings: FlowVariableMappingRule[]) => {
+    setEdges((current) =>
+      current.map((edge) =>
+        edge.id === edgeId
+          ? {
+              ...edge,
+              label: buildEdgeLabel(mappings),
+              data: {
+                ...edge.data,
+                mappings,
+              },
+            }
+          : edge
+      )
+    );
+    setDirty(true);
+  };
+
+  const handleFlowMetaChange = (key: 'name' | 'description', value: string) => {
+    setFlowMeta((current) => ({
+      ...current,
+      [key]: value,
+    }));
+    setDirty(true);
+  };
+
+  const handleAddStep = () => {
+    if (!selectedFlowId) {
+      return;
+    }
+
+    const clientKey = buildClientKey();
+    const nextNode: FlowCanvasNode = {
+      id: clientKey,
+      type: 'http-step',
+      position: {
+        x: 60 + nodes.length * 40,
+        y: 60 + nodes.length * 24,
+      },
+      data: {
+        clientKey,
+        name: `Step ${nodes.length + 1}`,
+        method: 'GET',
+        url: '',
+        headers: '',
+        body: '',
+        captures: '',
+        asserts: '',
+        status: 'idle',
+        latestResult: null,
+      },
+    };
+
+    setNodes((current) => [...current, nextNode]);
+    setSelectedNodeId(nextNode.id);
+    setSelectedEdgeId(null);
+    setInspectorOpen(true);
+    setDirty(true);
+  };
+
+  const saveCurrentFlow = async () => {
+    if (!selectedFlowId) {
+      return null;
+    }
+
+    const saved = await saveFlowMutation.mutateAsync({
+      flowId: selectedFlowId,
+      data: serializeFlow(flowMeta, nodes, edges),
+    });
+    skipNextHydrationRef.current = true;
+    setFlowMeta({
+      name: saved.name,
+      description: saved.description,
+    });
+    const mergedGraph = mergeSavedGraphIntoCanvas(nodes, edges, saved, selectedRun, liveStepResults);
+    setNodes(mergedGraph.nodes);
+    setEdges(mergedGraph.edges);
+    setDirty(false);
+    return saved;
+  };
+
+  const finalizeRun = async (runId: number) => {
+    await Promise.all([
+      flowRunsQuery.refetch(),
+      selectedRunQuery.refetch(),
+    ]);
+    setSelectedRunId(runId);
+  };
+
+  const pollRunUntilSettled = async (runId: number) => {
+    if (!selectedFlowId) {
+      return;
+    }
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const run = await flowService.getRun(projectId, selectedFlowId, runId);
+      if (run.step_results) {
+        const nextResults = Object.fromEntries(run.step_results.map((result) => [result.step_id, result]));
+        setLiveStepResults(nextResults);
+      }
+      if (run.status !== 'pending' && run.status !== 'running') {
+        await finalizeRun(runId);
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  };
+
+  const streamRun = async (runId: number) => {
+    if (!selectedFlowId) {
+      return;
+    }
+
+    streamAbortRef.current?.abort();
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
+
+    try {
+      await flowService.streamRun(projectId, selectedFlowId, runId, {
+        signal: controller.signal,
+        onStep: (event) => {
+          const stepResult = event.data;
+          if (!stepResult) {
+            return;
+          }
+          setLiveStepResults((current) => ({
+            ...current,
+            [stepResult.step_id]: stepResult,
+          }));
+        },
+        onDone: () => {
+          void finalizeRun(runId);
+        },
+      });
+    } catch {
+      if (controller.signal.aborted) {
+        return;
+      }
+      await pollRunUntilSettled(runId);
+    }
+  };
+
+  const handleRun = async () => {
+    if (!selectedFlowId) {
+      return;
+    }
+
+    try {
+      if (dirty) {
+        await saveCurrentFlow();
+      }
+
+      setLiveStepResults({});
+      const run = await runFlowMutation.mutateAsync(selectedFlowId);
+      setSelectedRunId(run.id);
+      await streamRun(run.id);
+    } catch {
+      // Global error handler surfaces API failure details.
+    }
+  };
+
+  const handleRefresh = () => {
+    void Promise.all([
+      flowListQuery.refetch(),
+      selectedFlowQuery.refetch(),
+      flowRunsQuery.refetch(),
+      selectedRunQuery.refetch(),
+    ]);
+  };
+
+  const flowSidebar = (
+    <aside className="flex w-full shrink-0 flex-col border-b border-border/60 bg-bg-surface/70 lg:h-full lg:w-[320px] lg:border-r lg:border-b-0">
+      <div className="space-y-4 border-b border-border/60 px-4 py-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-text-main">Flows</p>
+            <p className="text-sm leading-6 text-text-muted">
+              Design request graphs, save them, and stream execution in place.
+            </p>
+          </div>
+          <Button type="button" size="sm" onClick={() => setIsCreateOpen(true)} disabled={!canEdit}>
+            <Plus className="h-4 w-4" />
+            Add
+          </Button>
+        </div>
+
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-muted" />
+          <Input
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+            placeholder="Filter flows"
+            className="pl-9"
+            root
+          />
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        {flowListQuery.isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-24 animate-pulse rounded-3xl bg-muted" />
+            ))}
+          </div>
+        ) : flowListQuery.error ? (
+          <Alert>
+            <AlertTitle>Unable to load flows</AlertTitle>
+            <AlertDescription>Refresh the workspace to retry loading this project&apos;s flows.</AlertDescription>
+          </Alert>
+        ) : filteredFlows.length === 0 ? (
+          <Card className="border-dashed border-border/60">
+            <CardContent className="space-y-4 py-10 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+                <FolderGit2 className="h-6 w-6" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-lg font-semibold text-text-main">No flows yet</p>
+                <p className="text-sm leading-6 text-text-muted">
+                  Create the first flow, then design request nodes and explicit variable mappings.
+                </p>
+              </div>
+              <Button type="button" onClick={() => setIsCreateOpen(true)} disabled={!canEdit}>
+                <Plus className="h-4 w-4" />
+                Create Flow
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {filteredFlows.map((flow) => (
+              <div
+                key={flow.id}
+                className={cn(
+                  'rounded-3xl border px-4 py-3 transition-colors',
+                  selectedFlowId === flow.id
+                    ? 'border-primary/30 bg-primary/10'
+                    : 'border-border/60 bg-background/70 hover:bg-background'
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 text-left"
+                    onClick={() => navigateToFlow(flow.id)}
+                  >
+                    <p className="truncate text-sm font-semibold text-text-main">{flow.name}</p>
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-text-muted">
+                      {flow.description || 'No description'}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
+                      <Badge variant="outline">{flow.step_count ?? 0} steps</Badge>
+                      <span>{formatDate(flow.updated_at)}</span>
+                    </div>
+                  </button>
+                  {canEdit ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      isIcon
+                      onClick={() => handleDeleteFlow(flow.id, flow.name)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+
+  const editorContent = selectedFlowQuery.isLoading ? (
+    <div className="space-y-6">
+      <div className="h-36 animate-pulse rounded-3xl bg-muted" />
+      <div className="h-[420px] animate-pulse rounded-3xl bg-muted" />
+    </div>
+  ) : selectedFlowId && !selectedFlowQuery.data ? (
+    <Card className="border-dashed border-border/60">
+      <CardContent className="space-y-4 py-14 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+          <FileClock className="h-6 w-6" />
+        </div>
+        <div className="space-y-2">
+          <p className="text-lg font-semibold text-text-main">Flow not found</p>
+          <p className="text-sm leading-6 text-text-muted">
+            The selected flow no longer exists or the current item id is stale.
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href={buildProjectFlowsRoute(projectId)}>
+            Clear selection
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
+  ) : !selectedFlowId ? (
+    <Card className="border-dashed border-border/60">
+      <CardContent className="space-y-4 py-14 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+          <Workflow className="h-6 w-6" />
+        </div>
+        <div className="space-y-2">
+          <p className="text-lg font-semibold text-text-main">Select a flow</p>
+          <p className="text-sm leading-6 text-text-muted">
+            Use the left sidebar to open an existing flow or create a new one for this project.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  ) : (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border/60 bg-bg-surface/70 px-4 py-4 md:px-6">
+        <Button type="button" variant="outline" onClick={() => void saveCurrentFlow()} disabled={!canEdit || !dirty} loading={saveFlowMutation.isPending}>
+          <Save className="h-4 w-4" />
+          Save
+        </Button>
+        <Button type="button" onClick={() => void handleRun()} disabled={!canEdit || !selectedFlowId} loading={runFlowMutation.isPending}>
+          <Play className="h-4 w-4" />
+          Run
+        </Button>
+        <Button type="button" variant="outline" onClick={handleAddStep} disabled={!canEdit || !selectedFlowId}>
+          <Plus className="h-4 w-4" />
+          Add Step
+        </Button>
+        <Button type="button" variant="outline" onClick={() => reactFlowInstance?.fitView({ padding: 0.16 })} disabled={!selectedFlowId}>
+          Fit View
+        </Button>
+        <Button type="button" variant="outline" onClick={handleRefresh} disabled={flowListQuery.isFetching || selectedFlowQuery.isFetching}>
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </Button>
+        {isMobile ? (
+          <Button type="button" variant="outline" onClick={() => setInspectorOpen(true)}>
+            Details
+          </Button>
+        ) : null}
+        {dirty ? (
+          <Badge variant="outline" className="border-amber-200 bg-amber-500/10 text-amber-700">
+            Unsaved
+          </Badge>
+        ) : (
+          <Badge variant="outline">Saved</Badge>
+        )}
+      </div>
+
+      <div className="flex min-h-0 flex-1">
+        <div className="min-w-0 flex-1 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.08),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.85),rgba(248,250,252,0.98))]">
+          <div className="h-full min-h-[540px] p-4 md:p-6">
+            <div className="h-full overflow-hidden rounded-[32px] border border-border/60 bg-background/85 shadow-premium">
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                nodeTypes={nodeTypes}
+                fitView
+                onInit={setReactFlowInstance}
+                onNodesChange={handleNodesChange}
+                onEdgesChange={handleEdgesChange}
+                onNodesDelete={handleNodesDelete}
+                onConnect={handleConnect}
+                onPaneClick={() => {
+                  setSelectedNodeId(null);
+                  setSelectedEdgeId(null);
+                }}
+                onNodeClick={(_, node) => {
+                  setSelectedNodeId(node.id);
+                  setSelectedEdgeId(null);
+                  setInspectorOpen(true);
+                }}
+                onEdgeClick={(_, edge) => {
+                  setSelectedEdgeId(edge.id);
+                  setSelectedNodeId(null);
+                  setInspectorOpen(true);
+                }}
+                deleteKeyCode={['Backspace', 'Delete']}
+                minZoom={0.2}
+                defaultViewport={{ x: 0, y: 0, zoom: 0.9 }}
+              >
+                <Background
+                  id="flow-grid-minor"
+                  variant={BackgroundVariant.Lines}
+                  gap={24}
+                  lineWidth={1}
+                  color="rgba(148, 163, 184, 0.12)"
+                />
+                <Background
+                  id="flow-grid-major"
+                  variant={BackgroundVariant.Lines}
+                  gap={120}
+                  lineWidth={1.2}
+                  color="rgba(100, 116, 139, 0.22)"
+                />
+                <Controls />
+              </ReactFlow>
+            </div>
+          </div>
+        </div>
+
+        <aside className="hidden w-[380px] shrink-0 border-l border-border/60 bg-bg-surface/70 xl:block">
+          <div className="h-full overflow-y-auto p-4">
+            <FlowInspector
+              flowName={flowMeta.name}
+              flowDescription={flowMeta.description}
+              onFlowMetaChange={handleFlowMetaChange}
+              selectedNode={selectedNode}
+              selectedEdge={selectedEdge}
+              onNodeChange={handleNodeChange}
+              onEdgeMappingsChange={handleEdgeMappingsChange}
+              canEdit={canEdit}
+              runs={flowRunsQuery.data?.items ?? EMPTY_RUNS}
+              selectedRunId={effectiveRunId}
+              onSelectRun={setSelectedRunId}
+              selectedStepResult={selectedStepResult}
+            />
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <div className="flex h-full min-h-0 flex-col lg:flex-row lg:overflow-hidden">
+        {flowSidebar}
+
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="space-y-4 border-b border-border/60 bg-bg-surface/70 px-4 py-4 md:px-6">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/project">Projects</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href={buildProjectDetailRoute(projectId)}>{projectName}</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Flows</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+                    Flows
+                  </Badge>
+                  <p className="text-sm text-text-muted">React Flow test flow designer</p>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-semibold tracking-tight">
+                    {selectedFlowQuery.data?.name || 'HTTP test flows'}
+                  </h2>
+                  <p className="mt-2 max-w-4xl text-sm leading-6 text-text-muted">
+                    Design HTTP request graphs, pass captures across edges, and inspect streamed execution without leaving the project workspace.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" onClick={handleRefresh}>
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh
+                </Button>
+                <Button type="button" onClick={() => setIsCreateOpen(true)} disabled={!canEdit}>
+                  <Plus className="h-4 w-4" />
+                  New Flow
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-hidden">{editorContent}</div>
+        </main>
+      </div>
+
+      <CreateFlowDialog
+        open={isCreateOpen}
+        isSubmitting={createFlowMutation.isPending}
+        onOpenChange={setIsCreateOpen}
+        onSubmit={handleCreateFlow}
+      />
+
+      {isMobile && selectedFlowId ? (
+        <Drawer open={inspectorOpen} onOpenChange={setInspectorOpen} direction="right">
+          <DrawerContent className="max-w-full">
+            <DrawerHeader>
+              <DrawerTitle>Flow inspector</DrawerTitle>
+              <DrawerDescription>Inspect the selected node, edge, or run history.</DrawerDescription>
+            </DrawerHeader>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <FlowInspector
+                flowName={flowMeta.name}
+                flowDescription={flowMeta.description}
+                onFlowMetaChange={handleFlowMetaChange}
+                selectedNode={selectedNode}
+                selectedEdge={selectedEdge}
+                onNodeChange={handleNodeChange}
+                onEdgeMappingsChange={handleEdgeMappingsChange}
+                canEdit={canEdit}
+                runs={flowRunsQuery.data?.items ?? EMPTY_RUNS}
+                selectedRunId={effectiveRunId}
+                onSelectRun={setSelectedRunId}
+                selectedStepResult={selectedStepResult}
+              />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : null}
+    </>
+  );
+}

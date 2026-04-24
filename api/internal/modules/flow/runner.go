@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -68,6 +69,7 @@ func (r *Runner) Execute(ctx context.Context, run *FlowRunPO, steps []FlowStepPO
 
 	// Variable store for captures
 	variables := make(map[string]any)
+	capturedByStep := make(map[uint]map[string]any)
 	allPassed := true
 
 	for _, step := range orderedSteps {
@@ -89,8 +91,62 @@ func (r *Runner) Execute(ctx context.Context, run *FlowRunPO, steps []FlowStepPO
 			Status:   RunStatusRunning,
 		}
 
+		executionVariables := make(map[string]any, len(variables))
+		for key, value := range variables {
+			executionVariables[key] = value
+		}
+		var mappingErr error
+		for _, edge := range edges {
+			if edge.TargetStepID != step.ID {
+				continue
+			}
+
+			rules, err := parseVariableMappingRules(edge.VariableMapping)
+			if err != nil {
+				mappingErr = err
+				break
+			}
+
+			upstream := capturedByStep[edge.SourceStepID]
+			for _, rule := range rules {
+				if upstream == nil {
+					continue
+				}
+				if value, ok := upstream[rule.Source]; ok {
+					executionVariables[rule.Target] = value
+				}
+			}
+		}
+		if mappingErr != nil {
+			stepResult := &FlowStepResultPO{
+				StepID:       step.ID,
+				Status:       RunStatusFailed,
+				ErrorMessage: mappingErr.Error(),
+			}
+			if result, ok := resultMap[step.ID]; ok {
+				result.Status = stepResult.Status
+				result.ErrorMessage = stepResult.ErrorMessage
+				_ = r.repo.UpdateStepResult(ctx, result)
+			}
+			events <- StepEvent{
+				RunID:    run.ID,
+				StepID:   step.ID,
+				StepName: step.Name,
+				Status:   stepResult.Status,
+				Data:     stepResult,
+			}
+			allPassed = false
+			break
+		}
+
 		// Execute step
-		stepResult := r.executeStep(ctx, &step, variables)
+		stepResult := r.executeStep(ctx, &step, executionVariables)
+		if captured := parseCapturedVariables(stepResult.VariablesCaptured); len(captured) > 0 {
+			for key, value := range captured {
+				variables[key] = value
+			}
+			capturedByStep[step.ID] = captured
+		}
 
 		// Update result in DB
 		if result, ok := resultMap[step.ID]; ok {
@@ -144,6 +200,12 @@ func (r *Runner) executeStep(ctx context.Context, step *FlowStepPO, variables ma
 	}
 	body := r.resolveVariables(step.Body, variables)
 	headersStr := r.resolveVariables(step.Headers, variables)
+	unresolved := collectUnresolvedVariables(url, headersStr, body)
+	if len(unresolved) > 0 {
+		result.Status = RunStatusFailed
+		result.ErrorMessage = fmt.Sprintf("unresolved variables: %s", strings.Join(unresolved, ", "))
+		return result
+	}
 
 	// Build request info for logging
 	reqInfo := map[string]any{
@@ -279,6 +341,41 @@ func (r *Runner) resolveVariables(input string, variables map[string]any) string
 		}
 		return match
 	})
+}
+
+func collectUnresolvedVariables(values ...string) []string {
+	re := regexp.MustCompile(`\{\{(\w+)\}\}`)
+	seen := make(map[string]struct{})
+
+	for _, value := range values {
+		matches := re.FindAllStringSubmatch(value, -1)
+		for _, match := range matches {
+			if len(match) < 2 {
+				continue
+			}
+			seen[match[1]] = struct{}{}
+		}
+	}
+
+	keys := make([]string, 0, len(seen))
+	for key := range seen {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func parseCapturedVariables(raw string) map[string]any {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+
+	var captured map[string]any
+	if err := json.Unmarshal([]byte(raw), &captured); err != nil {
+		return nil
+	}
+
+	return captured
 }
 
 // processCaptures extracts variables from the response
@@ -464,6 +561,12 @@ func (r *Runner) evaluateDurationAssert(expr string, duration time.Duration) Ass
 func (r *Runner) topologicalSort(steps []FlowStepPO, edges []FlowEdgePO) []FlowStepPO {
 	if len(edges) == 0 {
 		// No edges, use sort_order
+		sort.SliceStable(steps, func(i, j int) bool {
+			if steps[i].SortOrder == steps[j].SortOrder {
+				return steps[i].ID < steps[j].ID
+			}
+			return steps[i].SortOrder < steps[j].SortOrder
+		})
 		return steps
 	}
 
@@ -484,10 +587,20 @@ func (r *Runner) topologicalSort(steps []FlowStepPO, edges []FlowEdgePO) []FlowS
 
 	// BFS
 	var queue []uint
-	for id, deg := range inDegree {
-		if deg == 0 {
-			queue = append(queue, id)
+	zeroInDegree := make([]FlowStepPO, 0)
+	for _, step := range steps {
+		if inDegree[step.ID] == 0 {
+			zeroInDegree = append(zeroInDegree, step)
 		}
+	}
+	sort.SliceStable(zeroInDegree, func(i, j int) bool {
+		if zeroInDegree[i].SortOrder == zeroInDegree[j].SortOrder {
+			return zeroInDegree[i].ID < zeroInDegree[j].ID
+		}
+		return zeroInDegree[i].SortOrder < zeroInDegree[j].SortOrder
+	})
+	for _, step := range zeroInDegree {
+		queue = append(queue, step.ID)
 	}
 
 	var ordered []FlowStepPO
@@ -499,7 +612,16 @@ func (r *Runner) topologicalSort(steps []FlowStepPO, edges []FlowEdgePO) []FlowS
 			ordered = append(ordered, step)
 		}
 
-		for _, next := range adj[current] {
+		nextSteps := adj[current]
+		sort.SliceStable(nextSteps, func(i, j int) bool {
+			left := stepMap[nextSteps[i]]
+			right := stepMap[nextSteps[j]]
+			if left.SortOrder == right.SortOrder {
+				return left.ID < right.ID
+			}
+			return left.SortOrder < right.SortOrder
+		})
+		for _, next := range nextSteps {
 			inDegree[next]--
 			if inDegree[next] == 0 {
 				queue = append(queue, next)
@@ -513,6 +635,12 @@ func (r *Runner) topologicalSort(steps []FlowStepPO, edges []FlowEdgePO) []FlowS
 		for _, s := range ordered {
 			reachedSet[s.ID] = true
 		}
+		sort.SliceStable(steps, func(i, j int) bool {
+			if steps[i].SortOrder == steps[j].SortOrder {
+				return steps[i].ID < steps[j].ID
+			}
+			return steps[i].SortOrder < steps[j].SortOrder
+		})
 		for _, s := range steps {
 			if !reachedSet[s.ID] {
 				ordered = append(ordered, s)

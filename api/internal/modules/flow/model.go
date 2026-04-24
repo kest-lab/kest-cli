@@ -27,6 +27,7 @@ func (FlowPO) TableName() string {
 type FlowStepPO struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
 	FlowID    uint           `gorm:"not null;index:idx_flow_steps_flow" json:"flow_id"`
+	ClientKey string         `gorm:"size:128;not null;default:'';index:idx_flow_steps_client_key" json:"client_key"`
 	Name      string         `gorm:"size:255;not null" json:"name"`
 	SortOrder int            `gorm:"default:0" json:"sort_order"`
 	Method    string         `gorm:"size:10;not null" json:"method"`
@@ -49,14 +50,14 @@ func (FlowStepPO) TableName() string {
 
 // FlowEdgePO represents a connection between two steps
 type FlowEdgePO struct {
-	ID             uint           `gorm:"primaryKey" json:"id"`
-	FlowID         uint           `gorm:"not null;index:idx_flow_edges_flow" json:"flow_id"`
-	SourceStepID   uint           `gorm:"not null" json:"source_step_id"`
-	TargetStepID   uint           `gorm:"not null" json:"target_step_id"`
-	VariableMapping string        `gorm:"type:text" json:"variable_mapping"`
-	CreatedAt      time.Time      `json:"created_at"`
-	UpdatedAt      time.Time      `json:"updated_at"`
-	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+	ID              uint           `gorm:"primaryKey" json:"id"`
+	FlowID          uint           `gorm:"not null;index:idx_flow_edges_flow" json:"flow_id"`
+	SourceStepID    uint           `gorm:"not null" json:"source_step_id"`
+	TargetStepID    uint           `gorm:"not null" json:"target_step_id"`
+	VariableMapping string         `gorm:"type:text" json:"variable_mapping"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // TableName returns the table name for FlowEdgePO

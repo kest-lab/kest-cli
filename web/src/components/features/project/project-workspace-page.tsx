@@ -67,6 +67,7 @@ import {
   findProjectCategory,
   flattenProjectCategories,
 } from '@/components/features/project/category-helpers';
+import { ProjectFlowManagementPage } from '@/components/features/project/flow-management-page';
 import {
   buildProjectWorkspaceRoute,
   getProjectWorkspaceModuleMeta,
@@ -589,7 +590,7 @@ export function ProjectWorkspacePage({
         />
       );
     case 'flows':
-      return <PlaceholderWorkspaceSection projectId={projectId} projectName={projectName} module={module} />;
+      return <ProjectFlowManagementPage projectId={projectId} selectedItemId={selectedItemId} />;
     default:
       return (
         <PlaceholderWorkspaceSection

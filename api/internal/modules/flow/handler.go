@@ -2,6 +2,7 @@ package flow
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -72,6 +73,16 @@ func (h *Handler) userID(c *gin.Context) uint {
 	return 0
 }
 
+func respondFlowError(c *gin.Context, err error) {
+	var flowErr *FlowError
+	if errors.As(err, &flowErr) {
+		response.Error(c, flowErr.Status, flowErr.Message)
+		return
+	}
+
+	response.Error(c, http.StatusInternalServerError, err.Error())
+}
+
 // --- Flow handlers ---
 
 // ListFlows handles GET /projects/:id/flows
@@ -108,7 +119,7 @@ func (h *Handler) CreateFlow(c *gin.Context) {
 
 	flow, err := h.service.CreateFlow(c.Request.Context(), pid, h.userID(c), &req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		respondFlowError(c, err)
 		return
 	}
 
@@ -124,11 +135,7 @@ func (h *Handler) GetFlow(c *gin.Context) {
 
 	flow, err := h.service.GetFlow(c.Request.Context(), fid)
 	if err != nil {
-		if err.Error() == "flow not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		respondFlowError(c, err)
 		return
 	}
 
@@ -150,11 +157,7 @@ func (h *Handler) UpdateFlow(c *gin.Context) {
 
 	flow, err := h.service.UpdateFlow(c.Request.Context(), fid, &req)
 	if err != nil {
-		if err.Error() == "flow not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		respondFlowError(c, err)
 		return
 	}
 
@@ -169,11 +172,7 @@ func (h *Handler) DeleteFlow(c *gin.Context) {
 	}
 
 	if err := h.service.DeleteFlow(c.Request.Context(), fid); err != nil {
-		if err.Error() == "flow not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		respondFlowError(c, err)
 		return
 	}
 
@@ -195,11 +194,7 @@ func (h *Handler) SaveFlow(c *gin.Context) {
 
 	flow, err := h.service.SaveFlow(c.Request.Context(), fid, &req)
 	if err != nil {
-		if err.Error() == "flow not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		respondFlowError(c, err)
 		return
 	}
 
@@ -223,7 +218,7 @@ func (h *Handler) CreateStep(c *gin.Context) {
 
 	step, err := h.service.CreateStep(c.Request.Context(), fid, &req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		respondFlowError(c, err)
 		return
 	}
 
@@ -246,11 +241,7 @@ func (h *Handler) UpdateStep(c *gin.Context) {
 
 	step, err2 := h.service.UpdateStep(c.Request.Context(), uint(sid), &req)
 	if err2 != nil {
-		if err2.Error() == "step not found" {
-			response.Error(c, http.StatusNotFound, err2.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err2.Error())
+		respondFlowError(c, err2)
 		return
 	}
 
@@ -266,11 +257,7 @@ func (h *Handler) DeleteStep(c *gin.Context) {
 	}
 
 	if err := h.service.DeleteStep(c.Request.Context(), uint(sid)); err != nil {
-		if err.Error() == "step not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		respondFlowError(c, err)
 		return
 	}
 
@@ -294,7 +281,7 @@ func (h *Handler) CreateEdge(c *gin.Context) {
 
 	edge, err := h.service.CreateEdge(c.Request.Context(), fid, &req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		respondFlowError(c, err)
 		return
 	}
 
@@ -310,11 +297,7 @@ func (h *Handler) DeleteEdge(c *gin.Context) {
 	}
 
 	if err := h.service.DeleteEdge(c.Request.Context(), uint(eid)); err != nil {
-		if err.Error() == "edge not found" {
-			response.Error(c, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		respondFlowError(c, err)
 		return
 	}
 
@@ -377,7 +360,7 @@ func (h *Handler) RunFlow(c *gin.Context) {
 
 	run, err := h.service.RunFlow(c.Request.Context(), fid, h.userID(c))
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		respondFlowError(c, err)
 		return
 	}
 
@@ -394,11 +377,7 @@ func (h *Handler) GetRun(c *gin.Context) {
 
 	run, err2 := h.service.GetRun(c.Request.Context(), uint(rid))
 	if err2 != nil {
-		if err2.Error() == "run not found" {
-			response.Error(c, http.StatusNotFound, err2.Error())
-			return
-		}
-		response.Error(c, http.StatusInternalServerError, err2.Error())
+		respondFlowError(c, err2)
 		return
 	}
 
@@ -414,7 +393,7 @@ func (h *Handler) ListRuns(c *gin.Context) {
 
 	runs, err := h.service.ListRuns(c.Request.Context(), fid)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		respondFlowError(c, err)
 		return
 	}
 

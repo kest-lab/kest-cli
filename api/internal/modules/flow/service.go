@@ -2,8 +2,8 @@ package flow
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"strings"
 )
 
 // Service defines the business logic interface for flows
@@ -45,10 +45,15 @@ func NewService(repo Repository) Service {
 // --- Flow CRUD ---
 
 func (s *service) CreateFlow(ctx context.Context, projectID, userID uint, req *CreateFlowRequest) (*FlowResponse, error) {
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return nil, newFlowError(422, "flow name is required")
+	}
+
 	flow := &FlowPO{
 		ProjectID:   projectID,
-		Name:        req.Name,
-		Description: req.Description,
+		Name:        name,
+		Description: strings.TrimSpace(req.Description),
 		CreatedBy:   userID,
 	}
 	if err := s.repo.CreateFlow(ctx, flow); err != nil {
@@ -60,7 +65,7 @@ func (s *service) CreateFlow(ctx context.Context, projectID, userID uint, req *C
 func (s *service) GetFlow(ctx context.Context, id uint) (*FlowDetailResponse, error) {
 	flow, err := s.repo.GetFlowByID(ctx, id)
 	if err != nil {
-		return nil, errors.New("flow not found")
+		return nil, newFlowError(404, "flow not found")
 	}
 
 	steps, err := s.repo.ListStepsByFlow(ctx, id)
@@ -77,6 +82,7 @@ func (s *service) GetFlow(ctx context.Context, id uint) (*FlowDetailResponse, er
 	for _, step := range steps {
 		stepResponses = append(stepResponses, *ToStepResponse(step))
 	}
+	ensureUniqueStepClientKeys(stepResponses)
 
 	edgeResponses := make([]EdgeResponse, 0, len(edges))
 	for _, edge := range edges {
@@ -112,14 +118,18 @@ func (s *service) ListFlows(ctx context.Context, projectID uint) ([]*FlowRespons
 func (s *service) UpdateFlow(ctx context.Context, id uint, req *UpdateFlowRequest) (*FlowResponse, error) {
 	flow, err := s.repo.GetFlowByID(ctx, id)
 	if err != nil {
-		return nil, errors.New("flow not found")
+		return nil, newFlowError(404, "flow not found")
 	}
 
 	if req.Name != nil {
-		flow.Name = *req.Name
+		name := strings.TrimSpace(*req.Name)
+		if name == "" {
+			return nil, newFlowError(422, "flow name is required")
+		}
+		flow.Name = name
 	}
 	if req.Description != nil {
-		flow.Description = *req.Description
+		flow.Description = strings.TrimSpace(*req.Description)
 	}
 
 	if err := s.repo.UpdateFlow(ctx, flow); err != nil {
@@ -131,7 +141,7 @@ func (s *service) UpdateFlow(ctx context.Context, id uint, req *UpdateFlowReques
 func (s *service) DeleteFlow(ctx context.Context, id uint) error {
 	_, err := s.repo.GetFlowByID(ctx, id)
 	if err != nil {
-		return errors.New("flow not found")
+		return newFlowError(404, "flow not found")
 	}
 
 	// Delete edges, steps, then flow
@@ -145,68 +155,90 @@ func (s *service) DeleteFlow(ctx context.Context, id uint) error {
 }
 
 func (s *service) SaveFlow(ctx context.Context, id uint, req *SaveFlowRequest) (*FlowDetailResponse, error) {
-	flow, err := s.repo.GetFlowByID(ctx, id)
-	if err != nil {
-		return nil, errors.New("flow not found")
+	if _, err := s.repo.GetFlowByID(ctx, id); err != nil {
+		return nil, newFlowError(404, "flow not found")
 	}
-
-	// Update flow metadata if provided
-	if req.Name != nil {
-		flow.Name = *req.Name
-	}
-	if req.Description != nil {
-		flow.Description = *req.Description
-	}
-	if err := s.repo.UpdateFlow(ctx, flow); err != nil {
+	if err := validateSaveGraph(req.Steps, req.Edges); err != nil {
 		return nil, err
 	}
 
-	// Replace all steps and edges
-	if err := s.repo.DeleteEdgesByFlow(ctx, id); err != nil {
-		return nil, err
-	}
-	if err := s.repo.DeleteStepsByFlow(ctx, id); err != nil {
-		return nil, err
-	}
+	if err := s.repo.WithTransaction(ctx, func(txRepo Repository) error {
+		flow, err := txRepo.GetFlowByID(ctx, id)
+		if err != nil {
+			return newFlowError(404, "flow not found")
+		}
 
-	// Create new steps
-	stepPOs := make([]*FlowStepPO, 0, len(req.Steps))
-	for _, stepReq := range req.Steps {
-		stepPOs = append(stepPOs, &FlowStepPO{
-			FlowID:    id,
-			Name:      stepReq.Name,
-			SortOrder: stepReq.SortOrder,
-			Method:    stepReq.Method,
-			URL:       stepReq.URL,
-			Headers:   stepReq.Headers,
-			Body:      stepReq.Body,
-			Captures:  stepReq.Captures,
-			Asserts:   stepReq.Asserts,
-			PositionX: stepReq.PositionX,
-			PositionY: stepReq.PositionY,
-		})
-	}
-	if err := s.repo.BatchCreateSteps(ctx, stepPOs); err != nil {
-		return nil, err
-	}
+		if req.Name != nil {
+			name := strings.TrimSpace(*req.Name)
+			if name == "" {
+				return newFlowError(422, "flow name is required")
+			}
+			flow.Name = name
+		}
+		if req.Description != nil {
+			flow.Description = strings.TrimSpace(*req.Description)
+		}
+		if err := txRepo.UpdateFlow(ctx, flow); err != nil {
+			return err
+		}
 
-	// Build a mapping from sort_order to step ID for edge resolution
-	stepIDMap := make(map[int]uint)
-	for _, step := range stepPOs {
-		stepIDMap[step.SortOrder] = step.ID
-	}
+		if err := txRepo.DeleteEdgesByFlow(ctx, id); err != nil {
+			return err
+		}
+		if err := txRepo.DeleteStepsByFlow(ctx, id); err != nil {
+			return err
+		}
 
-	// Create new edges
-	edgePOs := make([]*FlowEdgePO, 0, len(req.Edges))
-	for _, edgeReq := range req.Edges {
-		edgePOs = append(edgePOs, &FlowEdgePO{
-			FlowID:          id,
-			SourceStepID:    edgeReq.SourceStepID,
-			TargetStepID:    edgeReq.TargetStepID,
-			VariableMapping: edgeReq.VariableMapping,
-		})
-	}
-	if err := s.repo.BatchCreateEdges(ctx, edgePOs); err != nil {
+		stepPOs := make([]*FlowStepPO, 0, len(req.Steps))
+		for _, stepReq := range req.Steps {
+			stepPOs = append(stepPOs, &FlowStepPO{
+				FlowID:    id,
+				ClientKey: normalizeStepClientKey(0, stepReq.ClientKey),
+				Name:      stepReq.Name,
+				SortOrder: stepReq.SortOrder,
+				Method:    stepReq.Method,
+				URL:       stepReq.URL,
+				Headers:   stepReq.Headers,
+				Body:      stepReq.Body,
+				Captures:  stepReq.Captures,
+				Asserts:   stepReq.Asserts,
+				PositionX: stepReq.PositionX,
+				PositionY: stepReq.PositionY,
+			})
+		}
+		if err := txRepo.BatchCreateSteps(ctx, stepPOs); err != nil {
+			return err
+		}
+
+		stepIDByClientKey := make(map[string]uint, len(stepPOs))
+		for _, step := range stepPOs {
+			stepIDByClientKey[step.ClientKey] = step.ID
+		}
+
+		edgePOs := make([]*FlowEdgePO, 0, len(req.Edges))
+		for _, edgeReq := range req.Edges {
+			sourceID, ok := stepIDByClientKey[edgeReq.SourceClientKey]
+			if !ok {
+				return newFlowError(422, fmt.Sprintf("edge source step %q does not exist", edgeReq.SourceClientKey))
+			}
+			targetID, ok := stepIDByClientKey[edgeReq.TargetClientKey]
+			if !ok {
+				return newFlowError(422, fmt.Sprintf("edge target step %q does not exist", edgeReq.TargetClientKey))
+			}
+
+			edgePOs = append(edgePOs, &FlowEdgePO{
+				FlowID:          id,
+				SourceStepID:    sourceID,
+				TargetStepID:    targetID,
+				VariableMapping: edgeReq.VariableMapping,
+			})
+		}
+		if err := txRepo.BatchCreateEdges(ctx, edgePOs); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
@@ -218,11 +250,13 @@ func (s *service) SaveFlow(ctx context.Context, id uint, req *SaveFlowRequest) (
 func (s *service) CreateStep(ctx context.Context, flowID uint, req *CreateStepRequest) (*StepResponse, error) {
 	_, err := s.repo.GetFlowByID(ctx, flowID)
 	if err != nil {
-		return nil, errors.New("flow not found")
+		return nil, newFlowError(404, "flow not found")
 	}
 
+	clientKey := strings.TrimSpace(req.ClientKey)
 	step := &FlowStepPO{
 		FlowID:    flowID,
+		ClientKey: clientKey,
 		Name:      req.Name,
 		SortOrder: req.SortOrder,
 		Method:    req.Method,
@@ -237,15 +271,24 @@ func (s *service) CreateStep(ctx context.Context, flowID uint, req *CreateStepRe
 	if err := s.repo.CreateStep(ctx, step); err != nil {
 		return nil, err
 	}
+	if clientKey == "" {
+		step.ClientKey = normalizeStepClientKey(step.ID, "")
+		if err := s.repo.UpdateStep(ctx, step); err != nil {
+			return nil, err
+		}
+	}
 	return ToStepResponse(step), nil
 }
 
 func (s *service) UpdateStep(ctx context.Context, id uint, req *UpdateStepRequest) (*StepResponse, error) {
 	step, err := s.repo.GetStepByID(ctx, id)
 	if err != nil {
-		return nil, errors.New("step not found")
+		return nil, newFlowError(404, "step not found")
 	}
 
+	if req.ClientKey != nil {
+		step.ClientKey = normalizeStepClientKey(step.ID, *req.ClientKey)
+	}
 	if req.Name != nil {
 		step.Name = *req.Name
 	}
@@ -286,7 +329,7 @@ func (s *service) UpdateStep(ctx context.Context, id uint, req *UpdateStepReques
 func (s *service) DeleteStep(ctx context.Context, id uint) error {
 	_, err := s.repo.GetStepByID(ctx, id)
 	if err != nil {
-		return errors.New("step not found")
+		return newFlowError(404, "step not found")
 	}
 	return s.repo.DeleteStep(ctx, id)
 }
@@ -296,7 +339,40 @@ func (s *service) DeleteStep(ctx context.Context, id uint) error {
 func (s *service) CreateEdge(ctx context.Context, flowID uint, req *CreateEdgeRequest) (*EdgeResponse, error) {
 	_, err := s.repo.GetFlowByID(ctx, flowID)
 	if err != nil {
-		return nil, errors.New("flow not found")
+		return nil, newFlowError(404, "flow not found")
+	}
+
+	sourceStep, err := s.repo.GetStepByID(ctx, req.SourceStepID)
+	if err != nil {
+		return nil, newFlowError(422, "edge source step does not exist")
+	}
+	targetStep, err := s.repo.GetStepByID(ctx, req.TargetStepID)
+	if err != nil {
+		return nil, newFlowError(422, "edge target step does not exist")
+	}
+	if sourceStep.FlowID != flowID || targetStep.FlowID != flowID {
+		return nil, newFlowError(422, "edge steps must belong to the selected flow")
+	}
+	if _, err := parseVariableMappingRules(req.VariableMapping); err != nil {
+		return nil, err
+	}
+
+	steps, err := s.repo.ListStepsByFlow(ctx, flowID)
+	if err != nil {
+		return nil, err
+	}
+	edges, err := s.repo.ListEdgesByFlow(ctx, flowID)
+	if err != nil {
+		return nil, err
+	}
+	edges = append(edges, &FlowEdgePO{
+		FlowID:          flowID,
+		SourceStepID:    req.SourceStepID,
+		TargetStepID:    req.TargetStepID,
+		VariableMapping: req.VariableMapping,
+	})
+	if err := validateStoredGraph(steps, edges); err != nil {
+		return nil, err
 	}
 
 	edge := &FlowEdgePO{
@@ -314,7 +390,7 @@ func (s *service) CreateEdge(ctx context.Context, flowID uint, req *CreateEdgeRe
 func (s *service) UpdateEdge(ctx context.Context, id uint, req *UpdateEdgeRequest) (*EdgeResponse, error) {
 	edge, err := s.repo.GetEdgeByID(ctx, id)
 	if err != nil {
-		return nil, errors.New("edge not found")
+		return nil, newFlowError(404, "edge not found")
 	}
 
 	if req.SourceStepID != nil {
@@ -326,6 +402,39 @@ func (s *service) UpdateEdge(ctx context.Context, id uint, req *UpdateEdgeReques
 	if req.VariableMapping != nil {
 		edge.VariableMapping = *req.VariableMapping
 	}
+	if _, err := parseVariableMappingRules(edge.VariableMapping); err != nil {
+		return nil, err
+	}
+
+	sourceStep, err := s.repo.GetStepByID(ctx, edge.SourceStepID)
+	if err != nil {
+		return nil, newFlowError(422, "edge source step does not exist")
+	}
+	targetStep, err := s.repo.GetStepByID(ctx, edge.TargetStepID)
+	if err != nil {
+		return nil, newFlowError(422, "edge target step does not exist")
+	}
+	if sourceStep.FlowID != edge.FlowID || targetStep.FlowID != edge.FlowID {
+		return nil, newFlowError(422, "edge steps must belong to the selected flow")
+	}
+
+	steps, err := s.repo.ListStepsByFlow(ctx, edge.FlowID)
+	if err != nil {
+		return nil, err
+	}
+	edges, err := s.repo.ListEdgesByFlow(ctx, edge.FlowID)
+	if err != nil {
+		return nil, err
+	}
+	for index := range edges {
+		if edges[index].ID == edge.ID {
+			edges[index] = edge
+			break
+		}
+	}
+	if err := validateStoredGraph(steps, edges); err != nil {
+		return nil, err
+	}
 
 	if err := s.repo.UpdateEdge(ctx, edge); err != nil {
 		return nil, err
@@ -336,7 +445,7 @@ func (s *service) UpdateEdge(ctx context.Context, id uint, req *UpdateEdgeReques
 func (s *service) DeleteEdge(ctx context.Context, id uint) error {
 	_, err := s.repo.GetEdgeByID(ctx, id)
 	if err != nil {
-		return errors.New("edge not found")
+		return newFlowError(404, "edge not found")
 	}
 	return s.repo.DeleteEdge(ctx, id)
 }
@@ -347,7 +456,7 @@ func (s *service) ExecuteFlow(ctx context.Context, runID uint, baseURL string, e
 	run, err := s.repo.GetRunByID(ctx, runID)
 	if err != nil {
 		close(events)
-		return errors.New("run not found")
+		return newFlowError(404, "run not found")
 	}
 
 	// Get flow steps and edges
@@ -359,6 +468,10 @@ func (s *service) ExecuteFlow(ctx context.Context, runID uint, baseURL string, e
 
 	edges, err := s.repo.ListEdgesByFlow(ctx, run.FlowID)
 	if err != nil {
+		close(events)
+		return err
+	}
+	if err := validateStoredGraph(steps, edges); err != nil {
 		close(events)
 		return err
 	}
@@ -384,7 +497,19 @@ func (s *service) RunFlow(ctx context.Context, flowID, userID uint) (*RunRespons
 	}
 
 	if len(flowDetail.Steps) == 0 {
-		return nil, errors.New("flow has no steps")
+		return nil, newFlowError(422, "flow has no steps")
+	}
+
+	steps, err := s.repo.ListStepsByFlow(ctx, flowID)
+	if err != nil {
+		return nil, err
+	}
+	edges, err := s.repo.ListEdgesByFlow(ctx, flowID)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateStoredGraph(steps, edges); err != nil {
+		return nil, err
 	}
 
 	// Create run record
@@ -415,7 +540,7 @@ func (s *service) RunFlow(ctx context.Context, flowID, userID uint) (*RunRespons
 func (s *service) GetRun(ctx context.Context, runID uint) (*RunResponse, error) {
 	run, err := s.repo.GetRunByID(ctx, runID)
 	if err != nil {
-		return nil, errors.New("run not found")
+		return nil, newFlowError(404, "run not found")
 	}
 
 	resp := ToRunResponse(run)
@@ -445,4 +570,25 @@ func (s *service) ListRuns(ctx context.Context, flowID uint) ([]*RunResponse, er
 		responses = append(responses, ToRunResponse(run))
 	}
 	return responses, nil
+}
+
+func ensureUniqueStepClientKeys(steps []StepResponse) {
+	used := make(map[string]struct{}, len(steps))
+
+	for index := range steps {
+		base := normalizeStepClientKey(steps[index].ID, steps[index].ClientKey)
+		candidate := base
+		if _, exists := used[candidate]; exists {
+			candidate = fmt.Sprintf("%s-%d", base, steps[index].ID)
+			for suffix := 2; ; suffix += 1 {
+				if _, exists := used[candidate]; !exists {
+					break
+				}
+				candidate = fmt.Sprintf("%s-%d-%d", base, steps[index].ID, suffix)
+			}
+		}
+
+		steps[index].ClientKey = candidate
+		used[candidate] = struct{}{}
+	}
 }
