@@ -866,6 +866,7 @@ function CreateFlowDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: CreateFlowRequest) => Promise<void>;
 }) {
+  const t = useT('project');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
@@ -874,7 +875,7 @@ function CreateFlowDialog({
     event.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError('Flow name is required.');
+      setError(t('flowPage.nameRequired'));
       return;
     }
 
@@ -897,31 +898,31 @@ function CreateFlowDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent size="default">
         <DialogHeader>
-          <DialogTitle>Create Flow</DialogTitle>
+          <DialogTitle>{t('flowPage.createDialogTitle')}</DialogTitle>
           <DialogDescription>
-            Add a new HTTP test flow, then design the execution graph in the canvas.
+            {t('flowPage.createDialogDescription')}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
           <form id="create-flow-form" className="space-y-5 py-1" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="create-flow-name">Name</Label>
+              <Label htmlFor="create-flow-name">{t('common.name')}</Label>
               <Input
                 id="create-flow-name"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Auth chain"
+                placeholder={t('flowPage.namePlaceholder')}
                 errorText={error || undefined}
                 root
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-flow-description">Description</Label>
+              <Label htmlFor="create-flow-description">{t('common.description')}</Label>
               <Textarea
                 id="create-flow-description"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder="Describe what this flow validates and how variables move between steps."
+                placeholder={t('flowPage.descriptionPlaceholder')}
                 rows={6}
                 root
               />
@@ -930,10 +931,10 @@ function CreateFlowDialog({
         </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" form="create-flow-form" loading={isSubmitting}>
-            Create Flow
+            {t('flowPage.create')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -2515,9 +2516,9 @@ export function ProjectFlowManagementPage({
       <div className="space-y-4 border-b border-border/60 px-4 py-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-text-main">Flows</p>
+            <p className="text-sm font-semibold text-text-main">{t('modules.flows.label')}</p>
             <p className="text-sm leading-6 text-text-muted">
-              Design request graphs, save them, and stream execution in place.
+              {t('flowPage.sidebarDescription')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -2527,8 +2528,8 @@ export function ProjectFlowManagementPage({
                 variant="outline"
                 size="sm"
                 isIcon
-                aria-label="Hide flows sidebar"
-                title="Hide flows sidebar"
+                aria-label={t('flowPage.hideSidebar')}
+                title={t('flowPage.hideSidebar')}
                 onClick={() => setIsSidebarCollapsed(true)}
               >
                 <PanelLeft className="h-4 w-4" />
@@ -2536,7 +2537,7 @@ export function ProjectFlowManagementPage({
             ) : null}
             <Button type="button" size="sm" onClick={() => setIsCreateOpen(true)} disabled={!canEdit}>
               <Plus className="h-4 w-4" />
-              Add
+              {t('flowPage.create')}
             </Button>
           </div>
         </div>
@@ -2546,7 +2547,7 @@ export function ProjectFlowManagementPage({
           <Input
             value={searchValue}
             onChange={(event) => setSearchValue(event.target.value)}
-            placeholder="Filter flows"
+            placeholder={t('flowPage.filterPlaceholder')}
             className="pl-9"
             root
           />
@@ -2562,8 +2563,8 @@ export function ProjectFlowManagementPage({
           </div>
         ) : flowListQuery.error ? (
           <Alert>
-            <AlertTitle>Unable to load flows</AlertTitle>
-            <AlertDescription>Refresh the workspace to retry loading this project&apos;s flows.</AlertDescription>
+            <AlertTitle>{t('flowPage.loadFailedTitle')}</AlertTitle>
+            <AlertDescription>{t('flowPage.loadFailedDescription')}</AlertDescription>
           </Alert>
         ) : filteredFlows.length === 0 ? (
           <Card className="border-dashed border-border/60">
@@ -2572,14 +2573,14 @@ export function ProjectFlowManagementPage({
                 <FolderGit2 className="h-6 w-6" />
               </div>
               <div className="space-y-2">
-                <p className="text-lg font-semibold text-text-main">No flows yet</p>
+                <p className="text-lg font-semibold text-text-main">{t('flowPage.emptyTitle')}</p>
                 <p className="text-sm leading-6 text-text-muted">
-                  Create the first flow, then design request nodes and explicit variable mappings.
+                  {t('flowPage.emptyDescription')}
                 </p>
               </div>
               <Button type="button" onClick={() => setIsCreateOpen(true)} disabled={!canEdit}>
                 <Plus className="h-4 w-4" />
-                Create Flow
+                {t('flowPage.create')}
               </Button>
             </CardContent>
           </Card>
@@ -2603,10 +2604,10 @@ export function ProjectFlowManagementPage({
                   >
                     <p className="truncate text-sm font-semibold text-text-main">{flow.name}</p>
                     <p className="mt-1 line-clamp-2 text-xs leading-5 text-text-muted">
-                      {flow.description || 'No description'}
+                      {flow.description || t('common.noDescriptionProvided')}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
-                      <Badge variant="outline">{flow.step_count ?? 0} steps</Badge>
+                      <Badge variant="outline">{t('flowPage.stepCount', { count: flow.step_count ?? 0 })}</Badge>
                       <span>{formatDate(flow.updated_at)}</span>
                     </div>
                   </button>
@@ -2642,14 +2643,14 @@ export function ProjectFlowManagementPage({
           <FileClock className="h-6 w-6" />
         </div>
         <div className="space-y-2">
-          <p className="text-lg font-semibold text-text-main">Flow not found</p>
+          <p className="text-lg font-semibold text-text-main">{t('flowPage.notFoundTitle')}</p>
           <p className="text-sm leading-6 text-text-muted">
-            The selected flow no longer exists or the current item id is stale.
+            {t('flowPage.notFoundDescription')}
           </p>
         </div>
         <Button asChild variant="outline">
           <Link href={buildProjectFlowsRoute(projectId)}>
-            Clear selection
+            {t('common.clearSelection')}
           </Link>
         </Button>
       </CardContent>
@@ -2661,11 +2662,11 @@ export function ProjectFlowManagementPage({
           <Workflow className="h-6 w-6" />
         </div>
         <div className="space-y-2">
-          <p className="text-lg font-semibold text-text-main">Select a flow</p>
+          <p className="text-lg font-semibold text-text-main">{t('flowPage.selectTitle')}</p>
           <p className="text-sm leading-6 text-text-muted">
             {showFlowSidebar
-              ? 'Use the left sidebar to open an existing flow or create a new one for this project.'
-              : 'Use "Show Flows" to reopen the sidebar, then open an existing flow or create a new one.'}
+              ? t('flowPage.selectDescriptionWithSidebar')
+              : t('flowPage.selectDescriptionCollapsed')}
           </p>
         </div>
       </CardContent>
@@ -2675,7 +2676,7 @@ export function ProjectFlowManagementPage({
       <div className="flex flex-wrap items-center gap-2 border-b border-border/60 bg-bg-surface/70 px-4 py-4 md:px-6">
         <Button type="button" variant="outline" onClick={() => void saveCurrentFlow()} disabled={!canEdit || !dirty} loading={saveFlowMutation.isPending}>
           <Save className="h-4 w-4" />
-          Save
+          {t('common.saveChanges')}
         </Button>
         <Button
           type="button"
@@ -2684,7 +2685,7 @@ export function ProjectFlowManagementPage({
           loading={isLocalRunPending}
         >
           <Play className="h-4 w-4" />
-          Run Local
+          {t('flowPage.runLocal')}
         </Button>
         <Button
           type="button"
@@ -2694,37 +2695,37 @@ export function ProjectFlowManagementPage({
           loading={runFlowMutation.isPending}
         >
           <Play className="h-4 w-4" />
-          Run Server
+          {t('flowPage.runServer')}
         </Button>
         <Button type="button" variant="outline" onClick={handleAddStep} disabled={!canEdit || !selectedFlowId}>
           <Plus className="h-4 w-4" />
-          Add Step
+          {t('flowPage.addStep')}
         </Button>
         <Button type="button" variant="outline" onClick={() => reactFlowInstance?.fitView({ padding: 0.16 })} disabled={!selectedFlowId}>
-          Fit View
+          {t('flowPage.fitView')}
         </Button>
         <Button type="button" variant="outline" onClick={handleRefresh} disabled={flowListQuery.isFetching || selectedFlowQuery.isFetching}>
           <RefreshCw className="h-4 w-4" />
-          Refresh
+          {t('common.refresh')}
         </Button>
         {isMobile ? (
           <Button type="button" variant="outline" onClick={() => setInspectorOpen(true)}>
-            Details
+            {t('flowPage.details')}
           </Button>
         ) : null}
         {dirty ? (
           <Badge variant="outline" className="border-amber-200 bg-amber-500/10 text-amber-700">
-            Unsaved
+            {t('flowPage.unsaved')}
           </Badge>
         ) : (
-          <Badge variant="outline">Saved</Badge>
+          <Badge variant="outline">{t('flowPage.saved')}</Badge>
         )}
       </div>
 
       {validationState.message ? (
         <div className="border-b border-border/60 px-4 py-4 md:px-6">
           <Alert variant="destructive">
-            <AlertTitle>Fix the flow before continuing</AlertTitle>
+            <AlertTitle>{t('flowPage.validationTitle')}</AlertTitle>
             <AlertDescription>{validationState.message}</AlertDescription>
           </Alert>
         </div>
@@ -2821,21 +2822,21 @@ export function ProjectFlowManagementPage({
         <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <div className="space-y-4 border-b border-border/60 bg-bg-surface/70 px-4 py-4 md:px-6">
             <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link href="/project">Projects</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                    <Link href="/project">{t('common.projects')}</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
                     <Link href={buildProjectDetailRoute(projectId)}>{projectName}</Link>
-                  </BreadcrumbLink>
+                </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Flows</BreadcrumbPage>
+                  <BreadcrumbPage>{t('modules.flows.label')}</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -2844,16 +2845,16 @@ export function ProjectFlowManagementPage({
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                    Flows
+                    {t('modules.flows.label')}
                   </Badge>
-                  <p className="text-sm text-text-muted">React Flow test flow designer</p>
+                  <p className="text-sm text-text-muted">{t('flowPage.heroEyebrow')}</p>
                 </div>
                 <div>
                   <h2 className="text-2xl font-semibold tracking-tight">
-                    {selectedFlowQuery.data?.name || 'HTTP test flows'}
+                    {selectedFlowQuery.data?.name || t('flowPage.heroTitleFallback')}
                   </h2>
                   <p className="mt-2 max-w-4xl text-sm leading-6 text-text-muted">
-                    Design HTTP request graphs, pass captures across edges, and inspect streamed execution without leaving the project workspace.
+                    {t('flowPage.heroDescription')}
                   </p>
                 </div>
               </div>
@@ -2861,17 +2862,17 @@ export function ProjectFlowManagementPage({
               <div className="flex flex-wrap gap-2">
                 <Button type="button" variant="outline" onClick={handleRefresh}>
                   <RefreshCw className="h-4 w-4" />
-                  Refresh
+                  {t('common.refresh')}
                 </Button>
                 {!isMobile && isSidebarCollapsed ? (
                   <Button type="button" variant="outline" onClick={() => setIsSidebarCollapsed(false)}>
                     <PanelLeft className="h-4 w-4" />
-                    Show Flows
+                    {t('flowPage.showSidebar')}
                   </Button>
                 ) : null}
                 <Button type="button" onClick={() => setIsCreateOpen(true)} disabled={!canEdit}>
                   <Plus className="h-4 w-4" />
-                  New Flow
+                  {t('flowPage.newFlow')}
                 </Button>
               </div>
             </div>
@@ -2893,8 +2894,8 @@ export function ProjectFlowManagementPage({
         <Drawer open={inspectorOpen} onOpenChange={setInspectorOpen} direction="right">
           <DrawerContent className="max-w-full">
             <DrawerHeader>
-              <DrawerTitle>Flow inspector</DrawerTitle>
-              <DrawerDescription>Inspect the selected node, edge, or run history.</DrawerDescription>
+              <DrawerTitle>{t('flowPage.drawerTitle')}</DrawerTitle>
+              <DrawerDescription>{t('flowPage.drawerDescription')}</DrawerDescription>
             </DrawerHeader>
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
               <FlowInspector

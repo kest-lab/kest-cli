@@ -42,6 +42,8 @@ import {
   useProjects,
   useUpdateProject,
 } from '@/hooks/use-projects';
+import { useT } from '@/i18n/client';
+import type { ScopedTranslations } from '@/i18n/shared';
 import { apiSpecService } from '@/services/api-spec';
 import { projectService } from '@/services/project';
 import type { ApiProject, CreateProjectRequest, UpdateProjectRequest } from '@/types/project';
@@ -50,6 +52,7 @@ import { formatDate } from '@/utils';
 const PROJECTS_PAGE_SIZE = 1000;
 const MAX_PREVIEW_SPECS = 5;
 const EMPTY_PROJECTS: ApiProject[] = [];
+type ProjectT = ScopedTranslations<'project'>;
 
 const getProjectCreatedAt = (project: ApiProject) => project.created_at || '';
 
@@ -91,6 +94,7 @@ const buildQuickRequestHref = (projectId: number) =>
   `${buildProjectCollectionsRoute(projectId)}?quickRequest=1`;
 
 export function ProjectDashboardPage() {
+  const t = useT('project');
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -227,14 +231,14 @@ export function ProjectDashboardPage() {
               <Input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search projects"
+                placeholder={t('dashboardPage.searchPlaceholder')}
                 className="pl-9"
               />
             </div>
 
             <Button type="button" onClick={openCreateDialog} className="w-full">
               <Plus className="h-4 w-4" />
-              Create Project
+              {t('projectForm.createButton')}
             </Button>
           </div>
 
@@ -242,7 +246,7 @@ export function ProjectDashboardPage() {
 
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             <div className="mb-3 flex items-center justify-between px-2 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-              <span>Projects</span>
+              <span>{t('dashboardPage.projectsLabel')}</span>
               <span>{filteredProjects.length}</span>
             </div>
 
@@ -261,17 +265,17 @@ export function ProjectDashboardPage() {
               </div>
             ) : projectsQuery.error ? (
               <Alert>
-                <AlertTitle>Unable to load projects</AlertTitle>
+                <AlertTitle>{t('dashboardPage.loadFailedTitle')}</AlertTitle>
                 <AlertDescription>
-                  The dashboard could not load the project list from the current API.
+                  {t('dashboardPage.loadFailedDescription')}
                 </AlertDescription>
               </Alert>
             ) : filteredProjects.length === 0 ? (
               <Card className="border-dashed">
                 <CardContent className="p-6 text-sm text-text-muted">
                   {projects.length === 0
-                    ? 'No projects are available yet. Create the first project to populate the dashboard.'
-                    : 'No projects match the current search keyword.'}
+                    ? t('dashboardPage.noProjectsYet')
+                    : t('dashboardPage.noProjectsMatched')}
                 </CardContent>
               </Card>
             ) : (
@@ -304,15 +308,19 @@ export function ProjectDashboardPage() {
                       <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
                         {isActive ? (
                           <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                            Selected
+                            {t('dashboardPage.selected')}
                           </Badge>
                         ) : null}
                         {project.created_at ? (
-                          <span>Created {formatDate(project.created_at, 'YYYY-MM-DD')}</span>
+                          <span>
+                            {t('dashboardPage.createdAt', {
+                              value: formatDate(project.created_at, 'YYYY-MM-DD'),
+                            })}
+                          </span>
                         ) : null}
                         {!isActive ? (
                           <span className="transition-opacity group-hover:opacity-100 lg:opacity-0">
-                            Preview
+                            {t('dashboardPage.preview')}
                           </span>
                         ) : null}
                       </div>
@@ -363,6 +371,7 @@ function ProjectDashboardWelcome({
   onOpenProject: (projectId?: number | null) => void;
   onCreateProject: () => void;
 }) {
+  const t = useT('project');
   const recentProjects = [...projects]
     .sort(sortProjectsByCreatedAtDesc)
     .slice(0, 5);
@@ -374,20 +383,19 @@ function ProjectDashboardWelcome({
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-2">
               <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                Start here
+                {t('dashboardPage.startHere')}
               </Badge>
               <CardTitle className="text-2xl tracking-tight">
-                Create a project, then choose how you want to start
+                {t('dashboardPage.heroTitle')}
               </CardTitle>
               <CardDescription className="max-w-3xl">
-                After the first project exists, the dashboard will immediately open its preview and
-                point you to either AI-assisted API design or a quick request surface.
+                {t('dashboardPage.heroDescription')}
               </CardDescription>
             </div>
 
             <Button type="button" onClick={onCreateProject}>
               <Plus className="h-4 w-4" />
-              Create Project
+              {t('projectForm.createButton')}
             </Button>
           </div>
         </CardHeader>
@@ -396,19 +404,14 @@ function ProjectDashboardWelcome({
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card className="border-border/60">
           <CardHeader>
-            <CardTitle>Create the first project</CardTitle>
-            <CardDescription>
-              The dashboard becomes useful after one project exists. Then it will auto-open the
-              latest project and show the next recommended action.
-            </CardDescription>
+            <CardTitle>{t('dashboardPage.createFirstProjectTitle')}</CardTitle>
+            <CardDescription>{t('dashboardPage.createFirstProjectDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {recentProjects.length === 0 ? (
               <Alert>
-                <AlertTitle>No projects yet</AlertTitle>
-                <AlertDescription>
-                  Use the create action to seed the dashboard with your first project.
-                </AlertDescription>
+                <AlertTitle>{t('dashboardPage.noProjectsYetTitle')}</AlertTitle>
+                <AlertDescription>{t('dashboardPage.noProjectsYetDescription')}</AlertDescription>
               </Alert>
             ) : (
               recentProjects.map((project) => (
@@ -432,19 +435,17 @@ function ProjectDashboardWelcome({
 
         <Card className="border-dashed border-border/70">
           <CardHeader>
-            <CardTitle>Two ways to start</CardTitle>
-            <CardDescription>
-              Once a project exists, keep the first decision small: either model the API or probe it.
-            </CardDescription>
+            <CardTitle>{t('dashboardPage.twoWaysTitle')}</CardTitle>
+            <CardDescription>{t('dashboardPage.twoWaysDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-text-muted">
             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-              <p className="font-medium text-text-main">1. Design with AI</p>
-              <p className="mt-1">Use AI Draft API to turn product intent into a structured endpoint and start building the source of truth.</p>
+              <p className="font-medium text-text-main">{t('dashboardPage.aiStartTitle')}</p>
+              <p className="mt-1">{t('dashboardPage.aiStartDescription')}</p>
             </div>
             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-              <p className="font-medium text-text-main">2. Quick Request</p>
-              <p className="mt-1">If you already know the endpoint, open the request workbench and send a probe immediately, then save it back into structured assets.</p>
+              <p className="font-medium text-text-main">{t('dashboardPage.quickRequestTitle')}</p>
+              <p className="mt-1">{t('dashboardPage.quickRequestDescription')}</p>
             </div>
           </CardContent>
         </Card>
@@ -460,6 +461,7 @@ function ProjectPreviewPanel({
   project: ApiProject;
   onEdit: () => void;
 }) {
+  const t = useT('project');
   const [slowPreviewKey, setSlowPreviewKey] = useState('');
   const statsQuery = useProjectStats(project.id);
   const apiSpecsQuery = useApiSpecs({
@@ -486,6 +488,7 @@ function ProjectPreviewPanel({
     slowPreviewKey === slowPreviewLoadKey;
   const nextStep = hasResolvedReadiness
     ? resolveDashboardNextStep({
+        t,
         projectId: project.id,
         apiSpecCount,
         environmentCount,
@@ -494,38 +497,40 @@ function ProjectPreviewPanel({
   const readinessItems = hasResolvedReadiness
     ? ([
         {
-          label: 'Source of truth',
+          label: t('dashboardPage.sourceOfTruthLabel'),
           value:
             apiSpecCount > 0
-              ? `${apiSpecCount} spec${apiSpecCount === 1 ? '' : 's'} ready`
-              : 'Missing',
+              ? t('dashboardPage.sourceOfTruthReadyValue', { count: apiSpecCount })
+              : t('projectDetail.missing'),
           tone: apiSpecCount > 0 ? 'ready' : 'pending',
           detail:
             apiSpecCount > 0
-              ? 'The interface inventory exists and can drive docs and tests.'
-              : 'Start in API Specs so the project has a stable interface inventory.',
+              ? t('dashboardPage.sourceOfTruthReadyDetail')
+              : t('dashboardPage.sourceOfTruthMissingDetail'),
         },
         {
-          label: 'Runtime context',
+          label: t('dashboardPage.runtimeContextLabel'),
           value:
             environmentCount > 0
-              ? `${environmentCount} environment${environmentCount === 1 ? '' : 's'} configured`
-              : 'Missing',
+              ? t('dashboardPage.runtimeContextReadyValue', { count: environmentCount })
+              : t('projectDetail.missing'),
           tone: environmentCount > 0 ? 'ready' : 'pending',
           detail:
             environmentCount > 0
-              ? 'Base URLs, headers, and variables are ready for execution.'
-              : 'Add one environment before running requests against real targets.',
+              ? t('dashboardPage.runtimeContextReadyDetail')
+              : t('dashboardPage.runtimeContextMissingDetail'),
         },
         {
-          label: 'Validation',
+          label: t('dashboardPage.validationLabel'),
           value:
-            apiSpecCount > 0 && environmentCount > 0 ? 'Ready to generate' : 'Waiting on setup',
+            apiSpecCount > 0 && environmentCount > 0
+              ? t('dashboardPage.validationReadyValue')
+              : t('dashboardPage.validationPendingValue'),
           tone: apiSpecCount > 0 && environmentCount > 0 ? 'ready' : 'pending',
           detail:
             apiSpecCount > 0 && environmentCount > 0
-              ? 'Move into Test Cases when you want the first runnable coverage.'
-              : 'Test generation becomes useful after the spec and environment baseline exist.',
+              ? t('dashboardPage.validationReadyDetail')
+              : t('dashboardPage.validationPendingDetail'),
         },
       ] as const)
     : [];
@@ -562,19 +567,21 @@ function ProjectPreviewPanel({
                 <CardTitle className="text-2xl tracking-tight">{projectDetail.name}</CardTitle>
                 <CardDescription className="mt-2 max-w-3xl text-sm leading-6">
                   {hasReadinessError
-                    ? 'Some project signals failed to load. Retry this preview or open the workspace directly.'
+                    ? t('dashboardPage.previewSummaryFailed')
                     : isSlowPreview
-                      ? 'Loading project status is taking longer than usual. Use Quick Request or open the workspace while the richer preview catches up.'
+                      ? t('dashboardPage.previewSummarySlow')
                     : nextStep?.summary ??
-                      'Loading project status so the next step reflects real project data.'}
+                        t('dashboardPage.previewSummaryLoading')}
                 </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-5 text-sm text-text-muted">
-                <span>Slug: {projectDetail.slug}</span>
-                {createdAtLabel ? <span>Created {createdAtLabel}</span> : null}
+                <span>{t('dashboardPage.slugLabel', { value: projectDetail.slug })}</span>
+                {createdAtLabel ? (
+                  <span>{t('dashboardPage.createdAt', { value: createdAtLabel })}</span>
+                ) : null}
                 {typeof stats?.member_count === 'number' ? (
                   <span>
-                    {memberCount} team member{memberCount === 1 ? '' : 's'}
+                    {t('dashboardPage.teamMembers', { count: memberCount })}
                   </span>
                 ) : null}
                 <Button
@@ -584,7 +591,7 @@ function ProjectPreviewPanel({
                   onClick={onEdit}
                   className="h-auto px-0 text-sm text-text-muted hover:bg-transparent hover:text-text-main"
                 >
-                  Edit details
+                  {t('dashboardPage.editDetails')}
                 </Button>
               </div>
             </div>
@@ -593,13 +600,13 @@ function ProjectPreviewPanel({
               {isSlowPreview && !nextStep && !hasReadinessError ? (
                 <Button asChild>
                   <Link href={buildProjectCollectionsRoute(project.id)}>
-                    Quick Request
+                    {t('projectDetail.quickRequest')}
                   </Link>
                 </Button>
               ) : null}
               <Button asChild variant="outline">
                 <Link href={buildProjectDetailRoute(project.id)}>
-                  Open workspace
+                  {t('projectDetail.openWorkspace')}
                 </Link>
               </Button>
             </div>
@@ -610,18 +617,18 @@ function ProjectPreviewPanel({
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <Card className="border-border/60">
           <CardHeader>
-            <CardTitle>Progress</CardTitle>
-            <CardDescription>Three checks are enough to understand project readiness.</CardDescription>
+            <CardTitle>{t('dashboardPage.progressTitle')}</CardTitle>
+            <CardDescription>{t('dashboardPage.progressDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {hasReadinessError ? (
               <Alert>
-                <AlertTitle>Unable to load project readiness</AlertTitle>
+                <AlertTitle>{t('dashboardPage.readinessLoadFailedTitle')}</AlertTitle>
                 <AlertDescription className="mt-2">
-                  The preview could not determine whether the project is ready for setup or testing.
+                  {t('dashboardPage.readinessLoadFailedDescription')}
                 </AlertDescription>
                 <Button type="button" variant="outline" size="sm" className="mt-4" onClick={handleRetryPreview}>
-                  Retry preview
+                  {t('dashboardPage.retryPreview')}
                 </Button>
               </Alert>
             ) : !hasResolvedReadiness ? (
@@ -636,9 +643,9 @@ function ProjectPreviewPanel({
                 </div>
                 {isSlowPreview ? (
                   <div className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-border/70 bg-background/70 px-4 py-3 text-sm text-text-muted">
-                    <span>Still loading readiness signals.</span>
+                    <span>{t('dashboardPage.stillLoadingReadiness')}</span>
                     <Button type="button" variant="outline" size="sm" onClick={handleRetryPreview}>
-                      Retry
+                      {t('common.refresh')}
                     </Button>
                   </div>
                 ) : null}
@@ -679,14 +686,14 @@ function ProjectPreviewPanel({
               <div className="space-y-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium text-text-main">Recent API specs</p>
+                    <p className="text-sm font-medium text-text-main">{t('dashboardPage.recentApiSpecsTitle')}</p>
                     <p className="mt-1 text-sm text-text-muted">
-                      Keep this preview short. Inspect the rest inside the workspace.
+                      {t('dashboardPage.recentApiSpecsDescription')}
                     </p>
                   </div>
                   <Button asChild variant="ghost" className="px-0">
                     <Link href={buildProjectApiSpecsRoute(project.id)}>
-                      Open API Specs
+                      {t('projectDetail.reviewApiSpecs')}
                     </Link>
                   </Button>
                 </div>
@@ -702,7 +709,7 @@ function ProjectPreviewPanel({
                           {spec.method} {spec.path}
                         </p>
                         <p className="truncate text-xs text-text-muted">
-                          {spec.summary || spec.description || 'No summary provided'}
+                          {spec.summary || spec.description || t('common.noSummaryProvided')}
                         </p>
                       </div>
                       <Badge variant="outline">{spec.version}</Badge>
@@ -718,34 +725,34 @@ function ProjectPreviewPanel({
           <CardHeader>
             <CardTitle>
               {hasReadinessError
-                ? 'Preview needs attention'
+                ? t('dashboardPage.previewNeedsAttention')
                 : isSlowPreview && !nextStep
-                  ? 'Move now, refine later'
-                  : nextStep?.title ?? 'Loading next step'}
+                  ? t('dashboardPage.moveNowRefineLater')
+                  : nextStep?.title ?? t('dashboardPage.loadingNextStep')}
             </CardTitle>
             <CardDescription>
               {hasReadinessError
-                ? 'The dashboard cannot recommend the next step until the preview data loads successfully.'
+                ? t('dashboardPage.previewNeedsAttentionDescription')
                 : isSlowPreview && !nextStep
-                  ? 'The rich preview is still loading. Use a quick request or enter the workspace instead of waiting on the dashboard.'
+                  ? t('dashboardPage.moveNowRefineLaterDescription')
                 : nextStep?.description ??
-                  'Waiting for project readiness so this recommendation is not guessed.'}
+                    t('dashboardPage.recommendationLoadingDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {hasReadinessError ? (
               <Alert>
-                <AlertTitle>Recommendation unavailable</AlertTitle>
+                <AlertTitle>{t('dashboardPage.recommendationUnavailableTitle')}</AlertTitle>
                 <AlertDescription className="mt-2">
-                  Retry the preview, or continue in the workspace if you already know the next action.
+                  {t('dashboardPage.recommendationUnavailableDescription')}
                 </AlertDescription>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button type="button" variant="outline" size="sm" onClick={handleRetryPreview}>
-                    Retry preview
+                    {t('dashboardPage.retryPreview')}
                   </Button>
                   <Button asChild size="sm">
                     <Link href={buildProjectDetailRoute(project.id)}>
-                      Open workspace
+                      {t('projectDetail.openWorkspace')}
                     </Link>
                   </Button>
                 </div>
@@ -759,21 +766,21 @@ function ProjectPreviewPanel({
                 {isSlowPreview ? (
                   <div className="space-y-3 rounded-2xl border border-dashed border-border/70 bg-background/70 p-4">
                     <p className="text-sm text-text-muted">
-                      Recommendation is taking longer than usual. Do not block the user on the dashboard.
+                      {t('dashboardPage.recommendationSlowDescription')}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <Button asChild size="sm">
                         <Link href={buildProjectCollectionsRoute(project.id)}>
-                          Quick Request
+                          {t('projectDetail.quickRequest')}
                         </Link>
                       </Button>
                       <Button asChild size="sm" variant="outline">
                         <Link href={buildProjectDetailRoute(project.id)}>
-                          Open workspace
+                          {t('projectDetail.openWorkspace')}
                         </Link>
                       </Button>
                       <Button type="button" variant="outline" size="sm" onClick={handleRetryPreview}>
-                        Retry
+                        {t('common.refresh')}
                       </Button>
                     </div>
                   </div>
@@ -783,14 +790,14 @@ function ProjectPreviewPanel({
               <>
                 <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
                   <p className="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                    Why now
+                    {t('dashboardPage.whyNow')}
                   </p>
                   <p className="mt-3 text-sm leading-6 text-text-muted">{nextStep.reason}</p>
                 </div>
 
                 <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
                   <p className="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                    To unlock this step
+                    {t('dashboardPage.unlockTitle')}
                   </p>
                   <div className="mt-3 space-y-3">
                     {nextStep.blockers.map((blocker) => (
@@ -838,35 +845,37 @@ function ProjectPreviewPanel({
 }
 
 function resolveDashboardNextStep({
+  t,
   projectId,
   apiSpecCount,
   environmentCount,
 }: {
+  t: ProjectT;
   projectId: number;
   apiSpecCount: number;
   environmentCount: number;
 }) {
   if (apiSpecCount === 0) {
     return {
-      summary: 'No API spec exists yet. Start with AI Draft before setting up secondary surfaces.',
-      title: 'Define the first API surface',
-      description: 'Describe one endpoint, create the first spec, then come back for runtime setup.',
-      reason: 'The project needs one concrete interface before environments or validation become useful. If you just need to probe an endpoint, use Quick Request instead of reshaping the dashboard.',
+      summary: t('dashboardPage.noApiSpecSummary'),
+      title: t('dashboardPage.noApiSpecTitle'),
+      description: t('dashboardPage.noApiSpecDescription'),
+      reason: t('dashboardPage.noApiSpecReason'),
       primaryHref: `${buildProjectApiSpecsRoute(projectId)}?ai=create`,
-      primaryLabel: 'AI Draft API',
+      primaryLabel: t('projectDetail.aiDraftApi'),
       secondaryHref: buildQuickRequestHref(projectId),
-      secondaryLabel: 'Quick Request',
+      secondaryLabel: t('projectDetail.quickRequest'),
       blockers: [
         {
-          label: 'API source of truth',
-          detail: 'No API spec exists yet, so documentation and tests have nothing stable to build from.',
-          state: 'Missing',
+          label: t('dashboardPage.apiSourceLabel'),
+          detail: t('dashboardPage.apiSourceMissingDetail'),
+          state: t('projectDetail.missing'),
           tone: 'pending' as const,
         },
         {
-          label: 'Runtime setup',
-          detail: 'Environments can wait until the first endpoint is defined.',
-          state: 'Not started',
+          label: t('dashboardPage.runtimeSetupLabel'),
+          detail: t('dashboardPage.runtimeSetupCanWait'),
+          state: t('dashboardPage.notStarted'),
           tone: 'pending' as const,
         },
       ],
@@ -875,25 +884,25 @@ function resolveDashboardNextStep({
 
   if (environmentCount === 0) {
     return {
-      summary: `This project already has ${apiSpecCount} API spec${apiSpecCount === 1 ? '' : 's'}, but execution still has no runtime target.`,
-      title: 'Add the first environment',
-      description: 'Add one development or staging target so requests and tests can run somewhere real.',
-      reason: 'You already defined the surface. One environment unlocks requests, examples, and the first test runs.',
+      summary: t('dashboardPage.firstEnvironmentSummary', { count: apiSpecCount }),
+      title: t('dashboardPage.firstEnvironmentTitle'),
+      description: t('dashboardPage.firstEnvironmentDescription'),
+      reason: t('dashboardPage.firstEnvironmentReason'),
       primaryHref: buildProjectEnvironmentsRoute(projectId),
-      primaryLabel: 'Configure Environment',
+      primaryLabel: t('projectDetail.configureEnvironment'),
       secondaryHref: buildProjectApiSpecsRoute(projectId),
-      secondaryLabel: 'Review API Specs',
+      secondaryLabel: t('projectDetail.reviewApiSpecs'),
       blockers: [
         {
-          label: 'Execution target',
-          detail: 'No base URL, variables, or shared headers are configured yet.',
-          state: 'Missing',
+          label: t('dashboardPage.executionTargetLabel'),
+          detail: t('dashboardPage.executionTargetMissingDetail'),
+          state: t('projectDetail.missing'),
           tone: 'pending' as const,
         },
         {
-          label: 'Spec baseline',
-          detail: `The project already has ${apiSpecCount} API spec${apiSpecCount === 1 ? '' : 's'} ready for downstream work.`,
-          state: 'Ready',
+          label: t('dashboardPage.apiSourceLabel'),
+          detail: t('dashboardPage.specBaselineReadyDetail', { count: apiSpecCount }),
+          state: t('projectDetail.ready'),
           tone: 'ready' as const,
         },
       ],
@@ -901,25 +910,28 @@ function resolveDashboardNextStep({
   }
 
   return {
-    summary: `The project has ${apiSpecCount} API spec${apiSpecCount === 1 ? '' : 's'} and ${environmentCount} runtime environment${environmentCount === 1 ? '' : 's'}. Move into validation instead of adding more dashboard detail.`,
-    title: 'Generate validation coverage',
-    description: 'Generate test cases from the existing specs, then use Quick Request only for one-off debugging.',
-    reason: 'The spec and environment baseline exists. The next real value comes from runnable coverage, while Quick Request stays available for ad hoc inspection.',
+    summary: t('dashboardPage.coverageSummary', {
+      apiSpecCount,
+      environmentCount,
+    }),
+    title: t('dashboardPage.coverageTitle'),
+    description: t('dashboardPage.coverageDescription'),
+    reason: t('dashboardPage.coverageReason'),
     primaryHref: buildProjectTestCasesRoute(projectId),
-    primaryLabel: 'Open Test Cases',
+    primaryLabel: t('apiSpecs.openTestCases'),
     secondaryHref: buildQuickRequestHref(projectId),
-    secondaryLabel: 'Quick Request',
+    secondaryLabel: t('projectDetail.quickRequest'),
     blockers: [
       {
-        label: 'API source of truth',
-        detail: 'API Specs are already in place and can drive generated coverage.',
-        state: 'Ready',
+        label: t('dashboardPage.apiSourceLabel'),
+        detail: t('dashboardPage.apiSourceReadyDetail'),
+        state: t('projectDetail.ready'),
         tone: 'ready' as const,
       },
       {
-        label: 'Runtime setup',
-        detail: `At least ${environmentCount} environment${environmentCount === 1 ? '' : 's'} is configured for execution.`,
-        state: 'Ready',
+        label: t('dashboardPage.runtimeSetupLabel'),
+        detail: t('dashboardPage.runtimeSetupReadyDetail', { count: environmentCount }),
+        state: t('projectDetail.ready'),
         tone: 'ready' as const,
       },
     ],

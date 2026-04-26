@@ -68,6 +68,8 @@ import { useApiSpecExamples, useApiSpecs } from '@/hooks/use-api-specs';
 import { useEnvironments } from '@/hooks/use-environments';
 import { useProjectMemberRole } from '@/hooks/use-members';
 import { useProject } from '@/hooks/use-projects';
+import { useT } from '@/i18n/client';
+import type { ScopedTranslations } from '@/i18n/shared';
 import {
   useCreateTestCase,
   useCreateTestCaseFromSpec,
@@ -108,6 +110,7 @@ const EMPTY_SPECS: ApiSpec[] = [];
 const EMPTY_ENVIRONMENTS: ProjectEnvironment[] = [];
 const WRITE_ROLES = PROJECT_MEMBER_WRITE_ROLES;
 
+type ProjectT = ScopedTranslations<'project'>;
 type TestCaseFormMode = 'create' | 'edit';
 type DetailTab = 'overview' | 'request' | 'runs';
 type HistoryFilterStatus = 'all' | 'pass' | 'fail' | 'error';
@@ -145,12 +148,19 @@ interface RunDraft {
   variableKeys: string;
 }
 
-const getRoleLabel = (role?: ProjectMemberRole) => {
-  if (!role) {
-    return 'Unknown';
+const getRoleLabel = (t: ProjectT, role?: ProjectMemberRole) => {
+  switch (role) {
+    case 'owner':
+      return t('roles.owner');
+    case 'admin':
+      return t('roles.admin');
+    case 'write':
+      return t('roles.write');
+    case 'read':
+      return t('roles.read');
+    default:
+      return t('roles.unknown');
   }
-
-  return role.charAt(0).toUpperCase() + role.slice(1);
 };
 
 const formatJson = (value: unknown) => {
@@ -162,6 +172,7 @@ const formatJson = (value: unknown) => {
 };
 
 const parseJsonInput = <T,>(
+  t: ProjectT,
   value: string,
   label: string,
   expectation: 'object' | 'array' | 'any' = 'any'
@@ -177,25 +188,25 @@ const parseJsonInput = <T,>(
   try {
     parsed = JSON.parse(trimmedValue);
   } catch {
-    throw new Error(`${label} must be valid JSON.`);
+    throw new Error(t('common.jsonMustBeValid', { label }));
   }
 
   if (expectation === 'array' && !Array.isArray(parsed)) {
-    throw new Error(`${label} must be a JSON array.`);
+    throw new Error(t('common.jsonMustBeArray', { label }));
   }
 
   if (
     expectation === 'object' &&
     (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null)
   ) {
-    throw new Error(`${label} must be a JSON object.`);
+    throw new Error(t('common.jsonMustBeObject', { label }));
   }
 
   return parsed as T;
 };
 
-const parseStringRecordInput = (value: string, label: string) => {
-  const parsed = parseJsonInput<Record<string, unknown>>(value, label, 'object');
+const parseStringRecordInput = (t: ProjectT, value: string, label: string) => {
+  const parsed = parseJsonInput<Record<string, unknown>>(t, value, label, 'object');
 
   if (!parsed) {
     return undefined;
@@ -218,18 +229,18 @@ const normalizeRunStatus = (status?: string) => {
   return status;
 };
 
-const getRunStatusLabel = (status?: string) => {
+const getRunStatusLabel = (t: ProjectT, status?: string) => {
   switch (normalizeRunStatus(status)) {
     case 'pass':
-      return 'Passed';
+      return t('testCasesPage.statusPassed');
     case 'fail':
-      return 'Failed';
+      return t('testCasesPage.statusFailed');
     case 'error':
-      return 'Error';
+      return t('testCasesPage.statusError');
     case 'running':
-      return 'Running';
+      return t('testCasesPage.statusRunning');
     default:
-      return status || 'Unknown';
+      return status || t('common.unknown');
   }
 };
 
@@ -280,16 +291,26 @@ const getTestCaseFormDraft = (testCase?: ProjectTestCase | null): TestCaseFormDr
   extractVars: formatJson(testCase?.extract_vars),
 });
 
-const getDuplicateDraft = (testCase?: ProjectTestCase | null): DuplicateDraft => ({
-  name: testCase ? `${testCase.name} Copy` : '',
+const getDuplicateDraft = (
+  t: ProjectT,
+  testCase?: ProjectTestCase | null
+): DuplicateDraft => ({
+  name: testCase
+    ? t('testCasesPage.duplicateName', { name: testCase.name })
+    : '',
 });
 
-const getDefaultFromSpecName = (apiSpec?: ApiSpec | null) =>
-  apiSpec ? `Test ${apiSpec.method} ${apiSpec.path}`.trim() : '';
+const getDefaultFromSpecName = (t: ProjectT, apiSpec?: ApiSpec | null) =>
+  apiSpec
+    ? t('testCasesPage.defaultName', {
+        method: apiSpec.method,
+        path: apiSpec.path,
+      }).trim()
+    : '';
 
-const getFromSpecDraft = (apiSpec?: ApiSpec | null): FromSpecDraft => ({
+const getFromSpecDraft = (apiSpec: ApiSpec | null | undefined, t: ProjectT): FromSpecDraft => ({
   apiSpecId: apiSpec?.id ? String(apiSpec.id) : '',
-  name: getDefaultFromSpecName(apiSpec),
+  name: getDefaultFromSpecName(t, apiSpec),
   env: '',
   useExample: false,
   exampleId: 'auto',
@@ -302,25 +323,31 @@ const getRunDraft = (): RunDraft => ({
 });
 
 function RoleBadge({ role }: { role?: ProjectMemberRole }) {
+  const t = useT('project');
+
   return (
     <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-      Role: {getRoleLabel(role)}
+      {t('roles.badge', { role: getRoleLabel(t, role) })}
     </Badge>
   );
 }
 
 function MethodBadge({ method }: { method?: string }) {
+  const t = useT('project');
+
   return (
     <Badge variant="outline" className={cn('font-mono', getMethodBadgeClassName(method))}>
-      {method || 'N/A'}
+      {method || t('testCasesPage.notApplicable')}
     </Badge>
   );
 }
 
 function RunStatusBadge({ status }: { status?: string }) {
+  const t = useT('project');
+
   return (
     <Badge variant="outline" className={cn(getRunStatusBadgeClassName(status))}>
-      {getRunStatusLabel(status)}
+      {getRunStatusLabel(t, status)}
     </Badge>
   );
 }
@@ -371,10 +398,18 @@ function SummaryField({
   label: string;
   value?: string | number | null;
 }) {
+  const t = useT('project');
+  const hasValue =
+    value !== undefined &&
+    value !== null &&
+    !(typeof value === 'string' && value.trim().length === 0);
+
   return (
     <div className="space-y-1 rounded-xl border border-border/60 bg-muted/15 p-3">
       <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
-      <div className="text-sm font-medium text-foreground">{value || 'Not set'}</div>
+      <div className="text-sm font-medium text-foreground">
+        {hasValue ? value : t('common.notSet')}
+      </div>
     </div>
   );
 }
@@ -398,6 +433,7 @@ function TestCaseFormDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: CreateTestCaseRequest | UpdateTestCaseRequest) => Promise<void>;
 }) {
+  const t = useT('project');
   const [draft, setDraft] = useState<TestCaseFormDraft>(() => getTestCaseFormDraft(testCase));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -422,47 +458,71 @@ function TestCaseFormDialog({
     let extractVars: ExtractVariable[] | undefined;
 
     if (mode === 'create' && !draft.apiSpecId) {
-      nextErrors.apiSpecId = 'Select an API spec before creating a test case.';
+      nextErrors.apiSpecId = t('common.fieldRequired', {
+        field: t('testCasesPage.apiSpecLabel'),
+      });
     }
 
     if (!trimmedName) {
-      nextErrors.name = 'Name is required.';
+      nextErrors.name = t('common.fieldRequired', { field: t('common.name') });
     }
 
     try {
-      headers = parseStringRecordInput(draft.headers, 'Headers');
+      headers = parseStringRecordInput(t, draft.headers, t('testCasesPage.headersJsonLabel'));
     } catch (error) {
-      nextErrors.headers = error instanceof Error ? error.message : 'Unable to parse Headers.';
+      nextErrors.headers = error instanceof Error
+        ? error.message
+        : t('common.parseFailed', { label: t('testCasesPage.headersJsonLabel') });
     }
 
     try {
-      queryParams = parseStringRecordInput(draft.queryParams, 'Query Params');
+      queryParams = parseStringRecordInput(t, draft.queryParams, t('testCasesPage.queryParamsJsonLabel'));
     } catch (error) {
-      nextErrors.queryParams = error instanceof Error ? error.message : 'Unable to parse Query Params.';
+      nextErrors.queryParams = error instanceof Error
+        ? error.message
+        : t('common.parseFailed', { label: t('testCasesPage.queryParamsJsonLabel') });
     }
 
     try {
-      pathParams = parseStringRecordInput(draft.pathParams, 'Path Params');
+      pathParams = parseStringRecordInput(t, draft.pathParams, t('testCasesPage.pathParamsJsonLabel'));
     } catch (error) {
-      nextErrors.pathParams = error instanceof Error ? error.message : 'Unable to parse Path Params.';
+      nextErrors.pathParams = error instanceof Error
+        ? error.message
+        : t('common.parseFailed', { label: t('testCasesPage.pathParamsJsonLabel') });
     }
 
     try {
-      requestBody = parseJsonInput(draft.requestBody, 'Request Body');
+      requestBody = parseJsonInput(t, draft.requestBody, t('testCasesPage.requestBodyJsonLabel'));
     } catch (error) {
-      nextErrors.requestBody = error instanceof Error ? error.message : 'Unable to parse Request Body.';
+      nextErrors.requestBody = error instanceof Error
+        ? error.message
+        : t('common.parseFailed', { label: t('testCasesPage.requestBodyJsonLabel') });
     }
 
     try {
-      assertions = parseJsonInput<TestCaseAssertion[]>(draft.assertions, 'Assertions', 'array');
+      assertions = parseJsonInput<TestCaseAssertion[]>(
+        t,
+        draft.assertions,
+        t('testCasesPage.assertionsJsonLabel'),
+        'array'
+      );
     } catch (error) {
-      nextErrors.assertions = error instanceof Error ? error.message : 'Unable to parse Assertions.';
+      nextErrors.assertions = error instanceof Error
+        ? error.message
+        : t('common.parseFailed', { label: t('testCasesPage.assertionsJsonLabel') });
     }
 
     try {
-      extractVars = parseJsonInput<ExtractVariable[]>(draft.extractVars, 'Extract Vars', 'array');
+      extractVars = parseJsonInput<ExtractVariable[]>(
+        t,
+        draft.extractVars,
+        t('testCasesPage.extractVarsJsonLabel'),
+        'array'
+      );
     } catch (error) {
-      nextErrors.extractVars = error instanceof Error ? error.message : 'Unable to parse Extract Vars.';
+      nextErrors.extractVars = error instanceof Error
+        ? error.message
+        : t('common.parseFailed', { label: t('testCasesPage.extractVarsJsonLabel') });
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -508,11 +568,15 @@ function TestCaseFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>{mode === 'create' ? 'Create Test Case' : 'Edit Test Case'}</DialogTitle>
+          <DialogTitle>
+            {mode === 'create'
+              ? t('testCasesPage.createDialogTitle')
+              : t('testCasesPage.editDialogTitle')}
+          </DialogTitle>
           <DialogDescription>
             {mode === 'create'
-              ? 'Create a project test case with POST /v1/projects/:id/test-cases.'
-              : 'Update the current test case with PATCH /v1/projects/:id/test-cases/:tcid.'}
+              ? t('testCasesPage.createDialogDescription')
+              : t('testCasesPage.editDialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -525,26 +589,26 @@ function TestCaseFormDialog({
             </div>
           ) : mode === 'edit' && !testCase ? (
             <Alert className="mt-2">
-              <AlertTitle>Unable to load test case details</AlertTitle>
+              <AlertTitle>{t('testCasesPage.formLoadFailedTitle')}</AlertTitle>
               <AlertDescription>
-                The current test case is still loading. Close this dialog and try again.
+                {t('testCasesPage.formLoadFailedDescription')}
               </AlertDescription>
             </Alert>
           ) : (
             <form id="test-case-form" onSubmit={handleSubmit} className="space-y-5 py-1">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="test-case-api-spec">API Spec</Label>
+                  <Label htmlFor="test-case-api-spec">{t('testCasesPage.apiSpecLabel')}</Label>
                   <Select
                     value={draft.apiSpecId || 'none'}
                     disabled={mode === 'edit'}
                     onValueChange={(value) => updateDraft('apiSpecId', value === 'none' ? '' : value)}
                   >
                     <SelectTrigger id="test-case-api-spec" className="w-full">
-                      <SelectValue placeholder="Select API spec" />
+                      <SelectValue placeholder={t('testCasesPage.selectApiSpec')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Select API spec</SelectItem>
+                      <SelectItem value="none">{t('testCasesPage.selectApiSpec')}</SelectItem>
                       {apiSpecs.map((spec) => (
                         <SelectItem key={spec.id} value={String(spec.id)}>
                           {spec.method} {spec.path}
@@ -558,12 +622,12 @@ function TestCaseFormDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="test-case-env">Environment</Label>
+                  <Label htmlFor="test-case-env">{t('common.environment')}</Label>
                   <Input
                     id="test-case-env"
                     value={draft.env}
                     onChange={(event) => updateDraft('env', event.target.value)}
-                    placeholder="staging"
+                    placeholder={t('testCasesPage.environmentPlaceholder')}
                     root
                   />
                 </div>
@@ -571,24 +635,24 @@ function TestCaseFormDialog({
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="test-case-name">Name</Label>
+                  <Label htmlFor="test-case-name">{t('common.name')}</Label>
                   <Input
                     id="test-case-name"
                     value={draft.name}
                     onChange={(event) => updateDraft('name', event.target.value)}
-                    placeholder="Create user happy path"
+                    placeholder={t('testCasesPage.namePlaceholder')}
                     errorText={errors.name}
                     root
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="test-case-description">Description</Label>
+                  <Label htmlFor="test-case-description">{t('common.description')}</Label>
                   <Input
                     id="test-case-description"
                     value={draft.description}
                     onChange={(event) => updateDraft('description', event.target.value)}
-                    placeholder="Optional short summary"
+                    placeholder={t('testCasesPage.descriptionPlaceholder')}
                     root
                   />
                 </div>
@@ -596,12 +660,12 @@ function TestCaseFormDialog({
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="test-case-headers">Headers JSON</Label>
+                  <Label htmlFor="test-case-headers">{t('testCasesPage.headersJsonLabel')}</Label>
                   <Textarea
                     id="test-case-headers"
                     value={draft.headers}
                     onChange={(event) => updateDraft('headers', event.target.value)}
-                    placeholder='{"Authorization":"Bearer {{token}}"}'
+                    placeholder={t('testCasesPage.headersJsonPlaceholder')}
                     className="min-h-28 font-mono text-xs"
                     errorText={errors.headers}
                     root
@@ -609,12 +673,12 @@ function TestCaseFormDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="test-case-query-params">Query Params JSON</Label>
+                  <Label htmlFor="test-case-query-params">{t('testCasesPage.queryParamsJsonLabel')}</Label>
                   <Textarea
                     id="test-case-query-params"
                     value={draft.queryParams}
                     onChange={(event) => updateDraft('queryParams', event.target.value)}
-                    placeholder='{"page":"1"}'
+                    placeholder={t('testCasesPage.queryParamsJsonPlaceholder')}
                     className="min-h-28 font-mono text-xs"
                     errorText={errors.queryParams}
                     root
@@ -624,12 +688,12 @@ function TestCaseFormDialog({
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="test-case-path-params">Path Params JSON</Label>
+                  <Label htmlFor="test-case-path-params">{t('testCasesPage.pathParamsJsonLabel')}</Label>
                   <Textarea
                     id="test-case-path-params"
                     value={draft.pathParams}
                     onChange={(event) => updateDraft('pathParams', event.target.value)}
-                    placeholder='{"id":"123"}'
+                    placeholder={t('testCasesPage.pathParamsJsonPlaceholder')}
                     className="min-h-28 font-mono text-xs"
                     errorText={errors.pathParams}
                     root
@@ -637,12 +701,12 @@ function TestCaseFormDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="test-case-request-body">Request Body JSON</Label>
+                  <Label htmlFor="test-case-request-body">{t('testCasesPage.requestBodyJsonLabel')}</Label>
                   <Textarea
                     id="test-case-request-body"
                     value={draft.requestBody}
                     onChange={(event) => updateDraft('requestBody', event.target.value)}
-                    placeholder='{"username":"alice"}'
+                    placeholder={t('testCasesPage.requestBodyJsonPlaceholder')}
                     className="min-h-28 font-mono text-xs"
                     errorText={errors.requestBody}
                     root
@@ -652,24 +716,24 @@ function TestCaseFormDialog({
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="test-case-pre-script">Pre Script</Label>
+                  <Label htmlFor="test-case-pre-script">{t('testCasesPage.preScript')}</Label>
                   <Textarea
                     id="test-case-pre-script"
                     value={draft.preScript}
                     onChange={(event) => updateDraft('preScript', event.target.value)}
-                    placeholder="// Prepare variables before request"
+                    placeholder={t('testCasesPage.preScriptPlaceholder')}
                     className="min-h-28 font-mono text-xs"
                     root
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="test-case-post-script">Post Script</Label>
+                  <Label htmlFor="test-case-post-script">{t('testCasesPage.postScript')}</Label>
                   <Textarea
                     id="test-case-post-script"
                     value={draft.postScript}
                     onChange={(event) => updateDraft('postScript', event.target.value)}
-                    placeholder="// Cleanup after request"
+                    placeholder={t('testCasesPage.postScriptPlaceholder')}
                     className="min-h-28 font-mono text-xs"
                     root
                   />
@@ -678,12 +742,12 @@ function TestCaseFormDialog({
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="test-case-assertions">Assertions JSON</Label>
+                  <Label htmlFor="test-case-assertions">{t('testCasesPage.assertionsJsonLabel')}</Label>
                   <Textarea
                     id="test-case-assertions"
                     value={draft.assertions}
                     onChange={(event) => updateDraft('assertions', event.target.value)}
-                    placeholder='[{"type":"status","operator":"equals","expect":200}]'
+                    placeholder={t('testCasesPage.assertionsJsonPlaceholder')}
                     className="min-h-32 font-mono text-xs"
                     errorText={errors.assertions}
                     root
@@ -691,12 +755,12 @@ function TestCaseFormDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="test-case-extract-vars">Extract Vars JSON</Label>
+                  <Label htmlFor="test-case-extract-vars">{t('testCasesPage.extractVarsJsonLabel')}</Label>
                   <Textarea
                     id="test-case-extract-vars"
                     value={draft.extractVars}
                     onChange={(event) => updateDraft('extractVars', event.target.value)}
-                    placeholder='[{"name":"user_id","source":"body","path":"$.id"}]'
+                    placeholder={t('testCasesPage.extractVarsJsonPlaceholder')}
                     className="min-h-32 font-mono text-xs"
                     errorText={errors.extractVars}
                     root
@@ -709,7 +773,7 @@ function TestCaseFormDialog({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
@@ -717,7 +781,7 @@ function TestCaseFormDialog({
             loading={isSubmitting}
             disabled={mode === 'edit' && isLoadingTestCase}
           >
-            {mode === 'create' ? 'Create Test Case' : 'Save Changes'}
+            {mode === 'create' ? t('testCasesPage.create') : t('common.saveChanges')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -738,7 +802,8 @@ function DuplicateTestCaseDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: DuplicateTestCaseRequest) => Promise<void>;
 }) {
-  const [draft, setDraft] = useState<DuplicateDraft>(() => getDuplicateDraft(testCase));
+  const t = useT('project');
+  const [draft, setDraft] = useState<DuplicateDraft>(() => getDuplicateDraft(t, testCase));
   const [error, setError] = useState<string | undefined>();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -746,7 +811,7 @@ function DuplicateTestCaseDialog({
     const trimmedName = draft.name.trim();
 
     if (!trimmedName) {
-      setError('New name is required.');
+      setError(t('common.fieldRequired', { field: t('testCasesPage.duplicateNameLabel') }));
       return;
     }
 
@@ -757,27 +822,29 @@ function DuplicateTestCaseDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="default">
         <DialogHeader>
-          <DialogTitle>Duplicate Test Case</DialogTitle>
+          <DialogTitle>{t('testCasesPage.duplicateDialogTitle')}</DialogTitle>
           <DialogDescription>
-            Duplicate the current test case with POST /v1/projects/:id/test-cases/:tcid/duplicate.
+            {t('testCasesPage.duplicateDialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <DialogBody>
           <form id="duplicate-test-case-form" onSubmit={handleSubmit} className="space-y-4 py-1">
             <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-              Source:
+              {t('testCasesPage.duplicateSourceLabel')}
               {' '}
-              <span className="font-medium text-foreground">{testCase?.name || 'Unknown test case'}</span>
+              <span className="font-medium text-foreground">
+                {testCase?.name || t('testCasesPage.unknownTestCase')}
+              </span>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="duplicate-test-case-name">New Name</Label>
+              <Label htmlFor="duplicate-test-case-name">{t('testCasesPage.duplicateNameLabel')}</Label>
               <Input
                 id="duplicate-test-case-name"
                 value={draft.name}
                 onChange={(event) => setDraft({ name: event.target.value })}
-                placeholder="Create user happy path copy"
+                placeholder={t('testCasesPage.duplicateNamePlaceholder')}
                 errorText={error}
                 root
               />
@@ -787,10 +854,10 @@ function DuplicateTestCaseDialog({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" form="duplicate-test-case-form" loading={isSubmitting}>
-            Duplicate
+            {t('common.duplicate')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -817,11 +884,14 @@ function CreateFromSpecDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: CreateTestCaseFromSpecRequest) => Promise<void>;
 }) {
+  const t = useT('project');
   const initialSpec = useMemo(
     () => apiSpecs.find((spec) => spec.id === initialSpecId) ?? null,
     [apiSpecs, initialSpecId]
   );
-  const [draft, setDraft] = useState<FromSpecDraft>(() => getFromSpecDraft(initialSpec ?? undefined));
+  const [draft, setDraft] = useState<FromSpecDraft>(() =>
+    getFromSpecDraft(initialSpec ?? undefined, t)
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const selectedSpecId = draft.apiSpecId ? Number(draft.apiSpecId) : undefined;
@@ -844,11 +914,13 @@ function CreateFromSpecDialog({
     const trimmedEnv = draft.env.trim();
 
     if (!draft.apiSpecId) {
-      nextErrors.apiSpecId = 'Select an API spec.';
+      nextErrors.apiSpecId = t('common.fieldRequired', {
+        field: t('testCasesPage.apiSpecLabel'),
+      });
     }
 
     if (!trimmedName) {
-      nextErrors.name = 'Name is required.';
+      nextErrors.name = t('common.fieldRequired', { field: t('common.name') });
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -870,9 +942,9 @@ function CreateFromSpecDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>Create Test Case from API Spec</DialogTitle>
+          <DialogTitle>{t('testCasesPage.fromSpecDialogTitle')}</DialogTitle>
           <DialogDescription>
-            Turn an existing API spec into the first runnable test case without rebuilding the request by hand.
+            {t('testCasesPage.fromSpecDialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -880,19 +952,17 @@ function CreateFromSpecDialog({
           <form id="from-spec-test-case-form" onSubmit={handleSubmit} className="space-y-5 py-1">
             {flowSource === 'ai' && initialSpec ? (
               <Alert>
-                <AlertTitle>Continue from AI-generated spec</AlertTitle>
+                <AlertTitle>{t('testCasesPage.continueFromAiTitle')}</AlertTitle>
                 <AlertDescription>
-                  The new spec
-                  {' '}
-                  <code>{initialSpec.method} {initialSpec.path}</code>
-                  {' '}
-                  was just created. Generate its first test case now to keep the authoring flow continuous.
+                  {t('testCasesPage.continueFromAiDescription', {
+                    spec: `${initialSpec.method} ${initialSpec.path}`,
+                  })}
                 </AlertDescription>
               </Alert>
             ) : null}
 
             <div className="space-y-2">
-              <Label htmlFor="from-spec-api-spec">API Spec</Label>
+              <Label htmlFor="from-spec-api-spec">{t('testCasesPage.apiSpecLabel')}</Label>
               <Select
                 value={draft.apiSpecId || 'none'}
                 onValueChange={(value) =>
@@ -903,6 +973,7 @@ function CreateFromSpecDialog({
                     name:
                       value !== 'none' && !current.name.trim()
                         ? getDefaultFromSpecName(
+                            t,
                             apiSpecs.find((spec) => spec.id === Number(value)) ?? null
                           )
                         : current.name,
@@ -910,10 +981,10 @@ function CreateFromSpecDialog({
                 }
               >
                 <SelectTrigger id="from-spec-api-spec" className="w-full">
-                  <SelectValue placeholder="Select API spec" />
+                  <SelectValue placeholder={t('testCasesPage.selectApiSpec')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Select API spec</SelectItem>
+                  <SelectItem value="none">{t('testCasesPage.selectApiSpec')}</SelectItem>
                   {apiSpecs.map((spec) => (
                     <SelectItem key={spec.id} value={String(spec.id)}>
                       {spec.method} {spec.path}
@@ -930,31 +1001,31 @@ function CreateFromSpecDialog({
               <div className="rounded-xl border border-primary/10 bg-primary/5 p-4 text-sm">
                 <div className="font-medium text-foreground">{selectedSpec.method} {selectedSpec.path}</div>
                 <div className="mt-1 text-muted-foreground">
-                  {selectedSpec.summary || selectedSpec.description || 'No summary'}
+                  {selectedSpec.summary || selectedSpec.description || t('common.noSummaryProvided')}
                 </div>
               </div>
             ) : null}
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="from-spec-name">Test Case Name</Label>
+                <Label htmlFor="from-spec-name">{t('testCasesPage.testCaseNameLabel')}</Label>
                 <Input
                   id="from-spec-name"
                   value={draft.name}
                   onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
-                  placeholder="Create user smoke test"
+                  placeholder={t('testCasesPage.fromSpecNamePlaceholder')}
                   errorText={errors.name}
                   root
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="from-spec-env">Environment</Label>
+                <Label htmlFor="from-spec-env">{t('common.environment')}</Label>
                 <Input
                   id="from-spec-env"
                   value={draft.env}
                   onChange={(event) => setDraft((current) => ({ ...current, env: event.target.value }))}
-                  placeholder="staging"
+                  placeholder={t('testCasesPage.environmentPlaceholder')}
                   root
                 />
               </div>
@@ -964,11 +1035,10 @@ function CreateFromSpecDialog({
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   <Label htmlFor="from-spec-use-example" className="text-sm font-medium">
-                    Use API Example
+                    {t('testCasesPage.useApiExample')}
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    If the selected API spec already has examples, seed the test case with the
-                    request and response example data.
+                    {t('testCasesPage.useApiExampleDescription')}
                   </p>
                 </div>
                 <Switch
@@ -986,7 +1056,7 @@ function CreateFromSpecDialog({
 
               {draft.useExample ? (
                 <div className="mt-4 space-y-2">
-                  <Label htmlFor="from-spec-example">Example</Label>
+                  <Label htmlFor="from-spec-example">{t('common.examples')}</Label>
                   <Select
                     value={draft.exampleId}
                     onValueChange={(value) =>
@@ -994,20 +1064,23 @@ function CreateFromSpecDialog({
                     }
                   >
                     <SelectTrigger id="from-spec-example" className="w-full">
-                      <SelectValue placeholder="Use first example automatically" />
+                      <SelectValue placeholder={t('testCasesPage.useFirstExample')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">Use first example automatically</SelectItem>
+                      <SelectItem value="auto">{t('testCasesPage.useFirstExample')}</SelectItem>
                       {specExamples.map((example) => (
                         <SelectItem key={example.id} value={String(example.id)}>
-                          {example.name} (HTTP {example.response_status})
+                          {t('testCasesPage.exampleOption', {
+                            name: example.name,
+                            status: example.response_status,
+                          })}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
 
                   {specExamplesQuery.isLoading ? (
-                    <p className="text-xs text-muted-foreground">Loading examples…</p>
+                    <p className="text-xs text-muted-foreground">{t('testCasesPage.loadingExamples')}</p>
                   ) : null}
                 </div>
               ) : null}
@@ -1017,10 +1090,10 @@ function CreateFromSpecDialog({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" form="from-spec-test-case-form" loading={isSubmitting}>
-            Generate Test Case
+            {t('testCasesPage.generateFromSpec')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1043,6 +1116,7 @@ function RunTestCaseDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: RunTestCaseRequest) => Promise<void>;
 }) {
+  const t = useT('project');
   const [draft, setDraft] = useState<RunDraft>(() => getRunDraft());
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -1054,15 +1128,28 @@ function RunTestCaseDialog({
     let variableKeys: Record<string, string> | undefined;
 
     try {
-      globalVars = parseJsonInput<Record<string, unknown>>(draft.globalVars, 'Global Vars', 'object');
+      globalVars = parseJsonInput<Record<string, unknown>>(
+        t,
+        draft.globalVars,
+        t('testCasesPage.globalVarsJsonLabel'),
+        'object'
+      );
     } catch (error) {
-      nextErrors.globalVars = error instanceof Error ? error.message : 'Unable to parse Global Vars.';
+      nextErrors.globalVars = error instanceof Error
+        ? error.message
+        : t('common.parseFailed', { label: t('testCasesPage.globalVarsJsonLabel') });
     }
 
     try {
-      variableKeys = parseStringRecordInput(draft.variableKeys, 'Variable Keys');
+      variableKeys = parseStringRecordInput(
+        t,
+        draft.variableKeys,
+        t('testCasesPage.variableKeysJsonLabel')
+      );
     } catch (error) {
-      nextErrors.variableKeys = error instanceof Error ? error.message : 'Unable to parse Variable Keys.';
+      nextErrors.variableKeys = error instanceof Error
+        ? error.message
+        : t('common.parseFailed', { label: t('testCasesPage.variableKeysJsonLabel') });
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -1081,34 +1168,37 @@ function RunTestCaseDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>Run Test Case</DialogTitle>
+          <DialogTitle>{t('testCasesPage.runDialogTitle')}</DialogTitle>
           <DialogDescription>
-            Run the current test case with POST /v1/projects/:id/test-cases/:tcid/run and override
-            the environment or variables if needed.
+            {t('testCasesPage.runDialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <DialogBody>
           <form id="run-test-case-form" onSubmit={handleSubmit} className="space-y-5 py-1">
             <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm">
-              <div className="font-medium text-foreground">{testCase?.name || 'Unknown test case'}</div>
+              <div className="font-medium text-foreground">
+                {testCase?.name || t('testCasesPage.unknownTestCase')}
+              </div>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-muted-foreground">
                 <MethodBadge method={testCase?.method} />
-                <span className="font-mono">{testCase?.path || 'Path unavailable'}</span>
+                <span className="font-mono">
+                  {testCase?.path || t('testCasesPage.pathUnavailable')}
+                </span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="run-test-case-env">Override Environment</Label>
+              <Label htmlFor="run-test-case-env">{t('testCasesPage.overrideEnvironment')}</Label>
               <Select
                 value={draft.envId}
                 onValueChange={(value) => setDraft((current) => ({ ...current, envId: value }))}
               >
                 <SelectTrigger id="run-test-case-env" className="w-full">
-                  <SelectValue placeholder="Use test case env" />
+                  <SelectValue placeholder={t('testCasesPage.useTestCaseEnv')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Use test case env</SelectItem>
+                  <SelectItem value="none">{t('testCasesPage.useTestCaseEnv')}</SelectItem>
                   {environments.map((environment) => (
                     <SelectItem key={environment.id} value={String(environment.id)}>
                       {environment.name}
@@ -1120,12 +1210,12 @@ function RunTestCaseDialog({
 
             <div className="grid gap-4 xl:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="run-test-case-global-vars">Global Vars JSON</Label>
+                <Label htmlFor="run-test-case-global-vars">{t('testCasesPage.globalVarsJsonLabel')}</Label>
                 <Textarea
                   id="run-test-case-global-vars"
                   value={draft.globalVars}
                   onChange={(event) => setDraft((current) => ({ ...current, globalVars: event.target.value }))}
-                  placeholder='{"token":"abc"}'
+                  placeholder={t('testCasesPage.globalVarsJsonPlaceholder')}
                   className="min-h-32 font-mono text-xs"
                   errorText={errors.globalVars}
                   root
@@ -1133,14 +1223,14 @@ function RunTestCaseDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="run-test-case-variable-keys">Variable Keys JSON</Label>
+                <Label htmlFor="run-test-case-variable-keys">{t('testCasesPage.variableKeysJsonLabel')}</Label>
                 <Textarea
                   id="run-test-case-variable-keys"
                   value={draft.variableKeys}
                   onChange={(event) =>
                     setDraft((current) => ({ ...current, variableKeys: event.target.value }))
                   }
-                  placeholder='{"user_id":"42"}'
+                  placeholder={t('testCasesPage.variableKeysJsonPlaceholder')}
                   className="min-h-32 font-mono text-xs"
                   errorText={errors.variableKeys}
                   root
@@ -1152,10 +1242,10 @@ function RunTestCaseDialog({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" form="run-test-case-form" loading={isSubmitting}>
-            Run Test Case
+            {t('testCasesPage.run')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1176,28 +1266,29 @@ function DeleteTestCaseDialog({
   onOpenChange: (open: boolean) => void;
   onConfirm: () => Promise<void>;
 }) {
+  const t = useT('project');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="default">
         <DialogHeader>
-          <DialogTitle>Delete Test Case</DialogTitle>
+          <DialogTitle>{t('testCasesPage.deleteDialogTitle')}</DialogTitle>
           <DialogDescription>
-            This action cannot be undone. Run history will also lose its direct entry point.
+            {t('testCasesPage.deleteDialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
         <DialogBody>
           <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
             <div className="text-sm text-muted-foreground">
-              You are deleting
-              {' '}
-              <span className="font-semibold text-foreground">{testCase?.name || 'this test case'}</span>
-              .
+              {t('testCasesPage.deleteTargetDescription', {
+                name: testCase?.name || t('testCasesPage.deleteFallbackTarget'),
+              })}
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <MethodBadge method={testCase?.method} />
               <Badge variant="outline" className="font-mono">
-                {testCase?.path || 'Path unavailable'}
+                {testCase?.path || t('testCasesPage.pathUnavailable')}
               </Badge>
             </div>
           </div>
@@ -1205,10 +1296,10 @@ function DeleteTestCaseDialog({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="button" variant="destructive" loading={isDeleting} onClick={() => void onConfirm()}>
-            Delete Test Case
+            {t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1229,6 +1320,7 @@ function RunDetailDialog({
   runId?: number | null;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useT('project');
   const runQuery = useTestCaseRun(
     projectId,
     testCaseId ?? undefined,
@@ -1240,10 +1332,9 @@ function RunDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>Run Detail</DialogTitle>
+          <DialogTitle>{t('testCasesPage.runDetailDialogTitle')}</DialogTitle>
           <DialogDescription>
-            Inspect the full request, response, and assertions returned by
-            GET /v1/projects/:id/test-cases/:tcid/runs/:rid.
+            {t('testCasesPage.runDetailDialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -1256,79 +1347,82 @@ function RunDetailDialog({
             </div>
           ) : runQuery.isError || !run ? (
             <Alert>
-              <AlertTitle>Unable to load run detail</AlertTitle>
+              <AlertTitle>{t('testCasesPage.runDetailLoadFailedTitle')}</AlertTitle>
               <AlertDescription>
-                The run detail could not be loaded. Try again in a moment.
+                {t('testCasesPage.runDetailLoadFailedDescription')}
               </AlertDescription>
             </Alert>
           ) : (
             <div className="space-y-5 py-1">
               <div className="grid gap-3 md:grid-cols-4">
-                <SummaryField label="Status" value={getRunStatusLabel(run.status)} />
-                <SummaryField label="Duration" value={`${run.duration_ms} ms`} />
-                <SummaryField label="Created At" value={formatDate(run.created_at)} />
-                <SummaryField label="Run ID" value={run.id} />
+                <SummaryField label={t('common.status')} value={getRunStatusLabel(t, run.status)} />
+                <SummaryField
+                  label={t('common.duration')}
+                  value={t('testCasesPage.durationMs', { value: run.duration_ms })}
+                />
+                <SummaryField label={t('common.created')} value={formatDate(run.created_at)} />
+                <SummaryField label={t('testCasesPage.runIdLabel')} value={run.id} />
               </div>
 
               {run.message ? (
                 <Alert>
-                  <AlertTitle>Run Message</AlertTitle>
+                  <AlertTitle>{t('testCasesPage.runMessageTitle')}</AlertTitle>
                   <AlertDescription>{run.message}</AlertDescription>
                 </Alert>
               ) : null}
 
               <Tabs defaultValue="request" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="request">Request</TabsTrigger>
-                  <TabsTrigger value="response">Response</TabsTrigger>
-                  <TabsTrigger value="assertions">Assertions</TabsTrigger>
-                  <TabsTrigger value="variables">Variables</TabsTrigger>
+                  <TabsTrigger value="request">{t('common.request')}</TabsTrigger>
+                  <TabsTrigger value="response">{t('common.response')}</TabsTrigger>
+                  <TabsTrigger value="assertions">{t('testCasesPage.assertionsTab')}</TabsTrigger>
+                  <TabsTrigger value="variables">{t('common.variables')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="request" className="space-y-4">
                   <div className="grid gap-3 md:grid-cols-3">
-                    <SummaryField label="Method" value={run.request?.method || 'N/A'} />
-                    <SummaryField label="URL" value={run.request?.url || 'N/A'} />
-                    <SummaryField label="Headers" value={Object.keys(run.request?.headers || {}).length} />
+                    <SummaryField label={t('common.method')} value={run.request?.method || t('testCasesPage.notApplicable')} />
+                    <SummaryField label={t('common.url')} value={run.request?.url || t('testCasesPage.notApplicable')} />
+                    <SummaryField label={t('common.headers')} value={Object.keys(run.request?.headers || {}).length} />
                   </div>
                   <JsonPreview
-                    title="Request Headers"
+                    title={t('testCasesPage.requestHeadersTitle')}
                     value={run.request?.headers}
-                    emptyLabel="No request headers."
+                    emptyLabel={t('testCasesPage.requestHeadersEmpty')}
                   />
                   <JsonPreview
-                    title="Request Body"
+                    title={t('testCasesPage.requestBodyTitle')}
                     value={run.request?.body}
-                    emptyLabel="No request body."
+                    emptyLabel={t('testCasesPage.requestBodyResultEmpty')}
                   />
                 </TabsContent>
 
                 <TabsContent value="response" className="space-y-4">
                   <div className="grid gap-3 md:grid-cols-2">
-                    <SummaryField label="HTTP Status" value={run.response?.status || 'N/A'} />
+                    <SummaryField label={t('common.httpStatus')} value={run.response?.status || t('testCasesPage.notApplicable')} />
                     <SummaryField
-                      label="Headers"
+                      label={t('common.headers')}
                       value={Object.keys(run.response?.headers || {}).length}
                     />
                   </div>
                   <JsonPreview
-                    title="Response Headers"
+                    title={t('testCasesPage.responseHeadersTitle')}
                     value={run.response?.headers}
-                    emptyLabel="No response headers."
+                    emptyLabel={t('testCasesPage.responseHeadersEmpty')}
                   />
                   <JsonPreview
-                    title="Response Body"
+                    title={t('testCasesPage.responseBodyTitle')}
                     value={run.response?.body}
-                    emptyLabel="No response body."
+                    emptyLabel={t('testCasesPage.responseBodyEmpty')}
                   />
                 </TabsContent>
 
                 <TabsContent value="assertions" className="space-y-3">
                   {!run.assertions || run.assertions.length === 0 ? (
                     <Alert>
-                      <AlertTitle>No assertions recorded</AlertTitle>
+                      <AlertTitle>{t('testCasesPage.noAssertionsRecordedTitle')}</AlertTitle>
                       <AlertDescription>
-                        This run did not persist assertion details.
+                        {t('testCasesPage.noAssertionsRecordedDescription')}
                       </AlertDescription>
                     </Alert>
                   ) : (
@@ -1344,8 +1438,16 @@ function RunDetailDialog({
                           {assertion.path ? <Badge variant="outline" className="font-mono">{assertion.path}</Badge> : null}
                         </div>
                         <div className="mt-3 grid gap-3 md:grid-cols-2">
-                          <JsonPreview title="Expected" value={assertion.expect} emptyLabel="No expected value." />
-                          <JsonPreview title="Actual" value={assertion.actual} emptyLabel="No actual value." />
+                          <JsonPreview
+                            title={t('testCasesPage.expectedTitle')}
+                            value={assertion.expect}
+                            emptyLabel={t('testCasesPage.expectedEmpty')}
+                          />
+                          <JsonPreview
+                            title={t('testCasesPage.actualTitle')}
+                            value={assertion.actual}
+                            emptyLabel={t('testCasesPage.actualEmpty')}
+                          />
                         </div>
                         {assertion.message ? (
                           <p className="mt-3 text-sm text-muted-foreground">{assertion.message}</p>
@@ -1357,9 +1459,9 @@ function RunDetailDialog({
 
                 <TabsContent value="variables">
                   <JsonPreview
-                    title="Extracted Variables"
+                    title={t('testCasesPage.extractedVariablesTitle')}
                     value={run.variables}
-                    emptyLabel="No variables extracted."
+                    emptyLabel={t('testCasesPage.noVariablesExtracted')}
                   />
                 </TabsContent>
               </Tabs>
@@ -1369,7 +1471,7 @@ function RunDetailDialog({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Close
+            {t('common.close')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1386,6 +1488,7 @@ export function TestCaseManagementPage({
   autoOpenFromSpecSpecId?: number | null;
   flowSource?: 'ai' | null;
 }) {
+  const t = useT('project');
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1643,7 +1746,7 @@ export function TestCaseManagementPage({
   const headerActionItems: ActionMenuItem[] = [
     {
       key: 'test-cases-refresh',
-      label: isHeaderRefreshing ? 'Refreshing...' : 'Refresh',
+      label: isHeaderRefreshing ? t('common.refreshing') : t('common.refresh'),
       icon: RefreshCw,
       disabled: isHeaderRefreshing,
       onSelect: () => {
@@ -1652,27 +1755,27 @@ export function TestCaseManagementPage({
     },
     {
       key: 'test-cases-generate-from-spec',
-      label: 'Generate from Spec',
+      label: t('testCasesPage.generateFromSpec'),
       icon: FileJson2,
       disabled: !canCreate,
       onSelect: () => setIsFromSpecOpen(true),
     },
     {
       key: 'test-cases-api-specs',
-      label: 'API Specs',
+      label: t('apiSpecs.title'),
       icon: FileJson2,
       href: buildProjectApiSpecsRoute(projectId),
       separatorBefore: true,
     },
     {
       key: 'test-cases-environments',
-      label: 'Environments',
+      label: t('environments.title'),
       icon: Globe,
       href: buildProjectEnvironmentsRoute(projectId),
     },
     {
       key: 'test-cases-categories',
-      label: 'Categories',
+      label: t('categoriesPage.title'),
       icon: Tags,
       href: buildProjectCategoriesRoute(projectId),
     },
@@ -1682,7 +1785,9 @@ export function TestCaseManagementPage({
         {
           key: 'test-case-refresh',
           label:
-            activeTestCaseQuery.isFetching && !activeTestCaseQuery.isLoading ? 'Refreshing...' : 'Refresh',
+            activeTestCaseQuery.isFetching && !activeTestCaseQuery.isLoading
+              ? t('common.refreshing')
+              : t('common.refresh'),
           icon: RefreshCw,
           disabled: activeTestCaseQuery.isFetching && !activeTestCaseQuery.isLoading,
           onSelect: () => {
@@ -1691,21 +1796,21 @@ export function TestCaseManagementPage({
         },
         {
           key: 'test-case-edit',
-          label: 'Edit',
+          label: t('common.edit'),
           icon: Pencil,
           disabled: !canWrite,
           onSelect: () => openEditDialog(activeTestCase),
         },
         {
           key: 'test-case-duplicate',
-          label: 'Duplicate',
+          label: t('common.duplicate'),
           icon: Copy,
           disabled: !canWrite,
           onSelect: () => setDuplicateTarget(activeTestCase),
         },
         {
           key: 'test-case-delete',
-          label: 'Delete',
+          label: t('common.delete'),
           icon: Trash2,
           destructive: true,
           separatorBefore: true,
@@ -1726,34 +1831,31 @@ export function TestCaseManagementPage({
               <Button asChild variant="link" className="h-auto px-0 text-sm text-muted-foreground">
                 <Link href={buildProjectDetailRoute(projectId)}>
                   <ArrowLeft className="h-4 w-4" />
-                  Back to Project Overview
+                  {t('testCasesPage.backToProjectOverview')}
                 </Link>
               </Button>
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-3xl font-bold tracking-tight">Test Cases</h1>
+                  <h1 className="text-3xl font-bold tracking-tight">{t('testCasesPage.title')}</h1>
                   <FlaskConical className="h-6 w-6 text-primary" />
                 </div>
                 <p className="max-w-3xl text-sm text-text-muted">
-                  Manage project-scoped test cases through
-                  {' '}
-                  <code>{buildApiPath('/projects/:id/test-cases')}</code>
-                  , run them with
-                  {' '}
-                  <code>{buildApiPath('/projects/:id/test-cases/:tcid/run')}</code>
-                  , and inspect run history through
-                  {' '}
-                  <code>{buildApiPath('/projects/:id/test-cases/:tcid/runs')}</code>
-                  .
+                  {t('testCasesPage.description', {
+                    listPath: buildApiPath('/projects/:id/test-cases'),
+                    runPath: buildApiPath('/projects/:id/test-cases/:tcid/run'),
+                    historyPath: buildApiPath('/projects/:id/test-cases/:tcid/runs'),
+                  })}
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline">
-                  Project: {projectQuery.data?.name || `#${projectId}`}
+                  {t('testCasesPage.projectBadge', {
+                    name: projectQuery.data?.name || `#${projectId}`,
+                  })}
                 </Badge>
-                <Badge variant="outline">{totalTestCases} test cases</Badge>
+                <Badge variant="outline">{t('testCasesPage.totalCount', { count: totalTestCases })}</Badge>
                 <RoleBadge role={projectRole} />
               </div>
             </div>
@@ -1761,11 +1863,11 @@ export function TestCaseManagementPage({
             <div className="flex flex-wrap items-center gap-3">
               <Button type="button" onClick={openCreateDialog} disabled={!canCreate}>
                 <Plus className="h-4 w-4" />
-                New Test Case
+                {t('testCasesPage.create')}
               </Button>
               <ActionMenu
                 items={headerActionItems}
-                ariaLabel="Open test case management actions"
+                ariaLabel={t('testCasesPage.openManagementActions')}
                 triggerVariant="outline"
               />
             </div>
@@ -1774,25 +1876,23 @@ export function TestCaseManagementPage({
 
         {projectRole === 'read' ? (
           <Alert>
-            <AlertTitle>Read-only access</AlertTitle>
+            <AlertTitle>{t('testCasesPage.readOnlyTitle')}</AlertTitle>
             <AlertDescription>
-              You can browse test cases and run history, but creating, editing, duplicating, deleting,
-              and executing tests requires write permission.
+              {t('testCasesPage.readOnlyDescription')}
             </AlertDescription>
           </Alert>
         ) : null}
 
         {apiSpecs.length === 0 ? (
           <Alert>
-            <AlertTitle>No API specs available</AlertTitle>
+            <AlertTitle>{t('testCasesPage.noApiSpecsTitle')}</AlertTitle>
             <AlertDescription>
-              Test case generation depends on existing API Specs. Start with an AI draft or create an
-              API Spec first, then come back to generate coverage from it.
+              {t('testCasesPage.noApiSpecsDescription')}
               <div className="mt-3">
                 <Button asChild size="sm" variant="outline">
                   <Link href={`${buildProjectApiSpecsRoute(projectId)}?ai=create`}>
                     <FileJson2 className="h-4 w-4" />
-                    AI Draft API Spec
+                    {t('testCasesPage.aiDraftSpecButton')}
                   </Link>
                 </Button>
               </div>
@@ -1802,12 +1902,11 @@ export function TestCaseManagementPage({
 
         {flowSource === 'ai' && autoOpenSpec ? (
           <Alert>
-            <AlertTitle>AI spec ready for validation</AlertTitle>
+            <AlertTitle>{t('testCasesPage.aiSpecReadyTitle')}</AlertTitle>
             <AlertDescription>
-              Continue the flow by generating the first test case from
-              {' '}
-              <code>{autoOpenSpec.method} {autoOpenSpec.path}</code>
-              .
+              {t('testCasesPage.aiSpecReadyDescription', {
+                spec: `${autoOpenSpec.method} ${autoOpenSpec.path}`,
+              })}
             </AlertDescription>
           </Alert>
         ) : null}
@@ -1823,30 +1922,34 @@ export function TestCaseManagementPage({
           ) : (
             <>
               <StatCard
-                title="Total Test Cases"
+                title={t('testCasesPage.totalTitle')}
                 value={totalTestCases}
-                description={`Across ${totalPages} pages`}
+                description={t('testCasesPage.totalDescription', { pages: totalPages })}
                 icon={FlaskConical}
                 variant="primary"
               />
               <StatCard
-                title="Current Page"
+                title={t('testCasesPage.currentPageTitle')}
                 value={testCases.length}
-                description={`Page ${testCasesQuery.data?.meta.page || page} results`}
+                description={t('testCasesPage.currentPageDescription', {
+                  page: testCasesQuery.data?.meta.page || page,
+                })}
                 icon={Boxes}
                 variant="success"
               />
               <StatCard
-                title="Linked API Specs"
+                title={t('testCasesPage.linkedSpecsTitle')}
                 value={linkedApiSpecsCount}
-                description="Distinct API specs on this page"
+                description={t('testCasesPage.linkedSpecsDescription')}
                 icon={FileJson2}
                 variant="warning"
               />
               <StatCard
-                title="Assertions On Page"
+                title={t('testCasesPage.assertionsTitle')}
                 value={currentPageAssertionCount}
-                description={`${environmentsInPage} environments referenced`}
+                description={t('testCasesPage.assertionsDescription', {
+                  count: environmentsInPage,
+                })}
                 icon={ShieldCheck}
               />
             </>
@@ -1856,12 +1959,11 @@ export function TestCaseManagementPage({
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
           <Card className="border-border/50 shadow-premium">
             <CardHeader className="border-b bg-muted/20">
-              <CardTitle>Test Case List</CardTitle>
+              <CardTitle>{t('testCasesPage.listTitle')}</CardTitle>
               <CardDescription>
-                List, filter, paginate, and select records from GET
-                {' '}
-                <code>{buildApiPath('/projects/:id/test-cases')}</code>
-                .
+                {t('testCasesPage.listDescription', {
+                  path: buildApiPath('/projects/:id/test-cases'),
+                })}
               </CardDescription>
             </CardHeader>
 
@@ -1873,7 +1975,7 @@ export function TestCaseManagementPage({
                     setKeyword(event.target.value);
                     setPage(1);
                   }}
-                  placeholder="Search by name or description"
+                  placeholder={t('testCasesPage.searchPlaceholder')}
                   leftIcon={<Search className="h-4 w-4" />}
                   root
                 />
@@ -1886,10 +1988,10 @@ export function TestCaseManagementPage({
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Filter by API spec" />
+                    <SelectValue placeholder={t('testCasesPage.filterByApiSpec')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All API Specs</SelectItem>
+                    <SelectItem value="all">{t('testCasesPage.allApiSpecs')}</SelectItem>
                     {apiSpecs.map((spec) => (
                       <SelectItem key={spec.id} value={String(spec.id)}>
                         {spec.method} {spec.path}
@@ -1906,10 +2008,10 @@ export function TestCaseManagementPage({
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Filter by env" />
+                    <SelectValue placeholder={t('testCasesPage.filterByEnv')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Environments</SelectItem>
+                    <SelectItem value="all">{t('testCasesPage.allEnvironments')}</SelectItem>
                     {environmentOptions.map((environmentName) => (
                       <SelectItem key={environmentName} value={environmentName}>
                         {environmentName}
@@ -1921,9 +2023,9 @@ export function TestCaseManagementPage({
 
               {testCasesQuery.isError ? (
                 <Alert>
-                  <AlertTitle>Unable to load test cases</AlertTitle>
+                  <AlertTitle>{t('testCasesPage.loadFailedTitle')}</AlertTitle>
                   <AlertDescription>
-                    The current project test case list could not be loaded. Check your access or try again.
+                    {t('testCasesPage.loadFailedDescription')}
                   </AlertDescription>
                 </Alert>
               ) : testCases.length === 0 ? (
@@ -1931,21 +2033,21 @@ export function TestCaseManagementPage({
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <FlaskConical className="h-6 w-6" />
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold">No test cases found</h3>
+                  <h3 className="mt-4 text-lg font-semibold">{t('testCasesPage.emptyTitle')}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {deferredKeyword || apiSpecFilter !== 'all' || envFilter !== 'all'
-                      ? 'Adjust filters or search keyword to see more results.'
-                      : 'Create the first test case manually or bootstrap it from an API Spec.'}
+                      ? t('testCasesPage.emptyFilteredDescription')
+                      : t('testCasesPage.emptyDefaultDescription')}
                   </p>
                   {canCreate ? (
                     <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
                       <Button type="button" onClick={openCreateDialog}>
                         <Plus className="h-4 w-4" />
-                        New Test Case
+                        {t('testCasesPage.create')}
                       </Button>
                       <Button type="button" variant="outline" onClick={() => setIsFromSpecOpen(true)}>
                         <FileJson2 className="h-4 w-4" />
-                        Generate from Spec
+                        {t('testCasesPage.generateFromSpec')}
                       </Button>
                     </div>
                   ) : null}
@@ -1956,12 +2058,12 @@ export function TestCaseManagementPage({
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>API Spec</TableHead>
-                          <TableHead>Env</TableHead>
-                          <TableHead>Assertions</TableHead>
-                          <TableHead>Updated</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>{t('common.name')}</TableHead>
+                          <TableHead>{t('testCasesPage.tableApiSpec')}</TableHead>
+                          <TableHead>{t('testCasesPage.tableEnv')}</TableHead>
+                          <TableHead>{t('testCasesPage.tableAssertions')}</TableHead>
+                          <TableHead>{t('common.updated')}</TableHead>
+                          <TableHead className="text-right">{t('common.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1985,16 +2087,18 @@ export function TestCaseManagementPage({
                                     <MethodBadge method={testCase.method} />
                                   </div>
                                   <div className="font-mono text-xs text-muted-foreground">
-                                    {testCase.path || linkedSpec?.path || 'Path unavailable'}
+                                    {testCase.path || linkedSpec?.path || t('testCasesPage.pathUnavailable')}
                                   </div>
                                 </div>
                               </TableCell>
                               <TableCell>
                                 <div className="text-sm">
-                                  {linkedSpec ? `${linkedSpec.method} ${linkedSpec.path}` : `Spec #${testCase.api_spec_id}`}
+                                  {linkedSpec
+                                    ? `${linkedSpec.method} ${linkedSpec.path}`
+                                    : t('testCasesPage.specFallback', { id: testCase.api_spec_id })}
                                 </div>
                               </TableCell>
-                              <TableCell>{testCase.env || 'Not set'}</TableCell>
+                              <TableCell>{testCase.env || t('common.notSet')}</TableCell>
                               <TableCell>{testCase.assertions?.length ?? 0}</TableCell>
                               <TableCell>{formatDate(testCase.updated_at)}</TableCell>
                               <TableCell className="text-right">
@@ -2002,12 +2106,12 @@ export function TestCaseManagementPage({
                                   items={[
                                     {
                                       key: `test-case-view-${testCase.id}`,
-                                      label: 'View',
+                                      label: t('common.view'),
                                       onSelect: () => selectTestCase(testCase.id),
                                     },
                                     {
                                       key: `test-case-edit-${testCase.id}`,
-                                      label: 'Edit',
+                                      label: t('common.edit'),
                                       icon: Pencil,
                                       disabled: !canWrite,
                                       onSelect: () => {
@@ -2017,7 +2121,7 @@ export function TestCaseManagementPage({
                                     },
                                     {
                                       key: `test-case-run-${testCase.id}`,
-                                      label: 'Run',
+                                      label: t('testCasesPage.run'),
                                       icon: Play,
                                       disabled: !canWrite,
                                       onSelect: () => {
@@ -2027,7 +2131,7 @@ export function TestCaseManagementPage({
                                     },
                                     {
                                       key: `test-case-duplicate-${testCase.id}`,
-                                      label: 'Duplicate',
+                                      label: t('common.duplicate'),
                                       icon: Copy,
                                       disabled: !canWrite,
                                       onSelect: () => {
@@ -2037,7 +2141,7 @@ export function TestCaseManagementPage({
                                     },
                                     {
                                       key: `test-case-delete-${testCase.id}`,
-                                      label: 'Delete',
+                                      label: t('common.delete'),
                                       icon: Trash2,
                                       destructive: true,
                                       disabled: !canWrite,
@@ -2047,7 +2151,7 @@ export function TestCaseManagementPage({
                                       },
                                     },
                                   ]}
-                                  ariaLabel={`Open actions for ${testCase.name}`}
+                                  ariaLabel={t('testCasesPage.openActionsFor', { name: testCase.name })}
                                   stopPropagation
                                 />
                               </TableCell>
@@ -2060,19 +2164,11 @@ export function TestCaseManagementPage({
 
                   <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-sm text-muted-foreground">
-                      Page
-                      {' '}
-                      {testCasesQuery.data?.meta.page || page}
-                      {' '}
-                      of
-                      {' '}
-                      {totalPages}
-                      {' '}
-                      •
-                      {' '}
-                      {totalTestCases}
-                      {' '}
-                      total test cases
+                      {t('testCasesPage.pageSummary', {
+                        page: testCasesQuery.data?.meta.page || page,
+                        pages: totalPages,
+                        total: totalTestCases,
+                      })}
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
@@ -2081,7 +2177,7 @@ export function TestCaseManagementPage({
                         onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
                         disabled={page <= 1}
                       >
-                        Previous
+                        {t('common.previous')}
                       </Button>
                       <Button
                         type="button"
@@ -2091,7 +2187,7 @@ export function TestCaseManagementPage({
                         }
                         disabled={page >= totalPages}
                       >
-                        Next
+                        {t('common.next')}
                       </Button>
                     </div>
                   </div>
@@ -2102,13 +2198,11 @@ export function TestCaseManagementPage({
 
           <Card className="border-border/50 shadow-premium">
             <CardHeader className="border-b bg-muted/20">
-              <CardTitle>Test Case Detail</CardTitle>
+              <CardTitle>{t('testCasesPage.detailTitle')}</CardTitle>
               <CardDescription>
-                Inspect GET
-                {' '}
-                <code>{buildApiPath('/projects/:id/test-cases/:tcid')}</code>
-                {' '}
-                and its associated run history.
+                {t('testCasesPage.detailDescription', {
+                  path: buildApiPath('/projects/:id/test-cases/:tcid'),
+                })}
               </CardDescription>
             </CardHeader>
 
@@ -2121,9 +2215,9 @@ export function TestCaseManagementPage({
                 </div>
               ) : !activeTestCase ? (
                 <Alert>
-                  <AlertTitle>No test case selected</AlertTitle>
+                  <AlertTitle>{t('testCasesPage.noSelectionTitle')}</AlertTitle>
                   <AlertDescription>
-                    Pick a test case from the left table to inspect its full configuration and run history.
+                    {t('testCasesPage.noSelectionDescription')}
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -2138,16 +2232,26 @@ export function TestCaseManagementPage({
                         </div>
 
                         <div className="font-mono text-sm text-muted-foreground">
-                          {activeTestCase.path || activeSpec?.path || 'Path unavailable'}
+                          {activeTestCase.path || activeSpec?.path || t('testCasesPage.pathUnavailable')}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge variant="outline">
-                            API Spec: {activeSpec ? `${activeSpec.method} ${activeSpec.path}` : `#${activeTestCase.api_spec_id}`}
+                            {t('testCasesPage.apiSpecBadge', {
+                              spec: activeSpec
+                                ? `${activeSpec.method} ${activeSpec.path}`
+                                : `#${activeTestCase.api_spec_id}`,
+                            })}
                           </Badge>
-                          <Badge variant="outline">Env: {activeTestCase.env || 'Not set'}</Badge>
                           <Badge variant="outline">
-                            Assertions: {activeTestCase.assertions?.length ?? 0}
+                            {t('testCasesPage.envBadge', {
+                              env: activeTestCase.env || t('common.notSet'),
+                            })}
+                          </Badge>
+                          <Badge variant="outline">
+                            {t('testCasesPage.assertionsBadge', {
+                              count: activeTestCase.assertions?.length ?? 0,
+                            })}
                           </Badge>
                         </div>
                       </div>
@@ -2159,11 +2263,11 @@ export function TestCaseManagementPage({
                           disabled={!canWrite}
                         >
                           <Play className="h-4 w-4" />
-                          Run
+                          {t('testCasesPage.run')}
                         </Button>
                         <ActionMenu
                           items={detailActionItems}
-                          ariaLabel="Open selected test case actions"
+                          ariaLabel={t('testCasesPage.openSelectedActions')}
                           triggerVariant="outline"
                         />
                       </div>
@@ -2172,7 +2276,7 @@ export function TestCaseManagementPage({
 
                   {activeTestCase.description ? (
                     <Alert>
-                      <AlertTitle>Description</AlertTitle>
+                      <AlertTitle>{t('common.description')}</AlertTitle>
                       <AlertDescription>{activeTestCase.description}</AlertDescription>
                     </Alert>
                   ) : null}
@@ -2183,45 +2287,45 @@ export function TestCaseManagementPage({
                     className="space-y-4"
                   >
                     <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="overview">Overview</TabsTrigger>
-                      <TabsTrigger value="request">Request Config</TabsTrigger>
-                      <TabsTrigger value="runs">Run History</TabsTrigger>
+                      <TabsTrigger value="overview">{t('common.overview')}</TabsTrigger>
+                      <TabsTrigger value="request">{t('testCasesPage.tabsRequest')}</TabsTrigger>
+                      <TabsTrigger value="runs">{t('testCasesPage.tabsRuns')}</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="overview" className="space-y-4">
                       <div className="grid gap-3 md:grid-cols-2">
-                        <SummaryField label="Created At" value={formatDate(activeTestCase.created_at)} />
-                        <SummaryField label="Updated At" value={formatDate(activeTestCase.updated_at)} />
-                        <SummaryField label="Created By" value={activeTestCase.created_by} />
-                        <SummaryField label="API Spec ID" value={activeTestCase.api_spec_id} />
+                        <SummaryField label={t('common.created')} value={formatDate(activeTestCase.created_at)} />
+                        <SummaryField label={t('common.updated')} value={formatDate(activeTestCase.updated_at)} />
+                        <SummaryField label={t('testCasesPage.createdBy')} value={activeTestCase.created_by} />
+                        <SummaryField label={t('testCasesPage.apiSpecIdLabel')} value={activeTestCase.api_spec_id} />
                       </div>
 
                       <div className="grid gap-4 xl:grid-cols-2">
                         <JsonPreview
-                          title="Assertions"
+                          title={t('testCasesPage.tableAssertions')}
                           value={activeTestCase.assertions}
-                          emptyLabel="No assertions configured."
+                          emptyLabel={t('testCasesPage.assertionsEmpty')}
                         />
                         <JsonPreview
-                          title="Extract Variables"
+                          title={t('testCasesPage.extractVariables')}
                           value={activeTestCase.extract_vars}
-                          emptyLabel="No extract variables configured."
+                          emptyLabel={t('testCasesPage.extractVariablesEmpty')}
                         />
                       </div>
 
                       <div className="grid gap-4 xl:grid-cols-2">
                         <div className="space-y-2">
-                          <div className="text-sm font-medium">Pre Script</div>
+                          <div className="text-sm font-medium">{t('testCasesPage.preScript')}</div>
                           <CodeBlock
                             value={activeTestCase.pre_script}
-                            emptyLabel="No pre script configured."
+                            emptyLabel={t('testCasesPage.preScriptEmpty')}
                           />
                         </div>
                         <div className="space-y-2">
-                          <div className="text-sm font-medium">Post Script</div>
+                          <div className="text-sm font-medium">{t('testCasesPage.postScript')}</div>
                           <CodeBlock
                             value={activeTestCase.post_script}
-                            emptyLabel="No post script configured."
+                            emptyLabel={t('testCasesPage.postScriptEmpty')}
                           />
                         </div>
                       </div>
@@ -2230,27 +2334,27 @@ export function TestCaseManagementPage({
                     <TabsContent value="request" className="space-y-4">
                       <div className="grid gap-4 xl:grid-cols-2">
                         <JsonPreview
-                          title="Headers"
+                          title={t('common.headers')}
                           value={activeTestCase.headers}
-                          emptyLabel="No headers configured."
+                          emptyLabel={t('testCasesPage.headersEmpty')}
                         />
                         <JsonPreview
-                          title="Query Params"
+                          title={t('testCasesPage.queryParamsTitle')}
                           value={activeTestCase.query_params}
-                          emptyLabel="No query params configured."
+                          emptyLabel={t('testCasesPage.queryParamsEmpty')}
                         />
                       </div>
 
                       <div className="grid gap-4 xl:grid-cols-2">
                         <JsonPreview
-                          title="Path Params"
+                          title={t('testCasesPage.pathParamsTitle')}
                           value={activeTestCase.path_params}
-                          emptyLabel="No path params configured."
+                          emptyLabel={t('testCasesPage.pathParamsEmpty')}
                         />
                         <JsonPreview
-                          title="Request Body"
+                          title={t('common.requestBody')}
                           value={activeTestCase.request_body}
-                          emptyLabel="No request body configured."
+                          emptyLabel={t('testCasesPage.requestBodyEmpty')}
                         />
                       </div>
                     </TabsContent>
@@ -2260,28 +2364,31 @@ export function TestCaseManagementPage({
                         <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
                           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div className="space-y-1">
-                              <div className="text-sm font-semibold">Latest Ad Hoc Run</div>
+                              <div className="text-sm font-semibold">{t('testCasesPage.latestAdHocRun')}</div>
                               <div className="text-sm text-muted-foreground">
-                                This result was returned directly by the latest run call and may appear in
-                                history slightly later because the backend stores runs asynchronously.
+                                {t('testCasesPage.latestAdHocRunDescription')}
                               </div>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                               <RunStatusBadge status={effectiveLatestRunResult.status} />
-                              <Badge variant="outline">{effectiveLatestRunResult.duration_ms} ms</Badge>
+                              <Badge variant="outline">
+                                {t('testCasesPage.durationMs', {
+                                  value: effectiveLatestRunResult.duration_ms,
+                                })}
+                              </Badge>
                             </div>
                           </div>
 
                           <div className="mt-4 grid gap-4 xl:grid-cols-2">
                             <JsonPreview
-                              title="Request"
+                              title={t('common.request')}
                               value={effectiveLatestRunResult.request}
-                              emptyLabel="No request payload returned."
+                              emptyLabel={t('testCasesPage.noRequestPayloadReturned')}
                             />
                             <JsonPreview
-                              title="Response"
+                              title={t('common.response')}
                               value={effectiveLatestRunResult.response}
-                              emptyLabel="No response payload returned."
+                              emptyLabel={t('testCasesPage.noResponsePayloadReturned')}
                             />
                           </div>
                         </div>
@@ -2289,11 +2396,13 @@ export function TestCaseManagementPage({
 
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                         <div className="text-sm text-muted-foreground">
-                          {runHistoryQuery.data?.meta.total ?? 0}
-                          {' '}
-                          total runs
+                          {t('testCasesPage.totalRuns', {
+                            count: runHistoryQuery.data?.meta.total ?? 0,
+                          })}
                           {latestHistoryRun
-                            ? ` • latest persisted at ${formatDate(latestHistoryRun.created_at)}`
+                            ? ` • ${t('testCasesPage.latestPersistedAt', {
+                                value: formatDate(latestHistoryRun.created_at),
+                              })}`
                             : ''}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -2305,13 +2414,13 @@ export function TestCaseManagementPage({
                             }}
                           >
                             <SelectTrigger className="w-[180px]">
-                              <SelectValue placeholder="Filter run status" />
+                              <SelectValue placeholder={t('testCasesPage.filterRunStatus')} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">All statuses</SelectItem>
-                              <SelectItem value="pass">Passed</SelectItem>
-                              <SelectItem value="fail">Failed</SelectItem>
-                              <SelectItem value="error">Error</SelectItem>
+                              <SelectItem value="all">{t('testCasesPage.allStatuses')}</SelectItem>
+                              <SelectItem value="pass">{t('testCasesPage.statusPassed')}</SelectItem>
+                              <SelectItem value="fail">{t('testCasesPage.statusFailed')}</SelectItem>
+                              <SelectItem value="error">{t('testCasesPage.statusError')}</SelectItem>
                             </SelectContent>
                           </Select>
                           <Button
@@ -2321,23 +2430,23 @@ export function TestCaseManagementPage({
                             loading={runHistoryQuery.isFetching && !runHistoryQuery.isLoading}
                           >
                             <RefreshCw className="h-4 w-4" />
-                            Refresh History
+                            {t('testCasesPage.refreshHistory')}
                           </Button>
                         </div>
                       </div>
 
                       {runHistoryQuery.isError ? (
                         <Alert>
-                          <AlertTitle>Unable to load run history</AlertTitle>
+                          <AlertTitle>{t('testCasesPage.runHistoryLoadFailedTitle')}</AlertTitle>
                           <AlertDescription>
-                            The run history list could not be loaded for the current test case.
+                            {t('testCasesPage.runHistoryLoadFailedDescription')}
                           </AlertDescription>
                         </Alert>
                       ) : runHistory.length === 0 ? (
                         <Alert>
-                          <AlertTitle>No run history yet</AlertTitle>
+                          <AlertTitle>{t('testCasesPage.noRunHistoryTitle')}</AlertTitle>
                           <AlertDescription>
-                            Execute this test case to start generating run records.
+                            {t('testCasesPage.noRunHistoryDescription')}
                           </AlertDescription>
                         </Alert>
                       ) : (
@@ -2346,11 +2455,11 @@ export function TestCaseManagementPage({
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead>Status</TableHead>
-                                  <TableHead>Duration</TableHead>
-                                  <TableHead>Created At</TableHead>
-                                  <TableHead>Message</TableHead>
-                                  <TableHead className="text-right">Action</TableHead>
+                                  <TableHead>{t('common.status')}</TableHead>
+                                  <TableHead>{t('testCasesPage.tableDuration')}</TableHead>
+                                  <TableHead>{t('common.created')}</TableHead>
+                                  <TableHead>{t('testCasesPage.tableMessage')}</TableHead>
+                                  <TableHead className="text-right">{t('testCasesPage.tableAction')}</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -2362,7 +2471,7 @@ export function TestCaseManagementPage({
                                     <TableCell>{run.duration_ms} ms</TableCell>
                                     <TableCell>{formatDate(run.created_at)}</TableCell>
                                     <TableCell className="max-w-[240px] truncate">
-                                      {run.message || 'No message'}
+                                      {run.message || t('testCasesPage.noMessage')}
                                     </TableCell>
                                     <TableCell className="text-right">
                                       <Button
@@ -2371,7 +2480,7 @@ export function TestCaseManagementPage({
                                         variant="outline"
                                         onClick={() => setRunDetailId(run.id)}
                                       >
-                                        View
+                                        {t('common.view')}
                                       </Button>
                                     </TableCell>
                                   </TableRow>
@@ -2382,13 +2491,10 @@ export function TestCaseManagementPage({
 
                           <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="text-sm text-muted-foreground">
-                              Page
-                              {' '}
-                              {runHistoryQuery.data?.meta.page || effectiveHistoryPage}
-                              {' '}
-                              of
-                              {' '}
-                              {runHistoryQuery.data?.meta.total_pages || 1}
+                              {t('testCasesPage.runPageSummary', {
+                                page: runHistoryQuery.data?.meta.page || effectiveHistoryPage,
+                                pages: runHistoryQuery.data?.meta.total_pages || 1,
+                              })}
                             </div>
                             <div className="flex items-center gap-2">
                               <Button
@@ -2399,7 +2505,7 @@ export function TestCaseManagementPage({
                                 }
                                 disabled={effectiveHistoryPage <= 1}
                               >
-                                Previous
+                                {t('common.previous')}
                               </Button>
                               <Button
                                 type="button"
@@ -2417,7 +2523,7 @@ export function TestCaseManagementPage({
                                   effectiveHistoryPage >= (runHistoryQuery.data?.meta.total_pages || 1)
                                 }
                               >
-                                Next
+                                {t('common.next')}
                               </Button>
                             </div>
                           </div>

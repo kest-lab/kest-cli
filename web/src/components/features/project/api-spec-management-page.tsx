@@ -108,6 +108,7 @@ import {
 import { useProjectMemberRole } from '@/hooks/use-members';
 import { useProject, useProjectStats } from '@/hooks/use-projects';
 import { useT } from '@/i18n/client';
+import type { ScopedTranslations } from '@/i18n/shared';
 import type {
   ApiSpec,
   ApiSpecDocSource,
@@ -139,20 +140,6 @@ const WRITE_ROLES = PROJECT_MEMBER_WRITE_ROLES;
 // API 规格表单与筛选栏使用的静态选项。
 // 作用：集中维护 method、文档来源、语言和导出格式等枚举文案。
 const METHOD_OPTIONS: HttpMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
-const DOC_SOURCE_OPTIONS: Array<{ value: ApiSpecDocSource; label: string }> = [
-  { value: 'manual', label: 'Manual' },
-  { value: 'ai', label: 'AI' },
-];
-const LANGUAGE_OPTIONS: Array<{ value: ApiSpecLanguage; label: string }> = [
-  { value: 'en', label: 'English' },
-  { value: 'zh', label: 'Chinese' },
-];
-const EXPORT_FORMAT_OPTIONS: Array<{ value: ApiSpecExportFormat; label: string }> = [
-  { value: 'json', label: 'JSON' },
-  { value: 'openapi', label: 'OpenAPI' },
-  { value: 'swagger', label: 'Swagger' },
-  { value: 'markdown', label: 'Markdown' },
-];
 const PLATFORM_LABELS: Record<string, string> = {
   go: 'Go',
   javascript: 'JavaScript',
@@ -162,6 +149,7 @@ const PLATFORM_LABELS: Record<string, string> = {
   php: 'PHP',
   csharp: 'C#',
 };
+type ProjectT = ScopedTranslations<'project'>;
 
 type SpecFormMode = 'create' | 'edit';
 type DetailTab = 'overview' | 'docs' | 'examples' | 'generated-test';
@@ -214,16 +202,51 @@ interface AiActionDraft {
 
 // 项目平台显示文案解析器。
 // 作用：把 project.platform 转换成适合页面展示的文本。
-const getPlatformLabel = (platform: string) => PLATFORM_LABELS[platform] || 'Not set';
+const getPlatformLabel = (t: ProjectT, platform: string) =>
+  PLATFORM_LABELS[platform] || t('common.notSet');
+
+const getDocSourceOptions = (t: ProjectT): Array<{ value: ApiSpecDocSource; label: string }> => [
+  { value: 'manual', label: t('apiSpecsPage.docSourceManual') },
+  { value: 'ai', label: t('apiSpecsPage.docSourceAi') },
+];
+
+const getLanguageOptions = (t: ProjectT): Array<{ value: ApiSpecLanguage; label: string }> => [
+  { value: 'en', label: t('apiSpecsPage.languageEnglish') },
+  { value: 'zh', label: t('apiSpecsPage.languageChinese') },
+];
+
+const getExportFormatOptions = (
+  t: ProjectT
+): Array<{ value: ApiSpecExportFormat; label: string }> => [
+  { value: 'json', label: t('apiSpecsPage.exportJson') },
+  { value: 'openapi', label: t('apiSpecsPage.exportOpenapi') },
+  { value: 'swagger', label: t('apiSpecsPage.exportSwagger') },
+  { value: 'markdown', label: t('apiSpecsPage.exportMarkdown') },
+];
 
 // 成员角色显示文案解析器。
 // 作用：统一把 owner/admin/write/read 映射成首字母大写标签。
-const getRoleLabel = (role?: ProjectMemberRole) => {
-  if (!role) {
-    return 'Unknown';
+const getRoleLabel = (t: ProjectT, role?: ProjectMemberRole) => {
+  switch (role) {
+    case 'owner':
+      return t('roles.owner');
+    case 'admin':
+      return t('roles.admin');
+    case 'write':
+      return t('roles.write');
+    case 'read':
+      return t('roles.read');
+    default:
+      return t('roles.unknown');
+  }
+};
+
+const getDocSourceLabel = (t: ProjectT, value?: ApiSpecDocSource | null) => {
+  if (value === 'ai') {
+    return t('apiSpecsPage.docSourceAi');
   }
 
-  return role.charAt(0).toUpperCase() + role.slice(1);
+  return t('apiSpecsPage.docSourceManual');
 };
 
 // HTTP Method 颜色映射。
@@ -267,7 +290,12 @@ const normalizeTags = (value: string) =>
 
 // JSON 输入解析器。
 // 作用：统一处理 object/array/any 三种期望类型，并返回中文错误提示。
-const parseJsonInput = <T,>(value: string, label: string, expectation: 'object' | 'array' | 'any' = 'any') => {
+const parseJsonInput = <T,>(
+  t: ProjectT,
+  value: string,
+  label: string,
+  expectation: 'object' | 'array' | 'any' = 'any'
+) => {
   const trimmedValue = value.trim();
 
   if (!trimmedValue) {
@@ -279,18 +307,18 @@ const parseJsonInput = <T,>(value: string, label: string, expectation: 'object' 
   try {
     parsed = JSON.parse(trimmedValue);
   } catch {
-    throw new Error(`${label} 必须是合法的 JSON。`);
+    throw new Error(t('common.jsonMustBeValid', { label }));
   }
 
   if (expectation === 'array' && !Array.isArray(parsed)) {
-    throw new Error(`${label} 必须是 JSON 数组。`);
+    throw new Error(t('common.jsonMustBeArray', { label }));
   }
 
   if (
     expectation === 'object' &&
     (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null)
   ) {
-    throw new Error(`${label} 必须是 JSON 对象。`);
+    throw new Error(t('common.jsonMustBeObject', { label }));
   }
 
   return parsed as T;
@@ -298,9 +326,11 @@ const parseJsonInput = <T,>(value: string, label: string, expectation: 'object' 
 
 // 请求头标准化器。
 // 作用：把对象值统一转成字符串字典，满足 examples 接口的 request_headers 约束。
-const toHeadersRecord = (value: unknown) => {
+const toHeadersRecord = (t: ProjectT, value: unknown) => {
   if (!value || Array.isArray(value) || typeof value !== 'object') {
-    throw new Error('Request Headers 必须是 JSON 对象。');
+    throw new Error(
+      t('common.jsonMustBeObject', { label: t('apiSpecsPage.exampleRequestHeadersLabel') })
+    );
   }
 
   return Object.fromEntries(
@@ -397,9 +427,10 @@ function MethodBadge({ method }: { method: HttpMethod }) {
 // 当前成员角色徽章。
 // 作用：在页面头部直观展示当前用户的项目权限。
 function RoleBadge({ role }: { role?: ProjectMemberRole }) {
+  const t = useT('project');
   return (
     <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-      Role: {getRoleLabel(role)}
+      {t('roles.badge', { role: getRoleLabel(t, role) })}
     </Badge>
   );
 }
@@ -472,6 +503,8 @@ function SpecFormDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: CreateApiSpecRequest | UpdateApiSpecRequest) => Promise<void>;
 }) {
+  const t = useT('project');
+  const docSourceOptions = getDocSourceOptions(t);
   const [draft, setDraft] = useState<SpecFormDraft>(() => getSpecFormDraft(spec));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -487,11 +520,11 @@ function SpecFormDialog({
     const trimmedVersion = draft.version.trim();
 
     if (!trimmedPath) {
-      nextErrors.path = 'Path 是必填项。';
+      nextErrors.path = t('common.fieldRequired', { field: t('common.path') });
     }
 
     if (mode === 'create' && !trimmedVersion) {
-      nextErrors.version = 'Version 是必填项。';
+      nextErrors.version = t('common.fieldRequired', { field: t('common.version') });
     }
 
     let requestBody: RequestBodySpec | undefined;
@@ -500,21 +533,45 @@ function SpecFormDialog({
 
     if (Object.keys(nextErrors).length === 0) {
       try {
-        requestBody = parseJsonInput<RequestBodySpec>(draft.requestBody, 'Request Body', 'object');
+        requestBody = parseJsonInput<RequestBodySpec>(
+          t,
+          draft.requestBody,
+          t('common.requestBody'),
+          'object'
+        );
       } catch (error) {
-        nextErrors.requestBody = error instanceof Error ? error.message : 'Request Body 无法解析。';
+        nextErrors.requestBody =
+          error instanceof Error
+            ? error.message
+            : t('common.parseFailed', { label: t('common.requestBody') });
       }
 
       try {
-        parameters = parseJsonInput<ParameterSpec[]>(draft.parameters, 'Parameters', 'array');
+        parameters = parseJsonInput<ParameterSpec[]>(
+          t,
+          draft.parameters,
+          t('common.parameters'),
+          'array'
+        );
       } catch (error) {
-        nextErrors.parameters = error instanceof Error ? error.message : 'Parameters 无法解析。';
+        nextErrors.parameters =
+          error instanceof Error
+            ? error.message
+            : t('common.parseFailed', { label: t('common.parameters') });
       }
 
       try {
-        responses = parseJsonInput<Record<string, ResponseSpec>>(draft.responses, 'Responses', 'object');
+        responses = parseJsonInput<Record<string, ResponseSpec>>(
+          t,
+          draft.responses,
+          t('common.responses'),
+          'object'
+        );
       } catch (error) {
-        nextErrors.responses = error instanceof Error ? error.message : 'Responses 无法解析。';
+        nextErrors.responses =
+          error instanceof Error
+            ? error.message
+            : t('common.parseFailed', { label: t('common.responses') });
       }
     }
 
@@ -568,11 +625,13 @@ function SpecFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="full">
         <DialogHeader>
-          <DialogTitle>{mode === 'create' ? 'Create API Spec' : 'Edit API Spec'}</DialogTitle>
+          <DialogTitle>
+            {mode === 'create' ? t('apiSpecs.createDialogTitle') : t('apiSpecsPage.editDialogTitle')}
+          </DialogTitle>
           <DialogDescription>
             {mode === 'create'
-              ? '通过 POST /v1/projects/:id/api-specs 创建新的 API 规格。'
-              : '通过 PATCH /v1/projects/:id/api-specs/:sid 更新当前 API 规格。'}
+              ? t('apiSpecs.createDialogDescription')
+              : t('apiSpecsPage.editDialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -585,16 +644,14 @@ function SpecFormDialog({
             </div>
           ) : mode === 'edit' && !spec ? (
             <Alert className="mt-2">
-              <AlertTitle>Unable to load spec details</AlertTitle>
-              <AlertDescription>
-                当前规格详情尚未加载完成，请关闭后重试。
-              </AlertDescription>
+              <AlertTitle>{t('apiSpecsPage.specLoadFailedTitle')}</AlertTitle>
+              <AlertDescription>{t('apiSpecsPage.specLoadFailedDescription')}</AlertDescription>
             </Alert>
           ) : (
             <form id="api-spec-form" className="space-y-6 py-1" onSubmit={handleSubmit}>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div className="space-y-2">
-                  <Label htmlFor="spec-method">Method</Label>
+                  <Label htmlFor="spec-method">{t('common.method')}</Label>
                   {mode === 'create' ? (
                     <Select value={draft.method} onValueChange={(value) => updateDraft('method', value as HttpMethod)}>
                       <SelectTrigger id="spec-method" className="w-full">
@@ -614,24 +671,24 @@ function SpecFormDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="spec-path">Path</Label>
+                  <Label htmlFor="spec-path">{t('common.path')}</Label>
                   <Input
                     id="spec-path"
                     value={draft.path}
                     onChange={(event) => updateDraft('path', event.target.value)}
-                    placeholder="/api/v1/auth/login"
+                    placeholder={t('apiSpecsPage.pathPlaceholder')}
                     errorText={errors.path}
                     root
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="spec-version">Version</Label>
+                  <Label htmlFor="spec-version">{t('common.version')}</Label>
                   <Input
                     id="spec-version"
                     value={draft.version}
                     onChange={(event) => updateDraft('version', event.target.value)}
-                    placeholder="1.0.0"
+                    placeholder={t('apiSpecsPage.versionValuePlaceholder')}
                     readOnly={mode === 'edit'}
                     disabled={mode === 'edit'}
                     errorText={errors.version}
@@ -640,16 +697,16 @@ function SpecFormDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="spec-category">Category</Label>
+                  <Label htmlFor="spec-category">{t('common.category')}</Label>
                   <Select
                     value={draft.categoryId || 'none'}
                     onValueChange={(value) => updateDraft('categoryId', value === 'none' ? '' : value)}
                   >
                     <SelectTrigger id="spec-category" className="w-full">
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder={t('apiSpecs.selectCategory')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Not set</SelectItem>
+                      <SelectItem value="none">{t('common.notSet')}</SelectItem>
                       {categories.map((category) => (
                         <SelectItem key={category.value} value={category.value}>
                           {category.label}
@@ -660,18 +717,18 @@ function SpecFormDialog({
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="spec-summary">Summary</Label>
+                  <Label htmlFor="spec-summary">{t('common.summary')}</Label>
                   <Input
                     id="spec-summary"
                     value={draft.summary}
                     onChange={(event) => updateDraft('summary', event.target.value)}
-                    placeholder="Short summary of the endpoint"
+                    placeholder={t('apiSpecs.shortSummaryPlaceholder')}
                     root
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="spec-doc-source">Doc Source</Label>
+                  <Label htmlFor="spec-doc-source">{t('common.docSource')}</Label>
                   <Select
                     value={draft.docSource}
                     onValueChange={(value) => updateDraft('docSource', value as ApiSpecDocSource)}
@@ -680,7 +737,7 @@ function SpecFormDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {DOC_SOURCE_OPTIONS.map((option) => (
+                      {docSourceOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -691,10 +748,8 @@ function SpecFormDialog({
 
                 <div className="flex items-center justify-between rounded-xl border px-3 py-2">
                   <div className="space-y-1">
-                    <Label htmlFor="spec-is-public">Public Spec</Label>
-                    <div className="text-xs text-muted-foreground">
-                      控制 `is_public`，决定规格是否可公开暴露。
-                    </div>
+                    <Label htmlFor="spec-is-public">{t('apiSpecs.publicSpec')}</Label>
+                    <div className="text-xs text-muted-foreground">{t('apiSpecs.publicSpecDescription')}</div>
                   </div>
                   <Switch
                     id="spec-is-public"
@@ -706,28 +761,28 @@ function SpecFormDialog({
 
               {mode === 'edit' ? (
                 <div className="rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
-                  PATCH 接口当前不支持修改 `method` 和 `version`，编辑模式下这两个字段为只读。
+                  {t('apiSpecsPage.editReadonlyNotice')}
                 </div>
               ) : null}
 
               <div className="space-y-2">
-                <Label htmlFor="spec-tags">Tags</Label>
+                <Label htmlFor="spec-tags">{t('common.tags')}</Label>
                 <Input
                   id="spec-tags"
                   value={draft.tags}
                   onChange={(event) => updateDraft('tags', event.target.value)}
-                  placeholder="auth, public, login"
+                  placeholder={t('apiSpecsPage.tagsPlaceholder')}
                   root
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="spec-description">Description</Label>
+                <Label htmlFor="spec-description">{t('common.description')}</Label>
                 <Textarea
                   id="spec-description"
                   value={draft.description}
                   onChange={(event) => updateDraft('description', event.target.value)}
-                  placeholder="Detailed description for the endpoint"
+                  placeholder={t('apiSpecs.descriptionPlaceholder')}
                   rows={4}
                   root
                 />
@@ -735,34 +790,34 @@ function SpecFormDialog({
 
               <div className="grid gap-4 xl:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="spec-doc-markdown">Default Markdown</Label>
+                  <Label htmlFor="spec-doc-markdown">{t('apiSpecsPage.defaultMarkdownLabel')}</Label>
                   <Textarea
                     id="spec-doc-markdown"
                     value={draft.docMarkdown}
                     onChange={(event) => updateDraft('docMarkdown', event.target.value)}
-                    placeholder="## POST /api/v1/auth/login"
+                    placeholder={t('apiSpecsPage.markdownPlaceholder')}
                     rows={10}
                     root
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="spec-doc-markdown-zh">Chinese Markdown</Label>
+                  <Label htmlFor="spec-doc-markdown-zh">{t('apiSpecsPage.chineseMarkdownLabel')}</Label>
                   <Textarea
                     id="spec-doc-markdown-zh"
                     value={draft.docMarkdownZh}
                     onChange={(event) => updateDraft('docMarkdownZh', event.target.value)}
-                    placeholder="## POST /api/v1/auth/login"
+                    placeholder={t('apiSpecsPage.markdownPlaceholder')}
                     rows={10}
                     root
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="spec-doc-markdown-en">English Markdown</Label>
+                  <Label htmlFor="spec-doc-markdown-en">{t('apiSpecsPage.englishMarkdownLabel')}</Label>
                   <Textarea
                     id="spec-doc-markdown-en"
                     value={draft.docMarkdownEn}
                     onChange={(event) => updateDraft('docMarkdownEn', event.target.value)}
-                    placeholder="## POST /api/v1/auth/login"
+                    placeholder={t('apiSpecsPage.markdownPlaceholder')}
                     rows={10}
                     root
                   />
@@ -771,36 +826,36 @@ function SpecFormDialog({
 
               <div className="grid gap-4 xl:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="spec-request-body">Request Body JSON</Label>
+                  <Label htmlFor="spec-request-body">{t('apiSpecsPage.requestBodyJsonLabel')}</Label>
                   <Textarea
                     id="spec-request-body"
                     value={draft.requestBody}
                     onChange={(event) => updateDraft('requestBody', event.target.value)}
-                    placeholder='{"required": true, "content_type": "application/json", "schema": {"type": "object"}}'
+                    placeholder={t('apiSpecsPage.requestBodyJsonPlaceholder')}
                     rows={12}
                     errorText={errors.requestBody}
                     root
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="spec-parameters">Parameters JSON</Label>
+                  <Label htmlFor="spec-parameters">{t('apiSpecsPage.parametersJsonLabel')}</Label>
                   <Textarea
                     id="spec-parameters"
                     value={draft.parameters}
                     onChange={(event) => updateDraft('parameters', event.target.value)}
-                    placeholder='[{"name": "Authorization", "in": "header", "required": true, "schema": {"type": "string"}}]'
+                    placeholder={t('apiSpecsPage.parametersJsonPlaceholder')}
                     rows={12}
                     errorText={errors.parameters}
                     root
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="spec-responses">Responses JSON</Label>
+                  <Label htmlFor="spec-responses">{t('apiSpecsPage.responsesJsonLabel')}</Label>
                   <Textarea
                     id="spec-responses"
                     value={draft.responses}
                     onChange={(event) => updateDraft('responses', event.target.value)}
-                    placeholder='{"200": {"description": "Success", "content_type": "application/json", "schema": {"type": "object"}}}'
+                    placeholder={t('apiSpecsPage.responsesJsonPlaceholder')}
                     rows={12}
                     errorText={errors.responses}
                     root
@@ -813,7 +868,7 @@ function SpecFormDialog({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
@@ -821,7 +876,7 @@ function SpecFormDialog({
             loading={isSubmitting}
             disabled={(mode === 'edit' && (isLoadingSpec || !spec)) || isSubmitting}
           >
-            {mode === 'create' ? 'Create Spec' : 'Save Changes'}
+            {mode === 'create' ? t('apiSpecs.addSpec') : t('common.saveChanges')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -846,29 +901,27 @@ function DeleteSpecDialog({
   onOpenChange: (open: boolean) => void;
   onConfirm: () => Promise<void>;
 }) {
+  const t = useT('project');
+  const target = spec ? `${spec.method} ${spec.path}` : t('apiSpecsPage.deleteFallbackTarget');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>Delete API Spec</DialogTitle>
-          <DialogDescription>
-            这会永久删除 {spec ? `${spec.method} ${spec.path}` : '当前选中的 API 规格'} 以及它的 examples。
-          </DialogDescription>
+          <DialogTitle>{t('apiSpecsPage.deleteTitle')}</DialogTitle>
+          <DialogDescription>{t('apiSpecsPage.deleteDescription', { target })}</DialogDescription>
         </DialogHeader>
         <DialogBody>
           <Alert variant="destructive">
-            <AlertTitle>Irreversible action</AlertTitle>
-            <AlertDescription>
-              后端会立即执行 `DELETE /projects/:id/api-specs/:sid`，删除后无法恢复。
-            </AlertDescription>
+            <AlertTitle>{t('common.irreversibleAction')}</AlertTitle>
+            <AlertDescription>{t('apiSpecsPage.deleteWarning')}</AlertDescription>
           </Alert>
         </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="button" variant="destructive" loading={isDeleting} onClick={() => void onConfirm()}>
-            Delete Spec
+            {t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -891,6 +944,7 @@ function ImportSpecsDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: { specs: CreateApiSpecRequest[] }) => Promise<void>;
 }) {
+  const t = useT('project');
   const [draft, setDraft] = useState<ImportDraft>(() => getImportDraft());
   const [error, setError] = useState('');
 
@@ -898,16 +952,23 @@ function ImportSpecsDialog({
     event.preventDefault();
 
     try {
-      const parsed = parseJsonInput<{ specs: CreateApiSpecRequest[] }>(draft.payload, 'Import Payload', 'object');
+      const parsed = parseJsonInput<{ specs: CreateApiSpecRequest[] }>(
+        t,
+        draft.payload,
+        t('apiSpecsPage.importPayloadLabel'),
+        'object'
+      );
 
       if (!parsed?.specs || !Array.isArray(parsed.specs)) {
-        throw new Error('导入 payload 必须包含 `specs` 数组。');
+        throw new Error(t('apiSpecsPage.importPayloadMissingSpecs'));
       }
 
       setError('');
       await onSubmit(parsed);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : '导入 payload 无法解析。');
+      setError(
+        submitError instanceof Error ? submitError.message : t('apiSpecsPage.importPayloadInvalid')
+      );
     }
   };
 
@@ -915,10 +976,8 @@ function ImportSpecsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>Import API Specs</DialogTitle>
-          <DialogDescription>
-            提交完整的 `{` specs: [...] `}` JSON，后端会按 `method + path` 执行 upsert。
-          </DialogDescription>
+          <DialogTitle>{t('apiSpecsPage.importTitle')}</DialogTitle>
+          <DialogDescription>{t('apiSpecsPage.importDescription')}</DialogDescription>
         </DialogHeader>
         <DialogBody>
           <form id="api-spec-import-form" className="space-y-3 py-1" onSubmit={handleSubmit}>
@@ -930,16 +989,16 @@ function ImportSpecsDialog({
               root
             />
             <div className="text-xs text-muted-foreground">
-              接口：POST /v1/projects/:id/api-specs/import
+              {t('apiSpecsPage.importEndpoint')}
             </div>
           </form>
         </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" form="api-spec-import-form" loading={isSubmitting}>
-            Import Specs
+            {t('apiSpecsPage.importButton')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -962,20 +1021,20 @@ function ExportSpecsDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (format: ApiSpecExportFormat) => Promise<void>;
 }) {
+  const t = useT('project');
+  const exportFormatOptions = getExportFormatOptions(t);
   const [draft, setDraft] = useState<ExportDraft>(() => getExportDraft());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>Export API Specs</DialogTitle>
-          <DialogDescription>
-            选择导出格式，前端会直接下载接口返回内容。
-          </DialogDescription>
+          <DialogTitle>{t('apiSpecsPage.exportTitle')}</DialogTitle>
+          <DialogDescription>{t('apiSpecsPage.exportDescription')}</DialogDescription>
         </DialogHeader>
         <DialogBody>
           <div className="space-y-2 py-1">
-            <Label htmlFor="api-spec-export-format">Export Format</Label>
+            <Label htmlFor="api-spec-export-format">{t('apiSpecsPage.exportFormatLabel')}</Label>
             <Select
               value={draft.format}
               onValueChange={(value) => setDraft({ format: value as ApiSpecExportFormat })}
@@ -984,7 +1043,7 @@ function ExportSpecsDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {EXPORT_FORMAT_OPTIONS.map((option) => (
+                {exportFormatOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -995,10 +1054,10 @@ function ExportSpecsDialog({
         </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="button" loading={isSubmitting} onClick={() => void onSubmit(draft.format)}>
-            Export
+            {t('apiSpecsPage.exportButton')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1023,21 +1082,21 @@ function BatchGenDocDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: BatchGenDocRequest) => Promise<void>;
 }) {
+  const t = useT('project');
+  const languageOptions = getLanguageOptions(t);
   const [draft, setDraft] = useState<BatchGenDraft>(() => getBatchGenDraft());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>Batch Generate Docs</DialogTitle>
-          <DialogDescription>
-            通过 POST /v1/projects/:id/api-specs/batch-gen-doc 提交后台生成任务。
-          </DialogDescription>
+          <DialogTitle>{t('apiSpecsPage.batchTitle')}</DialogTitle>
+          <DialogDescription>{t('apiSpecsPage.batchDescription')}</DialogDescription>
         </DialogHeader>
         <DialogBody>
           <div className="space-y-4 py-1">
             <div className="space-y-2">
-              <Label htmlFor="batch-gen-lang">Language</Label>
+              <Label htmlFor="batch-gen-lang">{t('apiSpecsPage.batchLanguageLabel')}</Label>
               <Select
                 value={draft.lang}
                 onValueChange={(value) => setDraft((current) => ({ ...current, lang: value as ApiSpecLanguage }))}
@@ -1046,7 +1105,7 @@ function BatchGenDocDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {LANGUAGE_OPTIONS.map((option) => (
+                  {languageOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -1056,7 +1115,7 @@ function BatchGenDocDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="batch-gen-category">Category Scope</Label>
+              <Label htmlFor="batch-gen-category">{t('apiSpecsPage.batchCategoryLabel')}</Label>
               <Select
                 value={draft.categoryId || 'all'}
                 onValueChange={(value) =>
@@ -1067,7 +1126,7 @@ function BatchGenDocDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Whole project</SelectItem>
+                  <SelectItem value="all">{t('apiSpecsPage.batchWholeProject')}</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.value} value={category.value}>
                       {category.label}
@@ -1079,10 +1138,8 @@ function BatchGenDocDialog({
 
             <div className="flex items-center justify-between rounded-xl border px-3 py-2">
               <div className="space-y-1">
-                <Label htmlFor="batch-gen-force">Force Regeneration</Label>
-                <div className="text-xs text-muted-foreground">
-                  打开后会重新生成已有文档，而不是仅补齐缺失文档。
-                </div>
+                <Label htmlFor="batch-gen-force">{t('apiSpecsPage.batchForceLabel')}</Label>
+                <div className="text-xs text-muted-foreground">{t('apiSpecsPage.batchForceDescription')}</div>
               </div>
               <Switch
                 id="batch-gen-force"
@@ -1094,7 +1151,7 @@ function BatchGenDocDialog({
         </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             type="button"
@@ -1107,7 +1164,7 @@ function BatchGenDocDialog({
               })
             }
           >
-            Queue Job
+            {t('apiSpecsPage.batchQueueButton')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1134,32 +1191,36 @@ function AiActionDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (lang: ApiSpecLanguage) => Promise<void>;
 }) {
+  const t = useT('project');
+  const languageOptions = getLanguageOptions(t);
   const [draft, setDraft] = useState<AiActionDraft>(() => getAiActionDraft());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>{mode === 'doc' ? 'Generate Documentation' : 'Generate Test'}</DialogTitle>
+          <DialogTitle>
+            {mode === 'doc' ? t('apiSpecsPage.aiGenerateDocTitle') : t('apiSpecsPage.aiGenerateTestTitle')}
+          </DialogTitle>
           <DialogDescription>
-            {spec ? `${spec.method} ${spec.path}` : '当前选中的 API 规格'}
+            {spec ? `${spec.method} ${spec.path}` : t('apiSpecsPage.deleteFallbackTarget')}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
           <div className="space-y-2 py-1">
-            <Label htmlFor="ai-action-lang">Language</Label>
+            <Label htmlFor="ai-action-lang">{t('apiSpecsPage.aiActionLanguageLabel')}</Label>
             <Select
               value={draft.lang}
               onValueChange={(value) => setDraft({ lang: value as ApiSpecLanguage })}
             >
-              <SelectTrigger id="ai-action-lang" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LANGUAGE_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
+                <SelectTrigger id="ai-action-lang" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                {languageOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -1167,10 +1228,10 @@ function AiActionDialog({
         </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="button" loading={isSubmitting} onClick={() => void onSubmit(draft.lang)}>
-            {mode === 'doc' ? 'Generate Doc' : 'Generate Test'}
+            {mode === 'doc' ? t('apiSpecsPage.aiGenerateDocButton') : t('apiSpecsPage.aiGenerateTestButton')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1193,6 +1254,7 @@ function ExampleFormDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: CreateApiExampleRequest) => Promise<void>;
 }) {
+  const t = useT('project');
   const [draft, setDraft] = useState<ExampleDraft>(() => getExampleDraft());
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -1205,15 +1267,15 @@ function ExampleFormDialog({
     const durationMs = draft.durationMs.trim() ? Number(draft.durationMs) : undefined;
 
     if (!trimmedName) {
-      nextErrors.name = 'Example name 是必填项。';
+      nextErrors.name = t('apiSpecsPage.exampleNameRequired');
     }
 
     if (!Number.isInteger(responseStatus) || responseStatus < 100 || responseStatus > 599) {
-      nextErrors.responseStatus = 'Response Status 需要是 100 到 599 的整数。';
+      nextErrors.responseStatus = t('apiSpecsPage.exampleStatusInvalid');
     }
 
     if (draft.durationMs.trim() && (!Number.isFinite(durationMs) || (durationMs ?? 0) < 0)) {
-      nextErrors.durationMs = 'Duration 必须是大于等于 0 的数字。';
+      nextErrors.durationMs = t('apiSpecsPage.exampleDurationInvalid');
     }
 
     let requestHeaders: Record<string, string> | undefined;
@@ -1222,22 +1284,40 @@ function ExampleFormDialog({
 
     if (Object.keys(nextErrors).length === 0) {
       try {
-        const parsedHeaders = parseJsonInput<Record<string, unknown>>(draft.requestHeaders, 'Request Headers', 'object');
-        requestHeaders = parsedHeaders ? toHeadersRecord(parsedHeaders) : undefined;
+        const parsedHeaders = parseJsonInput<Record<string, unknown>>(
+          t,
+          draft.requestHeaders,
+          t('apiSpecsPage.exampleRequestHeadersLabel'),
+          'object'
+        );
+        requestHeaders = parsedHeaders ? toHeadersRecord(t, parsedHeaders) : undefined;
       } catch (error) {
-        nextErrors.requestHeaders = error instanceof Error ? error.message : 'Request Headers 无法解析。';
+        nextErrors.requestHeaders =
+          error instanceof Error
+            ? error.message
+            : t('common.parseFailed', { label: t('apiSpecsPage.exampleRequestHeadersLabel') });
       }
 
       try {
-        requestBody = parseJsonInput(draft.requestBody, 'Request Body');
+        requestBody = parseJsonInput(t, draft.requestBody, t('apiSpecsPage.exampleRequestBodyLabel'));
       } catch (error) {
-        nextErrors.requestBody = error instanceof Error ? error.message : 'Request Body 无法解析。';
+        nextErrors.requestBody =
+          error instanceof Error
+            ? error.message
+            : t('common.parseFailed', { label: t('apiSpecsPage.exampleRequestBodyLabel') });
       }
 
       try {
-        responseBody = parseJsonInput(draft.responseBody, 'Response Body');
+        responseBody = parseJsonInput(
+          t,
+          draft.responseBody,
+          t('apiSpecsPage.exampleResponseBodyLabel')
+        );
       } catch (error) {
-        nextErrors.responseBody = error instanceof Error ? error.message : 'Response Body 无法解析。';
+        nextErrors.responseBody =
+          error instanceof Error
+            ? error.message
+            : t('common.parseFailed', { label: t('apiSpecsPage.exampleResponseBodyLabel') });
       }
     }
 
@@ -1260,21 +1340,19 @@ function ExampleFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>Create API Example</DialogTitle>
-          <DialogDescription>
-            通过 POST /v1/projects/:id/api-specs/:sid/examples 新增请求/响应样例。
-          </DialogDescription>
+          <DialogTitle>{t('apiSpecsPage.exampleCreateTitle')}</DialogTitle>
+          <DialogDescription>{t('apiSpecsPage.exampleCreateDescription')}</DialogDescription>
         </DialogHeader>
         <DialogBody>
           <form id="api-example-form" className="space-y-4 py-1" onSubmit={handleSubmit}>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="api-example-name">Example Name</Label>
+                <Label htmlFor="api-example-name">{t('apiSpecsPage.exampleNameLabel')}</Label>
                 <Input
                   id="api-example-name"
                   value={draft.name}
                   onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
-                  placeholder="Successful login"
+                  placeholder={t('apiSpecsPage.exampleNamePlaceholder')}
                   errorText={errors.name}
                   root
                 />
@@ -1282,7 +1360,7 @@ function ExampleFormDialog({
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="api-example-status">Response Status</Label>
+                  <Label htmlFor="api-example-status">{t('apiSpecsPage.exampleResponseStatusLabel')}</Label>
                   <Input
                     id="api-example-status"
                     type="number"
@@ -1295,7 +1373,7 @@ function ExampleFormDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="api-example-duration">Duration (ms)</Label>
+                  <Label htmlFor="api-example-duration">{t('apiSpecsPage.exampleDurationLabel')}</Label>
                   <Input
                     id="api-example-duration"
                     type="number"
@@ -1313,7 +1391,7 @@ function ExampleFormDialog({
 
             <div className="grid gap-4 xl:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="api-example-request-headers">Request Headers JSON</Label>
+                <Label htmlFor="api-example-request-headers">{t('apiSpecsPage.exampleRequestHeadersLabel')}</Label>
                 <Textarea
                   id="api-example-request-headers"
                   value={draft.requestHeaders}
@@ -1327,7 +1405,7 @@ function ExampleFormDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="api-example-request-body">Request Body JSON</Label>
+                <Label htmlFor="api-example-request-body">{t('apiSpecsPage.exampleRequestBodyLabel')}</Label>
                 <Textarea
                   id="api-example-request-body"
                   value={draft.requestBody}
@@ -1341,7 +1419,7 @@ function ExampleFormDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="api-example-response-body">Response Body JSON</Label>
+                <Label htmlFor="api-example-response-body">{t('apiSpecsPage.exampleResponseBodyLabel')}</Label>
                 <Textarea
                   id="api-example-response-body"
                   value={draft.responseBody}
@@ -1358,10 +1436,10 @@ function ExampleFormDialog({
         </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" form="api-example-form" loading={isSubmitting}>
-            Create Example
+            {t('apiSpecsPage.exampleCreateButton')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1699,7 +1777,7 @@ export function ApiSpecManagementPage({
   const headerActionItems: ActionMenuItem[] = [
     {
       key: 'api-spec-refresh',
-      label: isHeaderRefreshing ? 'Refreshing...' : 'Refresh',
+      label: isHeaderRefreshing ? t('common.refreshing') : t('common.refresh'),
       icon: RefreshCw,
       disabled: isHeaderRefreshing,
       onSelect: () => {
@@ -1708,47 +1786,47 @@ export function ApiSpecManagementPage({
     },
     {
       key: 'api-spec-import',
-      label: 'Import',
+      label: t('apiSpecsPage.import'),
       icon: Upload,
       disabled: !canWrite,
       onSelect: () => setIsImportOpen(true),
     },
     {
       key: 'api-spec-export',
-      label: 'Export',
+      label: t('apiSpecsPage.export'),
       icon: Download,
       onSelect: () => setIsExportOpen(true),
     },
     {
       key: 'api-spec-batch-doc',
-      label: 'Batch Gen Doc',
+      label: t('apiSpecsPage.batchGenDoc'),
       icon: Sparkles,
       disabled: !canWrite,
       onSelect: () => setIsBatchGenOpen(true),
     },
     {
       key: 'api-spec-ai-create',
-      label: 'AI Create',
+      label: t('apiSpecsPage.aiCreate'),
       icon: Bot,
       disabled: !canWrite,
       onSelect: openAICreateDialog,
     },
     {
       key: 'api-spec-categories',
-      label: 'Categories',
+      label: t('modules.categories.label'),
       icon: Tags,
       href: buildProjectCategoriesRoute(projectId),
       separatorBefore: true,
     },
     {
       key: 'api-spec-environments',
-      label: 'Environments',
+      label: t('modules.environments.label'),
       icon: Globe,
       href: buildProjectEnvironmentsRoute(projectId),
     },
     {
       key: 'api-spec-test-cases',
-      label: 'Test Cases',
+      label: t('modules.testCases.label'),
       icon: FlaskConical,
       href: buildProjectTestCasesRoute(projectId),
     },
@@ -1758,7 +1836,7 @@ export function ApiSpecManagementPage({
         specShareQuery.data
           ? {
               key: 'detail-copy-link',
-              label: 'Copy Link',
+              label: t('apiSpecsPage.copyLink'),
               icon: Copy,
               onSelect: () => {
                 void handleCopyShareLink();
@@ -1766,7 +1844,7 @@ export function ApiSpecManagementPage({
             }
           : {
               key: 'detail-publish-share',
-              label: 'Publish Share',
+              label: t('apiSpecsPage.publishShare'),
               icon: Share2,
               disabled: !canWrite || publishShareMutation.isPending,
               onSelect: () => {
@@ -1775,7 +1853,7 @@ export function ApiSpecManagementPage({
             },
         {
           key: 'detail-preview-share',
-          label: 'Preview Share',
+          label: t('apiSpecsPage.previewShare'),
           icon: ExternalLink,
           href: shareRoute || '#',
           external: true,
@@ -1783,7 +1861,7 @@ export function ApiSpecManagementPage({
         },
         {
           key: 'detail-disable-share',
-          label: 'Disable Share',
+          label: t('apiSpecsPage.disableShare'),
           icon: Trash2,
           destructive: true,
           hidden: !Boolean(specShareQuery.data),
@@ -1794,7 +1872,7 @@ export function ApiSpecManagementPage({
         },
         {
           key: 'detail-generate-doc',
-          label: 'Gen Doc',
+          label: t('apiSpecsPage.genDoc'),
           icon: Bot,
           separatorBefore: true,
           disabled: !canWrite,
@@ -1802,27 +1880,27 @@ export function ApiSpecManagementPage({
         },
         {
           key: 'detail-generate-test',
-          label: 'Gen Test',
+          label: t('apiSpecsPage.genTest'),
           icon: FileCode2,
           disabled: !canWrite,
           onSelect: () => setAiAction({ mode: 'test', spec: selectedSpec }),
         },
         {
           key: 'detail-project-overview',
-          label: 'Project Overview',
+          label: t('apiSpecsPage.projectOverview'),
           icon: FolderKanban,
           separatorBefore: true,
           href: buildProjectDetailRoute(projectId),
         },
         {
           key: 'detail-categories',
-          label: 'Categories',
+          label: t('modules.categories.label'),
           icon: Tags,
           href: buildProjectCategoriesRoute(projectId),
         },
         {
           key: 'detail-delete-spec',
-          label: 'Delete',
+          label: t('common.delete'),
           icon: Trash2,
           destructive: true,
           separatorBefore: true,
@@ -1843,26 +1921,22 @@ export function ApiSpecManagementPage({
             <Button asChild variant="link" className="h-auto px-0 text-sm text-muted-foreground">
               <Link href={ROUTES.CONSOLE.PROJECTS}>
                 <ArrowLeft className="h-4 w-4" />
-                Back to Projects
+                {t('apiSpecsPage.backToProjects')}
               </Link>
             </Button>
 
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">API Specifications</h1>
+                <h1 className="text-3xl font-bold tracking-tight">{t('apiSpecsPage.title')}</h1>
                 <Braces className="h-6 w-6 text-primary" />
                 <RoleBadge role={currentRole} />
               </div>
 
               <p className="max-w-4xl text-sm text-text-muted">
-                管理项目
-                {' '}
-                <span className="font-semibold text-foreground">{projectName}</span>
-                {' '}
-                的 API 规格、examples、AI 文档和测试生成流程，对应后端入口为
-                {' '}
-                <code>{apiSpecsPath}</code>
-                。
+                {t('apiSpecsPage.description', {
+                  projectName,
+                  path: apiSpecsPath,
+                })}
               </p>
             </div>
 
@@ -1870,21 +1944,29 @@ export function ApiSpecManagementPage({
               <Badge variant="outline" className="font-mono">
                 {projectSlug}
               </Badge>
-              <Badge variant="outline">{getPlatformLabel(projectPlatform)}</Badge>
-              <Badge variant="outline">{totalSpecs} specs</Badge>
-              <Badge variant="outline">{projectStatsQuery.data?.category_count ?? 0} categories</Badge>
-              <Badge variant="outline">{projectStatsQuery.data?.member_count ?? 0} members</Badge>
+              <Badge variant="outline">{getPlatformLabel(t, projectPlatform)}</Badge>
+              <Badge variant="outline">{t('apiSpecsPage.countSpecs', { count: totalSpecs })}</Badge>
+              <Badge variant="outline">
+                {t('apiSpecsPage.countCategories', {
+                  count: projectStatsQuery.data?.category_count ?? 0,
+                })}
+              </Badge>
+              <Badge variant="outline">
+                {t('apiSpecsPage.countMembers', {
+                  count: projectStatsQuery.data?.member_count ?? 0,
+                })}
+              </Badge>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" onClick={openCreateDialog} disabled={!canWrite}>
               <Plus className="h-4 w-4" />
-              Create Spec
+              {t('apiSpecs.addSpecManually')}
             </Button>
             <ActionMenu
               items={headerActionItems}
-              ariaLabel="Open API spec management actions"
+              ariaLabel={t('apiSpecsPage.openManagementActions')}
               triggerVariant="outline"
             />
           </div>
@@ -1894,12 +1976,11 @@ export function ApiSpecManagementPage({
       {!canWrite && memberRoleQuery.isSuccess ? (
         <Alert>
           <ShieldCheck className="h-4 w-4" />
-          <AlertTitle>Read-only access</AlertTitle>
+          <AlertTitle>{t('apiSpecsPage.readOnlyTitle')}</AlertTitle>
           <AlertDescription>
-            当前角色是
-            {' '}
-            <strong>{getRoleLabel(currentRole)}</strong>
-            ，可以查看与导出 API 规格，但不能执行创建、编辑、删除、导入和 AI 生成。
+            {t('apiSpecsPage.readOnlyDescription', {
+              role: getRoleLabel(t, currentRole),
+            })}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -1915,30 +1996,32 @@ export function ApiSpecManagementPage({
         ) : (
           <>
             <StatCard
-              title="Total Specs"
+              title={t('apiSpecsPage.totalSpecs')}
               value={totalSpecs}
-              description={`Project slug: ${projectSlug}`}
+              description={t('apiSpecsPage.totalSpecsDescription', { slug: projectSlug })}
               icon={FileJson2}
               variant="primary"
             />
             <StatCard
-              title="Public On This Page"
+              title={t('apiSpecsPage.publicOnPage')}
               value={publicCountOnPage}
-              description={`Visible results on page ${specsQuery.data?.meta.page || page}`}
+              description={t('apiSpecsPage.publicOnPageDescription', {
+                page: specsQuery.data?.meta.page || page,
+              })}
               icon={ShieldCheck}
               variant="success"
             />
             <StatCard
-              title="Docs Available"
+              title={t('apiSpecsPage.docsAvailable')}
               value={documentedCountOnPage}
-              description="Specs already containing markdown docs"
+              description={t('apiSpecsPage.docsAvailableDescription')}
               icon={ScrollText}
               variant="default"
             />
             <StatCard
-              title="Examples Cached"
+              title={t('apiSpecsPage.examplesCached')}
               value={specExamplesQuery.data?.total ?? examplesOnPage}
-              description="Examples for the selected/current page specs"
+              description={t('apiSpecsPage.examplesCachedDescription')}
               icon={FlaskConical}
               variant="warning"
             />
@@ -1950,11 +2033,15 @@ export function ApiSpecManagementPage({
         <Card className="overflow-hidden border-border/50 shadow-premium">
           <CardHeader className="gap-4 border-b bg-muted/20">
             <div>
-              <CardTitle>Specification List</CardTitle>
+              <CardTitle>{t('apiSpecsPage.listTitle')}</CardTitle>
               <CardDescription>
                 {specsQuery.data?.meta
-                  ? `Page ${specsQuery.data.meta.page} of ${specsQuery.data.meta.total_pages}, ${specsQuery.data.meta.total} total specs`
-                  : `Connected to GET ${apiSpecsPath}`}
+                  ? t('apiSpecsPage.listDescriptionMeta', {
+                      page: specsQuery.data.meta.page,
+                      pages: specsQuery.data.meta.total_pages,
+                      total: specsQuery.data.meta.total,
+                    })
+                  : t('apiSpecsPage.listDescriptionFallback', { path: apiSpecsPath })}
               </CardDescription>
             </div>
 
@@ -1965,7 +2052,7 @@ export function ApiSpecManagementPage({
                   setKeyword(event.target.value);
                   resetToFirstPage();
                 }}
-                placeholder="Search path, summary, description"
+                placeholder={t('apiSpecsPage.searchPlaceholder')}
                 leftIcon={<Search className="size-4" />}
               />
 
@@ -1977,10 +2064,10 @@ export function ApiSpecManagementPage({
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Method" />
+                  <SelectValue placeholder={t('common.method')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All methods</SelectItem>
+                  <SelectItem value="all">{t('apiSpecsPage.allMethods')}</SelectItem>
                   {METHOD_OPTIONS.map((item) => (
                     <SelectItem key={item} value={item}>
                       {item}
@@ -1995,7 +2082,7 @@ export function ApiSpecManagementPage({
                   setVersion(event.target.value);
                   resetToFirstPage();
                 }}
-                placeholder="Version (exact match)"
+                placeholder={t('apiSpecsPage.versionPlaceholder')}
               />
 
               <Input
@@ -2004,7 +2091,7 @@ export function ApiSpecManagementPage({
                   setTag(event.target.value);
                   resetToFirstPage();
                 }}
-                placeholder="Tag (partial match)"
+                placeholder={t('apiSpecsPage.tagPlaceholder')}
               />
             </div>
           </CardHeader>
@@ -2022,13 +2109,13 @@ export function ApiSpecManagementPage({
                   <Table>
                     <TableHeader className="bg-muted/10">
                       <TableRow className="hover:bg-transparent">
-                        <TableHead>Method</TableHead>
-                        <TableHead>Path</TableHead>
-                        <TableHead>Version</TableHead>
-                        <TableHead>Tags</TableHead>
-                        <TableHead>Visibility</TableHead>
-                        <TableHead>Updated</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>{t('common.method')}</TableHead>
+                        <TableHead>{t('common.path')}</TableHead>
+                        <TableHead>{t('common.version')}</TableHead>
+                        <TableHead>{t('common.tags')}</TableHead>
+                        <TableHead>{t('apiSpecsPage.visibility')}</TableHead>
+                        <TableHead>{t('common.updated')}</TableHead>
+                        <TableHead className="text-right">{t('common.actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -2050,9 +2137,13 @@ export function ApiSpecManagementPage({
                           </TableCell>
                           <TableCell className="min-w-[260px]">
                             <div className="space-y-1">
-                              <div className="font-mono text-xs text-muted-foreground">ID {spec.id}</div>
+                              <div className="font-mono text-xs text-muted-foreground">
+                                {t('projectsPage.projectId', { id: spec.id })}
+                              </div>
                               <div className="font-medium">{spec.path}</div>
-                              <div className="text-xs text-muted-foreground">{spec.summary || 'No summary'}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {spec.summary || t('common.noSummaryProvided')}
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell className="font-mono text-xs">{spec.version}</TableCell>
@@ -2065,7 +2156,7 @@ export function ApiSpecManagementPage({
                                   </Badge>
                                 ))
                               ) : (
-                                <span className="text-xs text-muted-foreground">No tags</span>
+                                <span className="text-xs text-muted-foreground">{t('common.noTags')}</span>
                               )}
                               {spec.tags?.length > 2 ? (
                                 <Badge variant="outline">+{spec.tags.length - 2}</Badge>
@@ -2074,7 +2165,7 @@ export function ApiSpecManagementPage({
                           </TableCell>
                           <TableCell>
                             <Badge variant={spec.is_public ? 'default' : 'secondary'}>
-                              {spec.is_public ? 'Public' : 'Private'}
+                              {spec.is_public ? t('common.public') : t('common.private')}
                             </Badge>
                           </TableCell>
                           <TableCell>{formatDate(spec.updated_at, 'YYYY-MM-DD HH:mm')}</TableCell>
@@ -2083,7 +2174,7 @@ export function ApiSpecManagementPage({
                               items={[
                                 {
                                   key: `spec-view-${spec.id}`,
-                                  label: 'View',
+                                  label: t('apiSpecsPage.view'),
                                   icon: Eye,
                                   onSelect: () => {
                                     setSelectedSpecId(spec.id);
@@ -2092,14 +2183,14 @@ export function ApiSpecManagementPage({
                                 },
                                 {
                                   key: `spec-edit-${spec.id}`,
-                                  label: 'Edit',
+                                  label: t('common.edit'),
                                   icon: Pencil,
                                   disabled: !canWrite,
                                   onSelect: () => openEditDialog(spec.id),
                                 },
                                 {
                                   key: `spec-doc-${spec.id}`,
-                                  label: 'Gen Doc',
+                                  label: t('apiSpecsPage.genDoc'),
                                   icon: Bot,
                                   disabled: !canWrite,
                                   onSelect: () => {
@@ -2109,7 +2200,7 @@ export function ApiSpecManagementPage({
                                 },
                                 {
                                   key: `spec-test-${spec.id}`,
-                                  label: 'Gen Test',
+                                  label: t('apiSpecsPage.genTest'),
                                   icon: FileCode2,
                                   disabled: !canWrite,
                                   onSelect: () => {
@@ -2119,7 +2210,7 @@ export function ApiSpecManagementPage({
                                 },
                                 {
                                   key: `spec-delete-${spec.id}`,
-                                  label: 'Delete',
+                                  label: t('common.delete'),
                                   icon: Trash2,
                                   destructive: true,
                                   disabled: !canWrite,
@@ -2129,7 +2220,7 @@ export function ApiSpecManagementPage({
                                   },
                                 },
                               ]}
-                              ariaLabel={`Open actions for ${spec.path}`}
+                              ariaLabel={t('common.openActions')}
                               stopPropagation
                             />
                           </TableCell>
@@ -2139,7 +2230,7 @@ export function ApiSpecManagementPage({
                       {specs.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
-                            No API specs matched the current filters.
+                            {t('apiSpecsPage.noSpecsMatched')}
                           </TableCell>
                         </TableRow>
                       ) : null}
@@ -2154,10 +2245,13 @@ export function ApiSpecManagementPage({
                     onClick={() => setPage((currentPage) => currentPage - 1)}
                     disabled={!canGoPrev}
                   >
-                    Previous
+                    {t('apiSpecsPage.previous')}
                   </Button>
                   <div className="text-sm text-muted-foreground">
-                    Page {specsQuery.data?.meta.page || page} of {specsQuery.data?.meta.total_pages || 1}
+                    {t('projectsPage.pageSummary', {
+                      page: specsQuery.data?.meta.page || page,
+                      pages: specsQuery.data?.meta.total_pages || 1,
+                    })}
                   </div>
                   <Button
                     type="button"
@@ -2165,7 +2259,7 @@ export function ApiSpecManagementPage({
                     onClick={() => setPage((currentPage) => currentPage + 1)}
                     disabled={!canGoNext}
                   >
-                    Next
+                    {t('apiSpecsPage.next')}
                   </Button>
                 </div>
               </>
@@ -2177,11 +2271,13 @@ export function ApiSpecManagementPage({
           <CardHeader className="gap-4 border-b bg-muted/20">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <CardTitle>Selected Spec</CardTitle>
+                <CardTitle>{t('apiSpecsPage.selectedSpecTitle')}</CardTitle>
                 <CardDescription>
-                  Detail from <code>{activeSpecPath}</code>, full detail from <code>{activeSpecFullPath}</code>,
-                  {' '}
-                  examples from <code>{activeSpecExamplesPath}</code>.
+                  {t('apiSpecsPage.selectedSpecDescription', {
+                    path: activeSpecPath,
+                    fullPath: activeSpecFullPath,
+                    examplesPath: activeSpecExamplesPath,
+                  })}
                 </CardDescription>
               </div>
 
@@ -2194,11 +2290,11 @@ export function ApiSpecManagementPage({
                     onClick={() => openEditDialog(selectedSpec.id)}
                   >
                     <Pencil className="h-3.5 w-3.5" />
-                    Edit
+                    {t('common.edit')}
                   </Button>
                   <ActionMenu
                     items={detailActionItems}
-                    ariaLabel="Open selected API spec actions"
+                    ariaLabel={t('common.openActions')}
                     triggerVariant="outline"
                   />
                 </div>
@@ -2209,9 +2305,9 @@ export function ApiSpecManagementPage({
           <CardContent className="space-y-5 pt-6">
             {!selectedSpec ? (
               <Alert>
-                <AlertTitle>No API spec selected</AlertTitle>
+                <AlertTitle>{t('apiSpecs.emptyTitle')}</AlertTitle>
                 <AlertDescription>
-                  从左侧列表中选择一条 API 规格，查看它的完整详情、文档和 examples。
+                  {t('apiSpecs.description')}
                 </AlertDescription>
               </Alert>
             ) : (
@@ -2224,22 +2320,18 @@ export function ApiSpecManagementPage({
                         <h2 className="font-mono text-base font-semibold">{selectedSpec.path}</h2>
                         <Badge variant="outline">v{selectedSpec.version}</Badge>
                         <Badge variant={selectedSpec.is_public ? 'default' : 'secondary'}>
-                          {selectedSpec.is_public ? 'Public' : 'Private'}
+                          {selectedSpec.is_public ? t('common.public') : t('common.private')}
                         </Badge>
-                        {specShareQuery.data ? <Badge variant="outline">Shared</Badge> : null}
-                        <Badge variant="outline">{selectedSpec.doc_source || 'manual'}</Badge>
+                        {specShareQuery.data ? <Badge variant="outline">{t('share.shared')}</Badge> : null}
+                        <Badge variant="outline">{getDocSourceLabel(t, selectedSpec.doc_source)}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {selectedSpec.summary || 'No summary provided for this spec.'}
+                        {selectedSpec.summary || t('apiSpecs.noSpecDescription')}
                       </p>
                       {specShareQuery.data ? (
                         <p className="text-xs text-muted-foreground">
-                          分享接口：
-                          {' '}
                           <code>{activeSpecSharePath}</code>
-                          {' '}
-                          · 对外页面：
-                          {' '}
+                          {' · '}
                           <code>{shareRoute}</code>
                         </p>
                       ) : null}
@@ -2250,54 +2342,54 @@ export function ApiSpecManagementPage({
 
                 <Tabs value={detailTab} onValueChange={(value) => setDetailTab(value as DetailTab)}>
                   <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="docs">Docs</TabsTrigger>
-                    <TabsTrigger value="examples">Examples</TabsTrigger>
-                    <TabsTrigger value="generated-test">Generated Test</TabsTrigger>
+                    <TabsTrigger value="overview">{t('apiSpecsPage.tabsOverview')}</TabsTrigger>
+                    <TabsTrigger value="docs">{t('apiSpecsPage.tabsDocs')}</TabsTrigger>
+                    <TabsTrigger value="examples">{t('apiSpecsPage.tabsExamples')}</TabsTrigger>
+                    <TabsTrigger value="generated-test">{t('apiSpecsPage.tabsGeneratedTest')}</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="overview" className="space-y-4">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="rounded-xl border p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Project ID</div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.projectId')}</div>
                         <div className="mt-2 font-mono text-sm">{selectedSpec.project_id}</div>
                       </div>
                       <div className="rounded-xl border p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Category ID</div>
-                        <div className="mt-2 font-mono text-sm">{selectedSpec.category_id ?? 'Not set'}</div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('apiSpecsPage.categoryId')}</div>
+                        <div className="mt-2 font-mono text-sm">{selectedSpec.category_id ?? t('common.notSet')}</div>
                       </div>
                       <div className="rounded-xl border p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Created At</div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.created')}</div>
                         <div className="mt-2 text-sm">{formatDate(selectedSpec.created_at, 'YYYY-MM-DD HH:mm')}</div>
                       </div>
                       <div className="rounded-xl border p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Updated At</div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.updated')}</div>
                         <div className="mt-2 text-sm">{formatDate(selectedSpec.updated_at, 'YYYY-MM-DD HH:mm')}</div>
                       </div>
                     </div>
 
                     <div className="rounded-xl border p-4">
-                      <div className="mb-2 text-sm font-medium">Description</div>
+                      <div className="mb-2 text-sm font-medium">{t('common.description')}</div>
                       <div className="text-sm text-muted-foreground">
-                        {selectedSpec.description || 'No description provided.'}
+                        {selectedSpec.description || t('common.noDescriptionProvided')}
                       </div>
                     </div>
 
                     <div className="space-y-4">
                       <JsonPreview
-                        title="Request Body"
+                        title={t('common.requestBody')}
                         value={selectedSpec.request_body}
-                        emptyLabel="This API spec does not define request body schema yet."
+                        emptyLabel={t('apiSpecsPage.requestBodyEmpty')}
                       />
                       <JsonPreview
-                        title="Parameters"
+                        title={t('common.parameters')}
                         value={selectedSpec.parameters}
-                        emptyLabel="This API spec does not define parameters yet."
+                        emptyLabel={t('apiSpecsPage.parametersEmpty')}
                       />
                       <JsonPreview
-                        title="Responses"
+                        title={t('common.responses')}
                         value={selectedSpec.responses}
-                        emptyLabel="This API spec does not define responses yet."
+                        emptyLabel={t('apiSpecsPage.responsesEmpty')}
                       />
                     </div>
                   </TabsContent>
@@ -2305,27 +2397,27 @@ export function ApiSpecManagementPage({
                   <TabsContent value="docs" className="space-y-4">
                     <div className="grid gap-3 sm:grid-cols-3">
                       <div className="rounded-xl border p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Doc Source</div>
-                        <div className="mt-2 text-sm">{selectedSpec.doc_source || 'manual'}</div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.docSource')}</div>
+                        <div className="mt-2 text-sm">{getDocSourceLabel(t, selectedSpec.doc_source)}</div>
                       </div>
                       <div className="rounded-xl border p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Updated (Default)</div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('apiSpecsPage.updatedDefault')}</div>
                         <div className="mt-2 text-sm">
                           {selectedSpec.doc_updated_at
                             ? formatDate(selectedSpec.doc_updated_at, 'YYYY-MM-DD HH:mm')
-                            : 'Not generated'}
+                            : t('apiSpecs.documentationNotGenerated')}
                         </div>
                       </div>
                       <div className="rounded-xl border p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Updated (ZH / EN)</div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('apiSpecsPage.updatedLocalized')}</div>
                         <div className="mt-2 text-sm">
                           {(selectedSpec.doc_updated_at_zh &&
                             formatDate(selectedSpec.doc_updated_at_zh, 'YYYY-MM-DD HH:mm')) ||
-                            'ZH not generated'}
+                            t('apiSpecsPage.zhNotGenerated')}
                           {' / '}
                           {(selectedSpec.doc_updated_at_en &&
                             formatDate(selectedSpec.doc_updated_at_en, 'YYYY-MM-DD HH:mm')) ||
-                            'EN not generated'}
+                            t('apiSpecsPage.enNotGenerated')}
                         </div>
                       </div>
                     </div>
@@ -2333,34 +2425,34 @@ export function ApiSpecManagementPage({
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-3">
-                          <div className="text-sm font-medium">Default Markdown</div>
+                          <div className="text-sm font-medium">{t('apiSpecsPage.defaultMarkdownLabel')}</div>
                           <Badge variant="outline">doc_markdown</Badge>
                         </div>
                         <CodeBlock
                           value={selectedSpec.doc_markdown}
-                          emptyLabel="No default markdown stored for this spec."
+                          emptyLabel={t('apiSpecsPage.defaultMarkdownEmpty')}
                         />
                       </div>
 
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-3">
-                          <div className="text-sm font-medium">Chinese Markdown</div>
+                          <div className="text-sm font-medium">{t('apiSpecsPage.chineseMarkdownLabel')}</div>
                           <Badge variant="outline">doc_markdown_zh</Badge>
                         </div>
                         <CodeBlock
                           value={selectedSpec.doc_markdown_zh}
-                          emptyLabel="No Chinese markdown stored for this spec."
+                          emptyLabel={t('apiSpecsPage.chineseMarkdownEmpty')}
                         />
                       </div>
 
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-3">
-                          <div className="text-sm font-medium">English Markdown</div>
+                          <div className="text-sm font-medium">{t('apiSpecsPage.englishMarkdownLabel')}</div>
                           <Badge variant="outline">doc_markdown_en</Badge>
                         </div>
                         <CodeBlock
                           value={selectedSpec.doc_markdown_en}
-                          emptyLabel="No English markdown stored for this spec."
+                          emptyLabel={t('apiSpecsPage.englishMarkdownEmpty')}
                         />
                       </div>
                     </div>
@@ -2369,15 +2461,13 @@ export function ApiSpecManagementPage({
                   <TabsContent value="examples" className="space-y-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="text-sm font-medium">Examples</div>
-                        <div className="text-xs text-muted-foreground">
-                          当前列表通过 GET /projects/:id/api-specs/:sid/examples 拉取。
-                        </div>
+                        <div className="text-sm font-medium">{t('common.examples')}</div>
+                        <div className="text-xs text-muted-foreground">{t('apiSpecsPage.examplesDescription')}</div>
                       </div>
 
                       <Button type="button" size="sm" onClick={() => setIsExampleOpen(true)} disabled={!canWrite}>
                         <Plus className="h-3.5 w-3.5" />
-                        Create Example
+                        {t('apiSpecsPage.createExample')}
                       </Button>
                     </div>
 
@@ -2392,26 +2482,28 @@ export function ApiSpecManagementPage({
                           <div key={example.id} className="space-y-3 rounded-xl border p-4">
                             <div className="flex flex-wrap items-center gap-2">
                               <div className="font-medium">{example.name}</div>
-                              <Badge variant="outline">Status {example.response_status}</Badge>
+                              <Badge variant="outline">
+                                {t('apiSpecsPage.exampleStatus', { status: example.response_status })}
+                              </Badge>
                               <Badge variant="outline">{example.duration_ms} ms</Badge>
                               <Badge variant="outline">{formatDate(example.created_at, 'YYYY-MM-DD HH:mm')}</Badge>
                             </div>
 
                             <div className="grid gap-4 xl:grid-cols-3">
                               <JsonPreview
-                                title="Request Headers"
+                                title={t('apiSpecsPage.exampleRequestHeadersLabel')}
                                 value={example.request_headers}
-                                emptyLabel="No request headers stored for this example."
+                                emptyLabel={t('apiSpecsPage.requestHeadersEmpty')}
                               />
                               <JsonPreview
-                                title="Request Body"
+                                title={t('apiSpecsPage.exampleRequestBodyLabel')}
                                 value={example.request_body}
-                                emptyLabel="No request body stored for this example."
+                                emptyLabel={t('apiSpecsPage.requestBodyExampleEmpty')}
                               />
                               <JsonPreview
-                                title="Response Body"
+                                title={t('apiSpecsPage.exampleResponseBodyLabel')}
                                 value={example.response_body}
-                                emptyLabel="No response body stored for this example."
+                                emptyLabel={t('apiSpecsPage.responseBodyExampleEmpty')}
                               />
                             </div>
                           </div>
@@ -2419,10 +2511,8 @@ export function ApiSpecManagementPage({
                       </div>
                     ) : (
                       <Alert>
-                        <AlertTitle>No examples yet</AlertTitle>
-                        <AlertDescription>
-                          当前规格还没有 request/response 样例，可以通过上方按钮创建。
-                        </AlertDescription>
+                        <AlertTitle>{t('apiSpecsPage.exampleEmptyTitle')}</AlertTitle>
+                        <AlertDescription>{t('apiSpecsPage.exampleEmptyDescription')}</AlertDescription>
                       </Alert>
                     )}
                   </TabsContent>
@@ -2430,11 +2520,11 @@ export function ApiSpecManagementPage({
                   <TabsContent value="generated-test" className="space-y-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="text-sm font-medium">Generated Flow Test</div>
+                        <div className="text-sm font-medium">{t('apiSpecsPage.generatedFlowTest')}</div>
                         <div className="text-xs text-muted-foreground">
-                          当前展示语言：
-                          {' '}
-                          <span className="font-medium">{generatedTestLanguage.toUpperCase()}</span>
+                          {t('apiSpecsPage.generatedLanguage', {
+                            lang: generatedTestLanguage.toUpperCase(),
+                          })}
                         </div>
                       </div>
 
@@ -2447,7 +2537,7 @@ export function ApiSpecManagementPage({
                           onClick={() => void handleCopyGeneratedTest()}
                         >
                           <Boxes className="h-3.5 w-3.5" />
-                          Copy
+                          {t('apiSpecsPage.copy')}
                         </Button>
                         <Button
                           type="button"
@@ -2456,14 +2546,14 @@ export function ApiSpecManagementPage({
                           disabled={!canWrite}
                         >
                           <FileCode2 className="h-3.5 w-3.5" />
-                          Generate Test
+                          {t('apiSpecsPage.aiGenerateTestButton')}
                         </Button>
                       </div>
                     </div>
 
                     <CodeBlock
                       value={generatedTestQuery.data || selectedSpec.test_content}
-                      emptyLabel="No generated test cached for this spec yet. Run `gen-test` to see the flow content here."
+                      emptyLabel={t('apiSpecsPage.generatedTestEmpty')}
                     />
                   </TabsContent>
                 </Tabs>
@@ -2471,7 +2561,7 @@ export function ApiSpecManagementPage({
                 <div className="rounded-xl border bg-muted/20 p-4">
                   <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                     <FileJson2 className="h-4 w-4" />
-                    Connected API Endpoints
+                    {t('apiSpecsPage.connectedEndpointsTitle')}
                   </div>
                   <div className="space-y-2 font-mono text-xs text-muted-foreground">
                     <div>GET {apiSpecsPath}</div>
