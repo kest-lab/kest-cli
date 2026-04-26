@@ -57,6 +57,7 @@ import {
   useUpdateProject,
 } from '@/hooks/use-projects';
 import { useT } from '@/i18n/client';
+import type { ScopedTranslations } from '@/i18n/shared';
 import type {
   ApiProject,
   GenerateProjectCliTokenResponse,
@@ -90,18 +91,19 @@ interface ProjectNextAction {
 }
 
 const getProjectNextAction = (
+  t: ScopedTranslations<'project'>,
   projectId: number,
   stats?: ProjectStats | null
 ): ProjectNextAction => {
   if (!stats) {
     return {
-      title: 'Open the workspace',
-      description: 'Project signals are still loading, so the safest entry is the API workspace.',
-      reason: 'The workspace keeps the core project resources in one place while stats finish loading.',
-      primaryLabel: 'Open API Specs',
+      title: t('projectDetail.openWorkspace'),
+      description: t('projectDetail.loadingProject'),
+      reason: t('projectDetail.loadingReason'),
+      primaryLabel: t('modules.apiSpecs.label'),
       primaryHref: buildProjectApiSpecsRoute(projectId),
       primaryIcon: FileJson2,
-      secondaryLabel: 'Quick Request',
+      secondaryLabel: t('projectDetail.quickRequest'),
       secondaryHref: `${buildProjectCollectionsRoute(projectId)}?quickRequest=1`,
       secondaryIcon: FolderOpen,
     };
@@ -109,13 +111,13 @@ const getProjectNextAction = (
 
   if (stats.api_spec_count === 0) {
     return {
-      title: 'Define the first API surface',
-      description: 'Start with one endpoint and turn it into a structured source of truth.',
-      reason: 'Docs, examples, and tests all depend on at least one API spec.',
-      primaryLabel: 'AI Draft API',
+      title: t('projectDetail.defineFirstApi'),
+      description: t('projectDetail.defineFirstApiDescription'),
+      reason: t('projectDetail.defineFirstApiReason'),
+      primaryLabel: t('projectDetail.aiDraftApi'),
       primaryHref: `${buildProjectApiSpecsRoute(projectId)}?ai=create`,
       primaryIcon: Sparkles,
-      secondaryLabel: 'Quick Request',
+      secondaryLabel: t('projectDetail.quickRequest'),
       secondaryHref: `${buildProjectCollectionsRoute(projectId)}?quickRequest=1`,
       secondaryIcon: FolderOpen,
     };
@@ -123,32 +125,36 @@ const getProjectNextAction = (
 
   if (stats.environment_count === 0) {
     return {
-      title: 'Add the first runtime target',
-      description: 'Configure a base URL, variables, and headers before execution starts.',
-      reason: 'The API surface exists. One environment unlocks request runs and generated validation.',
-      primaryLabel: 'Configure Environment',
+      title: t('projectDetail.addRuntime'),
+      description: t('projectDetail.addRuntimeDescription'),
+      reason: t('projectDetail.addRuntimeReason'),
+      primaryLabel: t('projectDetail.configureEnvironment'),
       primaryHref: buildProjectEnvironmentsRoute(projectId),
       primaryIcon: Globe,
-      secondaryLabel: 'Review API Specs',
+      secondaryLabel: t('projectDetail.reviewApiSpecs'),
       secondaryHref: buildProjectApiSpecsRoute(projectId),
       secondaryIcon: FileJson2,
     };
   }
 
   return {
-    title: 'Generate validation coverage',
-    description: 'Use the existing specs and environment baseline to create runnable tests.',
-    reason: 'The project has both a source of truth and runtime context. The next value is repeatable validation.',
-    primaryLabel: 'Open Test Cases',
+    title: t('projectDetail.generateCoverage'),
+    description: t('projectDetail.generateCoverageDescription'),
+    reason: t('projectDetail.generateCoverageReason'),
+    primaryLabel: t('modules.testCases.label'),
     primaryHref: buildProjectTestCasesRoute(projectId),
     primaryIcon: FlaskConical,
-    secondaryLabel: 'Quick Request',
+    secondaryLabel: t('projectDetail.quickRequest'),
     secondaryHref: `${buildProjectCollectionsRoute(projectId)}?quickRequest=1`,
     secondaryIcon: FolderOpen,
   };
 };
 
-const getProjectWorkflowSteps = (projectId: number, stats?: ProjectStats | null): WorkflowStep[] => {
+const getProjectWorkflowSteps = (
+  t: ScopedTranslations<'project'>,
+  projectId: number,
+  stats?: ProjectStats | null
+): WorkflowStep[] => {
   const apiSpecCount = stats?.api_spec_count ?? 0;
   const environmentCount = stats?.environment_count ?? 0;
   const categoryCount = stats?.category_count ?? 0;
@@ -159,43 +165,51 @@ const getProjectWorkflowSteps = (projectId: number, stats?: ProjectStats | null)
   return [
     {
       key: 'api-specs',
-      title: 'API Specs',
+      title: t('modules.apiSpecs.label'),
       detail: hasSpecs
-        ? `${apiSpecCount} spec${apiSpecCount === 1 ? '' : 's'} available`
-        : 'Create the first structured endpoint',
-      state: hasSpecs ? 'Ready' : 'Missing',
+        ? t('projectDetail.workflowApiSpecsDetailReady', { count: apiSpecCount })
+        : t('projectDetail.workflowApiSpecsDetailMissing'),
+      state: hasSpecs ? t('projectDetail.ready') : t('projectDetail.missing'),
       tone: hasSpecs ? 'ready' : 'pending',
       href: hasSpecs ? buildProjectApiSpecsRoute(projectId) : `${buildProjectApiSpecsRoute(projectId)}?ai=create`,
       icon: FileJson2,
     },
     {
       key: 'environments',
-      title: 'Environments',
+      title: t('modules.environments.label'),
       detail: hasEnvironment
-        ? `${environmentCount} target${environmentCount === 1 ? '' : 's'} configured`
-        : 'Add a base URL and runtime variables',
-      state: hasEnvironment ? 'Ready' : 'Missing',
+        ? t('projectDetail.workflowEnvironmentsDetailReady', { count: environmentCount })
+        : t('projectDetail.workflowEnvironmentsDetailMissing'),
+      state: hasEnvironment ? t('projectDetail.ready') : t('projectDetail.missing'),
       tone: hasEnvironment ? 'ready' : 'pending',
       href: buildProjectEnvironmentsRoute(projectId),
       icon: Globe,
     },
     {
       key: 'test-cases',
-      title: 'Test Cases',
-      detail: hasSpecs ? 'Generate coverage from API specs' : 'Waiting for API specs',
-      state: hasSpecs ? 'Available' : 'Blocked',
+      title: t('modules.testCases.label'),
+      detail: hasSpecs
+        ? t('projectDetail.workflowTestCasesDetailReady')
+        : t('projectDetail.workflowTestCasesDetailMissing'),
+      state: hasSpecs ? t('projectDetail.available') : t('projectDetail.blocked'),
       tone: hasSpecs ? 'available' : 'pending',
       href: buildProjectTestCasesRoute(projectId),
       icon: FlaskConical,
     },
     {
       key: 'organize',
-      title: 'Organize',
+      title: t('projectDetail.organize'),
       detail:
         categoryCount > 0 || flowCount > 0
-          ? `${categoryCount} categories, ${flowCount} flows`
-          : 'Optional taxonomy and flows',
-      state: categoryCount > 0 || flowCount > 0 ? 'Active' : 'Optional',
+          ? t('projectDetail.workflowOrganizeDetailReady', {
+              categories: categoryCount,
+              flows: flowCount,
+            })
+          : t('projectDetail.workflowOrganizeDetailMissing'),
+      state:
+        categoryCount > 0 || flowCount > 0
+          ? t('projectDetail.active')
+          : t('projectDetail.optional'),
       tone: categoryCount > 0 || flowCount > 0 ? 'available' : 'pending',
       href: buildProjectCategoriesRoute(projectId),
       icon: Layers3,
@@ -320,7 +334,8 @@ function ModuleShortcut({
  * API Specs -> Environments -> Test Cases -> operational modules.
  */
 export function ProjectDetailPage({ projectId }: { projectId: number }) {
-  const t = useT('project');
+  const i18n = useT();
+  const t = i18n.project;
   const router = useRouter();
   const [formMode, setFormMode] = useState<ProjectFormMode>('edit');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -336,8 +351,8 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
 
   const project = projectQuery.data;
   const projectStats = projectStatsQuery.data;
-  const nextAction = getProjectNextAction(projectId, projectStats);
-  const workflowSteps = getProjectWorkflowSteps(projectId, projectStats);
+  const nextAction = getProjectNextAction(t, projectId, projectStats);
+  const workflowSteps = getProjectWorkflowSteps(t, projectId, projectStats);
   const PrimaryIcon = nextAction.primaryIcon;
   const SecondaryIcon = nextAction.secondaryIcon;
   const cliPlatformUrl = (apiExternalBaseUrl || buildApiPath('/')).replace(/\/$/, '');
@@ -422,7 +437,10 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
   const pageActionItems: ActionMenuItem[] = [
     {
       key: 'refresh',
-      label: projectQuery.isFetching || projectStatsQuery.isFetching ? 'Refreshing...' : 'Refresh',
+      label:
+        projectQuery.isFetching || projectStatsQuery.isFetching
+          ? i18n.common('refreshing')
+          : i18n.common('refresh'),
       icon: RefreshCw,
       disabled: projectQuery.isFetching || projectStatsQuery.isFetching,
       onSelect: () => {
@@ -432,20 +450,20 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
     },
     {
       key: 'edit',
-      label: 'Edit Project',
+      label: t('projectForm.editTitle'),
       icon: Pencil,
       disabled: !project,
       onSelect: openEditDialog,
     },
     {
       key: 'members',
-      label: 'Members',
+      label: t('projectDetail.members'),
       icon: Users,
       href: buildProjectMembersRoute(projectId),
     },
     {
       key: 'delete',
-      label: 'Delete Project',
+      label: t('projectForm.deleteButton'),
       icon: Trash2,
       destructive: true,
       separatorBefore: true,
@@ -468,7 +486,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
                 >
                   <Link href={ROUTES.CONSOLE.PROJECTS}>
                     <ArrowLeft className="h-4 w-4" />
-                    Projects
+                    {t('projectDetail.projects')}
                   </Link>
                 </Button>
 
@@ -483,7 +501,9 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
                   {project ? (
                     <div className="flex flex-wrap items-center gap-2">
                       <ProjectStatusBadge status={project.status} />
-                      <Badge variant="outline">{resolvePlatformLabel(project.platform)}</Badge>
+                      <Badge variant="outline">
+                        {resolvePlatformLabel(project.platform) || t('projectForm.notSet')}
+                      </Badge>
                       <Badge variant="outline" className="font-mono">
                         {project.slug}
                       </Badge>
@@ -507,7 +527,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
                 </Button>
                 <ActionMenu
                   items={pageActionItems}
-                  ariaLabel="Open project actions"
+                  ariaLabel={t('projectDetail.openProjectActions')}
                   triggerVariant="outline"
                 />
               </div>
@@ -516,9 +536,9 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
 
           {!project && !projectQuery.isLoading ? (
             <Alert>
-              <AlertTitle>Project not found</AlertTitle>
+              <AlertTitle>{t('projectDetail.projectNotFoundTitle')}</AlertTitle>
               <AlertDescription>
-                The selected project could not be loaded. Check the project ID or your access.
+                {t('projectDetail.projectNotFoundDescription')}
               </AlertDescription>
             </Alert>
           ) : null}
@@ -528,7 +548,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="space-y-3">
                   <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                    Next step
+                    {t('projectDetail.nextStep')}
                   </Badge>
                   <div>
                     <h2 className="text-xl font-semibold tracking-tight">{nextAction.title}</h2>
@@ -548,7 +568,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
               </div>
 
               <div className="mt-5 rounded-xl border border-border/60 bg-muted/20 p-4">
-                <p className="text-sm font-medium text-text-main">Why this action</p>
+                <p className="text-sm font-medium text-text-main">{t('projectDetail.whyThisAction')}</p>
                 <p className="mt-2 text-sm leading-6 text-text-muted">{nextAction.reason}</p>
               </div>
             </section>
@@ -556,12 +576,12 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
             <section className="rounded-xl border border-border/60 bg-background p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-semibold tracking-tight">Project flow</h2>
+                  <h2 className="text-lg font-semibold tracking-tight">{t('projectDetail.projectFlow')}</h2>
                   <p className="mt-1 text-sm text-text-muted">
-                    Follow the sequence, or jump directly from any row.
+                    {t('projectDetail.projectFlowDescription')}
                   </p>
                 </div>
-                {isProjectLoading ? <Badge variant="outline">Loading</Badge> : null}
+                {isProjectLoading ? <Badge variant="outline">{t('projectDetail.loading')}</Badge> : null}
               </div>
 
               <div className="mt-4 space-y-3">
@@ -581,75 +601,75 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
           ) : projectStats ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <MetricTile
-                title="API Specs"
+                title={t('modules.apiSpecs.label')}
                 value={projectStats.api_spec_count}
-                description="Structured source of truth"
+                description={t('projectDetail.metricApiSpecsDescription')}
                 icon={FileJson2}
               />
               <MetricTile
-                title="Environments"
+                title={t('modules.environments.label')}
                 value={projectStats.environment_count}
-                description="Runnable targets and variables"
+                description={t('projectDetail.metricEnvironmentsDescription')}
                 icon={Globe}
               />
               <MetricTile
-                title="Categories"
+                title={t('modules.categories.label')}
                 value={projectStats.category_count}
-                description="Resource organization"
+                description={t('projectDetail.metricCategoriesDescription')}
                 icon={Tags}
               />
               <MetricTile
-                title="Members"
+                title={t('modules.members.label')}
                 value={projectStats.member_count}
-                description="People with project access"
+                description={t('projectDetail.metricMembersDescription')}
                 icon={Users}
               />
             </div>
           ) : (
             <Alert>
-              <AlertTitle>Stats unavailable</AlertTitle>
+              <AlertTitle>{t('projectDetail.statsUnavailableTitle')}</AlertTitle>
               <AlertDescription>
-                Project stats could not be loaded. The workspace actions are still available.
+                {t('projectDetail.statsUnavailableDescription')}
               </AlertDescription>
             </Alert>
           )}
 
           <section className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Workspace modules</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{t('projectDetail.workspaceModules')}</h2>
               <p className="mt-1 text-sm text-text-muted">
-                Primary modules stay close to the workflow. Supporting modules are still one click away.
+                {t('projectDetail.workspaceModulesDescription')}
               </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <ModuleShortcut
-                title="API Specs"
-                description="Design endpoints, review AI drafts, and keep docs tied to the source of truth."
+                title={t('modules.apiSpecs.label')}
+                description={t('projectDetail.shortcutApiSpecsDescription')}
                 href={buildProjectApiSpecsRoute(projectId)}
                 icon={FileJson2}
-                actionLabel="Open specs"
+                actionLabel={t('projectDetail.shortcutApiSpecsAction')}
               />
               <ModuleShortcut
-                title="Environments"
-                description="Set base URLs, headers, and variables before running requests or tests."
+                title={t('modules.environments.label')}
+                description={t('projectDetail.shortcutEnvironmentsDescription')}
                 href={buildProjectEnvironmentsRoute(projectId)}
                 icon={Globe}
-                actionLabel="Configure"
+                actionLabel={t('projectDetail.shortcutEnvironmentsAction')}
               />
               <ModuleShortcut
-                title="Test Cases"
-                description="Generate and run validation coverage from the API specs already in this project."
+                title={t('modules.testCases.label')}
+                description={t('projectDetail.shortcutTestCasesDescription')}
                 href={buildProjectTestCasesRoute(projectId)}
                 icon={FlaskConical}
-                actionLabel="Open tests"
+                actionLabel={t('projectDetail.shortcutTestCasesAction')}
               />
               <ModuleShortcut
-                title="Collections"
-                description="Send quick requests and keep reusable request groups for manual debugging."
+                title={t('modules.collections.label')}
+                description={t('projectDetail.shortcutCollectionsDescription')}
                 href={buildProjectCollectionsRoute(projectId)}
                 icon={FolderOpen}
-                actionLabel="Debug"
+                actionLabel={t('projectDetail.shortcutCollectionsAction')}
               />
             </div>
           </section>
@@ -657,30 +677,32 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
           <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
             <Card className="border-border/60 shadow-none">
               <CardHeader>
-                <CardTitle>Project details</CardTitle>
-                <CardDescription>Identity and lifecycle metadata.</CardDescription>
+                <CardTitle>{t('projectDetail.projectDetails')}</CardTitle>
+                <CardDescription>{t('projectDetail.projectDetailsDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 md:grid-cols-3">
                 <div className="rounded-xl border border-border/60 bg-background p-4">
                   <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                    Project ID
+                    {t('common.projectId')}
                   </p>
                   <p className="mt-2 font-mono text-sm text-text-main">{project?.id ?? projectId}</p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-background p-4">
                   <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                    Platform
+                    {t('projectDetail.platform')}
                   </p>
                   <p className="mt-2 text-sm text-text-main">
-                    {project ? resolvePlatformLabel(project.platform) : 'Loading'}
+                    {project
+                      ? resolvePlatformLabel(project.platform) || t('projectForm.notSet')
+                      : i18n.common('loading')}
                   </p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-background p-4">
                   <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                    Created
+                    {t('common.created')}
                   </p>
                   <p className="mt-2 text-sm text-text-main">
-                    {project ? formatDate(project.created_at, 'YYYY-MM-DD HH:mm') : 'Loading'}
+                    {project ? formatDate(project.created_at, 'YYYY-MM-DD HH:mm') : i18n.common('loading')}
                   </p>
                 </div>
               </CardContent>
@@ -688,15 +710,15 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
 
             <Card id="cli-sync" className="border-border/60 shadow-none">
               <CardHeader>
-                <CardTitle>CLI Sync</CardTitle>
-                <CardDescription>Project-scoped token setup for `kest sync`.</CardDescription>
+                <CardTitle>{t('projectDetail.cliSync')}</CardTitle>
+                <CardDescription>{t('projectDetail.cliSyncDescription')}</CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-border/60 bg-background p-4">
                     <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                      Platform URL
+                      {t('projectDetail.platformUrl')}
                     </p>
                     <p className="mt-2 break-all font-mono text-xs text-text-main">
                       {cliPlatformUrl}
@@ -704,7 +726,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
                   </div>
                   <div className="rounded-xl border border-border/60 bg-background p-4">
                     <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                      Project Scope
+                      {t('projectDetail.projectScope')}
                     </p>
                     <p className="mt-2 font-mono text-sm text-text-main">
                       {project?.id ?? projectId}
@@ -719,16 +741,18 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
                     disabled={!project || generateCliTokenMutation.isPending}
                   >
                     <Key className="h-4 w-4" />
-                    {generateCliTokenMutation.isPending ? 'Generating...' : 'Generate Token'}
+                    {generateCliTokenMutation.isPending
+                      ? t('projectDetail.generating')
+                      : t('projectDetail.generateToken')}
                   </Button>
                   {generatedCliToken ? (
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => void handleCopyText(cliConfigCommand, 'Copied sync command')}
+                      onClick={() => void handleCopyText(cliConfigCommand, t('projectDetail.copiedSyncCommand'))}
                     >
                       <Terminal className="h-4 w-4" />
-                      Copy Command
+                      {t('projectDetail.copyCommand')}
                     </Button>
                   ) : null}
                 </div>
@@ -736,23 +760,23 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
                 {generatedCliToken ? (
                   <Alert>
                     <ShieldCheck className="h-4 w-4" />
-                    <AlertTitle>Copy this token now</AlertTitle>
+                    <AlertTitle>{t('projectDetail.copyTokenTitle')}</AlertTitle>
                     <AlertDescription className="space-y-4">
                       <div className="rounded-xl border bg-background p-4">
                         <div className="mb-2 flex items-center justify-between gap-3">
                           <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                            CLI Token
+                            {t('projectDetail.cliToken')}
                           </p>
                           <Button
                             type="button"
                             size="sm"
                             variant="ghost"
                             onClick={() =>
-                              void handleCopyText(generatedCliToken.token, 'Copied CLI token')
+                              void handleCopyText(generatedCliToken.token, t('projectDetail.copiedCliToken'))
                             }
                           >
                             <Copy className="h-3.5 w-3.5" />
-                            Copy
+                            {i18n.common('copy')}
                           </Button>
                         </div>
                         <code className="block break-all text-xs">{generatedCliToken.token}</code>
@@ -771,28 +795,28 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
           <section className="rounded-xl border border-border/60 bg-background p-5">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h2 className="text-lg font-semibold tracking-tight">Supporting areas</h2>
+                <h2 className="text-lg font-semibold tracking-tight">{t('projectDetail.supportingAreas')}</h2>
                 <p className="mt-1 text-sm text-text-muted">
-                  Use these after the core workflow needs team access, taxonomy, or orchestration.
+                  {t('projectDetail.supportingAreasDescription')}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button asChild variant="outline">
                   <Link href={buildProjectMembersRoute(projectId)}>
                     <Users className="h-4 w-4" />
-                    Members
+                    {t('projectDetail.members')}
                   </Link>
                 </Button>
                 <Button asChild variant="outline">
                   <Link href={buildProjectCategoriesRoute(projectId)}>
                     <Tags className="h-4 w-4" />
-                    Categories
+                    {t('projectDetail.categories')}
                   </Link>
                 </Button>
                 <Button asChild variant="outline">
                   <Link href={buildProjectFlowsRoute(projectId)}>
                     <Layers3 className="h-4 w-4" />
-                    Flows
+                    {t('projectDetail.flows')}
                   </Link>
                 </Button>
               </div>

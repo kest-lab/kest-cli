@@ -65,6 +65,8 @@ import {
 } from '@/hooks/use-environments';
 import { useProjectMemberRole } from '@/hooks/use-members';
 import { useProject, useProjectStats } from '@/hooks/use-projects';
+import { useT } from '@/i18n/client';
+import type { ScopedTranslations } from '@/i18n/shared';
 import type {
   CreateEnvironmentRequest,
   DuplicateEnvironmentRequest,
@@ -108,12 +110,19 @@ interface DuplicateEnvironmentDraft {
 
 // 项目角色显示文案解析器。
 // 作用：统一把 owner/admin/write/read 映射成首字母大写的角色标签。
-const getRoleLabel = (role?: ProjectMemberRole) => {
-  if (!role) {
-    return 'Unknown';
+const getRoleLabel = (t: ScopedTranslations<'project'>, role?: ProjectMemberRole) => {
+  switch (role) {
+    case 'owner':
+      return t('roles.owner');
+    case 'admin':
+      return t('roles.admin');
+    case 'write':
+      return t('roles.write');
+    case 'read':
+      return t('roles.read');
+    default:
+      return t('roles.unknown');
   }
-
-  return role.charAt(0).toUpperCase() + role.slice(1);
 };
 
 // JSON 序列化辅助方法。
@@ -130,7 +139,8 @@ const formatJson = (value: unknown) => {
 // 作用：统一解析对象类型输入，并在格式不合法时抛出中文错误。
 const parseObjectJsonInput = <T extends Record<string, unknown> | Record<string, string>>(
   value: string,
-  label: string
+  label: string,
+  t: ScopedTranslations<'project'>
 ) => {
   const trimmedValue = value.trim();
 
@@ -143,11 +153,11 @@ const parseObjectJsonInput = <T extends Record<string, unknown> | Record<string,
   try {
     parsed = JSON.parse(trimmedValue);
   } catch {
-    throw new Error(`${label} 必须是合法的 JSON 对象。`);
+    throw new Error(t('common.jsonMustBeValidObject', { label }));
   }
 
   if (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null) {
-    throw new Error(`${label} 必须是 JSON 对象。`);
+    throw new Error(t('common.jsonMustBeObject', { label }));
   }
 
   return parsed as T;
@@ -182,9 +192,11 @@ const getDuplicateEnvironmentDraft = (
 // 角色徽章。
 // 作用：在页面头部清晰展示当前用户对该项目环境的操作权限。
 function RoleBadge({ role }: { role?: ProjectMemberRole }) {
+  const t = useT('project');
+
   return (
     <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-      Role: {getRoleLabel(role)}
+      {t('roles.badge', { role: getRoleLabel(t, role) })}
     </Badge>
   );
 }
@@ -255,6 +267,8 @@ function EnvironmentFormDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: CreateEnvironmentRequest | UpdateEnvironmentRequest) => Promise<void>;
 }) {
+  const i18n = useT();
+  const t = i18n.project;
   const [draft, setDraft] = useState<EnvironmentFormDraft>(() => getEnvironmentFormDraft(environment));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -274,20 +288,34 @@ function EnvironmentFormDialog({
     let headers: Record<string, string> | undefined;
 
     if (!trimmedName) {
-      nextErrors.name = 'Environment name 是必填项。';
+      nextErrors.name = t('environments.nameRequired');
     }
 
     try {
-      variables = parseObjectJsonInput<Record<string, unknown>>(draft.variables, 'Variables');
+      variables = parseObjectJsonInput<Record<string, unknown>>(
+        draft.variables,
+        t('common.variablesJson'),
+        t
+      );
     } catch (error) {
-      nextErrors.variables = error instanceof Error ? error.message : 'Variables 无法解析。';
+      nextErrors.variables =
+        error instanceof Error
+          ? error.message
+          : t('common.parseFailed', { label: t('common.variablesJson') });
     }
 
     try {
-      const parsedHeaders = parseObjectJsonInput<Record<string, unknown>>(draft.headers, 'Headers');
+      const parsedHeaders = parseObjectJsonInput<Record<string, unknown>>(
+        draft.headers,
+        t('common.headersJson'),
+        t
+      );
       headers = parsedHeaders ? toStringRecord(parsedHeaders) : undefined;
     } catch (error) {
-      nextErrors.headers = error instanceof Error ? error.message : 'Headers 无法解析。';
+      nextErrors.headers =
+        error instanceof Error
+          ? error.message
+          : t('common.parseFailed', { label: t('common.headersJson') });
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -308,11 +336,15 @@ function EnvironmentFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>{mode === 'create' ? 'Create Environment' : 'Edit Environment'}</DialogTitle>
+          <DialogTitle>
+            {mode === 'create'
+              ? t('environments.createDialogTitle')
+              : t('environments.editDialogTitle')}
+          </DialogTitle>
           <DialogDescription>
             {mode === 'create'
-              ? '通过 POST /v1/projects/:id/environments 创建新的环境配置。'
-              : '通过 PATCH /v1/projects/:id/environments/:eid 更新当前环境配置。'}
+              ? t('environments.createDialogDescription')
+              : t('environments.editDialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -325,40 +357,40 @@ function EnvironmentFormDialog({
             </div>
           ) : mode === 'edit' && !environment ? (
             <Alert className="mt-2">
-              <AlertTitle>Unable to load environment details</AlertTitle>
+              <AlertTitle>{t('environments.unableToLoadDetails')}</AlertTitle>
               <AlertDescription>
-                当前环境详情尚未加载完成，请关闭后重试。
+                {t('environments.unableToLoadDetailsDescription')}
               </AlertDescription>
             </Alert>
           ) : (
             <form id="environment-form" className="space-y-4 py-1" onSubmit={handleSubmit}>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="environment-name">Name</Label>
+                  <Label htmlFor="environment-name">{t('common.name')}</Label>
                   <Input
                     id="environment-name"
                     value={draft.name}
                     onChange={(event) => updateDraft('name', event.target.value)}
-                    placeholder="production"
+                    placeholder={t('environments.systemName')}
                     errorText={errors.name}
                     root
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="environment-display-name">Display Name</Label>
+                  <Label htmlFor="environment-display-name">{t('common.displayName')}</Label>
                   <Input
                     id="environment-display-name"
                     value={draft.displayName}
                     onChange={(event) => updateDraft('displayName', event.target.value)}
-                    placeholder="Production"
+                    placeholder={t('common.displayName')}
                     root
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="environment-base-url">Base URL</Label>
+                <Label htmlFor="environment-base-url">{t('common.baseUrl')}</Label>
                 <Input
                   id="environment-base-url"
                   value={draft.baseUrl}
@@ -370,7 +402,7 @@ function EnvironmentFormDialog({
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="environment-variables">Variables JSON</Label>
+                  <Label htmlFor="environment-variables">{t('common.variablesJson')}</Label>
                   <Textarea
                     id="environment-variables"
                     value={draft.variables}
@@ -383,7 +415,7 @@ function EnvironmentFormDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="environment-headers">Headers JSON</Label>
+                  <Label htmlFor="environment-headers">{t('common.headersJson')}</Label>
                   <Textarea
                     id="environment-headers"
                     value={draft.headers}
@@ -401,7 +433,7 @@ function EnvironmentFormDialog({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {i18n.common('cancel')}
           </Button>
           <Button
             type="submit"
@@ -409,7 +441,9 @@ function EnvironmentFormDialog({
             loading={isSubmitting}
             disabled={(mode === 'edit' && (isLoadingEnvironment || !environment)) || isSubmitting}
           >
-            {mode === 'create' ? 'Create Environment' : 'Save Changes'}
+            {mode === 'create'
+              ? t('environments.createButton')
+              : t('environments.saveButton')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -434,29 +468,34 @@ function DeleteEnvironmentDialog({
   onOpenChange: (open: boolean) => void;
   onConfirm: () => Promise<void>;
 }) {
+  const i18n = useT();
+  const t = i18n.project;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>Delete Environment</DialogTitle>
+          <DialogTitle>{t('environments.deleteDialogTitle')}</DialogTitle>
           <DialogDescription>
-            这会永久删除 {environment ? `"${environment.name}"` : '当前选中的环境'}。
+            {t('environments.deleteDialogDescription', {
+              name: environment?.name || t('common.unknown'),
+            })}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
           <Alert variant="destructive">
-            <AlertTitle>Irreversible action</AlertTitle>
+            <AlertTitle>{t('common.irreversibleAction')}</AlertTitle>
             <AlertDescription>
-              后端会立即执行 `DELETE /projects/:id/environments/:eid`，删除后无法恢复。
+              {t('environments.deleteWarning')}
             </AlertDescription>
           </Alert>
         </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {i18n.common('cancel')}
           </Button>
           <Button type="button" variant="destructive" loading={isDeleting} onClick={() => void onConfirm()}>
-            Delete Environment
+            {t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -481,6 +520,8 @@ function DuplicateEnvironmentDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: DuplicateEnvironmentRequest) => Promise<void>;
 }) {
+  const i18n = useT();
+  const t = i18n.project;
   const [draft, setDraft] = useState<DuplicateEnvironmentDraft>(() =>
     getDuplicateEnvironmentDraft(environment)
   );
@@ -494,17 +535,20 @@ function DuplicateEnvironmentDialog({
     let overrideVars: Record<string, unknown> | undefined;
 
     if (!trimmedName) {
-      nextErrors.name = 'New environment name 是必填项。';
+      nextErrors.name = t('environments.newNameRequired');
     }
 
     try {
       overrideVars = parseObjectJsonInput<Record<string, unknown>>(
         draft.overrideVars,
-        'Override Variables'
+        t('common.overrideVariablesJson'),
+        t
       );
     } catch (error) {
       nextErrors.overrideVars =
-        error instanceof Error ? error.message : 'Override Variables 无法解析。';
+        error instanceof Error
+          ? error.message
+          : t('common.parseFailed', { label: t('common.overrideVariablesJson') });
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -522,15 +566,15 @@ function DuplicateEnvironmentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="default">
         <DialogHeader>
-          <DialogTitle>Duplicate Environment</DialogTitle>
+          <DialogTitle>{t('environments.duplicateDialogTitle')}</DialogTitle>
           <DialogDescription>
-            通过 POST /v1/projects/:id/environments/:eid/duplicate 复制当前环境。
+            {t('environments.duplicateDialogDescription')}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
           <form id="environment-duplicate-form" className="space-y-4 py-1" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="duplicate-environment-name">New Environment Name</Label>
+              <Label htmlFor="duplicate-environment-name">{t('environments.newEnvironmentName')}</Label>
               <Input
                 id="duplicate-environment-name"
                 value={draft.name}
@@ -542,7 +586,7 @@ function DuplicateEnvironmentDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="duplicate-environment-override-vars">Override Variables JSON</Label>
+              <Label htmlFor="duplicate-environment-override-vars">{t('common.overrideVariablesJson')}</Label>
               <Textarea
                 id="duplicate-environment-override-vars"
                 value={draft.overrideVars}
@@ -559,10 +603,10 @@ function DuplicateEnvironmentDialog({
         </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {i18n.common('cancel')}
           </Button>
           <Button type="submit" form="environment-duplicate-form" loading={isSubmitting}>
-            Duplicate Environment
+            {t('common.duplicate')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -582,6 +626,8 @@ export function EnvironmentManagementPage({
 }: {
   projectId: number;
 }) {
+  const i18n = useT();
+  const t = i18n.project;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<number | null>(null);
   const [detailTab, setDetailTab] = useState<DetailTab>('overview');
@@ -753,7 +799,7 @@ export function EnvironmentManagementPage({
   const headerActionItems: ActionMenuItem[] = [
     {
       key: 'environment-refresh',
-      label: isHeaderRefreshing ? 'Refreshing...' : 'Refresh',
+      label: isHeaderRefreshing ? i18n.common('refreshing') : i18n.common('refresh'),
       icon: RefreshCw,
       disabled: isHeaderRefreshing,
       onSelect: () => {
@@ -762,20 +808,20 @@ export function EnvironmentManagementPage({
     },
     {
       key: 'environment-api-specs',
-      label: 'API Specs',
+      label: t('modules.apiSpecs.label'),
       icon: FileJson2,
       href: buildProjectApiSpecsRoute(projectId),
       separatorBefore: true,
     },
     {
       key: 'environment-categories',
-      label: 'Categories',
+      label: t('modules.categories.label'),
       icon: Tags,
       href: buildProjectCategoriesRoute(projectId),
     },
     {
       key: 'environment-test-cases',
-      label: 'Test Cases',
+      label: t('modules.testCases.label'),
       icon: FlaskConical,
       href: buildProjectTestCasesRoute(projectId),
     },
@@ -784,14 +830,14 @@ export function EnvironmentManagementPage({
     ? [
         {
           key: 'environment-duplicate',
-          label: 'Duplicate',
+          label: i18n.common('duplicate'),
           icon: Boxes,
           disabled: !canWrite,
           onSelect: () => setDuplicateTarget(selectedEnvironment),
         },
         {
           key: 'environment-delete',
-          label: 'Delete',
+          label: i18n.common('delete'),
           icon: Trash2,
           destructive: true,
           disabled: !canWrite,
@@ -812,28 +858,19 @@ export function EnvironmentManagementPage({
             <Button asChild variant="link" className="h-auto px-0 text-sm text-muted-foreground">
               <Link href={buildProjectDetailRoute(projectId)}>
                 <ArrowLeft className="h-4 w-4" />
-                Back to Project Overview
+                {t('common.backToProjectOverview')}
               </Link>
             </Button>
 
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">Environments</h1>
+                <h1 className="text-3xl font-bold tracking-tight">{t('environments.title')}</h1>
                 <Globe className="h-6 w-6 text-primary" />
                 <RoleBadge role={currentRole} />
               </div>
 
               <p className="max-w-4xl text-sm text-text-muted">
-                管理项目
-                {' '}
-                <span className="font-semibold text-foreground">
-                  {projectQuery.data?.name || `#${projectId}`}
-                </span>
-                {' '}
-                的环境配置，对应后端入口为
-                {' '}
-                <code>{environmentsPath}</code>
-                。
+                {t('environments.currentDescriptionEmpty')}
               </p>
             </div>
 
@@ -843,9 +880,9 @@ export function EnvironmentManagementPage({
                   {projectQuery.data.slug}
                 </Badge>
                 <Badge variant="outline">
-                  {projectQuery.data.platform || 'No platform'}
+                  {projectQuery.data.platform || t('common.notSet')}
                 </Badge>
-                <Badge variant="outline">{totalEnvironments} environments</Badge>
+                <Badge variant="outline">{t('environments.countBadge', { count: totalEnvironments })}</Badge>
               </div>
             ) : null}
           </div>
@@ -853,11 +890,11 @@ export function EnvironmentManagementPage({
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" onClick={openCreateDialog} disabled={!canWrite}>
               <Plus className="h-4 w-4" />
-              Create Environment
+              {t('environments.createButton')}
             </Button>
             <ActionMenu
               items={headerActionItems}
-              ariaLabel="Open environment management actions"
+              ariaLabel={t('environments.openManagementActions')}
               triggerVariant="outline"
             />
           </div>
@@ -867,12 +904,11 @@ export function EnvironmentManagementPage({
       {!canWrite && memberRoleQuery.isSuccess ? (
         <Alert>
           <ShieldCheck className="h-4 w-4" />
-          <AlertTitle>Read-only access</AlertTitle>
+          <AlertTitle>{t('common.readOnlyAccess')}</AlertTitle>
           <AlertDescription>
-            当前角色是
-            {' '}
-            <strong>{getRoleLabel(currentRole)}</strong>
-            ，可以查看环境配置，但不能执行创建、编辑、复制和删除。
+            {t('environments.readOnlyDescription', {
+              role: getRoleLabel(t, currentRole),
+            })}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -888,30 +924,36 @@ export function EnvironmentManagementPage({
         ) : (
           <>
             <StatCard
-              title="Total Environments"
+              title={t('environments.totalEnvironments')}
               value={totalEnvironments}
-              description={`Reported by project stats: ${projectStatsQuery.data?.environment_count ?? totalEnvironments}`}
+              description={t('environments.reportedByStats', {
+                count: projectStatsQuery.data?.environment_count ?? totalEnvironments,
+              })}
               icon={Globe}
               variant="primary"
             />
             <StatCard
-              title="With Base URL"
+              title={t('environments.withBaseUrl')}
               value={withBaseUrlCount}
-              description="Environment records that already define base_url"
+              description={t('environments.withBaseUrlDescription')}
               icon={ShieldCheck}
               variant="success"
             />
             <StatCard
-              title="With Variables"
+              title={t('environments.withVariables')}
               value={withVariablesCount}
-              description="Environment records containing variables payload"
+              description={t('environments.withVariablesDescription')}
               icon={Boxes}
               variant="warning"
             />
             <StatCard
-              title="With Headers"
+              title={t('environments.withHeaders')}
               value={withHeadersCount}
-              description={deferredSearchQuery ? `Filtered by "${deferredSearchQuery}"` : 'Current project environments'}
+              description={
+                deferredSearchQuery
+                  ? t('environments.searchFilteredBy', { query: deferredSearchQuery })
+                  : t('environments.currentProjectEnvironments')
+              }
               icon={FolderKanban}
             />
           </>
@@ -922,16 +964,16 @@ export function EnvironmentManagementPage({
         <Card className="overflow-hidden border-border/50 shadow-premium">
           <CardHeader className="gap-4 border-b bg-muted/20">
             <div>
-              <CardTitle>Environment List</CardTitle>
+              <CardTitle>{t('environments.listTitle')}</CardTitle>
               <CardDescription>
-                后端当前返回完整列表，无分页；页面只做本地过滤。
+                {t('environments.listDescription')}
               </CardDescription>
             </div>
 
             <Input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Filter by name, display name, or base URL"
+              placeholder={t('environments.filterPlaceholder')}
               leftIcon={<Search className="size-4" />}
             />
           </CardHeader>
@@ -948,11 +990,11 @@ export function EnvironmentManagementPage({
                 <Table>
                   <TableHeader className="bg-muted/10">
                     <TableRow className="hover:bg-transparent">
-                      <TableHead>Name</TableHead>
-                      <TableHead>Display Name</TableHead>
-                      <TableHead>Base URL</TableHead>
-                      <TableHead>Updated</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('common.name')}</TableHead>
+                      <TableHead>{t('common.displayName')}</TableHead>
+                      <TableHead>{t('common.baseUrl')}</TableHead>
+                      <TableHead>{t('common.updated')}</TableHead>
+                      <TableHead className="text-right">{t('common.openActions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -972,12 +1014,14 @@ export function EnvironmentManagementPage({
                         <TableCell className="min-w-[220px]">
                           <div className="space-y-1">
                             <div className="font-medium">{environment.name}</div>
-                            <div className="text-xs text-muted-foreground">ID {environment.id}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {t('environments.environmentId')}: {environment.id}
+                            </div>
                           </div>
                         </TableCell>
-                        <TableCell>{environment.display_name || 'Not set'}</TableCell>
+                        <TableCell>{environment.display_name || t('common.notSet')}</TableCell>
                         <TableCell className="max-w-[220px] truncate font-mono text-xs text-muted-foreground">
-                          {environment.base_url || 'Not set'}
+                          {environment.base_url || t('common.notSet')}
                         </TableCell>
                         <TableCell>{formatDate(environment.updated_at, 'YYYY-MM-DD HH:mm')}</TableCell>
                         <TableCell className="text-right">
@@ -985,7 +1029,7 @@ export function EnvironmentManagementPage({
                             items={[
                               {
                                 key: `environment-view-${environment.id}`,
-                                label: 'View',
+                                label: t('common.open'),
                                 icon: Eye,
                                 onSelect: () => {
                                   setSelectedEnvironmentId(environment.id);
@@ -994,28 +1038,28 @@ export function EnvironmentManagementPage({
                               },
                               {
                                 key: `environment-edit-${environment.id}`,
-                                label: 'Edit',
+                                label: i18n.common('edit'),
                                 icon: Pencil,
                                 disabled: !canWrite,
                                 onSelect: () => openEditDialog(environment.id),
                               },
                               {
                                 key: `environment-duplicate-${environment.id}`,
-                                label: 'Duplicate',
+                                label: i18n.common('duplicate'),
                                 icon: Boxes,
                                 disabled: !canWrite,
                                 onSelect: () => setDuplicateTarget(environment),
                               },
                               {
                                 key: `environment-delete-${environment.id}`,
-                                label: 'Delete',
+                                label: i18n.common('delete'),
                                 icon: Trash2,
                                 destructive: true,
                                 disabled: !canWrite,
                                 onSelect: () => setDeleteTarget(environment),
                               },
                             ]}
-                            ariaLabel={`Open actions for ${environment.name}`}
+                            ariaLabel={i18n.common('openActions')}
                             stopPropagation
                           />
                         </TableCell>
@@ -1026,8 +1070,8 @@ export function EnvironmentManagementPage({
                       <TableRow>
                         <TableCell colSpan={5} className="py-12 text-center text-muted-foreground">
                           {environments.length === 0
-                            ? 'No environments found. Create your first environment to get started.'
-                            : 'No environments matched the current filter.'}
+                            ? t('environments.noEnvironmentsYetDescription')
+                            : t('environments.noMatchingDescription')}
                         </TableCell>
                       </TableRow>
                     ) : null}
@@ -1040,18 +1084,18 @@ export function EnvironmentManagementPage({
 
         <Card className="border-border/50 shadow-premium">
           <CardHeader className="border-b bg-muted/20">
-            <CardTitle>Selected Environment</CardTitle>
+            <CardTitle>{t('environments.selectedTitle')}</CardTitle>
             <CardDescription>
-              Detail from <code>{activeEnvironmentPath}</code>.
+              {t('environments.currentDescriptionWithSelection')}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-5 pt-6">
             {!selectedEnvironment ? (
               <Alert>
-                <AlertTitle>No environment selected</AlertTitle>
+                <AlertTitle>{t('environments.selectEnvironmentTitle')}</AlertTitle>
                 <AlertDescription>
-                  从左侧列表中选择一个环境，查看它的详情、variables 和 headers。
+                  {t('environments.selectEnvironmentDescription')}
                 </AlertDescription>
               </Alert>
             ) : (
@@ -1066,7 +1110,7 @@ export function EnvironmentManagementPage({
                         </Badge>
                       </div>
                       <p className="font-mono text-xs text-muted-foreground">
-                        {selectedEnvironment.base_url || 'No base URL configured'}
+                        {selectedEnvironment.base_url || t('environments.baseUrlMissing')}
                       </p>
                     </div>
 
@@ -1080,11 +1124,11 @@ export function EnvironmentManagementPage({
                         disabled={!canWrite}
                       >
                         <Pencil className="h-3.5 w-3.5" />
-                        Edit
+                        {i18n.common('edit')}
                       </Button>
                       <ActionMenu
                         items={detailActionItems}
-                        ariaLabel="Open selected environment actions"
+                        ariaLabel={t('environments.openSelectedActions')}
                         triggerVariant="outline"
                       />
                     </div>
@@ -1093,42 +1137,42 @@ export function EnvironmentManagementPage({
 
                 <Tabs value={detailTab} onValueChange={(value) => setDetailTab(value as DetailTab)}>
                   <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="variables">Variables</TabsTrigger>
-                    <TabsTrigger value="headers">Headers</TabsTrigger>
+                    <TabsTrigger value="overview">{t('environments.overview')}</TabsTrigger>
+                    <TabsTrigger value="variables">{t('common.variablesJson')}</TabsTrigger>
+                    <TabsTrigger value="headers">{t('common.headersJson')}</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="overview" className="space-y-4">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="rounded-xl border p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Environment ID</div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('environments.environmentId')}</div>
                         <div className="mt-2 font-mono text-sm">{selectedEnvironment.id}</div>
                       </div>
                       <div className="rounded-xl border p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Project ID</div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.projectId')}</div>
                         <div className="mt-2 font-mono text-sm">{selectedEnvironment.project_id}</div>
                       </div>
                       <div className="rounded-xl border p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Created At</div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.created')}</div>
                         <div className="mt-2 text-sm">{formatDate(selectedEnvironment.created_at, 'YYYY-MM-DD HH:mm')}</div>
                       </div>
                       <div className="rounded-xl border p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Updated At</div>
+                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.updated')}</div>
                         <div className="mt-2 text-sm">{formatDate(selectedEnvironment.updated_at, 'YYYY-MM-DD HH:mm')}</div>
                       </div>
                     </div>
 
                     <div className="rounded-xl border p-4">
-                      <div className="mb-2 text-sm font-medium">Base URL</div>
+                      <div className="mb-2 text-sm font-medium">{t('common.baseUrl')}</div>
                       <div className="font-mono text-xs text-muted-foreground">
-                        {selectedEnvironment.base_url || 'No base URL configured'}
+                        {selectedEnvironment.base_url || t('environments.baseUrlMissing')}
                       </div>
                     </div>
 
                     <div className="rounded-xl border bg-muted/20 p-4">
                       <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                         <Globe className="h-4 w-4" />
-                        Connected API Endpoints
+                        {t('environments.apiSurface')}
                       </div>
                       <div className="space-y-2 font-mono text-xs text-muted-foreground">
                         <div>GET {environmentsPath}</div>
@@ -1143,17 +1187,17 @@ export function EnvironmentManagementPage({
 
                   <TabsContent value="variables">
                     <JsonPreview
-                      title="Variables"
+                      title={t('common.variablesJson')}
                       value={selectedEnvironment.variables}
-                      emptyLabel="This environment does not define variables yet."
+                      emptyLabel={t('common.noData')}
                     />
                   </TabsContent>
 
                   <TabsContent value="headers">
                     <JsonPreview
-                      title="Headers"
+                      title={t('common.headersJson')}
                       value={selectedEnvironment.headers}
-                      emptyLabel="This environment does not define headers yet."
+                      emptyLabel={t('common.noData')}
                     />
                   </TabsContent>
                 </Tabs>

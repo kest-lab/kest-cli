@@ -5,6 +5,10 @@ export type Locale = (typeof locales)[number];
 // Default locale
 export const defaultLocale: Locale = 'en-US';
 
+// Locale cookie names
+export const primaryLocaleCookieName = 'NEXT_LOCALE';
+export const legacyLocaleCookieName = 'locale';
+
 // Switches
 export const isLocaleSwitcherEnabled = true;
 

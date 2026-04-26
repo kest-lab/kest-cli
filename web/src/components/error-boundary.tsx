@@ -8,6 +8,9 @@ interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  fallbackTitle?: string;
+  fallbackDescription?: string;
+  retryLabel?: string;
 }
 
 interface ErrorBoundaryState {
@@ -65,11 +68,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
             <AlertTriangle className="h-10 w-10 text-orange-500" />
           </div>
-          <h2 className="mt-6 text-xl font-semibold">Something went wrong</h2>
+          <h2 className="mt-6 text-xl font-semibold">
+            {this.props.fallbackTitle || 'Something went wrong'}
+          </h2>
           <p className="mb-8 mt-2 text-center text-sm text-muted-foreground max-w-md">
-            {this.state.error?.message || 'An unexpected error occurred in the application.'}
+            {this.state.error?.message || this.props.fallbackDescription || 'An unexpected error occurred in the application.'}
           </p>
-          <Button onClick={this.resetError}>Try again</Button>
+          <Button onClick={this.resetError}>
+            {this.props.retryLabel || 'Try again'}
+          </Button>
         </div>
       );
     }

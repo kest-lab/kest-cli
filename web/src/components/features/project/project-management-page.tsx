@@ -55,6 +55,7 @@ import {
   useProjects,
   useUpdateProject,
 } from '@/hooks/use-projects';
+import { useT } from '@/i18n/client';
 import type { ApiProject, CreateProjectRequest, UpdateProjectRequest } from '@/types/project';
 import { formatDate } from '@/utils';
 
@@ -70,6 +71,8 @@ const EMPTY_PROJECTS: ApiProject[] = [];
  * 4. 复用控制台视觉风格，让 `/project` 与 `/console` 保持一致
  */
 export function ProjectManagementPage() {
+  const i18n = useT();
+  const t = i18n.project;
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [formMode, setFormMode] = useState<ProjectFormMode>('create');
@@ -110,7 +113,10 @@ export function ProjectManagementPage() {
   const headerActionItems: ActionMenuItem[] = [
     {
       key: 'refresh',
-      label: projectsQuery.isFetching && !projectsQuery.isLoading ? 'Refreshing...' : 'Refresh',
+      label:
+        projectsQuery.isFetching && !projectsQuery.isLoading
+          ? i18n.common('refreshing')
+          : i18n.common('refresh'),
       icon: RefreshCw,
       disabled: projectsQuery.isFetching && !projectsQuery.isLoading,
       onSelect: () => {
@@ -181,27 +187,22 @@ export function ProjectManagementPage() {
         <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold tracking-tight">Project Workspace</h1>
+              <h1 className="text-3xl font-bold tracking-tight">{t('projectsPage.title')}</h1>
               <FolderKanban className="h-6 w-6 text-primary" />
             </div>
             <p className="max-w-3xl text-sm text-text-muted">
-              Logged-in users can create, inspect, update, and delete projects through
-              {' '}
-              <code>{projectsPath}</code>
-              {' '}
-              and jump to dedicated overview, environment, API specification, and test case pages
-              for each project.
+              {t('projectsPage.description', { projectsPath })}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" onClick={openCreateDialog}>
               <Plus className="h-4 w-4" />
-              Create Project
+              {t('projectsPage.createProject')}
             </Button>
             <ActionMenu
               items={headerActionItems}
-              ariaLabel="Open project page actions"
+              ariaLabel={t('projectsPage.openPageActions')}
               triggerVariant="outline"
             />
           </div>
@@ -219,31 +220,39 @@ export function ProjectManagementPage() {
         ) : (
           <>
             <StatCard
-              title="Total Projects"
+              title={t('projectsPage.totalProjects')}
               value={totalProjects}
-              description={`Across ${projectsQuery.data?.meta.pages || 0} pages`}
+              description={t('projectsPage.totalProjectsDescription', {
+                pages: projectsQuery.data?.meta.pages || 0,
+              })}
               icon={FolderKanban}
               variant="primary"
             />
             <StatCard
-              title="Active On This Page"
+              title={t('projectsPage.activeOnPage')}
               value={activeOnPage}
-              description={`Visible in page ${projectsQuery.data?.meta.page || page}`}
+              description={t('projectsPage.activeOnPageDescription', {
+                page: projectsQuery.data?.meta.page || page,
+              })}
               icon={ShieldCheck}
               variant="success"
             />
             <StatCard
-              title="Inactive On This Page"
+              title={t('projectsPage.inactiveOnPage')}
               value={inactiveOnPage}
-              description="Projects currently paused or disabled"
+              description={t('projectsPage.inactiveOnPageDescription')}
               icon={Layers3}
               variant="warning"
             />
             <StatCard
-              title="Filtered Results"
+              title={t('projectsPage.filteredResults')}
               value={filteredProjects.length}
               description={
-                searchQuery.trim() ? `Local filter: "${searchQuery.trim()}"` : 'Showing current page results'
+                searchQuery.trim()
+                  ? t('projectsPage.filteredResultsDescriptionWithQuery', {
+                      query: searchQuery.trim(),
+                    })
+                  : t('projectsPage.filteredResultsDescription')
               }
               icon={Boxes}
             />
@@ -254,15 +263,21 @@ export function ProjectManagementPage() {
       <Card className="overflow-hidden border-border/50 shadow-premium">
         <CardHeader className="flex flex-col gap-3 border-b bg-muted/20 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle>Projects</CardTitle>
+            <CardTitle>{t('projectsPage.cardTitle')}</CardTitle>
             <CardDescription>
               {projectsQuery.data?.meta
-                ? `Page ${projectsQuery.data.meta.page} of ${projectsQuery.data.meta.pages}, ${projectsQuery.data.meta.total} total projects`
-                : `Connected to GET ${projectsPath}`}
+                ? t('projectsPage.cardDescription', {
+                    page: projectsQuery.data.meta.page,
+                    pages: projectsQuery.data.meta.pages,
+                    total: projectsQuery.data.meta.total,
+                  })
+                : t('projectsPage.cardDescriptionFallback', { path: projectsPath })}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {projectsQuery.isFetching && !projectsQuery.isLoading ? <span>Refreshing…</span> : null}
+            {projectsQuery.isFetching && !projectsQuery.isLoading ? (
+              <span>{t('projectsPage.localRefresh')}</span>
+            ) : null}
           </div>
         </CardHeader>
 
@@ -271,11 +286,11 @@ export function ProjectManagementPage() {
             <Input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Filter current page by name, slug, or platform"
+              placeholder={t('projectsPage.filterPlaceholder')}
               leftIcon={<Search className="size-4" />}
             />
             <div className="text-xs text-muted-foreground">
-              项目详情和 stats 已迁移到单独页面，列表页只保留概览入口和 CRUD 操作。
+              {t('projectsPage.localFilterNote')}
             </div>
           </div>
 
@@ -291,12 +306,12 @@ export function ProjectManagementPage() {
                 <Table>
                   <TableHeader className="bg-muted/10">
                     <TableRow className="hover:bg-transparent">
-                      <TableHead>Name</TableHead>
-                      <TableHead>Slug</TableHead>
-                      <TableHead>Platform</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t('projectsPage.tableName')}</TableHead>
+                      <TableHead>{t('projectsPage.tableSlug')}</TableHead>
+                      <TableHead>{t('projectsPage.tablePlatform')}</TableHead>
+                      <TableHead>{t('projectsPage.tableStatus')}</TableHead>
+                      <TableHead>{t('projectsPage.tableCreated')}</TableHead>
+                      <TableHead className="text-right">{t('projectsPage.tableActions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -309,13 +324,17 @@ export function ProjectManagementPage() {
                           >
                             <div className="space-y-1">
                               <div className="font-medium">{project.name}</div>
-                              <div className="text-xs text-muted-foreground">ID {project.id}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {t('projectsPage.projectId', { id: project.id })}
+                              </div>
                             </div>
                           </Link>
                         </TableCell>
                         <TableCell className="font-mono text-xs text-muted-foreground">{project.slug}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{resolvePlatformLabel(project.platform)}</Badge>
+                          <Badge variant="outline">
+                            {resolvePlatformLabel(project.platform) || t('projectForm.notSet')}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <ProjectStatusBadge status={project.status} />
@@ -326,56 +345,56 @@ export function ProjectManagementPage() {
                             items={[
                               {
                                 key: `overview-${project.id}`,
-                                label: 'Overview',
+                                label: t('projectsPage.overview'),
                                 icon: BarChart3,
                                 href: buildProjectDetailRoute(project.id),
                               },
                               {
                                 key: `api-specs-${project.id}`,
-                                label: 'API Specs',
+                                label: t('modules.apiSpecs.label'),
                                 icon: FileJson2,
                                 href: buildProjectApiSpecsRoute(project.id),
                               },
                               {
                                 key: `environments-${project.id}`,
-                                label: 'Environments',
+                                label: t('modules.environments.label'),
                                 icon: Globe,
                                 href: buildProjectEnvironmentsRoute(project.id),
                               },
                               {
                                 key: `categories-${project.id}`,
-                                label: 'Categories',
+                                label: t('modules.categories.label'),
                                 icon: Tags,
                                 href: buildProjectCategoriesRoute(project.id),
                               },
                               {
                                 key: `members-${project.id}`,
-                                label: 'Members',
+                                label: t('modules.members.label'),
                                 icon: Users,
                                 href: buildProjectMembersRoute(project.id),
                               },
                               {
                                 key: `test-cases-${project.id}`,
-                                label: 'Test Cases',
+                                label: t('modules.testCases.label'),
                                 icon: FlaskConical,
                                 href: buildProjectTestCasesRoute(project.id),
                               },
                               {
                                 key: `edit-${project.id}`,
-                                label: 'Edit',
+                                label: i18n.common('edit'),
                                 icon: Pencil,
                                 separatorBefore: true,
                                 onSelect: () => openEditDialog(project),
                               },
                               {
                                 key: `delete-${project.id}`,
-                                label: 'Delete',
+                                label: i18n.common('delete'),
                                 icon: Trash2,
                                 destructive: true,
                                 onSelect: () => setDeleteTarget(project),
                               },
                             ]}
-                            ariaLabel={`Open actions for ${project.name}`}
+                            ariaLabel={i18n.common('openActions')}
                           />
                         </TableCell>
                       </TableRow>
@@ -384,8 +403,8 @@ export function ProjectManagementPage() {
                       <TableRow>
                         <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
                           {projects.length === 0
-                            ? 'No projects found. Create your first project to get started.'
-                            : 'No projects matched the current filter.'}
+                            ? t('projectsPage.noProjectsFound')
+                            : t('projectsPage.noProjectsMatched')}
                         </TableCell>
                       </TableRow>
                     ) : null}
@@ -396,7 +415,7 @@ export function ProjectManagementPage() {
               <div className="rounded-xl border bg-muted/20 p-4">
                 <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                   <BarChart3 className="h-4 w-4" />
-                  Connected API Endpoints
+                  {t('projectsPage.connectedEndpoints')}
                 </div>
                 <div className="space-y-2 font-mono text-xs text-muted-foreground">
                   <div>GET {projectsPath}</div>
@@ -420,10 +439,13 @@ export function ProjectManagementPage() {
                   onClick={() => setPage((currentPage) => currentPage - 1)}
                   disabled={!canGoPrev}
                 >
-                  Previous
+                  {i18n.common('previous')}
                 </Button>
                 <div className="text-sm text-muted-foreground">
-                  Page {projectsQuery.data?.meta.page || page} of {projectsQuery.data?.meta.pages || 1}
+                  {t('projectsPage.pageSummary', {
+                    page: projectsQuery.data?.meta.page || page,
+                    pages: projectsQuery.data?.meta.pages || 1,
+                  })}
                 </div>
                 <Button
                   type="button"
@@ -431,7 +453,7 @@ export function ProjectManagementPage() {
                   onClick={() => setPage((currentPage) => currentPage + 1)}
                   disabled={!canGoNext}
                 >
-                  Next
+                  {i18n.common('next')}
                 </Button>
               </div>
             </>

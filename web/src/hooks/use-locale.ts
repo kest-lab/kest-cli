@@ -2,31 +2,37 @@
 
 import { useCallback, useTransition } from 'react';
 import { useLocale as useNextIntlLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { locales, type Locale } from '@/i18n';
+import { legacyLocaleCookieName, primaryLocaleCookieName } from '@/i18n/config';
 
 /**
  * Hook for managing application locale
- * Handles locale switching via cookie-based persistence and page reload.
+ * Handles locale switching via cookie-based persistence and router refresh.
  */
 export function useLocale() {
   const locale = useNextIntlLocale() as Locale;
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   /**
    * Switches the application locale.
-   * This implementation uses a cookie to persist the choice and reloads the page
-   * to ensure all server-side and client-side parts are updated.
+   * This implementation persists the locale in both the current and legacy
+   * cookie names, then refreshes the App Router tree so server translations
+   * are fetched again.
    */
   const setLocale = useCallback((newLocale: Locale) => {
-    if (!locales.includes(newLocale)) return;
+    if (!locales.includes(newLocale) || newLocale === locale) return;
 
     startTransition(() => {
-      // Set cookie and reload to apply new locale
-      // Note: 'locale' is the standard cookie name expected by next-intl middleware in this scaffold.
-      document.cookie = `locale=${newLocale};path=/;max-age=31536000`;
-      window.location.reload();
+      const cookieOptions = 'path=/;max-age=31536000;samesite=lax';
+
+      document.cookie = `${primaryLocaleCookieName}=${encodeURIComponent(newLocale)};${cookieOptions}`;
+      document.cookie = `${legacyLocaleCookieName}=${encodeURIComponent(newLocale)};${cookieOptions}`;
+      document.documentElement.lang = newLocale;
+      router.refresh();
     });
-  }, []);
+  }, [locale, router]);
 
   return {
     locale,

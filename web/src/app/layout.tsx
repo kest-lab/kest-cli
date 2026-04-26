@@ -6,9 +6,10 @@ import { cn } from "@/utils";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { AuthProvider } from "@/providers/auth-provider";
-import { ErrorBoundary } from "@/components/error-boundary";
+import { LocalizedErrorBoundary } from "@/components/localized-error-boundary";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@/components/analytics";
+import { getT } from "@/i18n/server";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -29,12 +30,17 @@ export default async function RootLayout({
 }) {
   const locale = await getLocale();
   const messages = await getMessages();
+  const t = await getT();
 
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className={cn(inter.className, "min-h-screen antialiased")}>
-        <ErrorBoundary>
-          <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <LocalizedErrorBoundary
+            fallbackTitle={t.common("errorBoundaryTitle")}
+            fallbackDescription={t.common("errorBoundaryDescription")}
+            retryLabel={t.common("errorBoundaryRetry")}
+          >
             <ThemeProvider
               attribute="class"
               defaultTheme="system"
@@ -48,8 +54,8 @@ export default async function RootLayout({
               </QueryProvider>
               <Toaster richColors position="top-right" />
             </ThemeProvider>
-          </NextIntlClientProvider>
-        </ErrorBoundary>
+          </LocalizedErrorBoundary>
+        </NextIntlClientProvider>
         <Analytics />
       </body>
     </html>

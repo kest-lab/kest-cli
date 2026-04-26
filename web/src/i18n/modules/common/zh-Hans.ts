@@ -63,6 +63,13 @@ const messages = {
   toggleLanguage: '切换语言',
   selectLanguage: '选择语言',
   appLoading: '加载中...',
+  themeToggle: '切换主题',
+  lightTheme: '浅色',
+  darkTheme: '深色',
+  systemTheme: '跟随系统',
+  errorBoundaryTitle: '出现了一些问题',
+  errorBoundaryDescription: '应用中发生了未预期的错误。',
+  errorBoundaryRetry: '重试',
 };
 
 export default messages;

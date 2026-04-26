@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ROUTES } from '@/constants/routes';
 import { useLogout } from '@/hooks/use-auth';
+import { useT } from '@/i18n/client';
 import { useAuthStore } from '@/store/auth-store';
 
 const buildInitials = (name: string) =>
@@ -30,6 +31,7 @@ const buildInitials = (name: string) =>
     .join('') || 'U';
 
 export function ProjectTopbar() {
+  const t = useT('project');
   const router = useRouter();
   const logout = useLogout();
   const user = useAuthStore.use.user();
@@ -61,7 +63,7 @@ export function ProjectTopbar() {
         <Button variant="ghost" isIcon className="relative h-9 w-9 rounded-full">
           <Bell className="h-4 w-4 text-text-muted" />
           <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-bg-surface bg-primary" />
-          <span className="sr-only">Notifications</span>
+          <span className="sr-only">{t('topbar.notifications')}</span>
         </Button>
 
         <DropdownMenu>
@@ -74,11 +76,11 @@ export function ProjectTopbar() {
             >
               <Avatar className="h-full w-full">
                 <AvatarImage src={user?.avatar} />
-                <AvatarFallback className="bg-primary/10 text-primary">
+              <AvatarFallback className="bg-primary/10 text-primary">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <span className="sr-only">Profile</span>
+              <span className="sr-only">{t('topbar.profile')}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 rounded-xl p-1 shadow-premium">
@@ -91,7 +93,7 @@ export function ProjectTopbar() {
               onClick={handleLogout}
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              {t('topbar.logout')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

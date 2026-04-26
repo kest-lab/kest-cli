@@ -67,6 +67,8 @@ import {
 } from '@/hooks/use-categories';
 import { useProjectMemberRole } from '@/hooks/use-members';
 import { useProject, useProjectStats } from '@/hooks/use-projects';
+import { useT } from '@/i18n/client';
+import type { ScopedTranslations } from '@/i18n/shared';
 import {
   PROJECT_MEMBER_WRITE_ROLES,
   type ProjectMemberRole,
@@ -88,20 +90,32 @@ const WRITE_ROLES = PROJECT_MEMBER_WRITE_ROLES;
 
 // 成员角色文案解析器。
 // 作用：把 owner/admin/write/read 转成首字母大写标签。
-const getRoleLabel = (role?: ProjectMemberRole) => {
-  if (!role) {
-    return 'Unknown';
+const getRoleLabel = (
+  t: ScopedTranslations<'project'>,
+  role?: ProjectMemberRole
+) => {
+  switch (role) {
+    case 'owner':
+      return t('roles.owner');
+    case 'admin':
+      return t('roles.admin');
+    case 'write':
+      return t('roles.write');
+    case 'read':
+      return t('roles.read');
+    default:
+      return t('roles.unknown');
   }
-
-  return role.charAt(0).toUpperCase() + role.slice(1);
 };
 
 // 角色徽章。
 // 作用：在页面头部直观展示当前用户在项目中的权限级别。
 function RoleBadge({ role }: { role?: ProjectMemberRole }) {
+  const t = useT('project');
+
   return (
     <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-      Role: {getRoleLabel(role)}
+      {t('roles.badge', { role: getRoleLabel(t, role) })}
     </Badge>
   );
 }
@@ -129,6 +143,8 @@ export function CategoryManagementPage({
 }: {
   projectId: number;
 }) {
+  const i18n = useT();
+  const t = i18n.project;
   // 页面本地状态。
   // 作用：管理搜索词、分页、选中项和各类弹窗目标。
   const [searchQuery, setSearchQuery] = useState('');
@@ -336,7 +352,7 @@ export function CategoryManagementPage({
   const headerActionItems: ActionMenuItem[] = [
     {
       key: 'category-refresh',
-      label: isHeaderRefreshing ? 'Refreshing...' : 'Refresh',
+      label: isHeaderRefreshing ? i18n.common('refreshing') : i18n.common('refresh'),
       icon: RefreshCw,
       disabled: isHeaderRefreshing,
       onSelect: () => {
@@ -345,20 +361,20 @@ export function CategoryManagementPage({
     },
     {
       key: 'category-api-specs',
-      label: 'API Specs',
+      label: t('modules.apiSpecs.label'),
       icon: FileJson2,
       href: buildProjectApiSpecsRoute(projectId),
       separatorBefore: true,
     },
     {
       key: 'category-environments',
-      label: 'Environments',
+      label: t('modules.environments.label'),
       icon: Globe,
       href: buildProjectEnvironmentsRoute(projectId),
     },
     {
       key: 'category-test-cases',
-      label: 'Test Cases',
+      label: t('modules.testCases.label'),
       icon: FlaskConical,
       href: buildProjectTestCasesRoute(projectId),
     },
@@ -367,14 +383,14 @@ export function CategoryManagementPage({
     ? [
         {
           key: 'category-create-child',
-          label: 'Create Child',
+          label: t('categoriesPage.createChild'),
           icon: Plus,
           disabled: !canWrite,
           onSelect: () => openCreateDialog(selectedCategory.id),
         },
         {
           key: 'category-move-up',
-          label: 'Move Up',
+          label: t('categoriesPage.moveUp'),
           icon: ArrowUp,
           disabled: !canWrite || Boolean(deferredSearch.trim()) || !selectedCategoryCanMoveUp || sortCategoriesMutation.isPending,
           onSelect: () => {
@@ -383,7 +399,7 @@ export function CategoryManagementPage({
         },
         {
           key: 'category-move-down',
-          label: 'Move Down',
+          label: t('categoriesPage.moveDown'),
           icon: ArrowDown,
           disabled: !canWrite || Boolean(deferredSearch.trim()) || !selectedCategoryCanMoveDown || sortCategoriesMutation.isPending,
           onSelect: () => {
@@ -392,7 +408,7 @@ export function CategoryManagementPage({
         },
         {
           key: 'category-delete',
-          label: 'Delete',
+          label: i18n.common('delete'),
           icon: Trash2,
           destructive: true,
           separatorBefore: true,
@@ -413,25 +429,21 @@ export function CategoryManagementPage({
             <Button asChild variant="link" className="h-auto px-0 text-sm text-muted-foreground">
               <Link href={buildProjectDetailRoute(projectId)}>
                 <ArrowLeft className="h-4 w-4" />
-                Back to Project Overview
+                {t('categoriesPage.backToProjectOverview')}
               </Link>
             </Button>
 
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
+                <h1 className="text-3xl font-bold tracking-tight">{t('categoriesPage.title')}</h1>
                 <Tags className="h-6 w-6 text-primary" />
                 <RoleBadge role={currentRole} />
               </div>
               <p className="max-w-4xl text-sm text-text-muted">
-                管理项目
-                {' '}
-                <span className="font-semibold text-foreground">{projectName}</span>
-                {' '}
-                的分类层级，并将其复用到 API Specs 等模块中，对应后端入口为
-                {' '}
-                <code>{buildApiPath('/projects/:id/categories')}</code>
-                。
+                {t('categoriesPage.description', {
+                  projectName,
+                  path: buildApiPath('/projects/:id/categories'),
+                })}
               </p>
             </div>
 
@@ -439,20 +451,30 @@ export function CategoryManagementPage({
               <Badge variant="outline" className="font-mono">
                 {projectSlug}
               </Badge>
-              <Badge variant="outline">{projectStatsQuery.data?.category_count ?? totalCategories} categories</Badge>
-              <Badge variant="outline">{projectStatsQuery.data?.api_spec_count ?? 0} specs</Badge>
-              <Badge variant="outline">{parentOptions.length} selectable parents</Badge>
+              <Badge variant="outline">
+                {t('categoriesPage.countCategories', {
+                  count: projectStatsQuery.data?.category_count ?? totalCategories,
+                })}
+              </Badge>
+              <Badge variant="outline">
+                {t('categoriesPage.countSpecs', {
+                  count: projectStatsQuery.data?.api_spec_count ?? 0,
+                })}
+              </Badge>
+              <Badge variant="outline">
+                {t('categoriesPage.selectableParents', { count: parentOptions.length })}
+              </Badge>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" onClick={() => openCreateDialog()} disabled={!canWrite}>
               <Plus className="h-4 w-4" />
-              Create Category
+              {t('categoriesPage.createCategory')}
             </Button>
             <ActionMenu
               items={headerActionItems}
-              ariaLabel="Open category management actions"
+              ariaLabel={t('categoriesPage.openManagementActions')}
               triggerVariant="outline"
             />
           </div>
@@ -462,21 +484,20 @@ export function CategoryManagementPage({
       {!canWrite && memberRoleQuery.isSuccess ? (
         <Alert>
           <ShieldCheck className="h-4 w-4" />
-          <AlertTitle>Read-only access</AlertTitle>
+          <AlertTitle>{t('categoriesPage.readOnlyTitle')}</AlertTitle>
           <AlertDescription>
-            当前角色是
-            {' '}
-            <strong>{getRoleLabel(currentRole)}</strong>
-            ，可以查看分类层级，但不能执行创建、编辑、排序和删除。
+            {t('categoriesPage.readOnlyDescription', {
+              role: getRoleLabel(t, currentRole),
+            })}
           </AlertDescription>
         </Alert>
       ) : null}
 
       {isForbidden ? (
         <Alert variant="destructive">
-          <AlertTitle>No project access</AlertTitle>
+          <AlertTitle>{t('categoriesPage.noProjectAccessTitle')}</AlertTitle>
           <AlertDescription>
-            You do not have permission to view categories for this project.
+            {t('categoriesPage.noProjectAccessDescription')}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -492,33 +513,35 @@ export function CategoryManagementPage({
         ) : (
           <>
             <StatCard
-              title="Total Categories"
+              title={t('categoriesPage.totalCategories')}
               value={totalCategories}
-              description="Flattened hierarchy size in this project"
+              description={t('categoriesPage.totalCategoriesDescription')}
               icon={Tags}
               variant="primary"
             />
             <StatCard
-              title="Root Categories"
+              title={t('categoriesPage.rootCategories')}
               value={rootCategories}
-              description="Top-level grouping nodes"
+              description={t('categoriesPage.rootCategoriesDescription')}
               icon={FolderKanban}
               variant="success"
             />
             <StatCard
-              title="Nested Categories"
+              title={t('categoriesPage.nestedCategories')}
               value={nestedCategories}
-              description="Child categories attached under parents"
+              description={t('categoriesPage.nestedCategoriesDescription')}
               icon={Layers3}
               variant="warning"
             />
             <StatCard
-              title="With Description"
+              title={t('categoriesPage.withDescription')}
               value={describedCategories}
               description={
                 deferredSearch.trim()
-                  ? `Filtered results: ${filteredCategories.length}`
-                  : 'Documented categories ready for reuse'
+                  ? t('categoriesPage.withDescriptionFilteredDescription', {
+                      count: filteredCategories.length,
+                    })
+                  : t('categoriesPage.withDescriptionDescription')
               }
               icon={Boxes}
             />
@@ -530,14 +553,18 @@ export function CategoryManagementPage({
         <Card className="border-border/50 shadow-premium">
           <CardHeader className="flex flex-col gap-3 border-b bg-muted/20 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle>Category Registry</CardTitle>
+              <CardTitle>{t('categoriesPage.registryTitle')}</CardTitle>
               <CardDescription>
-                Hierarchy sourced from <code>{buildApiPath('/projects/:id/categories')}</code> and
-                rendered as a local tree snapshot so hierarchy-aware sorting and selection stay stable.
+                {t('categoriesPage.registryDescription', {
+                  path: buildApiPath('/projects/:id/categories'),
+                })}
               </CardDescription>
             </div>
             <div className="text-sm text-muted-foreground">
-              {filteredCategories.length} visible of {totalCategories}
+              {t('categoriesPage.visibleSummary', {
+                visible: filteredCategories.length,
+                total: totalCategories,
+              })}
             </div>
           </CardHeader>
 
@@ -546,21 +573,21 @@ export function CategoryManagementPage({
               <Input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search by category name, description, or parent"
+                placeholder={t('categoriesPage.searchPlaceholder')}
                 leftIcon={<Search className="size-4" />}
               />
               <div className="text-xs text-muted-foreground">
                 {deferredSearch.trim()
-                  ? 'Sorting is disabled while a local search filter is active.'
-                  : 'Move up/down keeps the backend sort order aligned within each sibling group.'}
+                  ? t('categoriesPage.sortingDisabled')
+                  : t('categoriesPage.sortingEnabled')}
               </div>
             </div>
 
             {categoriesQuery.isError ? (
               <Alert variant="destructive">
-                <AlertTitle>Failed to load categories</AlertTitle>
+                <AlertTitle>{t('categoriesPage.loadFailedTitle')}</AlertTitle>
                 <AlertDescription>
-                  The category list could not be loaded. Retry the request or confirm your project access.
+                  {t('categoriesPage.loadFailedDescription')}
                 </AlertDescription>
               </Alert>
             ) : categoriesQuery.isLoading ? (
@@ -574,18 +601,20 @@ export function CategoryManagementPage({
                 <div className="overflow-hidden rounded-xl border">
                   <Table>
                     <TableHeader className="bg-muted/10">
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead>Name</TableHead>
-                        <TableHead>Parent</TableHead>
-                        <TableHead>Order</TableHead>
-                        <TableHead>Updated</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                    <TableRow className="hover:bg-transparent">
+                        <TableHead>{t('categoriesPage.tableName')}</TableHead>
+                        <TableHead>{t('categoriesPage.tableParent')}</TableHead>
+                        <TableHead>{t('categoriesPage.tableOrder')}</TableHead>
+                        <TableHead>{t('categoriesPage.tableUpdated')}</TableHead>
+                        <TableHead className="text-right">{t('categoriesPage.tableActions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {visibleCategories.map((category) => {
                         const parentName =
-                          category.parent_name || categoryNameMap.get(category.parent_id ?? -1) || 'Root';
+                          category.parent_name ||
+                          categoryNameMap.get(category.parent_id ?? -1) ||
+                          t('categoriesPage.root');
 
                         return (
                           <TableRow
@@ -611,11 +640,15 @@ export function CategoryManagementPage({
                                     )}
                                     <span className="font-medium">{category.name}</span>
                                     <Badge variant="outline">
-                                      {category.depth === 0 ? 'Root' : `Level ${category.depth + 1}`}
+                                      {category.depth === 0
+                                        ? t('categoriesPage.root')
+                                        : t('categoriesPage.level', {
+                                            level: category.depth + 1,
+                                          })}
                                     </Badge>
                                   </div>
                                   <div className="text-xs text-muted-foreground">
-                                    {category.description?.trim() || 'No description provided.'}
+                                    {category.description?.trim() || t('categoriesPage.noDescriptionProvided')}
                                   </div>
                                 </div>
                               </button>
@@ -630,26 +663,26 @@ export function CategoryManagementPage({
                                 items={[
                                   {
                                     key: `category-view-${category.id}`,
-                                    label: 'View',
+                                    label: t('categoriesPage.view'),
                                     onSelect: () => setSelectedCategoryId(category.id),
                                   },
                                   {
                                     key: `category-create-child-${category.id}`,
-                                    label: 'Create Child',
+                                    label: t('categoriesPage.createChild'),
                                     icon: Plus,
                                     disabled: !canWrite,
                                     onSelect: () => openCreateDialog(category.id),
                                   },
                                   {
                                     key: `category-edit-${category.id}`,
-                                    label: 'Edit',
+                                    label: i18n.common('edit'),
                                     icon: Pencil,
                                     disabled: !canWrite,
                                     onSelect: () => openEditDialog(category.id),
                                   },
                                   {
                                     key: `category-up-${category.id}`,
-                                    label: 'Move Up',
+                                    label: t('categoriesPage.moveUp'),
                                     icon: ArrowUp,
                                     disabled:
                                       !canWrite ||
@@ -662,7 +695,7 @@ export function CategoryManagementPage({
                                   },
                                   {
                                     key: `category-down-${category.id}`,
-                                    label: 'Move Down',
+                                    label: t('categoriesPage.moveDown'),
                                     icon: ArrowDown,
                                     disabled:
                                       !canWrite ||
@@ -675,14 +708,14 @@ export function CategoryManagementPage({
                                   },
                                   {
                                     key: `category-delete-${category.id}`,
-                                    label: 'Delete',
+                                    label: i18n.common('delete'),
                                     icon: Trash2,
                                     destructive: true,
                                     disabled: !canWrite,
                                     onSelect: () => setDeleteTargetId(category.id),
                                   },
                                 ]}
-                                ariaLabel={`Open actions for ${category.name}`}
+                                ariaLabel={i18n.common('openActions')}
                               />
                             </TableCell>
                           </TableRow>
@@ -693,8 +726,8 @@ export function CategoryManagementPage({
                         <TableRow>
                           <TableCell colSpan={5} className="py-12 text-center text-muted-foreground">
                             {totalCategories === 0
-                              ? 'No categories found. Create the first category to organize your project assets.'
-                              : 'No categories matched the current filter.'}
+                              ? t('categoriesPage.noCategoriesFound')
+                              : t('categoriesPage.noCategoriesMatched')}
                           </TableCell>
                         </TableRow>
                       ) : null}
@@ -709,10 +742,13 @@ export function CategoryManagementPage({
                     onClick={() => setPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage <= 1}
                   >
-                    Previous
+                    {i18n.common('previous')}
                   </Button>
                   <div className="text-sm text-muted-foreground">
-                    Page {currentPage} of {totalPages}
+                    {t('categoriesPage.pageSummary', {
+                      page: currentPage,
+                      pages: totalPages,
+                    })}
                   </div>
                   <Button
                     type="button"
@@ -720,7 +756,7 @@ export function CategoryManagementPage({
                     onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage >= totalPages}
                   >
-                    Next
+                    {i18n.common('next')}
                   </Button>
                 </div>
               </>
@@ -730,10 +766,11 @@ export function CategoryManagementPage({
 
         <Card className="border-border/50 shadow-premium">
           <CardHeader className="border-b bg-muted/20">
-            <CardTitle>Category Detail</CardTitle>
+            <CardTitle>{t('categoriesPage.detailTitle')}</CardTitle>
             <CardDescription>
-              Details from <code>{buildApiPath('/projects/:id/categories/:cid')}</code>, enriched with the
-              loaded tree so parent/child relationships remain visible.
+              {t('categoriesPage.detailDescription', {
+                path: buildApiPath('/projects/:id/categories/:cid'),
+              })}
             </CardDescription>
           </CardHeader>
 
@@ -746,23 +783,23 @@ export function CategoryManagementPage({
               </div>
             ) : totalCategories === 0 ? (
               <Alert>
-                <AlertTitle>No categories yet</AlertTitle>
+                <AlertTitle>{t('categoriesPage.noCategoriesYetTitle')}</AlertTitle>
                 <AlertDescription>
-                  Create a root category or a child category to start organizing API assets.
+                  {t('categoriesPage.noCategoriesYetDescription')}
                 </AlertDescription>
               </Alert>
             ) : selectedCategoryQuery.isError && !selectedCategory ? (
               <Alert variant="destructive">
-                <AlertTitle>Failed to load category details</AlertTitle>
+                <AlertTitle>{t('categoriesPage.detailLoadFailedTitle')}</AlertTitle>
                 <AlertDescription>
-                  The selected category details could not be loaded. Choose another record or retry refresh.
+                  {t('categoriesPage.detailLoadFailedDescription')}
                 </AlertDescription>
               </Alert>
             ) : !selectedCategory ? (
               <Alert>
-                <AlertTitle>Select a category</AlertTitle>
+                <AlertTitle>{t('categoriesPage.selectCategoryTitle')}</AlertTitle>
                 <AlertDescription>
-                  Pick a row from the registry to inspect its hierarchy and edit actions.
+                  {t('categoriesPage.selectCategoryDescription')}
                 </AlertDescription>
               </Alert>
             ) : (
@@ -773,12 +810,16 @@ export function CategoryManagementPage({
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-xl font-semibold">{selectedCategory.name}</h2>
                         <Badge variant="outline">
-                          {selectedCategory.parent_id ? 'Child Category' : 'Root Category'}
+                          {selectedCategory.parent_id
+                            ? t('categoriesPage.childCategory')
+                            : t('common.rootCategory')}
                         </Badge>
-                        <Badge variant="outline">Order {selectedCategory.sort_order}</Badge>
+                        <Badge variant="outline">
+                          {t('categoriesPage.orderBadge', { order: selectedCategory.sort_order })}
+                        </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {selectedCategory.description?.trim() || 'No description provided for this category.'}
+                        {selectedCategory.description?.trim() || t('categoriesPage.noDescriptionProvided')}
                       </p>
                     </div>
 
@@ -791,11 +832,11 @@ export function CategoryManagementPage({
                         disabled={!canWrite}
                       >
                         <Pencil className="h-3.5 w-3.5" />
-                        Edit
+                        {i18n.common('edit')}
                       </Button>
                       <ActionMenu
                         items={detailActionItems}
-                        ariaLabel="Open selected category actions"
+                        ariaLabel={t('categoriesPage.openSelectedActions')}
                         triggerVariant="outline"
                       />
                     </div>
@@ -804,21 +845,31 @@ export function CategoryManagementPage({
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Category ID</div>
+                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                      {t('categoriesPage.categoryId')}
+                    </div>
                     <div className="mt-2 font-mono text-sm">{selectedCategory.id}</div>
                   </div>
                   <div className="rounded-xl border p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Parent</div>
-                    <div className="mt-2 text-sm">{selectedParent?.name || 'No parent category'}</div>
+                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                      {t('categoriesPage.parent')}
+                    </div>
+                    <div className="mt-2 text-sm">
+                      {selectedParent?.name || t('categoriesPage.noParentCategory')}
+                    </div>
                   </div>
                   <div className="rounded-xl border p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Updated At</div>
+                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                      {t('categoriesPage.updatedAt')}
+                    </div>
                     <div className="mt-2 text-sm">{formatDate(selectedCategory.updated_at, 'YYYY-MM-DD HH:mm')}</div>
                   </div>
                   <div className="rounded-xl border p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Test Case Count</div>
+                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                      {t('categoriesPage.testCaseCount')}
+                    </div>
                     <div className="mt-2 text-sm">
-                      {selectedCategory.test_cases_count ?? 'Not exposed by current backend'}
+                      {selectedCategory.test_cases_count ?? t('categoriesPage.testCaseCountUnavailable')}
                     </div>
                   </div>
                 </div>
@@ -826,15 +877,17 @@ export function CategoryManagementPage({
                 <div className="rounded-xl border bg-muted/20 p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
-                      <div className="text-sm font-medium">Children</div>
+                      <div className="text-sm font-medium">{t('categoriesPage.children')}</div>
                       <div className="text-xs text-muted-foreground">
-                        {selectedChildren.length} direct children under this category
+                        {t('categoriesPage.childrenDescription', {
+                          count: selectedChildren.length,
+                        })}
                       </div>
                     </div>
                     <Button type="button" size="sm" variant="outline" asChild>
                       <Link href={buildProjectApiSpecsRoute(projectId)}>
                         <FileJson2 className="h-3.5 w-3.5" />
-                        API Specs
+                        {t('categoriesPage.childSpecs')}
                       </Link>
                     </Button>
                   </div>
@@ -855,17 +908,15 @@ export function CategoryManagementPage({
                     </div>
                   ) : (
                     <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                      No child categories under the selected node.
+                      {t('categoriesPage.noChildren')}
                     </div>
                   )}
                 </div>
 
                 <Alert>
-                  <AlertTitle>Workspace behavior</AlertTitle>
+                  <AlertTitle>{t('categoriesPage.workspaceBehaviorTitle')}</AlertTitle>
                   <AlertDescription>
-                    This workspace keeps the full category tree loaded so search, sorting, and parent-child
-                    details remain consistent during edits. Delete actions still stay conservative and avoid
-                    automatic reassignment.
+                    {t('categoriesPage.workspaceBehaviorDescription')}
                   </AlertDescription>
                 </Alert>
               </>
@@ -876,9 +927,9 @@ export function CategoryManagementPage({
 
       <Card className="border-border/50 shadow-premium">
         <CardHeader className="border-b bg-muted/20">
-          <CardTitle>Connected API Endpoints</CardTitle>
+          <CardTitle>{t('categoriesPage.connectedEndpointsTitle')}</CardTitle>
           <CardDescription>
-            Categories mounted in the current frontend workspace.
+            {t('categoriesPage.connectedEndpointsDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 pt-6 font-mono text-xs text-muted-foreground">

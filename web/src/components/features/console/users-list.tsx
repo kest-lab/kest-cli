@@ -17,23 +17,25 @@ import {
 } from '@/components/ui/table';
 import { ROUTES } from '@/constants/routes';
 import { useUserSearch, useUsers } from '@/hooks/use-users';
+import { useT } from '@/i18n/client';
 import { formatDate } from '@/utils';
 
 const PAGE_SIZE = 10;
 
-const resolveStatusLabel = (status: number | string) => {
+const resolveStatusLabel = (status: number | string, activeLabel: string, inactiveLabel: string) => {
   if (status === 1 || status === 'active') {
-    return 'Active';
+    return activeLabel;
   }
 
   if (status === 0 || status === 'inactive') {
-    return 'Inactive';
+    return inactiveLabel;
   }
 
   return String(status);
 };
 
 export function UsersList() {
+  const t = useT();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,27 +58,31 @@ export function UsersList() {
   return (
     <div className="flex-1 space-y-6 p-6 pt-6">
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t.console('users.title')}</h1>
         <p className="text-sm text-muted-foreground">
-          Connected to <code>GET {usersPath}</code> for paginated user management.
+          {t.console('users.listConnectedDescription', { path: usersPath })}
         </p>
       </div>
 
       <Card>
         <CardHeader className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle>User Directory</CardTitle>
+            <CardTitle>{t.console('users.directory')}</CardTitle>
             <CardDescription>
               {isSearchMode
-                ? `Search results for "${searchQuery}"`
+                ? t.console('users.searchResults', { query: searchQuery })
                 : data?.meta
-                ? `Page ${data.meta.current_page} of ${data.meta.last_page}, ${data.meta.total} total users`
-                : 'Loading user list'}
+                ? t.console('users.pageSummary', {
+                    page: data.meta.current_page,
+                    pages: data.meta.last_page,
+                    total: data.meta.total,
+                  })
+                : t.console('users.loadingList')}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {isSearching ? <span>Searching…</span> : null}
-            {isFetching && !isLoading && !isSearchMode ? <span>Refreshing…</span> : null}
+            {isSearching ? <span>{t.console('users.searching')}</span> : null}
+            {isFetching && !isLoading && !isSearchMode ? <span>{t.console('users.refreshing')}</span> : null}
           </div>
         </CardHeader>
         <CardContent>
@@ -84,15 +90,15 @@ export function UsersList() {
             <Input
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search by username or email"
+              placeholder={t.console('users.searchPlaceholder')}
             />
-            <Button type="submit" variant="outline">Search</Button>
+            <Button type="submit" variant="outline">{t.console('users.search')}</Button>
             {isSearchMode ? (
               <Button type="button" variant="ghost" onClick={() => {
                 setSearchInput('');
                 setSearchQuery('');
               }}>
-                Clear
+                {t.console('users.clear')}
               </Button>
             ) : null}
           </form>
@@ -109,13 +115,13 @@ export function UsersList() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Nickname</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead>{t.console('users.id')}</TableHead>
+                      <TableHead>{t.console('users.username')}</TableHead>
+                      <TableHead>{t.console('users.email')}</TableHead>
+                      <TableHead>{t.console('users.nickname')}</TableHead>
+                      <TableHead>{t.console('users.status')}</TableHead>
+                      <TableHead>{t.console('users.created')}</TableHead>
+                      <TableHead className="text-right">{t.console('users.action')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -126,12 +132,14 @@ export function UsersList() {
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{user.nickname || '—'}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{resolveStatusLabel(user.status)}</Badge>
+                          <Badge variant="outline">
+                            {resolveStatusLabel(user.status, t('common.active'), t('common.inactive'))}
+                          </Badge>
                         </TableCell>
                         <TableCell>{formatDate(user.created_at, 'YYYY-MM-DD')}</TableCell>
                         <TableCell className="text-right">
                           <Button asChild size="sm" variant="outline">
-                            <Link href={`${ROUTES.CONSOLE.USERS}/${user.id}`}>Open</Link>
+                            <Link href={`${ROUTES.CONSOLE.USERS}/${user.id}`}>{t.console('users.open')}</Link>
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -139,7 +147,7 @@ export function UsersList() {
                     {users.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                          No users found.
+                          {t.console('users.noUsersFound')}
                         </TableCell>
                       </TableRow>
                     ) : null}
@@ -150,11 +158,11 @@ export function UsersList() {
               {!isSearchMode ? (
                 <div className="mt-4 flex items-center justify-between">
                   <Button variant="outline" onClick={() => setPage((current) => current - 1)} disabled={!canGoPrev}>
-                    Previous
+                    {t('common.previous')}
                   </Button>
-                  <span className="text-sm text-muted-foreground">Page {page}</span>
+                  <span className="text-sm text-muted-foreground">{t.console('users.page', { page })}</span>
                   <Button variant="outline" onClick={() => setPage((current) => current + 1)} disabled={!canGoNext}>
-                    Next
+                    {t('common.next')}
                   </Button>
                 </div>
               ) : null}

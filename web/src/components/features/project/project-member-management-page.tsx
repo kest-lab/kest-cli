@@ -69,13 +69,13 @@ import {
 import { useProject, useProjectStats } from '@/hooks/use-projects';
 import { useUserSearch } from '@/hooks/use-users';
 import { useT } from '@/i18n/client';
+import type { ScopedTranslations } from '@/i18n/shared';
 import type { ApiUser } from '@/types/auth';
 import {
   PROJECT_MEMBER_ASSIGNABLE_ROLES,
   canEditProjectMember,
   canManageProjectMembers,
   canRemoveProjectMember,
-  getProjectMemberRoleLabel,
   sortProjectMembers,
   type AssignableProjectMemberRole,
   type ProjectMember,
@@ -83,8 +83,6 @@ import {
 } from '@/types/member';
 import {
   PROJECT_INVITATION_ASSIGNABLE_ROLES,
-  getProjectInvitationRemainingUsesLabel,
-  getProjectInvitationStatusLabel,
   type ProjectInvitation,
   type ProjectInvitationRole,
   type ProjectInvitationStatus,
@@ -119,14 +117,6 @@ const resolveBrowserInviteBaseUrl = () => {
 
   return window.location.origin.replace(/\/+$/, '');
 };
-const ROLE_FILTER_OPTIONS: Array<{ value: 'all' | ProjectMemberRole; label: string }> = [
-  { value: 'all', label: 'All roles' },
-  { value: 'owner', label: 'Owner' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'write', label: 'Write' },
-  { value: 'read', label: 'Read' },
-];
-
 const createDefaultInviteExpiryInput = () => {
   const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
@@ -179,10 +169,59 @@ const getInvitationStatusBadgeClassName = (status?: ProjectInvitationStatus) => 
   }
 };
 
+const getRoleLabel = (
+  t: ScopedTranslations<'project'>,
+  role?: ProjectMemberRole | ProjectInvitationRole
+) => {
+  switch (role) {
+    case 'owner':
+      return t('roles.owner');
+    case 'admin':
+      return t('roles.admin');
+    case 'write':
+      return t('roles.write');
+    case 'read':
+      return t('roles.read');
+    default:
+      return t('roles.unknown');
+  }
+};
+
+const getInvitationStatusLabel = (
+  t: ScopedTranslations<'project'>,
+  status?: ProjectInvitationStatus
+) => {
+  switch (status) {
+    case 'active':
+      return t('invitation.statusActive');
+    case 'expired':
+      return t('invitation.statusExpired');
+    case 'revoked':
+      return t('invitation.statusRevoked');
+    case 'used_up':
+      return t('invitation.statusUsedUp');
+    default:
+      return t('roles.unknown');
+  }
+};
+
+const getInvitationRemainingUsesLabel = (
+  t: ScopedTranslations<'project'>,
+  invitation: Pick<ProjectInvitation, 'remaining_uses' | 'max_uses'>
+) => {
+  if (invitation.max_uses === 0 || invitation.remaining_uses === null) {
+    return t('invitation.unlimited');
+  }
+
+  return String(invitation.remaining_uses);
+};
+
 function RoleBadge({ role }: { role?: ProjectMemberRole }) {
+  const t = useT('project');
+
   return (
     <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-      Role: {getProjectMemberRoleLabel(role)}
+      {t('roles.badge', { role: getRoleLabel(t, role) })}
     </Badge>
   );
 }
@@ -198,7 +237,8 @@ function MembersTableSkeleton() {
 }
 
 export function ProjectMemberManagementPage({ projectId }: { projectId: number }) {
-  const t = useT('project');
+  const i18n = useT();
+  const t = i18n.project;
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | ProjectMemberRole>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -264,6 +304,13 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
   const writeCount = members.filter(member => member.role === 'write').length;
   const readCount = members.filter(member => member.role === 'read').length;
   const invitations = invitationsQuery.data ?? EMPTY_INVITATIONS;
+  const roleFilterOptions: Array<{ value: 'all' | ProjectMemberRole; label: string }> = [
+    { value: 'all', label: t('membersPage.allRoles') },
+    { value: 'owner', label: getRoleLabel(t, 'owner') },
+    { value: 'admin', label: getRoleLabel(t, 'admin') },
+    { value: 'write', label: getRoleLabel(t, 'write') },
+    { value: 'read', label: getRoleLabel(t, 'read') },
+  ];
   const membersPath = buildApiPath('/projects/:id/members');
   const membersMePath = buildApiPath('/projects/:id/members/me');
   const invitationsPath = buildApiPath('/projects/:id/invitations');
@@ -320,7 +367,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
 
   const handleAddMember = async () => {
     if (!selectedCandidate) {
-      setAddDialogError('Select a user before adding a member.');
+      setAddDialogError(t('membersPage.selectUserRequired'));
       return;
     }
 
@@ -381,7 +428,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
     if (trimmedMaxUses !== '') {
       parsedMaxUses = Number.parseInt(trimmedMaxUses, 10);
       if (Number.isNaN(parsedMaxUses) || parsedMaxUses < 0) {
-        setInviteDialogError('Max uses must be 0 or a positive integer.');
+        setInviteDialogError(t('membersPage.maxUsesInvalid'));
         return;
       }
     }
@@ -390,7 +437,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
     if (inviteExpiresAt.trim()) {
       const parsedDate = new Date(inviteExpiresAt);
       if (Number.isNaN(parsedDate.getTime())) {
-        setInviteDialogError('Select a valid expiration date.');
+        setInviteDialogError(t('membersPage.expiresInvalid'));
         return;
       }
       expiresAt = parsedDate.toISOString();
@@ -461,7 +508,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
   const headerActionItems: ActionMenuItem[] = [
     {
       key: 'members-refresh',
-      label: isRefreshing ? 'Refreshing...' : 'Refresh',
+      label: isRefreshing ? i18n.common('refreshing') : i18n.common('refresh'),
       icon: RefreshCw,
       disabled: isRefreshing,
       onSelect: () => {
@@ -470,7 +517,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
     },
     {
       key: 'members-add',
-      label: 'Add Member',
+      label: t('membersPage.addMember'),
       icon: UserPlus,
       disabled: !canManageMembers,
       onSelect: handleOpenAddDialog,
@@ -492,19 +539,21 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                 >
                   <Link href={buildProjectDetailRoute(projectId)}>
                     <ArrowLeft className="h-4 w-4" />
-                    Back to Project Overview
+                    {t('common.backToProjectOverview')}
                   </Link>
                 </Button>
 
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-3xl font-bold tracking-tight">Members</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">{t('membersPage.title')}</h1>
                     <Users className="h-6 w-6 text-primary" />
                     <RoleBadge role={currentRole} />
                   </div>
                   <p className="max-w-4xl text-sm text-text-muted">
-                    Manage project access through <code>{membersPath}</code> and resolve the current
-                    user role through <code>{membersMePath}</code>.
+                    {t('membersPage.description', {
+                      membersPath,
+                      membersMePath,
+                    })}
                   </p>
                 </div>
 
@@ -515,7 +564,9 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                     </Badge>
                     <Badge variant="outline">{project.name}</Badge>
                     <Badge variant="outline">
-                      {projectStatsQuery.data?.member_count ?? members.length} members
+                      {t('membersPage.memberCount', {
+                        count: projectStatsQuery.data?.member_count ?? members.length,
+                      })}
                     </Badge>
                   </div>
                 ) : null}
@@ -524,7 +575,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
               <div className="flex flex-wrap items-center gap-3">
                 <Button type="button" onClick={handleOpenInviteDialog} disabled={!canManageMembers}>
                   <Link2 className="h-4 w-4" />
-                  Generate Invite Link
+                  {t('membersPage.generateInviteLink')}
                 </Button>
                 <Button
                   type="button"
@@ -533,11 +584,11 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                   disabled={!canManageMembers}
                 >
                   <UserPlus className="h-4 w-4" />
-                  Add Member
+                  {t('membersPage.addMember')}
                 </Button>
                 <ActionMenu
                   items={headerActionItems}
-                  ariaLabel="Open member management actions"
+                  ariaLabel={t('membersPage.openMemberActions')}
                   triggerVariant="outline"
                 />
               </div>
@@ -547,11 +598,11 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
           {!canManageMembers && memberRoleQuery.isSuccess ? (
             <Alert>
               <ShieldCheck className="h-4 w-4" />
-              <AlertTitle>Read-only member access</AlertTitle>
+              <AlertTitle>{t('membersPage.readOnlyTitle')}</AlertTitle>
               <AlertDescription>
-                当前角色是 <strong>{getProjectMemberRoleLabel(currentRole)}</strong>
-                ，可以查看成员列表，但只有 <strong>admin</strong> 和 <strong>owner</strong>{' '}
-                可以新增、调整或移除成员。
+                {t('membersPage.readOnlyDescription', {
+                  role: getRoleLabel(t, currentRole),
+                })}
               </AlertDescription>
             </Alert>
           ) : null}
@@ -567,29 +618,32 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
             ) : (
               <>
                 <StatCard
-                  title="Total Members"
+                  title={t('membersPage.totalMembers')}
                   value={projectStatsQuery.data?.member_count ?? members.length}
-                  description="All users with project access"
+                  description={t('membersPage.totalMembersDescription')}
                   icon={Users}
                 />
                 <StatCard
-                  title="Admins & Owners"
+                  title={t('membersPage.adminsOwners')}
                   value={ownerCount + adminCount}
-                  description={`${ownerCount} owner${ownerCount === 1 ? '' : 's'}, ${adminCount} admin${adminCount === 1 ? '' : 's'}`}
+                  description={t('membersPage.adminsOwnersDescription', {
+                    owners: ownerCount,
+                    admins: adminCount,
+                  })}
                   icon={ShieldCheck}
                   variant="warning"
                 />
                 <StatCard
-                  title="Writers"
+                  title={t('membersPage.writers')}
                   value={writeCount}
-                  description="Can edit project resources"
+                  description={t('membersPage.writersDescription')}
                   icon={Pencil}
                   variant="success"
                 />
                 <StatCard
-                  title="Readers"
+                  title={t('membersPage.readers')}
                   value={readCount}
-                  description="Browse-only project access"
+                  description={t('membersPage.readersDescription')}
                   icon={Mail}
                   variant="default"
                 />
@@ -601,10 +655,9 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
             <CardHeader className="space-y-4">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div>
-                  <CardTitle>Invite Links</CardTitle>
+                  <CardTitle>{t('membersPage.inviteLinks')}</CardTitle>
                   <CardDescription>
-                    Generate role-scoped invite links through <code>{invitationsPath}</code> and
-                    manage their lifecycle before sharing externally.
+                    {t('membersPage.inviteLinksDescription', { path: invitationsPath })}
                   </CardDescription>
                 </div>
                 <Button
@@ -614,7 +667,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                   disabled={!canManageMembers}
                 >
                   <Link2 className="h-4 w-4" />
-                  New Invite Link
+                  {t('membersPage.newInviteLink')}
                 </Button>
               </div>
             </CardHeader>
@@ -622,20 +675,18 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
               {!canManageMembers && memberRoleQuery.isSuccess ? (
                 <Alert>
                   <ShieldCheck className="h-4 w-4" />
-                  <AlertTitle>Invite management requires admin access</AlertTitle>
+                  <AlertTitle>{t('membersPage.inviteAccessRequiredTitle')}</AlertTitle>
                   <AlertDescription>
-                    Invite links can be listed, generated, copied, and revoked only by{' '}
-                    <strong>admin</strong> or <strong>owner</strong> members.
+                    {t('membersPage.inviteAccessRequiredDescription')}
                   </AlertDescription>
                 </Alert>
               ) : invitationsQuery.isLoading ? (
                 <MembersTableSkeleton />
               ) : hasInvitationLoadError ? (
                 <Alert>
-                  <AlertTitle>Unable to load invite links</AlertTitle>
+                  <AlertTitle>{t('membersPage.inviteLoadFailedTitle')}</AlertTitle>
                   <AlertDescription>
-                    Refresh the page or confirm the current user still has permission to manage
-                    invitations for this project.
+                    {t('membersPage.inviteLoadFailedDescription')}
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -643,13 +694,13 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Remaining</TableHead>
-                        <TableHead>Used</TableHead>
-                        <TableHead>Expires</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>{t('membersPage.inviteRole')}</TableHead>
+                        <TableHead>{t('membersPage.inviteStatus')}</TableHead>
+                        <TableHead>{t('membersPage.inviteRemaining')}</TableHead>
+                        <TableHead>{t('membersPage.inviteUsed')}</TableHead>
+                        <TableHead>{t('membersPage.inviteExpires')}</TableHead>
+                        <TableHead>{t('membersPage.inviteCreated')}</TableHead>
+                        <TableHead className="text-right">{t('membersPage.inviteActions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -658,7 +709,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                           <TableCell>
                             <div className="space-y-1">
                               <Badge variant="outline">
-                                {getProjectMemberRoleLabel(invitation.role)}
+                                {getRoleLabel(t, invitation.role)}
                               </Badge>
                               <div className="font-mono text-xs text-muted-foreground">
                                 {invitation.token_prefix}
@@ -670,17 +721,17 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                               variant="outline"
                               className={getInvitationStatusBadgeClassName(invitation.status)}
                             >
-                              {getProjectInvitationStatusLabel(invitation.status)}
+                              {getInvitationStatusLabel(t, invitation.status)}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {getProjectInvitationRemainingUsesLabel(invitation)}
+                            {getInvitationRemainingUsesLabel(t, invitation)}
                           </TableCell>
                           <TableCell>{invitation.used_count}</TableCell>
                           <TableCell>
                             {invitation.expires_at
                               ? formatDate(invitation.expires_at, 'YYYY-MM-DD HH:mm')
-                              : 'Never'}
+                              : t('membersPage.never')}
                           </TableCell>
                           <TableCell>
                             {formatDate(invitation.created_at, 'YYYY-MM-DD HH:mm')}
@@ -696,7 +747,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                                 }}
                               >
                                 <Copy className="h-3.5 w-3.5" />
-                                Copy
+                                {t('membersPage.copyLink')}
                               </Button>
                               <Button
                                 type="button"
@@ -706,7 +757,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                                 onClick={() => setRevokeTarget(invitation)}
                               >
                                 <Link2Off className="h-3.5 w-3.5" />
-                                Revoke
+                                {t('membersPage.revokeLink')}
                               </Button>
                             </div>
                           </TableCell>
@@ -718,7 +769,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                             colSpan={7}
                             className="py-10 text-center text-muted-foreground"
                           >
-                            No invite links have been generated for this project yet.
+                            {t('membersPage.noInviteLinks')}
                           </TableCell>
                         </TableRow>
                       ) : null}
@@ -733,10 +784,9 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
             <CardHeader className="space-y-4">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div>
-                  <CardTitle>Project Members</CardTitle>
+                  <CardTitle>{t('membersPage.projectMembers')}</CardTitle>
                   <CardDescription>
-                    Search by username or email, then adjust operational roles for non-owner
-                    members.
+                    {t('membersPage.projectMembersDescription')}
                   </CardDescription>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row">
@@ -745,7 +795,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                     <Input
                       value={searchQuery}
                       onChange={event => setSearchQuery(event.target.value)}
-                      placeholder="Filter by username or email"
+                      placeholder={t('membersPage.filterPlaceholder')}
                       className="pl-9"
                     />
                   </div>
@@ -754,10 +804,10 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                     onValueChange={value => setRoleFilter(value as 'all' | ProjectMemberRole)}
                   >
                     <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filter by role" />
+                      <SelectValue placeholder={t('membersPage.filterByRole')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {ROLE_FILTER_OPTIONS.map(option => (
+                      {roleFilterOptions.map(option => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -772,10 +822,9 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                 <MembersTableSkeleton />
               ) : hasLoadError ? (
                 <Alert>
-                  <AlertTitle>Unable to load members</AlertTitle>
+                  <AlertTitle>{t('membersPage.membersLoadFailedTitle')}</AlertTitle>
                   <AlertDescription>
-                    The project members page could not load its data. Retry the request or confirm
-                    the current user still has access to this project.
+                    {t('membersPage.membersLoadFailedDescription')}
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -783,11 +832,11 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>User</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Joined</TableHead>
-                        <TableHead>Updated</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>{t('membersPage.user')}</TableHead>
+                        <TableHead>{t('membersPage.inviteRole')}</TableHead>
+                        <TableHead>{t('membersPage.joined')}</TableHead>
+                        <TableHead>{t('membersPage.updated')}</TableHead>
+                        <TableHead className="text-right">{t('membersPage.inviteActions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -803,14 +852,14 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                         const rowActionItems: ActionMenuItem[] = [
                           {
                             key: `edit-${member.user_id}`,
-                            label: 'Edit Role',
+                            label: t('membersPage.editRole'),
                             icon: Pencil,
                             disabled: !canEdit,
                             onSelect: () => handleOpenEditDialog(member),
                           },
                           {
                             key: `delete-${member.user_id}`,
-                            label: 'Remove',
+                            label: t('membersPage.remove'),
                             icon: Trash2,
                             destructive: true,
                             separatorBefore: true,
@@ -829,11 +878,11 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                                 <div className="space-y-1">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <span className="font-medium">{member.username}</span>
-                                    {isCurrentUser ? <Badge variant="outline">You</Badge> : null}
+                                    {isCurrentUser ? <Badge variant="outline">{t('membersPage.you')}</Badge> : null}
                                     {member.role === 'owner' ? (
                                       <Badge variant="outline" className="gap-1">
                                         <Crown className="h-3 w-3" />
-                                        Owner
+                                        {getRoleLabel(t, 'owner')}
                                       </Badge>
                                     ) : null}
                                   </div>
@@ -846,7 +895,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                             </TableCell>
                             <TableCell>
                               <Badge variant={getRoleBadgeVariant(member.role)}>
-                                {getProjectMemberRoleLabel(member.role)}
+                                {getRoleLabel(t, member.role)}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -858,15 +907,17 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                             <TableCell className="text-right">
                               {!canManageMembers ? (
                                 <span className="text-sm text-muted-foreground">
-                                  Admin required
+                                  {t('membersPage.adminRequired')}
                                 </span>
                               ) : canEdit || canRemove ? (
                                 <ActionMenu
                                   items={rowActionItems}
-                                  ariaLabel={`Open actions for ${member.username}`}
+                                  ariaLabel={i18n.common('openActions')}
                                 />
                               ) : (
-                                <span className="text-sm text-muted-foreground">Protected</span>
+                                <span className="text-sm text-muted-foreground">
+                                  {t('membersPage.protected')}
+                                </span>
                               )}
                             </TableCell>
                           </TableRow>
@@ -878,7 +929,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                             colSpan={5}
                             className="py-10 text-center text-muted-foreground"
                           >
-                            No members match the current filter.
+                            {t('membersPage.noMembersMatch')}
                           </TableCell>
                         </TableRow>
                       ) : null}
@@ -902,24 +953,23 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
       >
         <DialogContent size="lg">
           <DialogHeader>
-            <DialogTitle>Generate Invite Link</DialogTitle>
+            <DialogTitle>{t('membersPage.inviteDialogTitle')}</DialogTitle>
             <DialogDescription>
-              Create a shareable project invite that grants a predefined role after the invited user
-              logs in.
+              {t('membersPage.inviteDialogDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
             <div className="space-y-5">
               {inviteDialogError ? (
                 <Alert variant="destructive">
-                  <AlertTitle>Cannot generate invite link</AlertTitle>
+                  <AlertTitle>{t('membersPage.inviteDialogErrorTitle')}</AlertTitle>
                   <AlertDescription>{inviteDialogError}</AlertDescription>
                 </Alert>
               ) : null}
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="invite-role">Role</Label>
+                  <Label htmlFor="invite-role">{t('membersPage.inviteRole')}</Label>
                   <Select
                     value={inviteRole}
                     onValueChange={value => {
@@ -928,12 +978,12 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                     }}
                   >
                     <SelectTrigger id="invite-role">
-                      <SelectValue placeholder="Select role" />
+                      <SelectValue placeholder={t('membersPage.selectRole')} />
                     </SelectTrigger>
                     <SelectContent>
                       {PROJECT_INVITATION_ASSIGNABLE_ROLES.map(role => (
                         <SelectItem key={role} value={role}>
-                          {getProjectMemberRoleLabel(role)}
+                          {getRoleLabel(t, role)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -941,7 +991,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="invite-max-uses">Max uses</Label>
+                  <Label htmlFor="invite-max-uses">{t('membersPage.maxUses')}</Label>
                   <Input
                     id="invite-max-uses"
                     type="number"
@@ -951,16 +1001,16 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                       setInviteMaxUses(event.target.value);
                       setInviteDialogError(null);
                     }}
-                    placeholder="1"
+                    placeholder={t('membersPage.maxUsesPlaceholder')}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Use <strong>0</strong> for an unlimited link. Default is <strong>1</strong>.
+                    {t('membersPage.maxUsesHelp')}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="invite-expires-at">Expires at</Label>
+                <Label htmlFor="invite-expires-at">{t('membersPage.expiresAt')}</Label>
                 <Input
                   id="invite-expires-at"
                   type="datetime-local"
@@ -976,7 +1026,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-1">
-                      <div className="text-sm font-medium">Invite link generated</div>
+                      <div className="text-sm font-medium">{t('membersPage.inviteGenerated')}</div>
                       <div className="break-all text-sm text-muted-foreground">
                         {resolveInviteLink(generatedInvitation)}
                       </div>
@@ -990,7 +1040,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                       }}
                     >
                       <Copy className="h-3.5 w-3.5" />
-                      Copy Link
+                      {t('membersPage.copyLink')}
                     </Button>
                   </div>
                 </div>
@@ -999,7 +1049,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
-              Close
+              {i18n.common('close')}
             </Button>
             <Button
               type="button"
@@ -1009,7 +1059,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
               disabled={createInvitationMutation.isPending || !canManageMembers}
             >
               <Link2 className="h-4 w-4" />
-              Generate Invite Link
+              {t('membersPage.generateInviteLink')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1026,22 +1076,22 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
       >
         <DialogContent size="lg">
           <DialogHeader>
-            <DialogTitle>Add Member</DialogTitle>
+            <DialogTitle>{t('membersPage.addMemberDialogTitle')}</DialogTitle>
             <DialogDescription>
-              Search existing users, then grant them project access with an assignable role.
+              {t('membersPage.addMemberDialogDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
             <div className="space-y-5">
               {addDialogError ? (
                 <Alert variant="destructive">
-                  <AlertTitle>Cannot add member</AlertTitle>
+                  <AlertTitle>{t('membersPage.addMemberDialogErrorTitle')}</AlertTitle>
                   <AlertDescription>{addDialogError}</AlertDescription>
                 </Alert>
               ) : null}
 
               <div className="space-y-2">
-                <Label htmlFor="member-search">Find user</Label>
+                <Label htmlFor="member-search">{t('membersPage.findUser')}</Label>
                 <Input
                   id="member-search"
                   value={candidateQuery}
@@ -1049,23 +1099,23 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                     setCandidateQuery(event.target.value);
                     setAddDialogError(null);
                   }}
-                  placeholder="Search by username or email"
+                  placeholder={t('membersPage.searchUserPlaceholder')}
                 />
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label>Matching users</Label>
+                  <Label>{t('membersPage.matchingUsers')}</Label>
                   <span className="text-sm text-muted-foreground">
                     {userSearchQuery.isFetching
-                      ? 'Searching…'
-                      : `${candidateResults.length} available`}
+                      ? t('membersPage.searching')
+                      : t('membersPage.availableCount', { count: candidateResults.length })}
                   </span>
                 </div>
                 <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border p-3">
                   {deferredCandidateQuery.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Start typing to search existing users.
+                      {t('membersPage.startTyping')}
                     </p>
                   ) : userSearchQuery.isFetching ? (
                     <div className="space-y-2">
@@ -1075,8 +1125,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                     </div>
                   ) : candidateResults.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      No eligible users matched this query. Matching users who are already project
-                      members are hidden.
+                      {t('membersPage.noEligibleUsers')}
                     </p>
                   ) : (
                     candidateResults.map(candidate => {
@@ -1099,9 +1148,9 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
                             </div>
                           </div>
                           {isSelected ? (
-                            <Badge>Selected</Badge>
+                            <Badge>{t('membersPage.selected')}</Badge>
                           ) : (
-                            <Badge variant="outline">Select</Badge>
+                            <Badge variant="outline">{t('membersPage.select')}</Badge>
                           )}
                         </button>
                       );
@@ -1111,18 +1160,18 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="member-role">Role</Label>
+                <Label htmlFor="member-role">{t('membersPage.inviteRole')}</Label>
                 <Select
                   value={newMemberRole}
                   onValueChange={value => setNewMemberRole(value as AssignableProjectMemberRole)}
                 >
                   <SelectTrigger id="member-role">
-                    <SelectValue placeholder="Select role" />
+                    <SelectValue placeholder={t('membersPage.selectRole')} />
                   </SelectTrigger>
                   <SelectContent>
                     {PROJECT_MEMBER_ASSIGNABLE_ROLES.map(role => (
                       <SelectItem key={role} value={role}>
-                        {getProjectMemberRoleLabel(role)}
+                        {getRoleLabel(t, role)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1131,7 +1180,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
 
               {selectedCandidate ? (
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-                  <div className="text-sm font-medium">Selected user</div>
+                  <div className="text-sm font-medium">{t('membersPage.selectedUser')}</div>
                   <div className="mt-1 text-sm text-muted-foreground">
                     {selectedCandidate.username} · {selectedCandidate.email}
                   </div>
@@ -1141,7 +1190,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Cancel
+              {i18n.common('cancel')}
             </Button>
             <Button
               type="button"
@@ -1151,7 +1200,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
               disabled={createMemberMutation.isPending || !canManageMembers}
             >
               <UserPlus className="h-4 w-4" />
-              Add Member
+              {t('membersPage.addMember')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1160,9 +1209,11 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
       <Dialog open={Boolean(editingMember)} onOpenChange={open => !open && setEditingMember(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Member Role</DialogTitle>
+            <DialogTitle>{t('membersPage.editMemberDialogTitle')}</DialogTitle>
             <DialogDescription>
-              Update the project role for <strong>{editingMember?.username}</strong>.
+              {t('membersPage.editMemberDialogDescription', {
+                username: editingMember?.username || '',
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
@@ -1173,18 +1224,18 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-member-role">Role</Label>
+                <Label htmlFor="edit-member-role">{t('membersPage.inviteRole')}</Label>
                 <Select
                   value={editingRole}
                   onValueChange={value => setEditingRole(value as AssignableProjectMemberRole)}
                 >
                   <SelectTrigger id="edit-member-role">
-                    <SelectValue placeholder="Select role" />
+                    <SelectValue placeholder={t('membersPage.selectRole')} />
                   </SelectTrigger>
                   <SelectContent>
                     {PROJECT_MEMBER_ASSIGNABLE_ROLES.map(role => (
                       <SelectItem key={role} value={role}>
-                        {getProjectMemberRoleLabel(role)}
+                        {getRoleLabel(t, role)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1194,7 +1245,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setEditingMember(null)}>
-              Cancel
+              {i18n.common('cancel')}
             </Button>
             <Button
               type="button"
@@ -1203,7 +1254,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
               }}
               disabled={updateMemberMutation.isPending || !editingMember}
             >
-              Save Role
+              {t('membersPage.saveRole')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1212,17 +1263,20 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
       <Dialog open={Boolean(deleteTarget)} onOpenChange={open => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Remove Member</DialogTitle>
+            <DialogTitle>{t('membersPage.removeMemberDialogTitle')}</DialogTitle>
             <DialogDescription>
-              Remove <strong>{deleteTarget?.username}</strong> from this project.
+              {t('membersPage.removeMemberDialogDescription', {
+                username: deleteTarget?.username || '',
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
             <Alert>
-              <AlertTitle>Access will be revoked immediately</AlertTitle>
+              <AlertTitle>{t('membersPage.revokeAccessTitle')}</AlertTitle>
               <AlertDescription>
-                {deleteTarget?.username} will no longer be able to access project resources after
-                this action completes.
+                {t('membersPage.revokeAccessDescription', {
+                  username: deleteTarget?.username || '',
+                })}
               </AlertDescription>
             </Alert>
             {deleteTarget ? (
@@ -1234,7 +1288,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancel
+              {i18n.common('cancel')}
             </Button>
             <Button
               type="button"
@@ -1245,7 +1299,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
               disabled={deleteMemberMutation.isPending || !deleteTarget}
             >
               <Trash2 className="h-4 w-4" />
-              Remove Member
+              {t('membersPage.removeMember')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1254,15 +1308,14 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
       <Dialog open={Boolean(revokeTarget)} onOpenChange={open => !open && setRevokeTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Revoke Invite Link</DialogTitle>
+            <DialogTitle>{t('membersPage.revokeInviteDialogTitle')}</DialogTitle>
             <DialogDescription>
-              Revoke the selected invite link immediately. Existing members keep their access, but
-              the link can no longer be accepted.
+              {t('membersPage.revokeInviteDialogDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
             <Alert>
-              <AlertTitle>Link access will be disabled immediately</AlertTitle>
+              <AlertTitle>{t('membersPage.revokeInviteTitle')}</AlertTitle>
               <AlertDescription>
                 {revokeTarget ? resolveInviteLink(revokeTarget) : ''}
               </AlertDescription>
@@ -1270,20 +1323,22 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
             {revokeTarget ? (
               <div className="mt-4 rounded-xl border p-4">
                 <div className="font-medium">
-                  {getProjectMemberRoleLabel(revokeTarget.role)} invitation
+                  {t('membersPage.invitationSummary', {
+                    role: getRoleLabel(t, revokeTarget.role),
+                  })}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {getProjectInvitationStatusLabel(revokeTarget.status)} ·{' '}
+                  {getInvitationStatusLabel(t, revokeTarget.status)} ·{' '}
                   {revokeTarget.max_uses === 0
-                    ? 'Unlimited uses'
-                    : `${revokeTarget.max_uses} max uses`}
+                    ? t('membersPage.unlimitedUses')
+                    : t('membersPage.maxUsesSummary', { count: revokeTarget.max_uses })}
                 </div>
               </div>
             ) : null}
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setRevokeTarget(null)}>
-              Cancel
+              {i18n.common('cancel')}
             </Button>
             <Button
               type="button"
@@ -1294,7 +1349,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
               disabled={deleteInvitationMutation.isPending || !revokeTarget}
             >
               <Link2Off className="h-4 w-4" />
-              Revoke Link
+              {t('membersPage.revokeLink')}
             </Button>
           </DialogFooter>
         </DialogContent>

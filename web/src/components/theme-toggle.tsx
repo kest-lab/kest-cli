@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/providers/theme-provider";
+import { useT } from "@/i18n/client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,7 @@ import {
  */
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
+  const t = useT();
 
   return (
     <DropdownMenu>
@@ -32,18 +34,18 @@ export function ThemeToggle() {
               resolvedTheme === "dark" ? "rotate-0 scale-100" : "rotate-90 scale-0"
             }`}
           />
-          <span className="sr-only">Toggle theme</span>
+          <span className="sr-only">{t('common.themeToggle')}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme("light")}>
-          Light
+          {t('common.lightTheme')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
-          Dark
+          {t('common.darkTheme')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
-          System
+          {t('common.systemTheme')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { buildCategoryOptions } from '@/components/features/project/category-helpers';
+import { useT } from '@/i18n/client';
 import type {
   CreateCategoryRequest,
   ProjectCategory,
@@ -117,6 +118,7 @@ function CategoryFormDialogBody({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: CreateCategoryRequest | UpdateCategoryRequest) => Promise<void>;
 }) {
+  const t = useT('project');
   const [draft, setDraft] = useState<CategoryFormDraft>(() =>
     getCategoryFormDraft(category, defaultParentId)
   );
@@ -143,20 +145,20 @@ function CategoryFormDialogBody({
     let sortOrder: number | undefined;
 
     if (!trimmedName) {
-      nextErrors.name = 'Category name is required.';
+      nextErrors.name = t('categoryForm.nameRequired');
     } else if (trimmedName.length > 100) {
-      nextErrors.name = 'Category name must be 100 characters or fewer.';
+      nextErrors.name = t('categoryForm.nameTooLong');
     }
 
     if (trimmedDescription.length > 500) {
-      nextErrors.description = 'Description must be 500 characters or fewer.';
+      nextErrors.description = t('categoryForm.descriptionTooLong');
     }
 
     if (draft.sortOrder.trim()) {
       sortOrder = Number(draft.sortOrder);
 
       if (!Number.isInteger(sortOrder) || sortOrder < 0) {
-        nextErrors.sortOrder = 'Sort order must be a non-negative integer.';
+        nextErrors.sortOrder = t('categoryForm.sortOrderInvalid');
       }
     }
 
@@ -164,7 +166,7 @@ function CategoryFormDialogBody({
       draft.parentId === 'none' ? null : Number.isNaN(Number(draft.parentId)) ? null : Number(draft.parentId);
 
     if (parentId !== null && invalidParentIds.includes(parentId)) {
-      nextErrors.parentId = 'The selected parent would create an invalid category loop.';
+      nextErrors.parentId = t('categoryForm.invalidLoop');
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -183,35 +185,35 @@ function CategoryFormDialogBody({
   return (
     <DialogContent size="default">
       <DialogHeader>
-        <DialogTitle>{mode === 'create' ? 'Create Category' : 'Edit Category'}</DialogTitle>
+        <DialogTitle>{mode === 'create' ? t('categoryForm.createTitle') : t('categoryForm.editTitle')}</DialogTitle>
         <DialogDescription>
           {mode === 'create'
-            ? 'Add a project category and optionally place it under an existing parent.'
-            : 'Update the selected category and its place in the hierarchy.'}
+            ? t('categoryForm.createDescription')
+            : t('categoryForm.editDescription')}
         </DialogDescription>
       </DialogHeader>
 
       <DialogBody>
         <form id="category-form" className="space-y-4 py-1" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="category-name">Name</Label>
+            <Label htmlFor="category-name">{t('categoryForm.nameLabel')}</Label>
             <Input
               id="category-name"
               value={draft.name}
               onChange={(event) => updateDraft('name', event.target.value)}
-              placeholder="Authentication"
+              placeholder={t('categoryForm.namePlaceholder')}
               errorText={errors.name}
               root
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category-description">Description</Label>
+            <Label htmlFor="category-description">{t('categoryForm.descriptionLabel')}</Label>
             <Textarea
               id="category-description"
               value={draft.description}
               onChange={(event) => updateDraft('description', event.target.value)}
-              placeholder="Describe the endpoints or scenarios grouped by this category."
+              placeholder={t('categoryForm.descriptionPlaceholder')}
               errorText={errors.description}
               root
             />
@@ -219,7 +221,7 @@ function CategoryFormDialogBody({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="category-parent">Parent Category</Label>
+              <Label htmlFor="category-parent">{t('categoryForm.parentLabel')}</Label>
               <Select
                 value={draft.parentId || 'none'}
                 onValueChange={(value) => updateDraft('parentId', value)}
@@ -228,10 +230,10 @@ function CategoryFormDialogBody({
                   id="category-parent"
                   className={errors.parentId ? 'border-destructive' : undefined}
                 >
-                  <SelectValue placeholder="Select parent category" />
+                  <SelectValue placeholder={t('categoryForm.selectParent')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No parent</SelectItem>
+                  <SelectItem value="none">{t('categoryForm.noParent')}</SelectItem>
                   {categoryOptions.map((option) => (
                     <SelectItem
                       key={option.value}
@@ -249,14 +251,14 @@ function CategoryFormDialogBody({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category-sort-order">Sort Order</Label>
+              <Label htmlFor="category-sort-order">{t('categoryForm.sortOrderLabel')}</Label>
               <Input
                 id="category-sort-order"
                 type="number"
                 min={0}
                 value={draft.sortOrder}
                 onChange={(event) => updateDraft('sortOrder', event.target.value)}
-                placeholder="Optional"
+                placeholder={t('categoryForm.optional')}
                 errorText={errors.sortOrder}
                 root
               />
@@ -267,10 +269,10 @@ function CategoryFormDialogBody({
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" form="category-form" loading={isSubmitting}>
-          {mode === 'create' ? 'Create Category' : 'Save Changes'}
+          {mode === 'create' ? t('categoryForm.createButton') : t('categoryForm.saveButton')}
         </Button>
       </DialogFooter>
     </DialogContent>
@@ -294,40 +296,41 @@ export function DeleteCategoryDialog({
   onOpenChange: (open: boolean) => void;
   onConfirm: () => Promise<void>;
 }) {
+  const t = useT('project');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>Delete Category</DialogTitle>
+          <DialogTitle>{t('categoryForm.deleteTitle')}</DialogTitle>
           <DialogDescription>
-            This will permanently delete {category ? `"${category.name}"` : 'the selected category'}.
+            {category
+              ? t('categoryForm.deleteDescriptionWithName', { name: category.name })
+              : t('categoryForm.deleteDescriptionFallback')}
           </DialogDescription>
         </DialogHeader>
 
         <DialogBody className="space-y-3">
           <Alert variant="destructive">
-            <AlertTitle>Irreversible action</AlertTitle>
+            <AlertTitle>{t('categoryForm.deleteWarningTitle')}</AlertTitle>
             <AlertDescription>
-              The current backend deletes the category immediately, and child categories are detached
-              from their parent.
+              {t('categoryForm.deleteWarningDescription')}
             </AlertDescription>
           </Alert>
 
           <Alert>
-            <AlertTitle>Deletion scope</AlertTitle>
+            <AlertTitle>{t('categoryForm.deleteScopeTitle')}</AlertTitle>
             <AlertDescription>
-              The `move_to` reassignment option described in the markdown doc is not exposed by the
-              current backend route, so this dialog keeps the delete flow conservative.
+              {t('categoryForm.deleteScopeDescription')}
             </AlertDescription>
           </Alert>
         </DialogBody>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="button" variant="destructive" loading={isDeleting} onClick={() => void onConfirm()}>
-            Delete Category
+            {t('categoryForm.deleteButton')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useT } from '@/i18n/client';
 import type {
   ApiProject,
   CreateProjectRequest,
@@ -61,11 +62,12 @@ const getDefaultDraft = (project?: ApiProject | null): ProjectFormDraft => ({
 });
 
 export const resolvePlatformLabel = (platform: string) =>
-  PLATFORM_OPTIONS.find((option) => option.value === platform)?.label || 'Not set';
+  PLATFORM_OPTIONS.find((option) => option.value === platform)?.label || '';
 
 // 项目状态文案解析器。
 // 作用：把数字状态转换成界面可读的标签文本。
-const resolveStatusLabel = (status: number) => (status === 1 ? 'Active' : 'Inactive');
+const resolveStatusLabel = (status: number, activeLabel: string, inactiveLabel: string) =>
+  status === 1 ? activeLabel : inactiveLabel;
 
 /**
  * 项目状态徽章。
@@ -76,9 +78,10 @@ export function ProjectStatusBadge({
 }: {
   status: ProjectStatus;
 }) {
+  const t = useT('project');
   return (
     <Badge variant={status === 1 ? 'default' : 'secondary'}>
-      {resolveStatusLabel(status)}
+      {resolveStatusLabel(status, t('projectForm.active'), t('projectForm.inactive'))}
     </Badge>
   );
 }
@@ -133,6 +136,7 @@ function ProjectFormDialogBody({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: CreateProjectRequest | UpdateProjectRequest) => Promise<void>;
 }) {
+  const t = useT('project');
   const [draft, setDraft] = useState<ProjectFormDraft>(() => getDefaultDraft(project));
   const [errors, setErrors] = useState<{ name?: string; slug?: string }>({});
 
@@ -144,11 +148,11 @@ function ProjectFormDialogBody({
     const trimmedSlug = draft.slug.trim();
 
     if (!trimmedName) {
-      nextErrors.name = 'Project name is required.';
+      nextErrors.name = t('projectForm.projectNameRequired');
     }
 
     if (trimmedSlug.length > 50) {
-      nextErrors.slug = 'Slug must be 50 characters or fewer.';
+      nextErrors.slug = t('projectForm.slugTooLong');
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -175,35 +179,35 @@ function ProjectFormDialogBody({
   return (
     <DialogContent size="default">
       <DialogHeader>
-        <DialogTitle>{mode === 'create' ? 'Create Project' : 'Edit Project'}</DialogTitle>
+        <DialogTitle>{mode === 'create' ? t('projectForm.createTitle') : t('projectForm.editTitle')}</DialogTitle>
         <DialogDescription>
           {mode === 'create'
-            ? 'Create a new project through POST /v1/projects.'
-            : 'Update project fields through PATCH /v1/projects/:id.'}
+            ? t('projectForm.createDescription')
+            : t('projectForm.editDescription')}
         </DialogDescription>
       </DialogHeader>
 
       <DialogBody>
         <form id="project-form" onSubmit={handleSubmit} className="space-y-4 py-1">
           <div className="space-y-2">
-            <Label htmlFor="project-name">Project Name</Label>
+            <Label htmlFor="project-name">{t('projectForm.nameLabel')}</Label>
             <Input
               id="project-name"
               value={draft.name}
               onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
-              placeholder="Payments Platform"
+              placeholder={t('projectForm.namePlaceholder')}
               errorText={errors.name}
               root
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="project-slug">Slug</Label>
+            <Label htmlFor="project-slug">{t('projectForm.slugLabel')}</Label>
             <Input
               id="project-slug"
               value={draft.slug}
               onChange={(event) => setDraft((current) => ({ ...current, slug: event.target.value }))}
-              placeholder={mode === 'create' ? 'Optional, auto-generated when left blank' : ''}
+              placeholder={mode === 'create' ? t('projectForm.slugPlaceholder') : ''}
               readOnly={mode === 'edit'}
               disabled={mode === 'edit'}
               errorText={errors.slug}
@@ -212,7 +216,7 @@ function ProjectFormDialogBody({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="project-platform">Platform</Label>
+            <Label htmlFor="project-platform">{t('projectForm.platformLabel')}</Label>
             <Select
               value={draft.platform || 'none'}
               onValueChange={(value) =>
@@ -220,10 +224,10 @@ function ProjectFormDialogBody({
               }
             >
               <SelectTrigger id="project-platform" className="w-full">
-                <SelectValue placeholder="Select a platform" />
+                <SelectValue placeholder={t('projectForm.selectPlatform')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Not set</SelectItem>
+                <SelectItem value="none">{t('projectForm.notSet')}</SelectItem>
                 {PLATFORM_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -235,7 +239,7 @@ function ProjectFormDialogBody({
 
           {mode === 'edit' ? (
             <div className="space-y-2">
-              <Label htmlFor="project-status">Status</Label>
+              <Label htmlFor="project-status">{t('projectForm.statusLabel')}</Label>
               <Select
                 value={draft.status}
                 onValueChange={(value) =>
@@ -246,8 +250,8 @@ function ProjectFormDialogBody({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Active</SelectItem>
-                  <SelectItem value="0">Inactive</SelectItem>
+                  <SelectItem value="1">{t('projectForm.active')}</SelectItem>
+                  <SelectItem value="0">{t('projectForm.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -257,10 +261,10 @@ function ProjectFormDialogBody({
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" form="project-form" loading={isSubmitting}>
-          {mode === 'create' ? 'Create Project' : 'Save Changes'}
+          {mode === 'create' ? t('projectForm.createButton') : t('projectForm.saveButton')}
         </Button>
       </DialogFooter>
     </DialogContent>
@@ -286,31 +290,34 @@ export function DeleteProjectDialog({
   onOpenChange: (open: boolean) => void;
   onConfirm: () => Promise<void>;
 }) {
+  const t = useT('project');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>Delete Project</DialogTitle>
+          <DialogTitle>{t('projectForm.deleteTitle')}</DialogTitle>
           <DialogDescription>
-            This will permanently delete {project ? `"${project.name}"` : 'the selected project'}.
+            {project
+              ? t('projectForm.deleteDescriptionWithName', { name: project.name })
+              : t('projectForm.deleteDescriptionFallback')}
           </DialogDescription>
         </DialogHeader>
 
         <DialogBody>
           <Alert variant="destructive">
-            <AlertTitle>Irreversible action</AlertTitle>
+            <AlertTitle>{t('projectForm.deleteWarningTitle')}</AlertTitle>
             <AlertDescription>
-              The backend deletes the project record immediately through DELETE /v1/projects/:id.
+              {t('projectForm.deleteWarningDescription')}
             </AlertDescription>
           </Alert>
         </DialogBody>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="button" variant="destructive" loading={isDeleting} onClick={() => void onConfirm()}>
-            Delete Project
+            {t('projectForm.deleteButton')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -65,6 +65,13 @@ const messages: CommonMessages = {
   toggleLanguage: 'Toggle language',
   selectLanguage: 'Select language',
   appLoading: 'Loading...',
+  themeToggle: 'Toggle theme',
+  lightTheme: 'Light',
+  darkTheme: 'Dark',
+  systemTheme: 'System',
+  errorBoundaryTitle: 'Something went wrong',
+  errorBoundaryDescription: 'An unexpected error occurred in the application.',
+  errorBoundaryRetry: 'Try again',
 };
 
 export default messages;

@@ -21,12 +21,9 @@ import {
   useProjectInvitationDetail,
   useRejectProjectInvitation,
 } from '@/hooks/use-project-invitations';
+import { useT } from '@/i18n/client';
 import { useAuthStore } from '@/store/auth-store';
-import { getProjectMemberRoleLabel } from '@/types/member';
-import {
-  getProjectInvitationStatusLabel,
-  isProjectInvitationActive,
-} from '@/types/project-invitation';
+import { isProjectInvitationActive } from '@/types/project-invitation';
 import { formatDate } from '@/utils';
 
 const getStatusBadgeClassName = (status?: string) => {
@@ -45,6 +42,7 @@ const getStatusBadgeClassName = (status?: string) => {
 };
 
 export function ProjectInvitationPage({ slug }: { slug: string }) {
+  const t = useT('project');
   const router = useRouter();
   const [wasRejected, setWasRejected] = useState(false);
 
@@ -80,6 +78,36 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
     }
   };
 
+  const getRoleLabel = (role?: string) => {
+    switch (role) {
+      case 'owner':
+        return t('roles.owner');
+      case 'admin':
+        return t('roles.admin');
+      case 'write':
+        return t('roles.write');
+      case 'read':
+        return t('roles.read');
+      default:
+        return t('roles.unknown');
+    }
+  };
+
+  const getInvitationStatusLabel = (status?: string) => {
+    switch (status) {
+      case 'active':
+        return t('invitation.statusActive');
+      case 'expired':
+        return t('invitation.statusExpired');
+      case 'revoked':
+        return t('invitation.statusRevoked');
+      case 'used_up':
+        return t('invitation.statusUsedUp');
+      default:
+        return t('roles.unknown');
+    }
+  };
+
   return (
     <main className="min-h-screen bg-linear-to-b from-primary/10 via-background to-background px-4 py-10 sm:px-6">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
@@ -87,17 +115,17 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
           <CardHeader className="gap-4 bg-linear-to-r from-primary/10 via-cyan-500/5 to-transparent">
             <div className="flex flex-wrap items-center gap-3">
               <Badge variant="outline" className={getStatusBadgeClassName(invitation?.status)}>
-                {getProjectInvitationStatusLabel(invitation?.status)}
+                {getInvitationStatusLabel(invitation?.status)}
               </Badge>
               <Badge variant="outline" className="gap-1">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                {getProjectMemberRoleLabel(invitation?.role)}
+                {getRoleLabel(invitation?.role)}
               </Badge>
             </div>
             <div className="space-y-2">
-              <CardTitle className="text-3xl tracking-tight">Project Invitation</CardTitle>
+              <CardTitle className="text-3xl tracking-tight">{t('invitation.title')}</CardTitle>
               <CardDescription className="max-w-2xl text-sm text-muted-foreground">
-                Review the invitation details, then accept the requested role to join the project.
+                {t('invitation.description')}
               </CardDescription>
             </div>
           </CardHeader>
@@ -115,10 +143,9 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
             ) : invitationQuery.isError || !invitation ? (
               <Alert variant="destructive">
                 <XCircle className="h-4 w-4" />
-                <AlertTitle>Invitation unavailable</AlertTitle>
+                <AlertTitle>{t('invitation.unavailableTitle')}</AlertTitle>
                 <AlertDescription>
-                  This invite link could not be loaded. It may have been revoked, deleted, or
-                  malformed.
+                  {t('invitation.unavailableDescription')}
                 </AlertDescription>
               </Alert>
             ) : (
@@ -126,7 +153,7 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
                 <div className="rounded-2xl border border-primary/15 bg-primary/5 p-5">
                   <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                     <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">Project</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('invitation.projectLabel')}</p>
                       <h1 className="text-2xl font-semibold tracking-tight">
                         {invitation.project_name}
                       </h1>
@@ -135,7 +162,7 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
                       </p>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Invitation path: <code>{inviteRoute}</code>
+                      {t('invitation.invitationPath')}: <code>{inviteRoute}</code>
                     </div>
                   </div>
                 </div>
@@ -144,30 +171,30 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
                   <div className="rounded-2xl border p-5">
                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <ShieldCheck className="h-4 w-4" />
-                      Role
+                      {t('invitation.roleLabel')}
                     </div>
                     <p className="mt-3 text-lg font-semibold">
-                      {getProjectMemberRoleLabel(invitation.role)}
+                      {getRoleLabel(invitation.role)}
                     </p>
                   </div>
                   <div className="rounded-2xl border p-5">
                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <Clock3 className="h-4 w-4" />
-                      Expires
+                      {t('invitation.expiresLabel')}
                     </div>
                     <p className="mt-3 text-lg font-semibold">
                       {invitation.expires_at
                         ? formatDate(invitation.expires_at, 'YYYY-MM-DD HH:mm')
-                        : 'Never'}
+                        : t('invitation.never')}
                     </p>
                   </div>
                   <div className="rounded-2xl border p-5">
                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <MailPlus className="h-4 w-4" />
-                      Remaining uses
+                      {t('invitation.remainingUsesLabel')}
                     </div>
                     <p className="mt-3 text-lg font-semibold">
-                      {invitation.remaining_uses === null ? 'Unlimited' : invitation.remaining_uses}
+                      {invitation.remaining_uses === null ? t('invitation.unlimited') : invitation.remaining_uses}
                     </p>
                   </div>
                 </div>
@@ -175,10 +202,9 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
                 {!isAuthenticated && isSystemReady ? (
                   <Alert>
                     <LogIn className="h-4 w-4" />
-                    <AlertTitle>Login required</AlertTitle>
+                    <AlertTitle>{t('invitation.loginRequiredTitle')}</AlertTitle>
                     <AlertDescription>
-                      Sign in or create an account first, then return here to accept or reject this
-                      invitation.
+                      {t('invitation.loginRequiredDescription')}
                     </AlertDescription>
                   </Alert>
                 ) : null}
@@ -186,10 +212,9 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
                 {wasRejected ? (
                   <Alert>
                     <CheckCircle2 className="h-4 w-4" />
-                    <AlertTitle>Invitation rejected</AlertTitle>
+                    <AlertTitle>{t('invitation.rejectedTitle')}</AlertTitle>
                     <AlertDescription>
-                      You declined this invite. You can keep the page open for reference, but the
-                      link has not been accepted.
+                      {t('invitation.rejectedDescription')}
                     </AlertDescription>
                   </Alert>
                 ) : null}
@@ -200,11 +225,11 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
                       <Button asChild size="lg">
                         <Link href={loginHref}>
                           <LogIn className="h-4 w-4" />
-                          Login to Continue
+                          {t('invitation.loginToContinue')}
                         </Link>
                       </Button>
                       <Button asChild variant="outline" size="lg">
-                        <Link href={registerHref}>Create Account</Link>
+                        <Link href={registerHref}>{t('invitation.createAccount')}</Link>
                       </Button>
                     </>
                   ) : (
@@ -217,7 +242,7 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
                         }}
                         disabled={!canRespond || acceptInvitationMutation.isPending}
                       >
-                        Accept Invitation
+                        {t('invitation.accept')}
                       </Button>
                       <Button
                         type="button"
@@ -228,7 +253,7 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
                         }}
                         disabled={!canRespond || rejectInvitationMutation.isPending}
                       >
-                        Reject Invitation
+                        {t('invitation.reject')}
                       </Button>
                     </>
                   )}
