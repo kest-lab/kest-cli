@@ -878,8 +878,8 @@ function ApiSpecsWorkspaceSection({
                   </CardHeader>
                 </Card>
 
-                <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-                  <Card className="border-border/60">
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+                  <Card className="min-w-0 border-border/60">
                     <CardHeader>
                       <CardTitle>{t('apiSpecs.specSummary')}</CardTitle>
                       <CardDescription>{t('apiSpecs.specSummaryDescription')}</CardDescription>
@@ -895,21 +895,23 @@ function ApiSpecsWorkspaceSection({
                       </DetailField>
                       <DetailField label={t('common.docSource')}>{selectedSpec.doc_source || t('common.unknown')}</DetailField>
                       <DetailField label={t('common.tags')}>
-                        {selectedSpec.tags.length > 0 ? selectedSpec.tags.join(', ') : t('common.noTags')}
+                        {(selectedSpec.tags?.length ?? 0) > 0
+                          ? selectedSpec.tags.join(', ')
+                          : t('common.noTags')}
                       </DetailField>
                     </CardContent>
                   </Card>
 
-                  <Card className="border-border/60">
+                  <Card className="min-w-0 border-border/60">
                     <CardHeader>
                       <CardTitle>{t('apiSpecs.documentationSnapshot')}</CardTitle>
                       <CardDescription>
                         {t('apiSpecs.documentationSnapshotDescription')}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="min-w-0">
                       {docPreview ? (
-                        <pre className="max-h-[420px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+                        <pre className="min-w-0 max-h-[420px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
                           {docPreview}
                         </pre>
                       ) : (
@@ -2343,12 +2345,9 @@ function ResourceContent({
 
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                {moduleLabel}
-              </Badge>
-              <p className="text-sm text-text-muted">{t('common.contentArea')}</p>
-            </div>
+            <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+              {moduleLabel}
+            </Badge>
             <div>
               <h2 className="text-2xl font-semibold tracking-tight">{currentTitle}</h2>
               <p className="mt-2 max-w-4xl text-sm leading-6 text-text-muted">{description}</p>
@@ -2433,7 +2432,7 @@ function ApiSpecsGuideState({
   const t = useT('project');
 
   return (
-    <Card className="border-border/60">
+    <Card className="min-w-0 border-border/60">
       <CardContent className="space-y-6 py-8">
         <div className="flex flex-col items-start gap-4 rounded-[28px] border border-primary/15 bg-gradient-to-br from-primary/10 via-background to-background p-6">
           <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary">
@@ -2553,12 +2552,12 @@ function JsonCard({
   value: unknown;
 }) {
   return (
-    <Card className="border-border/60">
+    <Card className="min-w-0 border-border/60">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <pre className="max-h-[420px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+      <CardContent className="min-w-0">
+        <pre className="min-w-0 max-h-[420px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
           {formatJson(value)}
         </pre>
       </CardContent>

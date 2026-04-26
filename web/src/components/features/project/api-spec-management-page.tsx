@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useDeferredValue, useMemo, useState } from 'react';
 import {
   ArrowLeft,
@@ -504,6 +505,7 @@ function SpecFormDialog({
   onSubmit: (payload: CreateApiSpecRequest | UpdateApiSpecRequest) => Promise<void>;
 }) {
   const t = useT('project');
+  const rawT = useTranslations('project');
   const docSourceOptions = getDocSourceOptions(t);
   const [draft, setDraft] = useState<SpecFormDraft>(() => getSpecFormDraft(spec));
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -831,7 +833,7 @@ function SpecFormDialog({
                     id="spec-request-body"
                     value={draft.requestBody}
                     onChange={(event) => updateDraft('requestBody', event.target.value)}
-                    placeholder={t('apiSpecsPage.requestBodyJsonPlaceholder')}
+                    placeholder={rawT.raw('apiSpecsPage.requestBodyJsonPlaceholder')}
                     rows={12}
                     errorText={errors.requestBody}
                     root
@@ -843,7 +845,7 @@ function SpecFormDialog({
                     id="spec-parameters"
                     value={draft.parameters}
                     onChange={(event) => updateDraft('parameters', event.target.value)}
-                    placeholder={t('apiSpecsPage.parametersJsonPlaceholder')}
+                    placeholder={rawT.raw('apiSpecsPage.parametersJsonPlaceholder')}
                     rows={12}
                     errorText={errors.parameters}
                     root
@@ -855,7 +857,7 @@ function SpecFormDialog({
                     id="spec-responses"
                     value={draft.responses}
                     onChange={(event) => updateDraft('responses', event.target.value)}
-                    placeholder={t('apiSpecsPage.responsesJsonPlaceholder')}
+                    placeholder={rawT.raw('apiSpecsPage.responsesJsonPlaceholder')}
                     rows={12}
                     errorText={errors.responses}
                     root
@@ -945,6 +947,7 @@ function ImportSpecsDialog({
   onSubmit: (payload: { specs: CreateApiSpecRequest[] }) => Promise<void>;
 }) {
   const t = useT('project');
+  const rawT = useTranslations('project');
   const [draft, setDraft] = useState<ImportDraft>(() => getImportDraft());
   const [error, setError] = useState('');
 
@@ -977,7 +980,7 @@ function ImportSpecsDialog({
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>{t('apiSpecsPage.importTitle')}</DialogTitle>
-          <DialogDescription>{t('apiSpecsPage.importDescription')}</DialogDescription>
+          <DialogDescription>{rawT.raw('apiSpecsPage.importDescription')}</DialogDescription>
         </DialogHeader>
         <DialogBody>
           <form id="api-spec-import-form" className="space-y-3 py-1" onSubmit={handleSubmit}>

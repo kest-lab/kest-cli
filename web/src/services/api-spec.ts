@@ -34,6 +34,32 @@ const normalizePayload = <T extends object>(payload: T) =>
     Object.entries(payload as Record<string, unknown>).filter(([, value]) => value !== undefined)
   ) as T;
 
+const normalizeApiSpec = (spec: ApiSpec): ApiSpec => ({
+  ...spec,
+  tags: Array.isArray(spec.tags) ? spec.tags : [],
+  parameters: Array.isArray(spec.parameters) ? spec.parameters : [],
+  examples: Array.isArray(spec.examples) ? spec.examples : [],
+  responses:
+    spec.responses && typeof spec.responses === 'object' && !Array.isArray(spec.responses)
+      ? spec.responses
+      : {},
+});
+
+const normalizeApiSpecListResponse = (response: ApiSpecListResponse): ApiSpecListResponse => ({
+  ...response,
+  items: response.items.map(normalizeApiSpec),
+});
+
+const normalizePublicApiSpecShare = (share: PublicApiSpecShare): PublicApiSpecShare => ({
+  ...share,
+  tags: Array.isArray(share.tags) ? share.tags : [],
+  parameters: Array.isArray(share.parameters) ? share.parameters : [],
+  responses:
+    share.responses && typeof share.responses === 'object' && !Array.isArray(share.responses)
+      ? share.responses
+      : {},
+});
+
 export const apiSpecService = {
   list: ({
     projectId,
@@ -44,25 +70,29 @@ export const apiSpecService = {
     tag,
     keyword,
   }: ApiSpecListParams) =>
-    request.get<ApiSpecListResponse>(`/projects/${projectId}/api-specs`, {
-      params: normalizePayload({
-        page,
-        page_size: pageSize,
-        version,
-        method,
-        tag,
-        keyword,
-      }),
-    }),
+    request
+      .get<ApiSpecListResponse>(`/projects/${projectId}/api-specs`, {
+        params: normalizePayload({
+          page,
+          page_size: pageSize,
+          version,
+          method,
+          tag,
+          keyword,
+        }),
+      })
+      .then(normalizeApiSpecListResponse),
 
   getById: (projectId: number | string, specId: number | string) =>
-    request.get<ApiSpec>(`/projects/${projectId}/api-specs/${specId}`),
+    request.get<ApiSpec>(`/projects/${projectId}/api-specs/${specId}`).then(normalizeApiSpec),
 
   getFullById: (projectId: number | string, specId: number | string) =>
-    request.get<ApiSpec>(`/projects/${projectId}/api-specs/${specId}/full`),
+    request.get<ApiSpec>(`/projects/${projectId}/api-specs/${specId}/full`).then(normalizeApiSpec),
 
   create: (projectId: number | string, data: CreateApiSpecRequest) =>
-    request.post<ApiSpec>(`/projects/${projectId}/api-specs`, normalizePayload(data)),
+    request
+      .post<ApiSpec>(`/projects/${projectId}/api-specs`, normalizePayload(data))
+      .then(normalizeApiSpec),
 
   createAIDraft: (projectId: number | string, data: CreateApiSpecAIDraftRequest) =>
     request.post<ApiSpecAIDraft>(`/projects/${projectId}/api-specs/ai-drafts`, normalizePayload(data)),
@@ -91,7 +121,9 @@ export const apiSpecService = {
     ),
 
   update: (projectId: number | string, specId: number | string, data: UpdateApiSpecRequest) =>
-    request.patch<ApiSpec>(`/projects/${projectId}/api-specs/${specId}`, normalizePayload(data)),
+    request
+      .patch<ApiSpec>(`/projects/${projectId}/api-specs/${specId}`, normalizePayload(data))
+      .then(normalizeApiSpec),
 
   delete: (projectId: number | string, specId: number | string) =>
     request.delete<void>(`/projects/${projectId}/api-specs/${specId}`),
@@ -136,9 +168,11 @@ export const apiSpecService = {
     request.delete<void>(`/projects/${projectId}/api-specs/${specId}/share`),
 
   getPublicShare: (slug: string) =>
-    request.get<PublicApiSpecShare>(`/public/api-spec-shares/${slug}`, {
-      skipAuth: true,
-    }),
+    request
+      .get<PublicApiSpecShare>(`/public/api-spec-shares/${slug}`, {
+        skipAuth: true,
+      })
+      .then(normalizePublicApiSpecShare),
 
   listCategories: (projectId: number | string) =>
     request.get<ProjectCategoryListResponse>(`/projects/${projectId}/categories`, {

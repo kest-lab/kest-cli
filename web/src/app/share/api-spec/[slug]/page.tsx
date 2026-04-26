@@ -37,7 +37,17 @@ async function fetchPublicShare(slug: string): Promise<PublicApiSpecShare> {
     throw new Error('Public API spec share response is missing data');
   }
 
-  return payload.data;
+  return {
+    ...payload.data,
+    tags: Array.isArray(payload.data.tags) ? payload.data.tags : [],
+    parameters: Array.isArray(payload.data.parameters) ? payload.data.parameters : [],
+    responses:
+      payload.data.responses &&
+      typeof payload.data.responses === 'object' &&
+      !Array.isArray(payload.data.responses)
+        ? payload.data.responses
+        : {},
+  };
 }
 
 export async function generateMetadata({

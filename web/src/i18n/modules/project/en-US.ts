@@ -47,7 +47,6 @@ const messages: ProjectMessages = {
     projects: 'Projects',
     project: 'Project',
     projectId: 'Project ID',
-    contentArea: 'Content area',
     role: 'Role',
     unknown: 'Unknown',
     notSet: 'Not set',

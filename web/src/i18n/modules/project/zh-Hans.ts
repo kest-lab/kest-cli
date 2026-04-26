@@ -45,7 +45,6 @@ const messages = {
     projects: '项目',
     project: '项目',
     projectId: '项目 ID',
-    contentArea: '内容区',
     role: '角色',
     unknown: '未知',
     notSet: '未设置',
