@@ -69,6 +69,7 @@ import {
 import { useEnvironments } from '@/hooks/use-environments';
 import { useCreateProjectHistory } from '@/hooks/use-histories';
 import { useImportMarkdownCollection, useImportPostmanCollection } from '@/hooks/use-importer';
+import { useT } from '@/i18n/client';
 import { collectionService } from '@/services/collection';
 import { localRunnerService } from '@/services/local-runner';
 import { useCreateRequest, useDeleteRequest, useUpdateRequest } from '@/hooks/use-requests';
@@ -1276,6 +1277,7 @@ export function ApiRequestWorkbench({
 }: {
   projectId: number;
 }) {
+  const t = useT('project');
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialState = useMemo(() => getInitialWorkbenchState(), []);
@@ -1789,12 +1791,12 @@ export function ApiRequestWorkbench({
       !Number.isInteger(persistedCollectionId) ||
       persistedCollectionId <= 0
     ) {
-      throw new Error('Move this request into a saved collection before sending it.');
+      throw new Error(t('collections.saveBeforeSend'));
     }
 
     if (options.requireRunnableUrl) {
       if (!tab.url.trim()) {
-        throw new Error('Enter a request URL before sending.');
+        throw new Error(t('collections.enterUrlBeforeSend'));
       }
     }
 
@@ -1823,7 +1825,7 @@ export function ApiRequestWorkbench({
 
   const ensurePersistedRequestForExamples = async (tab: RequestPageTab) => {
     if (!tab.collectionId || !isPersistedCollectionId(tab.collectionId)) {
-      throw new Error('Move this request into a saved collection before creating examples.');
+      throw new Error(t('collections.saveBeforeExamples'));
     }
 
     const collectionId = Number(tab.collectionId);
@@ -1854,7 +1856,7 @@ export function ApiRequestWorkbench({
     }
 
     if (!activeTab.collectionId || !isPersistedCollectionId(activeTab.collectionId)) {
-      toast.error('Move this request into a saved collection before creating examples.');
+      toast.error(t('collections.saveBeforeExamples'));
       return;
     }
 
@@ -1901,7 +1903,7 @@ export function ApiRequestWorkbench({
     }
 
     updateActiveTab((tab) => applyExampleToTab(tab, example));
-    toast.success(`Applied example "${example.name}"`);
+    toast.success(t('collections.applyExample', { name: example.name }));
   };
 
   const handleSaveLatestResponseToExample = async (example: RequestExample) => {
@@ -1911,7 +1913,7 @@ export function ApiRequestWorkbench({
 
     const responsePayload = toSaveExampleResponsePayload(activeTab.response);
     if (!responsePayload) {
-      toast.error('Send the request first so there is a real response to capture.');
+      toast.error(t('collections.sendBeforeCapture'));
       return;
     }
 
@@ -1992,7 +1994,7 @@ export function ApiRequestWorkbench({
 
   const handleUpdateExample = async (draft: ExampleFormDraft) => {
     if (!editingExampleId || !persistedActiveCollectionId || !persistedActiveRequestId) {
-      toast.error('Select a saved example before editing it.');
+      toast.error(t('collections.selectExampleBeforeEdit'));
       return;
     }
 
@@ -2064,7 +2066,7 @@ export function ApiRequestWorkbench({
 
   const openCollectionImportDialog = (collection: CollectionNode, kind: ImportDialogKind) => {
     if (!collection.isFolder) {
-      toast.error('Import can only target a folder collection or the project root.');
+      toast.error(t('collections.importTargetInvalid'));
       return;
     }
 
@@ -2100,8 +2102,8 @@ export function ApiRequestWorkbench({
     if (!importFile) {
       toast.error(
         importDialogTarget.kind === 'markdown'
-          ? 'Choose an API Markdown file before importing.'
-          : 'Choose a Postman collection file before importing.'
+          ? t('collections.chooseMarkdownFile')
+          : t('collections.choosePostmanFile')
       );
       return;
     }
@@ -2116,12 +2118,12 @@ export function ApiRequestWorkbench({
       );
 
       if (!targetCollection?.isFolder) {
-        toast.error('Import can only target a folder collection or the project root.');
+        toast.error(t('collections.importTargetInvalid'));
         return;
       }
 
       if (!isPersistedCollectionId(importDialogTarget.parentCollectionId)) {
-        toast.error('Save the target collection before importing into it.');
+        toast.error(t('collections.saveTargetBeforeImport'));
         return;
       }
 

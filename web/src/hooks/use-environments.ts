@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useT } from '@/i18n/client';
 import { environmentService } from '@/services/environment';
 import type {
   CreateEnvironmentRequest,
@@ -50,6 +51,7 @@ export function useEnvironment(projectId?: number | string, environmentId?: numb
 // 作用：创建成功后刷新列表并把新环境详情提前写入缓存。
 export function useCreateEnvironment(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: CreateEnvironmentRequest) => environmentService.create(projectId, data),
@@ -59,7 +61,7 @@ export function useCreateEnvironment(projectId: number | string) {
         environmentKeys.detail(projectId, environment.id),
         environment
       );
-      toast.success(`Created environment "${environment.name}"`);
+      toast.success(t.project('toasts.environmentCreated', { name: environment.name }));
     },
   });
 }
@@ -68,6 +70,7 @@ export function useCreateEnvironment(projectId: number | string) {
 // 作用：更新成功后同步刷新列表和详情缓存。
 export function useUpdateEnvironment(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -83,7 +86,7 @@ export function useUpdateEnvironment(projectId: number | string) {
         environmentKeys.detail(projectId, environment.id),
         environment
       );
-      toast.success(`Updated environment "${environment.name}"`);
+      toast.success(t.project('toasts.environmentUpdated', { name: environment.name }));
     },
   });
 }
@@ -92,6 +95,7 @@ export function useUpdateEnvironment(projectId: number | string) {
 // 作用：删除成功后清理详情缓存并刷新列表。
 export function useDeleteEnvironment(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (environmentId: number | string) =>
@@ -101,7 +105,7 @@ export function useDeleteEnvironment(projectId: number | string) {
       queryClient.removeQueries({
         queryKey: environmentKeys.detail(projectId, environmentId),
       });
-      toast.success('Environment deleted');
+      toast.success(t.project('toasts.environmentDeleted'));
     },
   });
 }
@@ -110,6 +114,7 @@ export function useDeleteEnvironment(projectId: number | string) {
 // 作用：复制成功后刷新列表，并把新环境详情写入缓存以便页面立即选中。
 export function useDuplicateEnvironment(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -125,7 +130,7 @@ export function useDuplicateEnvironment(projectId: number | string) {
         environmentKeys.detail(projectId, environment.id),
         environment
       );
-      toast.success(`Duplicated environment "${environment.name}"`);
+      toast.success(t.project('toasts.environmentDuplicated', { name: environment.name }));
     },
   });
 }

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { requestKeys } from '@/hooks/use-requests';
+import { useT } from '@/i18n/client';
 import { collectionService } from '@/services/collection';
 import type {
   CollectionListParams,
@@ -83,13 +84,14 @@ export function useProjectCollections(params?: CollectionListParams) {
 
 export function useCreateCollection(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: CreateCollectionRequest) => collectionService.create(projectId, data),
     onSuccess: (collection) => {
       queryClient.invalidateQueries({ queryKey: collectionKeys.project(projectId) });
       queryClient.setQueryData(collectionKeys.detail(projectId, collection.id), collection);
-      toast.success(`Created collection "${collection.name}"`);
+      toast.success(t.project('toasts.collectionCreated', { name: collection.name }));
     },
   });
 }
@@ -98,6 +100,7 @@ export function useCreateCollection(projectId: number | string) {
 // 作用：调用后端删除接口，并清理当前项目下 collection 相关缓存。
 export function useDeleteCollection(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (collectionId: number | string) =>
@@ -139,7 +142,7 @@ export function useDeleteCollection(projectId: number | string) {
       queryClient.removeQueries({
         queryKey: collectionKeys.detail(projectId, collectionId),
       });
-      toast.success('Collection deleted');
+      toast.success(t.project('toasts.collectionDeleted'));
     },
   });
 }
@@ -148,6 +151,7 @@ export function useDeleteCollection(projectId: number | string) {
 // 作用：提交名称等字段的更新，并刷新当前项目下的 collection 缓存。
 export function useUpdateCollection(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -160,7 +164,7 @@ export function useUpdateCollection(projectId: number | string) {
     onSuccess: (collection) => {
       queryClient.invalidateQueries({ queryKey: collectionKeys.project(projectId) });
       queryClient.setQueryData(collectionKeys.detail(projectId, collection.id), collection);
-      toast.success(`Updated collection "${collection.name}"`);
+      toast.success(t.project('toasts.collectionUpdated', { name: collection.name }));
     },
   });
 }

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useT } from '@/i18n/client';
 import { apiSpecService } from '@/services/api-spec';
 import type {
   AcceptApiSpecAIDraftRequest,
@@ -140,6 +141,7 @@ export function useGeneratedApiTest(projectId?: number | string, specId?: number
 // 作用：创建成功后刷新列表，并预写入新规格详情缓存。
 export function useCreateApiSpec(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: CreateApiSpecRequest) => apiSpecService.create(projectId, data),
@@ -147,7 +149,7 @@ export function useCreateApiSpec(projectId: number | string) {
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.lists(projectId) });
       queryClient.setQueryData(apiSpecKeys.detail(projectId, spec.id), spec);
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.full(projectId, spec.id) });
-      toast.success(`Created API spec ${spec.method} ${spec.path}`);
+      toast.success(t.project('toasts.apiSpecCreated', { method: spec.method, path: spec.path }));
     },
   });
 }
@@ -160,12 +162,13 @@ const emitDraftWarnings = (warnings?: string[]) => {
 // 作用：生成结构化草稿后直接写入 draft 缓存，供弹窗编辑与 refine 复用。
 export function useCreateApiSpecAIDraft(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: CreateApiSpecAIDraftRequest) => apiSpecService.createAIDraft(projectId, data),
     onSuccess: (draft) => {
       queryClient.setQueryData<ApiSpecAIDraft>(apiSpecKeys.aiDraft(projectId, draft.id), draft);
-      toast.success('Generated AI API spec draft');
+      toast.success(t.project('toasts.aiDraftGenerated'));
     },
   });
 }
@@ -174,6 +177,7 @@ export function useCreateApiSpecAIDraft(projectId: number | string) {
 // 作用：更新已有 draft，并保持 query cache 与服务端同步。
 export function useRefineApiSpecAIDraft(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -185,7 +189,7 @@ export function useRefineApiSpecAIDraft(projectId: number | string) {
     }) => apiSpecService.refineAIDraft(projectId, draftId, data),
     onSuccess: (draft) => {
       queryClient.setQueryData<ApiSpecAIDraft>(apiSpecKeys.aiDraft(projectId, draft.id), draft);
-      toast.success('Refined AI draft');
+      toast.success(t.project('toasts.aiDraftRefined'));
     },
   });
 }
@@ -194,6 +198,7 @@ export function useRefineApiSpecAIDraft(projectId: number | string) {
 // 作用：把 draft 落成正式 spec，并刷新列表/详情缓存。
 export function useAcceptApiSpecAIDraft(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -215,7 +220,10 @@ export function useAcceptApiSpecAIDraft(projectId: number | string) {
         status: 'accepted',
       });
       emitDraftWarnings(result.warnings);
-      toast.success(`Created API spec ${result.spec.method} ${result.spec.path}`);
+      toast.success(t.project('toasts.apiSpecCreated', {
+        method: result.spec.method,
+        path: result.spec.path,
+      }));
     },
   });
 }
@@ -224,6 +232,7 @@ export function useAcceptApiSpecAIDraft(projectId: number | string) {
 // 作用：更新成功后同步刷新列表、详情和完整详情缓存。
 export function useUpdateApiSpec(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({ specId, data }: { specId: number | string; data: UpdateApiSpecRequest }) =>
@@ -234,7 +243,7 @@ export function useUpdateApiSpec(projectId: number | string) {
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.full(projectId, spec.id) });
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.examples(projectId, spec.id) });
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.share(projectId, spec.id) });
-      toast.success(`Updated API spec ${spec.method} ${spec.path}`);
+      toast.success(t.project('toasts.apiSpecUpdated', { method: spec.method, path: spec.path }));
     },
   });
 }
@@ -243,13 +252,14 @@ export function useUpdateApiSpec(projectId: number | string) {
 // 作用：删除成功后清理该规格相关缓存并刷新列表。
 export function useDeleteApiSpec(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (specId: number | string) => apiSpecService.delete(projectId, specId),
     onSuccess: (_, specId) => {
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.lists(projectId) });
       queryClient.removeQueries({ queryKey: apiSpecKeys.spec(projectId, specId) });
-      toast.success('API spec deleted');
+      toast.success(t.project('toasts.apiSpecDeleted'));
     },
   });
 }
@@ -258,12 +268,13 @@ export function useDeleteApiSpec(projectId: number | string) {
 // 作用：导入成功后刷新列表并提示 upsert 已完成。
 export function useImportApiSpecs(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: ImportApiSpecsRequest) => apiSpecService.import(projectId, data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.lists(projectId) });
-      toast.success(result.message || 'Specs imported successfully');
+      toast.success(result.message || t.project('toasts.specsImported'));
     },
   });
 }
@@ -281,6 +292,7 @@ export function useExportApiSpecs(projectId: number | string) {
 // 作用：单条生成成功后刷新对应规格详情和列表缓存。
 export function useGenApiDoc(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({ specId, lang }: { specId: number | string; lang: ApiSpecLanguage }) =>
@@ -290,7 +302,7 @@ export function useGenApiDoc(projectId: number | string) {
       queryClient.setQueryData(apiSpecKeys.detail(projectId, spec.id), spec);
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.full(projectId, spec.id) });
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.share(projectId, spec.id) });
-      toast.success(`Generated ${spec.path} documentation`);
+      toast.success(t.project('toasts.documentationGenerated', { path: spec.path }));
     },
   });
 }
@@ -299,6 +311,7 @@ export function useGenApiDoc(projectId: number | string) {
 // 作用：把 flow_content 缓存在 query 中，方便详情页直接展示。
 export function useGenApiTest(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({ specId, lang }: { specId: number | string; lang: ApiSpecLanguage }) =>
@@ -308,7 +321,7 @@ export function useGenApiTest(projectId: number | string) {
         apiSpecKeys.generatedTest(projectId, variables.specId, variables.lang),
         result.flow_content
       );
-      toast.success('Generated Kest flow test');
+      toast.success(t.project('toasts.apiTestGenerated'));
     },
   });
 }
@@ -317,12 +330,16 @@ export function useGenApiTest(projectId: number | string) {
 // 作用：批量任务提交成功后统一失效当前项目下的规格缓存。
 export function useBatchGenApiDocs(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: BatchGenDocRequest) => apiSpecService.batchGenDoc(projectId, data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.project(projectId) });
-      toast.success(`Queued ${result.queued} specs, skipped ${result.skipped}`);
+      toast.success(t.project('toasts.batchDocsQueued', {
+        queued: result.queued,
+        skipped: result.skipped,
+      }));
     },
   });
 }
@@ -331,6 +348,7 @@ export function useBatchGenApiDocs(projectId: number | string) {
 // 作用：创建成功后刷新 examples 列表和完整规格详情。
 export function useCreateApiExample(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({ specId, data }: { specId: number | string; data: CreateApiExampleRequest }) =>
@@ -339,7 +357,7 @@ export function useCreateApiExample(projectId: number | string) {
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.examples(projectId, variables.specId) });
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.full(projectId, variables.specId) });
       queryClient.invalidateQueries({ queryKey: apiSpecKeys.share(projectId, variables.specId) });
-      toast.success('API example created');
+      toast.success(t.project('toasts.apiExampleCreated'));
     },
   });
 }
@@ -348,12 +366,13 @@ export function useCreateApiExample(projectId: number | string) {
 // 作用：返回当前规格的公开 slug，并同步本地缓存。
 export function usePublishApiSpecShare(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (specId: number | string) => apiSpecService.publishShare(projectId, specId),
     onSuccess: (share) => {
       queryClient.setQueryData(apiSpecKeys.share(projectId, share.api_spec_id), share);
-      toast.success('Public share published');
+      toast.success(t.project('toasts.publicSharePublished'));
     },
   });
 }
@@ -362,12 +381,13 @@ export function usePublishApiSpecShare(projectId: number | string) {
 // 作用：关闭公开链接，并把分享查询缓存直接置空。
 export function useDeleteApiSpecShare(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (specId: number | string) => apiSpecService.deleteShare(projectId, specId),
     onSuccess: (_, specId) => {
       queryClient.setQueryData(apiSpecKeys.share(projectId, specId), null);
-      toast.success('Public share disabled');
+      toast.success(t.project('toasts.publicShareDisabled'));
     },
   });
 }

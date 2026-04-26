@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useT } from '@/i18n/client';
 import { testCaseService } from '@/services/test-case';
 import type {
   CreateTestCaseFromSpecRequest,
@@ -87,6 +88,7 @@ export function useTestCaseRun(
 
 export function useCreateTestCase(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: CreateTestCaseRequest) => testCaseService.create(projectId, data),
@@ -96,13 +98,14 @@ export function useCreateTestCase(projectId: number | string) {
         testCaseKeys.detail(projectId, testCase.id),
         testCase
       );
-      toast.success(`Created test case "${testCase.name}"`);
+      toast.success(t.project('toasts.testCaseCreated', { name: testCase.name }));
     },
   });
 }
 
 export function useUpdateTestCase(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -118,13 +121,14 @@ export function useUpdateTestCase(projectId: number | string) {
         testCaseKeys.detail(projectId, testCase.id),
         testCase
       );
-      toast.success(`Updated test case "${testCase.name}"`);
+      toast.success(t.project('toasts.testCaseUpdated', { name: testCase.name }));
     },
   });
 }
 
 export function useDeleteTestCase(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (testCaseId: number | string) => testCaseService.delete(projectId, testCaseId),
@@ -136,13 +140,14 @@ export function useDeleteTestCase(projectId: number | string) {
       queryClient.removeQueries({
         queryKey: testCaseKeys.runs(projectId, testCaseId),
       });
-      toast.success('Test case deleted');
+      toast.success(t.project('toasts.testCaseDeleted'));
     },
   });
 }
 
 export function useDuplicateTestCase(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -158,13 +163,14 @@ export function useDuplicateTestCase(projectId: number | string) {
         testCaseKeys.detail(projectId, testCase.id),
         testCase
       );
-      toast.success(`Duplicated test case "${testCase.name}"`);
+      toast.success(t.project('toasts.testCaseDuplicated', { name: testCase.name }));
     },
   });
 }
 
 export function useCreateTestCaseFromSpec(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: CreateTestCaseFromSpecRequest) => testCaseService.fromSpec(projectId, data),
@@ -174,13 +180,14 @@ export function useCreateTestCaseFromSpec(projectId: number | string) {
         testCaseKeys.detail(projectId, testCase.id),
         testCase
       );
-      toast.success(`Created test case from API spec "${testCase.name}"`);
+      toast.success(t.project('toasts.testCaseFromSpecCreated', { name: testCase.name }));
     },
   });
 }
 
 export function useRunTestCase(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -196,11 +203,11 @@ export function useRunTestCase(projectId: number | string) {
       });
 
       if (result.status === 'pass' || result.status === 'passed') {
-        toast.success('Test case run passed');
+        toast.success(t.project('toasts.testCaseRunPassed'));
         return;
       }
 
-      toast.error(result.message || `Test case run finished with status ${result.status}`);
+      toast.error(result.message || t.project('toasts.testCaseRunFinished', { status: result.status }));
     },
   });
 }

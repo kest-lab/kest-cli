@@ -98,6 +98,7 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProjectMemberRole } from '@/hooks/use-members';
 import { useProject } from '@/hooks/use-projects';
+import { useT } from '@/i18n/client';
 import { flowService } from '@/services/flow';
 import {
   extractFlowParameterCandidates,
@@ -1805,6 +1806,7 @@ export function ProjectFlowManagementPage({
   projectId: number;
   selectedItemId?: number | null;
 }) {
+  const t = useT('project');
   const router = useRouter();
   const isMobile = useIsMobile();
   const projectQuery = useProject(projectId);
@@ -2009,7 +2011,7 @@ export function ProjectFlowManagementPage({
   };
 
   const handleDeleteFlow = async (flowId: number, flowName: string) => {
-    if (!window.confirm(`Delete flow "${flowName}"?`)) {
+    if (!window.confirm(t('toasts.flowDeleteConfirm', { name: flowName }))) {
       return;
     }
 

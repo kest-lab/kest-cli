@@ -107,7 +107,7 @@ export function ConsoleShell({
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform group-hover:scale-110">
               <BarChart3 className="h-5 w-5" />
             </div>
-            <span className="text-xl font-bold tracking-tight">KEST Console</span>
+            <span className="text-xl font-bold tracking-tight">{t.console('shell.title')}</span>
           </Link>
         </div>
 
@@ -117,7 +117,7 @@ export function ConsoleShell({
           <Button variant="ghost" isIcon className="relative h-9 w-9 rounded-full">
             <Bell className="h-4 w-4 text-text-muted" />
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-bg-surface bg-primary" />
-            <span className="sr-only">Notifications</span>
+            <span className="sr-only">{t.console('shell.notifications')}</span>
           </Button>
 
           <DropdownMenu>
@@ -132,7 +132,7 @@ export function ConsoleShell({
                   <AvatarImage src={user?.avatar} />
                   <AvatarFallback className="bg-primary/10 text-primary">{initials}</AvatarFallback>
                 </Avatar>
-                <span className="sr-only">Profile</span>
+                <span className="sr-only">{t.console('shell.profile')}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-xl p-1 shadow-premium">
@@ -151,7 +151,7 @@ export function ConsoleShell({
                 onClick={handleLogout}
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Logout</span>
+                <span>{t.console('shell.logout')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -207,7 +207,7 @@ export function ConsoleShell({
               href={ROUTES.SITE.HOME}
               className="mt-4 flex h-8 items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
             >
-              <span>Return to Site</span>
+              <span>{t.console('shell.returnToSite')}</span>
             </Link>
           </div>
         </aside>

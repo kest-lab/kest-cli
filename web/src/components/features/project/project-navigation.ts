@@ -23,11 +23,19 @@ export type ProjectWorkspaceModule =
   | 'histories'
   | 'flows';
 
+export type ProjectWorkspaceModuleI18nKey =
+  | 'apiSpecs'
+  | 'testCases'
+  | 'environments'
+  | 'collections'
+  | 'categories'
+  | 'members'
+  | 'histories'
+  | 'flows';
+
 export interface ProjectWorkspaceModuleMeta {
   value: ProjectWorkspaceModule;
-  label: string;
-  shortLabel: string;
-  description: string;
+  i18nKey: ProjectWorkspaceModuleI18nKey;
   icon: LucideIcon;
   status?: 'ready' | 'planned';
 }
@@ -35,65 +43,49 @@ export interface ProjectWorkspaceModuleMeta {
 export const PROJECT_WORKSPACE_MODULES: ProjectWorkspaceModuleMeta[] = [
   {
     value: 'api-specs',
-    label: 'API Specs',
-    shortLabel: 'Specs',
-    description: 'Describe and curate the API surface, with AI-assisted drafting as the default entry.',
+    i18nKey: 'apiSpecs',
     icon: FileJson2,
     status: 'ready',
   },
   {
     value: 'environments',
-    label: 'Environments',
-    shortLabel: 'Envs',
-    description: 'Configure base URLs, variables, and shared headers before execution starts.',
+    i18nKey: 'environments',
     icon: Globe,
     status: 'ready',
   },
   {
     value: 'test-cases',
-    label: 'Test Cases',
-    shortLabel: 'Tests',
-    description: 'Generate and manage validation suites derived from API specs.',
+    i18nKey: 'testCases',
     icon: FlaskConical,
     status: 'ready',
   },
   {
     value: 'collections',
-    label: 'Collections',
-    shortLabel: 'Collections',
-    description: 'Use scratchpads and reusable request groups for manual debugging and local execution.',
+    i18nKey: 'collections',
     icon: FolderOpen,
     status: 'ready',
   },
   {
     value: 'categories',
-    label: 'Categories',
-    shortLabel: 'Categories',
-    description: 'Group growing resources by domain, owner, or area once the surface becomes large.',
+    i18nKey: 'categories',
     icon: Tags,
     status: 'ready',
   },
   {
     value: 'members',
-    label: 'Members',
-    shortLabel: 'Members',
-    description: 'Manage project access, operational roles, and who can change project resources.',
+    i18nKey: 'members',
     icon: Users,
     status: 'ready',
   },
   {
     value: 'histories',
-    label: 'History',
-    shortLabel: 'History',
-    description: 'Review activity and execution records scoped to this project.',
+    i18nKey: 'histories',
     icon: History,
     status: 'ready',
   },
   {
     value: 'flows',
-    label: 'Flows',
-    shortLabel: 'Flows',
-    description: 'Open reusable workflow assets and orchestration definitions.',
+    i18nKey: 'flows',
     icon: FolderGit2,
     status: 'ready',
   },

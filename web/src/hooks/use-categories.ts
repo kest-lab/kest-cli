@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useT } from '@/i18n/client';
 import { categoryService } from '@/services/category';
 import type {
   CategoryListParams,
@@ -57,6 +58,7 @@ export function useProjectCategory(projectId?: number | string, categoryId?: num
 // 作用：创建成功后统一刷新分类域和依赖分类的上层缓存。
 export function useCreateCategory(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: CreateCategoryRequest) => categoryService.create(projectId, data),
@@ -65,7 +67,7 @@ export function useCreateCategory(projectId: number | string) {
       queryClient.invalidateQueries({ queryKey: projectStatsKey(projectId) });
       queryClient.invalidateQueries({ queryKey: apiSpecCategoriesKey(projectId) });
       queryClient.setQueryData(categoryKeys.detail(projectId, category.id), category);
-      toast.success(`Created category "${category.name}"`);
+      toast.success(t.project('toasts.categoryCreated', { name: category.name }));
     },
   });
 }
@@ -74,6 +76,7 @@ export function useCreateCategory(projectId: number | string) {
 // 作用：更新成功后保持列表、详情、项目统计和分类下拉同步。
 export function useUpdateCategory(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -88,7 +91,7 @@ export function useUpdateCategory(projectId: number | string) {
       queryClient.invalidateQueries({ queryKey: projectStatsKey(projectId) });
       queryClient.invalidateQueries({ queryKey: apiSpecCategoriesKey(projectId) });
       queryClient.setQueryData(categoryKeys.detail(projectId, category.id), category);
-      toast.success(`Updated category "${category.name}"`);
+      toast.success(t.project('toasts.categoryUpdated', { name: category.name }));
     },
   });
 }
@@ -97,6 +100,7 @@ export function useUpdateCategory(projectId: number | string) {
 // 作用：删除成功后清理详情缓存，并触发列表和关联模块刷新。
 export function useDeleteCategory(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (categoryId: number | string) => categoryService.delete(projectId, categoryId),
@@ -105,7 +109,7 @@ export function useDeleteCategory(projectId: number | string) {
       queryClient.invalidateQueries({ queryKey: projectStatsKey(projectId) });
       queryClient.invalidateQueries({ queryKey: apiSpecCategoriesKey(projectId) });
       queryClient.removeQueries({ queryKey: categoryKeys.detail(projectId, categoryId) });
-      toast.success('Category deleted');
+      toast.success(t.project('toasts.categoryDeleted'));
     },
   });
 }
@@ -114,13 +118,14 @@ export function useDeleteCategory(projectId: number | string) {
 // 作用：保存同级分类顺序，并刷新分类列表和 API Specs 里的分类选项。
 export function useSortCategories(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: SortCategoriesRequest) => categoryService.sort(projectId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: categoryKeys.project(projectId) });
       queryClient.invalidateQueries({ queryKey: apiSpecCategoriesKey(projectId) });
-      toast.success('Category order saved');
+      toast.success(t.project('toasts.categoryOrderSaved'));
     },
   });
 }

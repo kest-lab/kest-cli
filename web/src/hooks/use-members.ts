@@ -2,8 +2,9 @@
 
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { memberService } from '@/services/member';
 import { projectKeys } from '@/hooks/use-projects';
+import { useT } from '@/i18n/client';
+import { memberService } from '@/services/member';
 import type {
   CreateProjectMemberRequest,
   UpdateProjectMemberRequest,
@@ -51,12 +52,13 @@ const invalidateMemberProjectData = (
 // 作用：成员创建后刷新成员列表、当前用户角色和项目成员统计。
 export function useCreateProjectMember(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: CreateProjectMemberRequest) => memberService.create(projectId, data),
     onSuccess: () => {
       invalidateMemberProjectData(queryClient, projectId);
-      toast.success('Member added');
+      toast.success(t.project('toasts.memberAdded'));
     },
   });
 }
@@ -65,6 +67,7 @@ export function useCreateProjectMember(projectId: number | string) {
 // 作用：角色更新后保持成员列表和项目统计同步。
 export function useUpdateProjectMember(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -76,7 +79,7 @@ export function useUpdateProjectMember(projectId: number | string) {
     }) => memberService.update(projectId, userId, data),
     onSuccess: () => {
       invalidateMemberProjectData(queryClient, projectId);
-      toast.success('Member role updated');
+      toast.success(t.project('toasts.memberRoleUpdated'));
     },
   });
 }
@@ -85,12 +88,13 @@ export function useUpdateProjectMember(projectId: number | string) {
 // 作用：成员移除后刷新成员列表并同步项目统计数据。
 export function useDeleteProjectMember(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (userId: number | string) => memberService.delete(projectId, userId),
     onSuccess: () => {
       invalidateMemberProjectData(queryClient, projectId);
-      toast.success('Member removed');
+      toast.success(t.project('toasts.memberRemoved'));
     },
   });
 }

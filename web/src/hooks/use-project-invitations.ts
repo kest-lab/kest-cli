@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { memberKeys } from '@/hooks/use-members';
 import { projectKeys } from '@/hooks/use-projects';
+import { useT } from '@/i18n/client';
 import { projectInvitationService } from '@/services/project-invitation';
 import type { CreateProjectInvitationRequest } from '@/types/project-invitation';
 
@@ -27,6 +28,7 @@ export function useProjectInvitations(projectId?: number | string, enabled = tru
 
 export function useCreateProjectInvitation(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: CreateProjectInvitationRequest) =>
@@ -34,20 +36,21 @@ export function useCreateProjectInvitation(projectId: number | string) {
     onSuccess: invitation => {
       queryClient.invalidateQueries({ queryKey: projectInvitationKeys.project(projectId) });
       queryClient.setQueryData(projectInvitationKeys.detail(invitation.slug), invitation);
-      toast.success('Invite link generated');
+      toast.success(t.project('toasts.inviteLinkGenerated'));
     },
   });
 }
 
 export function useDeleteProjectInvitation(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (invitationId: number | string) =>
       projectInvitationService.revoke(projectId, invitationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectInvitationKeys.project(projectId) });
-      toast.success('Invite link revoked');
+      toast.success(t.project('toasts.inviteLinkRevoked'));
     },
   });
 }
@@ -63,6 +66,7 @@ export function useProjectInvitationDetail(slug?: string) {
 
 export function useAcceptProjectInvitation(slug: string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: () => projectInvitationService.accept(slug),
@@ -71,19 +75,20 @@ export function useAcceptProjectInvitation(slug: string) {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
       queryClient.invalidateQueries({ queryKey: projectKeys.projectStats(result.project_id) });
       queryClient.invalidateQueries({ queryKey: memberKeys.project(result.project_id) });
-      toast.success('Invitation accepted');
+      toast.success(t.project('toasts.invitationAccepted'));
     },
   });
 }
 
 export function useRejectProjectInvitation(slug: string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: () => projectInvitationService.reject(slug),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectInvitationKeys.detail(slug) });
-      toast.success('Invitation rejected');
+      toast.success(t.project('toasts.invitationRejected'));
     },
   });
 }

@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useT } from '@/i18n/client';
 import { requestService } from '@/services/request';
 import type { CreateRequestRequest, UpdateRequestRequest } from '@/types/request';
 
@@ -21,6 +22,7 @@ export const requestKeys = {
 
 export function useCreateRequest(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -34,13 +36,14 @@ export function useCreateRequest(projectId: number | string) {
       queryClient.invalidateQueries({
         queryKey: requestKeys.collection(projectId, variables.collectionId),
       });
-      toast.success(`Created request "${createdRequest.name}"`);
+      toast.success(t.project('toasts.requestCreated', { name: createdRequest.name }));
     },
   });
 }
 
 export function useUpdateRequest(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -59,13 +62,14 @@ export function useUpdateRequest(projectId: number | string) {
       queryClient.invalidateQueries({
         queryKey: requestKeys.detail(projectId, variables.collectionId, variables.requestId),
       });
-      toast.success(`Updated request "${updatedRequest.name}"`);
+      toast.success(t.project('toasts.requestUpdated', { name: updatedRequest.name }));
     },
   });
 }
 
 export function useDeleteRequest(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -82,7 +86,7 @@ export function useDeleteRequest(projectId: number | string) {
       queryClient.removeQueries({
         queryKey: requestKeys.detail(projectId, variables.collectionId, variables.requestId),
       });
-      toast.success('Request deleted');
+      toast.success(t.project('toasts.requestDeleted'));
     },
   });
 }

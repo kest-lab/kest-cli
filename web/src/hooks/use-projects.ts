@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useT } from '@/i18n/client';
 import { projectService } from '@/services/project';
 import type {
   CreateProjectRequest,
@@ -57,13 +58,14 @@ export function useProjectStats(id?: number | string) {
 // 作用：调用创建接口后刷新列表，并把新项目详情提前写入缓存。
 export function useCreateProject() {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: CreateProjectRequest) => projectService.create(data),
     onSuccess: (project) => {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
       queryClient.setQueryData(projectKeys.detail(project.id), project);
-      toast.success(`Created project "${project.name}"`);
+      toast.success(t.project('toasts.projectCreated', { name: project.name }));
     },
   });
 }
@@ -72,6 +74,7 @@ export function useCreateProject() {
 // 作用：提交项目编辑后同步刷新列表、详情和统计缓存。
 export function useUpdateProject() {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number | string; data: UpdateProjectRequest }) =>
@@ -80,7 +83,7 @@ export function useUpdateProject() {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
       queryClient.setQueryData(projectKeys.detail(project.id), project);
       queryClient.invalidateQueries({ queryKey: projectKeys.projectStats(project.id) });
-      toast.success(`Updated project "${project.name}"`);
+      toast.success(t.project('toasts.projectUpdated', { name: project.name }));
     },
   });
 }
@@ -89,6 +92,7 @@ export function useUpdateProject() {
 // 作用：项目删除成功后移除对应详情/统计缓存，并触发列表刷新。
 export function useDeleteProject() {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (id: number | string) => projectService.delete(id),
@@ -96,7 +100,7 @@ export function useDeleteProject() {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
       queryClient.removeQueries({ queryKey: projectKeys.detail(id) });
       queryClient.removeQueries({ queryKey: projectKeys.projectStats(id) });
-      toast.success('Project deleted');
+      toast.success(t.project('toasts.projectDeleted'));
     },
   });
 }
@@ -104,6 +108,8 @@ export function useDeleteProject() {
 // 生成 CLI token mutation。
 // 作用：为当前项目签发一次性展示的 project-scoped CLI token，供 `kest sync` 上传使用。
 export function useGenerateProjectCliToken() {
+  const t = useT();
+
   return useMutation({
     mutationFn: ({
       id,
@@ -113,7 +119,7 @@ export function useGenerateProjectCliToken() {
       data?: GenerateProjectCliTokenRequest;
     }) => projectService.generateCliToken(id, data),
     onSuccess: () => {
-      toast.success('Generated CLI token');
+      toast.success(t.project('toasts.cliTokenGenerated'));
     },
   });
 }

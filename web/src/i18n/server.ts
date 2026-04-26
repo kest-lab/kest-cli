@@ -28,6 +28,8 @@ export async function getT(scope?: string) {
     dashboardT,
     testT,
     marketingT,
+    projectT,
+    consoleT,
   ] = await Promise.all([
     getTranslations('common') as Promise<TranslatorFn>,
     getTranslations('auth') as Promise<TranslatorFn>,
@@ -38,6 +40,8 @@ export async function getT(scope?: string) {
     getTranslations('dashboard') as Promise<TranslatorFn>,
     getTranslations('test') as Promise<TranslatorFn>,
     getTranslations('marketing') as Promise<TranslatorFn>,
+    getTranslations('project') as Promise<TranslatorFn>,
+    getTranslations('console') as Promise<TranslatorFn>,
   ]);
 
   const namespaces: Translators = {
@@ -50,6 +54,8 @@ export async function getT(scope?: string) {
     dashboard: dashboardT as Translators['dashboard'],
     test: testT as Translators['test'],
     marketing: marketingT as Translators['marketing'],
+    project: projectT as Translators['project'],
+    console: consoleT as Translators['console'],
   };
 
   const translate = rootT as unknown as UnifiedTranslations;

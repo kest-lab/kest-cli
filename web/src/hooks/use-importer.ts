@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { collectionKeys } from '@/hooks/use-collections';
 import { requestKeys } from '@/hooks/use-requests';
+import { useT } from '@/i18n/client';
 import { importerService } from '@/services/importer';
 import type {
   ImportMarkdownCollectionRequest,
@@ -12,6 +13,7 @@ import type {
 
 export function useImportPostmanCollection(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: ImportPostmanCollectionRequest) =>
@@ -19,13 +21,14 @@ export function useImportPostmanCollection(projectId: number | string) {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: collectionKeys.project(projectId) });
       queryClient.invalidateQueries({ queryKey: requestKeys.project(projectId) });
-      toast.success(result.message || 'Postman collection imported');
+      toast.success(result.message || t.project('toasts.postmanImported'));
     },
   });
 }
 
 export function useImportMarkdownCollection(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: ImportMarkdownCollectionRequest) =>
@@ -33,9 +36,7 @@ export function useImportMarkdownCollection(projectId: number | string) {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: collectionKeys.project(projectId) });
       queryClient.invalidateQueries({ queryKey: requestKeys.project(projectId) });
-      toast.success(
-        `Imported ${result.requests_created} request${result.requests_created === 1 ? '' : 's'} from API Markdown`
-      );
+      toast.success(t.project('toasts.markdownImported', { count: result.requests_created }));
     },
   });
 }

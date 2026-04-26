@@ -56,6 +56,7 @@ import {
   useProjectStats,
   useUpdateProject,
 } from '@/hooks/use-projects';
+import { useT } from '@/i18n/client';
 import type {
   ApiProject,
   GenerateProjectCliTokenResponse,
@@ -319,6 +320,7 @@ function ModuleShortcut({
  * API Specs -> Environments -> Test Cases -> operational modules.
  */
 export function ProjectDetailPage({ projectId }: { projectId: number }) {
+  const t = useT('project');
   const router = useRouter();
   const [formMode, setFormMode] = useState<ProjectFormMode>('edit');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -394,7 +396,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number }) {
       await navigator.clipboard.writeText(value);
       toast.success(successMessage);
     } catch {
-      toast.error('Failed to copy to clipboard');
+      toast.error(t('toasts.copyFailed'));
     }
   };
 

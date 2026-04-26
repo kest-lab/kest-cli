@@ -9,7 +9,9 @@ import {
   PROJECT_WORKSPACE_MODULES,
   buildProjectWorkspaceRoute,
 } from '@/components/features/project/project-navigation';
+import { getProjectModuleCopy } from '@/components/features/project/project-i18n';
 import { buildProjectDetailRoute } from '@/constants/routes';
+import { useT } from '@/i18n/client';
 import { cn } from '@/utils';
 
 export function ProjectWorkspaceLayout({
@@ -19,6 +21,7 @@ export function ProjectWorkspaceLayout({
   projectId: number;
   children: React.ReactNode;
 }) {
+  const t = useT('project');
   const pathname = usePathname();
   const readyModules = PROJECT_WORKSPACE_MODULES.filter((item) => item.status !== 'planned');
   const plannedModules = PROJECT_WORKSPACE_MODULES.filter((item) => item.status === 'planned');
@@ -67,7 +70,7 @@ export function ProjectWorkspaceLayout({
                     >
                       <Icon className="h-3 w-3" />
                     </div>
-                    <span>{item.shortLabel}</span>
+                    <span>{getProjectModuleCopy(t, item.i18nKey, 'shortLabel')}</span>
                   </Link>
                 );
               })}
@@ -83,9 +86,9 @@ export function ProjectWorkspaceLayout({
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-text-muted">
                       <Icon className="h-3 w-3" />
                     </div>
-                    <span>{item.shortLabel}</span>
+                    <span>{getProjectModuleCopy(t, item.i18nKey, 'shortLabel')}</span>
                     <span className="text-[10px] uppercase tracking-[0.16em] text-text-muted/80">
-                      Soon
+                      {t('common.soon')}
                     </span>
                   </div>
                 );
@@ -139,7 +142,9 @@ export function ProjectWorkspaceLayout({
                         <Icon className="h-3 w-3" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[11px] font-medium leading-4">{item.label}</p>
+                        <p className="text-[11px] font-medium leading-4">
+                          {getProjectModuleCopy(t, item.i18nKey, 'label')}
+                        </p>
                       </div>
                     </Link>
                   );
@@ -162,9 +167,11 @@ export function ProjectWorkspaceLayout({
                             <Icon className="h-3 w-3" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[11px] font-medium leading-4">{item.label}</p>
+                            <p className="text-[11px] font-medium leading-4">
+                              {getProjectModuleCopy(t, item.i18nKey, 'label')}
+                            </p>
                             <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-text-muted/80">
-                              Soon
+                              {t('common.soon')}
                             </p>
                           </div>
                         </div>

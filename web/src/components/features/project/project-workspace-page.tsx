@@ -67,6 +67,7 @@ import {
   flattenProjectCategories,
 } from '@/components/features/project/category-helpers';
 import { ProjectFlowManagementPage } from '@/components/features/project/flow-management-page';
+import { getProjectModuleCopy } from '@/components/features/project/project-i18n';
 import {
   buildProjectWorkspaceRoute,
   getProjectWorkspaceModuleMeta,
@@ -113,6 +114,7 @@ import {
   PROJECT_MEMBER_WRITE_ROLES,
   type ProjectMemberRole,
 } from '@/types/member';
+import { useT } from '@/i18n/client';
 import { cn, formatDate } from '@/utils';
 
 const MAX_MODULE_ITEMS = 500;
@@ -169,7 +171,11 @@ const getRoleLabel = (role?: ProjectMemberRole) => {
 
 const parseObjectJsonInput = <T extends Record<string, unknown> | Record<string, string>>(
   value: string,
-  label: string
+  label: string,
+  messages?: {
+    invalidJson: string;
+    invalidObject: string;
+  }
 ) => {
   const trimmedValue = value.trim();
 
@@ -182,11 +188,11 @@ const parseObjectJsonInput = <T extends Record<string, unknown> | Record<string,
   try {
     parsed = JSON.parse(trimmedValue);
   } catch {
-    throw new Error(`${label} must be a valid JSON object.`);
+    throw new Error(messages?.invalidJson ?? `${label} must be a valid JSON object.`);
   }
 
   if (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null) {
-    throw new Error(`${label} must be a JSON object.`);
+    throw new Error(messages?.invalidObject ?? `${label} must be a JSON object.`);
   }
 
   return parsed as T;
@@ -231,6 +237,7 @@ function EnvironmentFormDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: CreateEnvironmentRequest | UpdateEnvironmentRequest) => Promise<void>;
 }) {
+  const t = useT('project');
   const [draft, setDraft] = useState<EnvironmentFormDraft>(() => getEnvironmentFormDraft(environment));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -250,20 +257,34 @@ function EnvironmentFormDialog({
     let headers: Record<string, string> | undefined;
 
     if (!trimmedName) {
-      nextErrors.name = 'Environment name is required.';
+      nextErrors.name = t('environments.nameRequired');
     }
 
     try {
-      variables = parseObjectJsonInput<Record<string, unknown>>(draft.variables, 'Variables');
+      variables = parseObjectJsonInput<Record<string, unknown>>(
+        draft.variables,
+        t('common.variablesJson'),
+        {
+          invalidJson: t('common.jsonMustBeValidObject', { label: t('common.variablesJson') }),
+          invalidObject: t('common.jsonMustBeObject', { label: t('common.variablesJson') }),
+        }
+      );
     } catch (error) {
-      nextErrors.variables = error instanceof Error ? error.message : 'Unable to parse variables.';
+      nextErrors.variables = error instanceof Error ? error.message : t('common.parseFailed', { label: t('common.variablesJson') });
     }
 
     try {
-      const parsedHeaders = parseObjectJsonInput<Record<string, unknown>>(draft.headers, 'Headers');
+      const parsedHeaders = parseObjectJsonInput<Record<string, unknown>>(
+        draft.headers,
+        t('common.headersJson'),
+        {
+          invalidJson: t('common.jsonMustBeValidObject', { label: t('common.headersJson') }),
+          invalidObject: t('common.jsonMustBeObject', { label: t('common.headersJson') }),
+        }
+      );
       headers = parsedHeaders ? toStringRecord(parsedHeaders) : undefined;
     } catch (error) {
-      nextErrors.headers = error instanceof Error ? error.message : 'Unable to parse headers.';
+      nextErrors.headers = error instanceof Error ? error.message : t('common.parseFailed', { label: t('common.headersJson') });
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -284,11 +305,11 @@ function EnvironmentFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>{mode === 'create' ? 'Create Environment' : 'Edit Environment'}</DialogTitle>
+          <DialogTitle>{mode === 'create' ? t('environments.createDialogTitle') : t('environments.editDialogTitle')}</DialogTitle>
           <DialogDescription>
             {mode === 'create'
-              ? 'Create a project-scoped environment with base URL, variables, and headers.'
-              : 'Update the selected project-scoped environment.'}
+              ? t('environments.createDialogDescription')
+              : t('environments.editDialogDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -301,16 +322,16 @@ function EnvironmentFormDialog({
             </div>
           ) : mode === 'edit' && !environment ? (
             <Alert className="mt-2">
-              <AlertTitle>Unable to load environment details</AlertTitle>
+              <AlertTitle>{t('environments.unableToLoadDetails')}</AlertTitle>
               <AlertDescription>
-                The selected environment details are not available yet. Close this dialog and try again.
+                {t('environments.unableToLoadDetailsDescription')}
               </AlertDescription>
             </Alert>
           ) : (
             <form id="environment-form" className="space-y-4 py-1" onSubmit={handleSubmit}>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="environment-name">Name</Label>
+                  <Label htmlFor="environment-name">{t('common.name')}</Label>
                   <Input
                     id="environment-name"
                     value={draft.name}
@@ -322,7 +343,7 @@ function EnvironmentFormDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="environment-display-name">Display Name</Label>
+                  <Label htmlFor="environment-display-name">{t('common.displayName')}</Label>
                   <Input
                     id="environment-display-name"
                     value={draft.displayName}
@@ -334,7 +355,7 @@ function EnvironmentFormDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="environment-base-url">Base URL</Label>
+                <Label htmlFor="environment-base-url">{t('common.baseUrl')}</Label>
                 <Input
                   id="environment-base-url"
                   value={draft.baseUrl}
@@ -346,7 +367,7 @@ function EnvironmentFormDialog({
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="environment-variables">Variables JSON</Label>
+                  <Label htmlFor="environment-variables">{t('common.variablesJson')}</Label>
                   <Textarea
                     id="environment-variables"
                     value={draft.variables}
@@ -359,7 +380,7 @@ function EnvironmentFormDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="environment-headers">Headers JSON</Label>
+                  <Label htmlFor="environment-headers">{t('common.headersJson')}</Label>
                   <Textarea
                     id="environment-headers"
                     value={draft.headers}
@@ -377,7 +398,7 @@ function EnvironmentFormDialog({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
@@ -385,7 +406,7 @@ function EnvironmentFormDialog({
             loading={isSubmitting}
             disabled={(mode === 'edit' && (isLoadingEnvironment || !environment)) || isSubmitting}
           >
-            {mode === 'create' ? 'Create Environment' : 'Save Changes'}
+            {mode === 'create' ? t('environments.createButton') : t('environments.saveButton')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -406,29 +427,33 @@ function DeleteEnvironmentDialog({
   onOpenChange: (open: boolean) => void;
   onConfirm: () => Promise<void>;
 }) {
+  const t = useT('project');
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>Delete Environment</DialogTitle>
+          <DialogTitle>{t('environments.deleteDialogTitle')}</DialogTitle>
           <DialogDescription>
-            This permanently removes {environment ? `"${environment.name}"` : 'the selected environment'}.
+            {t('environments.deleteDialogDescription', {
+              name: environment ? `"${environment.name}"` : t('environments.title').toLowerCase(),
+            })}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
           <Alert variant="destructive">
-            <AlertTitle>Irreversible action</AlertTitle>
+            <AlertTitle>{t('common.irreversibleAction')}</AlertTitle>
             <AlertDescription>
-              The environment will be deleted immediately and cannot be restored.
+              {t('environments.deleteWarning')}
             </AlertDescription>
           </Alert>
         </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="button" variant="destructive" loading={isDeleting} onClick={() => void onConfirm()}>
-            Delete Environment
+            {t('environments.deleteDialogTitle')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -449,6 +474,7 @@ function DuplicateEnvironmentDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: DuplicateEnvironmentRequest) => Promise<void>;
 }) {
+  const t = useT('project');
   const [draft, setDraft] = useState<DuplicateEnvironmentDraft>(() =>
     getDuplicateEnvironmentDraft(environment)
   );
@@ -462,17 +488,21 @@ function DuplicateEnvironmentDialog({
     let overrideVars: Record<string, unknown> | undefined;
 
     if (!trimmedName) {
-      nextErrors.name = 'New environment name is required.';
+      nextErrors.name = t('environments.newNameRequired');
     }
 
     try {
       overrideVars = parseObjectJsonInput<Record<string, unknown>>(
         draft.overrideVars,
-        'Override variables'
+        t('common.overrideVariablesJson'),
+        {
+          invalidJson: t('common.jsonMustBeValidObject', { label: t('common.overrideVariablesJson') }),
+          invalidObject: t('common.jsonMustBeObject', { label: t('common.overrideVariablesJson') }),
+        }
       );
     } catch (error) {
       nextErrors.overrideVars =
-        error instanceof Error ? error.message : 'Unable to parse override variables.';
+        error instanceof Error ? error.message : t('common.parseFailed', { label: t('common.overrideVariablesJson') });
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -490,15 +520,15 @@ function DuplicateEnvironmentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="default">
         <DialogHeader>
-          <DialogTitle>Duplicate Environment</DialogTitle>
+          <DialogTitle>{t('environments.duplicateDialogTitle')}</DialogTitle>
           <DialogDescription>
-            Create a new environment from the selected one and optionally override variables.
+            {t('environments.duplicateDialogDescription')}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
           <form id="environment-duplicate-form" className="space-y-4 py-1" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="duplicate-environment-name">New Environment Name</Label>
+              <Label htmlFor="duplicate-environment-name">{t('environments.newEnvironmentName')}</Label>
               <Input
                 id="duplicate-environment-name"
                 value={draft.name}
@@ -510,7 +540,7 @@ function DuplicateEnvironmentDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="duplicate-environment-override-vars">Override Variables JSON</Label>
+              <Label htmlFor="duplicate-environment-override-vars">{t('common.overrideVariablesJson')}</Label>
               <Textarea
                 id="duplicate-environment-override-vars"
                 value={draft.overrideVars}
@@ -527,10 +557,10 @@ function DuplicateEnvironmentDialog({
         </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" form="environment-duplicate-form" loading={isSubmitting}>
-            Duplicate Environment
+            {t('environments.duplicateDialogTitle')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -549,8 +579,9 @@ export function ProjectWorkspacePage({
   selectedItemId?: number | null;
   autoOpenAICreate?: boolean;
 }) {
+  const t = useT('project');
   const projectQuery = useProject(projectId);
-  const projectName = projectQuery.data?.name || `Project #${projectId}`;
+  const projectName = projectQuery.data?.name || `${t('common.project')} #${projectId}`;
 
   switch (module) {
     case 'collections':
@@ -612,6 +643,7 @@ function ApiSpecsWorkspaceSection({
   selectedItemId?: number | null;
   autoOpenAICreate?: boolean;
 }) {
+  const t = useT('project');
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -692,26 +724,26 @@ function ApiSpecsWorkspaceSection({
   const moduleActionItems: ActionMenuItem[] = [
     {
       key: 'api-specs-manager',
-      label: 'Open full manager',
+      label: t('apiSpecs.openFullManager'),
       icon: FileJson2,
       href: fullManagerHref,
     },
     {
       key: 'api-specs-refresh',
-      label: isRefreshing ? 'Refreshing...' : 'Refresh',
+      label: isRefreshing ? t('common.refreshing') : t('common.refresh'),
       icon: RefreshCw,
       disabled: isRefreshing,
       onSelect: handleRefresh,
     },
     {
       key: 'api-specs-ai-draft',
-      label: 'AI Draft',
+      label: t('apiSpecs.aiDraft'),
       icon: Sparkles,
       onSelect: () => setIsAICreateOpen(true),
     },
     {
       key: 'api-specs-create',
-      label: 'Add Spec',
+      label: t('apiSpecs.addSpec'),
       icon: Plus,
       onSelect: () => setIsCreateOpen(true),
     },
@@ -723,19 +755,19 @@ function ApiSpecsWorkspaceSection({
         sidebar={
           <ResourceSidebar
             module="api-specs"
-            title="API Specs"
-            description="Select a spec to load its details into the content area."
+            title={t('apiSpecs.title')}
+            description={t('apiSpecs.description')}
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
-            searchPlaceholder="Filter API specs"
+            searchPlaceholder={t('apiSpecs.filterPlaceholder')}
             count={filteredSpecs.length}
             loading={specsQuery.isLoading}
             error={specsQuery.error}
             emptyState={
               <SidebarEmptyState
                 icon={FileJson2}
-                title="No API specs"
-                description="Start with an AI draft or create the first spec manually."
+                title={t('apiSpecs.emptyTitle')}
+                description={t('apiSpecs.emptyDescription')}
               />
             }
           >
@@ -745,11 +777,11 @@ function ApiSpecsWorkspaceSection({
                 href={buildModuleHref(projectId, 'api-specs', spec.id)}
                 active={spec.id === selectedSpec?.id}
                 title={`${spec.method} ${spec.path}`}
-                description={spec.summary || spec.description || 'No summary provided'}
+                description={spec.summary || spec.description || t('common.noSummaryProvided')}
                 meta={
                   <>
                     <Badge variant="outline">{spec.version}</Badge>
-                    <span>{spec.examples?.length ?? 0} examples</span>
+                    <span>{t('common.examples')}: {spec.examples?.length ?? 0}</span>
                   </>
                 }
                 actionsMenu={
@@ -757,17 +789,17 @@ function ApiSpecsWorkspaceSection({
                     items={[
                       {
                         key: `spec-open-${spec.id}`,
-                        label: 'Open',
+                        label: t('common.open'),
                         href: buildModuleHref(projectId, 'api-specs', spec.id),
                       },
                       {
                         key: `spec-manager-${spec.id}`,
-                        label: 'Open in full manager',
+                        label: t('apiSpecs.openInFullManager'),
                         icon: FileJson2,
                         href: `${fullManagerHref}&item=${spec.id}`,
                       },
                     ]}
-                    ariaLabel={`Open actions for ${spec.method} ${spec.path}`}
+                    ariaLabel={t('common.openActions')}
                     stopPropagation
                     triggerClassName="h-7 w-7 rounded-lg opacity-0 transition-opacity group-hover/resource:opacity-100 focus-within:opacity-100 data-[state=open]:opacity-100"
                   />
@@ -781,21 +813,21 @@ function ApiSpecsWorkspaceSection({
             projectId={projectId}
             projectName={projectName}
             module="api-specs"
-            currentTitle={selectedSpec ? `${selectedSpec.method} ${selectedSpec.path}` : 'Module guide'}
+            currentTitle={selectedSpec ? `${selectedSpec.method} ${selectedSpec.path}` : t('common.moduleGuide')}
             description={
               selectedSpec
-                ? 'Spec detail loaded from the current project-scoped API.'
-                : 'API Specs is the default project workspace module. Choose a spec in the middle sidebar to inspect its content.'
+                ? t('apiSpecs.currentDescriptionWithSelection')
+                : t('apiSpecs.currentDescriptionEmpty')
             }
             actions={
               <>
                 <Button type="button" onClick={() => setIsCreateOpen(true)}>
                   <Plus className="h-4 w-4" />
-                  Add Spec
+                  {t('apiSpecs.addSpec')}
                 </Button>
                 <ActionMenu
                   items={moduleActionItems}
-                  ariaLabel="Open API spec workspace actions"
+                  ariaLabel={t('common.openActions')}
                   triggerVariant="outline"
                 />
               </>
@@ -804,7 +836,7 @@ function ApiSpecsWorkspaceSection({
             {selectedItemId && selectedSpecQuery.isLoading ? (
               <DetailSkeleton />
             ) : selectedItemId && !selectedSpec ? (
-              <MissingDetailState moduleLabel="API spec" clearHref={buildProjectApiSpecsRoute(projectId)} />
+              <MissingDetailState moduleLabel={t('apiSpecs.title')} clearHref={buildProjectApiSpecsRoute(projectId)} />
             ) : !selectedSpec ? (
               <ApiSpecsGuideState
                 onOpenAICreate={() => setIsAICreateOpen(true)}
@@ -823,20 +855,24 @@ function ApiSpecsWorkspaceSection({
                             {selectedSpec.method}
                           </Badge>
                           <Badge variant="outline">{selectedSpec.version}</Badge>
-                          {selectedSpec.is_public ? <Badge>Public</Badge> : <Badge variant="secondary">Private</Badge>}
+                          {selectedSpec.is_public ? (
+                            <Badge>{t('common.public')}</Badge>
+                          ) : (
+                            <Badge variant="secondary">{t('common.private')}</Badge>
+                          )}
                         </div>
                         <div>
                           <CardTitle className="text-2xl tracking-tight">{selectedSpec.path}</CardTitle>
                           <CardDescription className="mt-2 max-w-4xl leading-6">
-                            {selectedSpec.summary || selectedSpec.description || 'No description provided for this spec.'}
+                            {selectedSpec.summary || selectedSpec.description || t('apiSpecs.noSpecDescription')}
                           </CardDescription>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        <InfoBadge label="Category" value={selectedSpec.category_id ? `#${selectedSpec.category_id}` : 'Unassigned'} />
-                        <InfoBadge label="Examples" value={selectedSpec.examples?.length ?? 0} />
-                        <InfoBadge label="Responses" value={Object.keys(selectedSpec.responses || {}).length} />
+                        <InfoBadge label={t('common.category')} value={selectedSpec.category_id ? `#${selectedSpec.category_id}` : t('common.unassigned')} />
+                        <InfoBadge label={t('common.examples')} value={selectedSpec.examples?.length ?? 0} />
+                        <InfoBadge label={t('common.responses')} value={Object.keys(selectedSpec.responses || {}).length} />
                       </div>
                     </div>
                   </CardHeader>
@@ -845,30 +881,30 @@ function ApiSpecsWorkspaceSection({
                 <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
                   <Card className="border-border/60">
                     <CardHeader>
-                      <CardTitle>Spec summary</CardTitle>
-                      <CardDescription>Core metadata for the selected API spec.</CardDescription>
+                      <CardTitle>{t('apiSpecs.specSummary')}</CardTitle>
+                      <CardDescription>{t('apiSpecs.specSummaryDescription')}</CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-4 md:grid-cols-2">
-                      <DetailField label="Created">{formatDate(selectedSpec.created_at, 'YYYY-MM-DD HH:mm')}</DetailField>
-                      <DetailField label="Updated">{formatDate(selectedSpec.updated_at, 'YYYY-MM-DD HH:mm')}</DetailField>
-                      <DetailField label="Request parameters">
+                      <DetailField label={t('common.created')}>{formatDate(selectedSpec.created_at, 'YYYY-MM-DD HH:mm')}</DetailField>
+                      <DetailField label={t('common.updated')}>{formatDate(selectedSpec.updated_at, 'YYYY-MM-DD HH:mm')}</DetailField>
+                      <DetailField label={t('common.requestParameters')}>
                         {selectedSpec.parameters?.length ?? 0}
                       </DetailField>
-                      <DetailField label="Request body">
-                        {selectedSpec.request_body ? 'Available' : 'Not defined'}
+                      <DetailField label={t('common.requestBody')}>
+                        {selectedSpec.request_body ? t('common.available') : t('common.notDefined')}
                       </DetailField>
-                      <DetailField label="Doc source">{selectedSpec.doc_source || 'Unknown'}</DetailField>
-                      <DetailField label="Tags">
-                        {selectedSpec.tags.length > 0 ? selectedSpec.tags.join(', ') : 'No tags'}
+                      <DetailField label={t('common.docSource')}>{selectedSpec.doc_source || t('common.unknown')}</DetailField>
+                      <DetailField label={t('common.tags')}>
+                        {selectedSpec.tags.length > 0 ? selectedSpec.tags.join(', ') : t('common.noTags')}
                       </DetailField>
                     </CardContent>
                   </Card>
 
                   <Card className="border-border/60">
                     <CardHeader>
-                      <CardTitle>Documentation snapshot</CardTitle>
+                      <CardTitle>{t('apiSpecs.documentationSnapshot')}</CardTitle>
                       <CardDescription>
-                        Latest markdown fragment stored for this API spec.
+                        {t('apiSpecs.documentationSnapshotDescription')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -879,8 +915,8 @@ function ApiSpecsWorkspaceSection({
                       ) : (
                         <GuideState
                           icon={Clock3}
-                          title="Documentation not generated"
-                          description="No markdown documentation is attached to the selected spec yet."
+                          title={t('apiSpecs.documentationNotGenerated')}
+                          description={t('apiSpecs.documentationNotGeneratedDescription')}
                         />
                       )}
                     </CardContent>
@@ -888,10 +924,10 @@ function ApiSpecsWorkspaceSection({
                 </div>
 
                 <div className="grid gap-6 xl:grid-cols-2">
-                  <JsonCard title="Request body schema" value={selectedSpec.request_body} />
-                  <JsonCard title="Responses" value={selectedSpec.responses} />
-                  <JsonCard title="Parameters" value={selectedSpec.parameters} />
-                  <JsonCard title="Examples" value={selectedSpec.examples} />
+                  <JsonCard title={t('common.requestBodySchema')} value={selectedSpec.request_body} />
+                  <JsonCard title={t('common.responses')} value={selectedSpec.responses} />
+                  <JsonCard title={t('common.parameters')} value={selectedSpec.parameters} />
+                  <JsonCard title={t('common.examples')} value={selectedSpec.examples} />
                 </div>
               </div>
             )}
@@ -959,6 +995,7 @@ function EnvironmentsWorkspaceSection({
   projectName: string;
   selectedItemId?: number | null;
 }) {
+  const t = useT('project');
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [formMode, setFormMode] = useState<EnvironmentFormMode>('create');
@@ -1127,27 +1164,27 @@ function EnvironmentsWorkspaceSection({
   const workspaceActionItems: ActionMenuItem[] = [
     {
       key: 'environments-refresh',
-      label: isRefreshing ? 'Refreshing...' : 'Refresh',
+      label: isRefreshing ? t('common.refreshing') : t('common.refresh'),
       icon: RefreshCw,
       disabled: isRefreshing,
       onSelect: () => void handleRefresh(),
     },
     {
       key: 'environments-api-specs',
-      label: 'API Specs',
+      label: t('apiSpecs.title'),
       icon: FileJson2,
       href: buildProjectApiSpecsRoute(projectId),
       separatorBefore: selectedEnvironment ? true : undefined,
     },
     {
       key: 'environments-categories',
-      label: 'Categories',
+      label: t('categories.title'),
       icon: Tags,
       href: buildProjectCategoriesRoute(projectId),
     },
     {
       key: 'environments-test-cases',
-      label: 'Test Cases',
+      label: t('apiSpecs.openTestCases'),
       icon: FlaskConical,
       href: buildProjectTestCasesRoute(projectId),
     },
@@ -1156,14 +1193,14 @@ function EnvironmentsWorkspaceSection({
   if (selectedEnvironment) {
     workspaceActionItems.splice(1, 0, {
       key: 'environments-duplicate',
-      label: 'Duplicate',
+      label: t('common.duplicate'),
       icon: Boxes,
       disabled: !canWrite,
       onSelect: () => setDuplicateTarget(selectedEnvironment),
     });
     workspaceActionItems.splice(2, 0, {
       key: 'environments-delete',
-      label: 'Delete',
+      label: t('common.delete'),
       icon: Trash2,
       destructive: true,
       disabled: !canWrite,
@@ -1177,19 +1214,19 @@ function EnvironmentsWorkspaceSection({
         sidebar={
           <ResourceSidebar
             module="environments"
-            title="Environments"
-            description="Pick an environment to inspect and manage base URL, headers, and variables."
+            title={t('environments.title')}
+            description={t('environments.description')}
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
-            searchPlaceholder="Filter environments"
+            searchPlaceholder={t('environments.filterPlaceholder')}
             count={filteredEnvironments.length}
             loading={environmentsQuery.isLoading}
             error={environmentsQuery.error}
             emptyState={
               <SidebarEmptyState
                 icon={Globe}
-                title="No environments"
-                description="Create the first environment to define project-scoped runtime settings."
+                title={t('environments.emptyTitle')}
+                description={t('environments.emptyDescription')}
               />
             }
           >
@@ -1199,11 +1236,11 @@ function EnvironmentsWorkspaceSection({
                 href={buildModuleHref(projectId, 'environments', environment.id)}
                 active={environment.id === selectedEnvironment?.id}
                 title={environment.display_name || environment.name}
-                description={environment.base_url || 'Base URL not configured'}
+                description={environment.base_url || t('environments.baseUrlNotConfigured')}
                 meta={
                   <>
-                    <span>{Object.keys(environment.variables || {}).length} vars</span>
-                    <span>{Object.keys(environment.headers || {}).length} headers</span>
+                    <span>{t('environments.vars', { count: Object.keys(environment.variables || {}).length })}</span>
+                    <span>{t('environments.headers', { count: Object.keys(environment.headers || {}).length })}</span>
                   </>
                 }
                 actionsMenu={
@@ -1211,33 +1248,33 @@ function EnvironmentsWorkspaceSection({
                     items={[
                       {
                         key: `environment-open-${environment.id}`,
-                        label: 'Open',
+                        label: t('common.open'),
                         href: buildModuleHref(projectId, 'environments', environment.id),
                       },
                       {
                         key: `environment-edit-${environment.id}`,
-                        label: 'Edit',
+                        label: t('common.edit'),
                         icon: Pencil,
                         disabled: !canWrite,
                         onSelect: () => openEditDialog(environment.id),
                       },
                       {
                         key: `environment-duplicate-${environment.id}`,
-                        label: 'Duplicate',
+                        label: t('common.duplicate'),
                         icon: Boxes,
                         disabled: !canWrite,
                         onSelect: () => setDuplicateTarget(environment),
                       },
                       {
                         key: `environment-delete-${environment.id}`,
-                        label: 'Delete',
+                        label: t('common.delete'),
                         icon: Trash2,
                         destructive: true,
                         disabled: !canWrite,
                         onSelect: () => setDeleteTarget(environment),
                       },
                     ]}
-                    ariaLabel={`Open actions for ${environment.name}`}
+                    ariaLabel={t('common.openActions')}
                     stopPropagation
                     triggerClassName="h-7 w-7 rounded-lg opacity-0 transition-opacity group-hover/resource:opacity-100 focus-within:opacity-100 data-[state=open]:opacity-100"
                   />
@@ -1254,12 +1291,12 @@ function EnvironmentsWorkspaceSection({
             currentTitle={
               selectedEnvironment
                 ? selectedEnvironment.display_name || selectedEnvironment.name
-                : 'Environment workspace'
+                : t('environments.workspaceTitle')
             }
             description={
               selectedEnvironment
-                ? 'Environment detail loaded from the selected project.'
-                : 'Create project-scoped environments here, or pick one from the sidebar to inspect and edit it.'
+                ? t('environments.currentDescriptionWithSelection')
+                : t('environments.currentDescriptionEmpty')
             }
             actions={
               <>
@@ -1271,16 +1308,16 @@ function EnvironmentsWorkspaceSection({
                     disabled={!canWrite}
                   >
                     <Pencil className="h-4 w-4" />
-                    Edit
+                    {t('common.edit')}
                   </Button>
                 ) : null}
                 <Button type="button" onClick={openCreateDialog} disabled={!canWrite}>
                   <Plus className="h-4 w-4" />
-                  Create Environment
+                  {t('environments.createButton')}
                 </Button>
                 <ActionMenu
                   items={workspaceActionItems}
-                  ariaLabel="Open environment workspace actions"
+                  ariaLabel={t('common.openActions')}
                   triggerVariant="outline"
                 />
               </>
@@ -1290,10 +1327,9 @@ function EnvironmentsWorkspaceSection({
               {!canWrite && memberRoleQuery.isSuccess ? (
                 <Alert>
                   <ShieldCheck className="h-4 w-4" />
-                  <AlertTitle>Read-only access</AlertTitle>
+                  <AlertTitle>{t('common.readOnlyAccess')}</AlertTitle>
                   <AlertDescription>
-                    Your current role is <strong>{getRoleLabel(currentRole)}</strong>. You can inspect
-                    environments, but create, edit, duplicate, and delete actions are disabled.
+                    {t('environments.readOnlyDescription', { role: getRoleLabel(currentRole) })}
                   </AlertDescription>
                 </Alert>
               ) : null}
@@ -1308,33 +1344,33 @@ function EnvironmentsWorkspaceSection({
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <StatCard
-                    title="Total environments"
+                    title={t('environments.totalEnvironments')}
                     value={totalEnvironments}
-                    description="All project-scoped environment records"
+                    description={t('environments.totalEnvironmentsDescription')}
                     icon={Globe}
                     variant="primary"
                   />
                   <StatCard
-                    title="With base URL"
+                    title={t('environments.withBaseUrl')}
                     value={withBaseUrlCount}
-                    description="Environments ready to target a concrete host"
+                    description={t('environments.withBaseUrlDescription')}
                     icon={ShieldCheck}
                     variant="success"
                   />
                   <StatCard
-                    title="With variables"
+                    title={t('environments.withVariables')}
                     value={withVariablesCount}
-                    description="Environments carrying variables payload"
+                    description={t('environments.withVariablesDescription')}
                     icon={Boxes}
                     variant="warning"
                   />
                   <StatCard
-                    title="With headers"
+                    title={t('environments.withHeaders')}
                     value={withHeadersCount}
                     description={
                       normalizedSearch
-                        ? `Search filtered by "${normalizedSearch}"`
-                        : 'Environments carrying request headers'
+                        ? t('environments.searchFilteredBy', { query: normalizedSearch })
+                        : t('environments.withHeadersDescription')
                     }
                     icon={Tags}
                   />
@@ -1345,7 +1381,7 @@ function EnvironmentsWorkspaceSection({
                 <DetailSkeleton />
               ) : effectiveSelectedItemId && !selectedEnvironment ? (
                 <MissingDetailState
-                  moduleLabel="environment"
+                  moduleLabel={t('modules.environments.label').toLowerCase()}
                   clearHref={buildProjectEnvironmentsRoute(projectId)}
                 />
               ) : !selectedEnvironment ? (
@@ -1358,20 +1394,19 @@ function EnvironmentsWorkspaceSection({
                         <Globe className="h-6 w-6" />
                       </div>
                       <div className="space-y-2">
-                        <p className="text-lg font-semibold text-text-main">No environments yet</p>
+                        <p className="text-lg font-semibold text-text-main">{t('environments.noEnvironmentsYet')}</p>
                         <p className="max-w-2xl text-sm leading-6 text-text-muted">
-                          Create the first project environment to store base URLs, reusable headers, and
-                          variables for your requests and tests.
+                          {t('environments.noEnvironmentsYetDescription')}
                         </p>
                       </div>
                       <div className="flex flex-wrap justify-center gap-3">
                         <Button type="button" onClick={openCreateDialog} disabled={!canWrite}>
                           <Plus className="h-4 w-4" />
-                          Create Environment
+                          {t('environments.createButton')}
                         </Button>
                         <Button asChild variant="outline">
                           <Link href={buildProjectApiSpecsRoute(projectId)}>
-                            Open API Specs
+                            {t('environments.openApiSpecs')}
                           </Link>
                         </Button>
                       </div>
@@ -1381,20 +1416,19 @@ function EnvironmentsWorkspaceSection({
                   <div className="space-y-6">
                     <Card className="border-border/60">
                       <CardHeader>
-                        <CardTitle>Environment overview</CardTitle>
+                        <CardTitle>{t('environments.overview')}</CardTitle>
                         <CardDescription>
-                          The old standalone manager is collapsed into this content area. Choose an
-                          environment from the sidebar, or create a new one from here.
+                          {t('environments.overviewDescription')}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="flex flex-wrap gap-3">
                         <Button type="button" onClick={openCreateDialog} disabled={!canWrite}>
                           <Plus className="h-4 w-4" />
-                          Create Environment
+                          {t('environments.createButton')}
                         </Button>
                         <Button asChild variant="outline">
                           <Link href={buildProjectTestCasesRoute(projectId)}>
-                            Open Test Cases
+                            {t('environments.openTestCases')}
                           </Link>
                         </Button>
                       </CardContent>
@@ -1404,18 +1438,18 @@ function EnvironmentsWorkspaceSection({
                       <Card className="border-border/60">
                         <CardHeader>
                           <CardTitle>
-                            {normalizedSearch ? 'Matching environments' : 'Available environments'}
+                            {normalizedSearch ? t('environments.matchingEnvironments') : t('environments.availableEnvironments')}
                           </CardTitle>
                           <CardDescription>
-                            Quick links for the environments currently visible in the sidebar.
+                            {t('environments.visibleQuickLinks')}
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
                           {listPreview.length === 0 ? (
                             <GuideState
                               icon={Globe}
-                              title="No matching environments"
-                              description="Try a broader search term or clear the current filter."
+                              title={t('environments.noMatchingEnvironments')}
+                              description={t('environments.noMatchingDescription')}
                             />
                           ) : (
                             listPreview.map((environment) => (
@@ -1430,14 +1464,14 @@ function EnvironmentsWorkspaceSection({
                                       {environment.display_name || environment.name}
                                     </p>
                                     <p className="mt-1 text-xs text-text-muted">
-                                      {environment.base_url || 'Base URL not configured'}
+                                      {environment.base_url || t('environments.baseUrlNotConfigured')}
                                     </p>
                                   </div>
                                   <Badge variant="outline">{environment.name}</Badge>
                                 </div>
                                 <div className="mt-3 flex flex-wrap gap-3 text-xs text-text-muted">
-                                  <span>{Object.keys(environment.variables || {}).length} vars</span>
-                                  <span>{Object.keys(environment.headers || {}).length} headers</span>
+                                  <span>{t('environments.vars', { count: Object.keys(environment.variables || {}).length })}</span>
+                                  <span>{t('environments.headers', { count: Object.keys(environment.headers || {}).length })}</span>
                                   <span>{formatDate(environment.updated_at, 'YYYY-MM-DD HH:mm')}</span>
                                 </div>
                               </Link>
@@ -1448,9 +1482,9 @@ function EnvironmentsWorkspaceSection({
 
                       <Card className="border-border/60">
                         <CardHeader>
-                          <CardTitle>Environment API surface</CardTitle>
+                          <CardTitle>{t('environments.apiSurface')}</CardTitle>
                           <CardDescription>
-                            Project-scoped endpoints used by this workspace for environment CRUD.
+                            {t('environments.apiSurfaceDescription')}
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -1475,7 +1509,7 @@ POST ${activeEnvironmentPath}/duplicate`}</code>
                         <div className="space-y-3">
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                              Environment
+                              {t('modules.environments.label')}
                             </Badge>
                             <Badge variant="outline">{selectedEnvironment.name}</Badge>
                           </div>
@@ -1484,18 +1518,18 @@ POST ${activeEnvironmentPath}/duplicate`}</code>
                               {selectedEnvironment.display_name || selectedEnvironment.name}
                             </CardTitle>
                             <CardDescription className="mt-2">
-                              {selectedEnvironment.base_url || 'Base URL is not configured yet.'}
+                              {selectedEnvironment.base_url || t('environments.baseUrlMissing')}
                             </CardDescription>
                           </div>
                         </div>
 
                         <div className="flex flex-wrap gap-2">
                           <InfoBadge
-                            label="Variables"
+                            label={t('common.variablesJson')}
                             value={Object.keys(selectedEnvironment.variables || {}).length}
                           />
                           <InfoBadge
-                            label="Headers"
+                            label={t('common.headersJson')}
                             value={Object.keys(selectedEnvironment.headers || {}).length}
                           />
                         </div>
@@ -1506,27 +1540,27 @@ POST ${activeEnvironmentPath}/duplicate`}</code>
                   <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
                     <Card className="border-border/60">
                       <CardHeader>
-                        <CardTitle>Environment metadata</CardTitle>
-                        <CardDescription>Core identity and timestamps for this environment.</CardDescription>
+                        <CardTitle>{t('environments.metadata')}</CardTitle>
+                        <CardDescription>{t('environments.metadataDescription')}</CardDescription>
                       </CardHeader>
                       <CardContent className="grid gap-4 md:grid-cols-2">
-                        <DetailField label="System name">{selectedEnvironment.name}</DetailField>
-                        <DetailField label="Display name">
-                          {selectedEnvironment.display_name || 'Not set'}
+                        <DetailField label={t('environments.systemName')}>{selectedEnvironment.name}</DetailField>
+                        <DetailField label={t('common.displayName')}>
+                          {selectedEnvironment.display_name || t('common.notSet')}
                         </DetailField>
-                        <DetailField label="Created">
+                        <DetailField label={t('common.created')}>
                           {formatDate(selectedEnvironment.created_at, 'YYYY-MM-DD HH:mm')}
                         </DetailField>
-                        <DetailField label="Updated">
+                        <DetailField label={t('common.updated')}>
                           {formatDate(selectedEnvironment.updated_at, 'YYYY-MM-DD HH:mm')}
                         </DetailField>
                       </CardContent>
                     </Card>
 
-                    <JsonCard title="Headers" value={selectedEnvironment.headers} />
+                    <JsonCard title={t('common.headersJson')} value={selectedEnvironment.headers} />
                   </div>
 
-                  <JsonCard title="Variables" value={selectedEnvironment.variables} />
+                  <JsonCard title={t('common.variablesJson')} value={selectedEnvironment.variables} />
                 </div>
               )}
             </div>
@@ -1587,6 +1621,7 @@ function CategoriesWorkspaceSection({
   projectName: string;
   selectedItemId?: number | null;
 }) {
+  const t = useT('project');
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearch = useDeferredValue(searchQuery);
 
@@ -1619,7 +1654,7 @@ function CategoriesWorkspaceSection({
   const refreshActionItems: ActionMenuItem[] = [
     {
       key: 'categories-refresh',
-      label: categoriesQuery.isFetching || selectedCategoryQuery.isFetching ? 'Refreshing...' : 'Refresh',
+      label: categoriesQuery.isFetching || selectedCategoryQuery.isFetching ? t('common.refreshing') : t('common.refresh'),
       icon: RefreshCw,
       disabled: categoriesQuery.isFetching || selectedCategoryQuery.isFetching,
       onSelect: () => {
@@ -1636,19 +1671,19 @@ function CategoriesWorkspaceSection({
       sidebar={
         <ResourceSidebar
           module="categories"
-          title="Categories"
-          description="Use the second sidebar to browse the category hierarchy."
+          title={t('categories.title')}
+          description={t('categories.description')}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="Filter categories"
+          searchPlaceholder={t('categories.filterPlaceholder')}
           count={filteredCategories.length}
           loading={categoriesQuery.isLoading}
           error={categoriesQuery.error}
           emptyState={
             <SidebarEmptyState
               icon={Tags}
-              title="No categories"
-              description="Categories will appear here once the project taxonomy is created."
+              title={t('categories.emptyTitle')}
+              description={t('categories.emptyDescription')}
             />
           }
         >
@@ -1658,12 +1693,12 @@ function CategoriesWorkspaceSection({
               href={buildModuleHref(projectId, 'categories', category.id)}
               active={category.id === selectedCategory?.id}
               title={category.name}
-              description={category.description || 'No description provided'}
+              description={category.description || t('common.noDescriptionProvided')}
               indentLevel={Math.min(category.depth, 4)}
               meta={
                 <>
-                  <span>Order {category.sort_order}</span>
-                  {category.test_cases_count ? <span>{category.test_cases_count} tests</span> : null}
+                  <span>{t('categories.sortOrder')} {category.sort_order}</span>
+                  {category.test_cases_count ? <span>{t('categories.tests')}: {category.test_cases_count}</span> : null}
                 </>
               }
             />
@@ -1675,22 +1710,22 @@ function CategoriesWorkspaceSection({
           projectId={projectId}
           projectName={projectName}
           module="categories"
-          currentTitle={selectedCategory ? selectedCategory.name : 'Module guide'}
+          currentTitle={selectedCategory ? selectedCategory.name : t('common.moduleGuide')}
           description={
             selectedCategory
-              ? 'Category detail loaded from the selected project taxonomy.'
-              : 'Select a category to inspect hierarchy and metadata.'
+              ? t('categories.categoryMetadataDescription')
+              : t('categories.chooseCategoryDescription')
           }
           actions={
             <>
               <Button asChild variant="outline">
                 <Link href={fullManagerHref}>
-                  Full manager
+                  {t('common.fullManager')}
                 </Link>
               </Button>
               <ActionMenu
                 items={refreshActionItems}
-                ariaLabel="Open category workspace actions"
+                ariaLabel={t('common.openActions')}
                 triggerVariant="outline"
               />
             </>
@@ -1699,14 +1734,14 @@ function CategoriesWorkspaceSection({
           {selectedItemId && selectedCategoryQuery.isLoading ? (
             <DetailSkeleton />
           ) : selectedItemId && !selectedCategory ? (
-            <MissingDetailState moduleLabel="category" clearHref={buildProjectCategoriesRoute(projectId)} />
+            <MissingDetailState moduleLabel={t('modules.categories.label').toLowerCase()} clearHref={buildProjectCategoriesRoute(projectId)} />
           ) : !selectedCategory ? (
             <GuideState
               icon={Tags}
-              title="Choose a category"
-              description="Categories only render in the content area after a concrete category is selected."
+              title={t('categories.chooseCategory')}
+              description={t('categories.chooseCategoryDescription')}
               actionHref={`${buildProjectCategoriesRoute(projectId)}?mode=manage`}
-              actionLabel="Manage categories"
+              actionLabel={t('categories.manageCategories')}
             />
           ) : (
             <div className="space-y-6">
@@ -1716,26 +1751,26 @@ function CategoriesWorkspaceSection({
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                          Category
+                          {t('common.category')}
                         </Badge>
                         {selectedCategory.parent_id ? (
-                          <Badge variant="outline">Parent #{selectedCategory.parent_id}</Badge>
+                          <Badge variant="outline">{t('categories.parent')} #{selectedCategory.parent_id}</Badge>
                         ) : (
-                          <Badge variant="secondary">Root</Badge>
+                          <Badge variant="secondary">{t('common.root')}</Badge>
                         )}
                       </div>
                       <div>
                         <CardTitle className="text-2xl tracking-tight">{selectedCategory.name}</CardTitle>
                         <CardDescription className="mt-2 max-w-3xl leading-6">
-                          {selectedCategory.description || 'No description has been written for this category yet.'}
+                          {selectedCategory.description || t('common.noDescriptionProvided')}
                         </CardDescription>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <InfoBadge label="Children" value={childCategories.length} />
-                      <InfoBadge label="Sort order" value={selectedCategory.sort_order} />
-                      <InfoBadge label="Tests" value={selectedCategory.test_cases_count ?? 0} />
+                      <InfoBadge label={t('categories.children')} value={childCategories.length} />
+                      <InfoBadge label={t('categories.sortOrder')} value={selectedCategory.sort_order} />
+                      <InfoBadge label={t('categories.tests')} value={selectedCategory.test_cases_count ?? 0} />
                     </div>
                   </div>
                 </CardHeader>
@@ -1744,34 +1779,34 @@ function CategoriesWorkspaceSection({
               <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
                 <Card className="border-border/60">
                   <CardHeader>
-                    <CardTitle>Category metadata</CardTitle>
-                    <CardDescription>Hierarchy, timestamps, and linkages for this node.</CardDescription>
+                    <CardTitle>{t('categories.categoryMetadata')}</CardTitle>
+                    <CardDescription>{t('categories.categoryMetadataDescription')}</CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-4 md:grid-cols-2">
-                    <DetailField label="Parent">
-                      {selectedCategory.parent_name || (selectedCategory.parent_id ? `#${selectedCategory.parent_id}` : 'Root category')}
+                    <DetailField label={t('categories.parent')}>
+                      {selectedCategory.parent_name || (selectedCategory.parent_id ? `#${selectedCategory.parent_id}` : t('common.rootCategory'))}
                     </DetailField>
-                    <DetailField label="Created">
+                    <DetailField label={t('common.created')}>
                       {formatDate(selectedCategory.created_at, 'YYYY-MM-DD HH:mm')}
                     </DetailField>
-                    <DetailField label="Updated">
+                    <DetailField label={t('common.updated')}>
                       {formatDate(selectedCategory.updated_at, 'YYYY-MM-DD HH:mm')}
                     </DetailField>
-                    <DetailField label="Project ID">{selectedCategory.project_id}</DetailField>
+                    <DetailField label={t('common.projectId')}>{selectedCategory.project_id}</DetailField>
                   </CardContent>
                 </Card>
 
                 <Card className="border-border/60">
                   <CardHeader>
-                    <CardTitle>Child categories</CardTitle>
-                    <CardDescription>Direct descendants of the selected category.</CardDescription>
+                    <CardTitle>{t('categories.childCategories')}</CardTitle>
+                    <CardDescription>{t('categories.childCategoriesDescription')}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {childCategories.length === 0 ? (
                       <GuideState
                         icon={Layers3}
-                        title="No child categories"
-                        description="This category currently acts as a leaf node in the project hierarchy."
+                        title={t('categories.noChildCategories')}
+                        description={t('categories.noChildCategoriesDescription')}
                       />
                     ) : (
                       childCategories.map((child) => (
@@ -1781,7 +1816,7 @@ function CategoriesWorkspaceSection({
                         >
                           <p className="text-sm font-medium">{child.name}</p>
                           <p className="mt-1 text-xs text-text-muted">
-                            {child.description || 'No description provided'}
+                            {child.description || t('common.noDescriptionProvided')}
                           </p>
                         </div>
                       ))
@@ -1806,6 +1841,7 @@ function HistoryWorkspaceSection({
   projectName: string;
   selectedItemId?: number | null;
 }) {
+  const t = useT('project');
   const [searchQuery, setSearchQuery] = useState('');
   const [entityTypeFilter, setEntityTypeFilter] = useState('all');
   const deferredSearch = useDeferredValue(searchQuery);
@@ -1848,7 +1884,7 @@ function HistoryWorkspaceSection({
   const refreshActionItems: ActionMenuItem[] = [
     {
       key: 'histories-refresh',
-      label: historiesQuery.isFetching || selectedHistoryQuery.isFetching ? 'Refreshing...' : 'Refresh',
+      label: historiesQuery.isFetching || selectedHistoryQuery.isFetching ? t('common.refreshing') : t('common.refresh'),
       icon: RefreshCw,
       disabled: historiesQuery.isFetching || selectedHistoryQuery.isFetching,
       onSelect: () => {
@@ -1866,21 +1902,21 @@ function HistoryWorkspaceSection({
       sidebar={
         <ResourceSidebar
           module="histories"
-          title="History"
-          description="Inspect persisted project activity, entity snapshots, and recorded diffs."
+          title={t('history.title')}
+          description={t('history.description')}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="Search history"
+          searchPlaceholder={t('history.searchPlaceholder')}
           count={filteredHistories.length}
           loading={historiesQuery.isLoading}
           error={historiesQuery.error}
           headerActions={
             <Select value={entityTypeFilter} onValueChange={setEntityTypeFilter}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filter by entity type" />
+                <SelectValue placeholder={t('history.filterByEntityType')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All entity types</SelectItem>
+                <SelectItem value="all">{t('history.allEntityTypes')}</SelectItem>
                 {entityTypeOptions.map((entityType) => (
                   <SelectItem key={entityType} value={entityType}>
                     {entityType}
@@ -1892,11 +1928,11 @@ function HistoryWorkspaceSection({
           emptyState={
             <SidebarEmptyState
               icon={FileClock}
-              title={isFiltered ? 'No matching history' : 'No history yet'}
+              title={isFiltered ? t('history.noMatchingHistory') : t('history.noHistoryYet')}
               description={
                 isFiltered
-                  ? 'Try a different keyword or entity type filter.'
-                  : 'History records will appear here once project activity is being recorded.'
+                  ? t('history.noMatchingDescription')
+                  : t('history.emptyDescription')
               }
             />
           }
@@ -1914,7 +1950,7 @@ function HistoryWorkspaceSection({
               meta={
                 <>
                   <Badge variant="outline">{history.action}</Badge>
-                  <span>User #{history.user_id}</span>
+                  <span>{t('history.user')} #{history.user_id}</span>
                   <span>{formatDate(history.created_at, 'YYYY-MM-DD HH:mm')}</span>
                 </>
               }
@@ -1930,17 +1966,17 @@ function HistoryWorkspaceSection({
           currentTitle={
             selectedHistory
               ? `${selectedHistory.entity_type} #${selectedHistory.entity_id}`
-              : 'Project history'
+              : t('history.projectHistory')
           }
           description={
             selectedHistory
-              ? 'History detail loaded from the selected project-scoped record.'
-              : 'Select a history record in the sidebar to inspect its snapshot and recorded diff.'
+              ? t('history.currentDescriptionWithSelection')
+              : t('history.currentDescriptionEmpty')
           }
           actions={
             <ActionMenu
               items={refreshActionItems}
-              ariaLabel="Open history workspace actions"
+              ariaLabel={t('common.openActions')}
               triggerVariant="outline"
             />
           }
@@ -1949,7 +1985,7 @@ function HistoryWorkspaceSection({
             <DetailSkeleton />
           ) : selectedItemId && !selectedHistory ? (
             <MissingDetailState
-              moduleLabel="history record"
+              moduleLabel={t('history.recordId').toLowerCase()}
               clearHref={buildProjectHistoriesRoute(projectId)}
             />
           ) : historiesQuery.isLoading ? (
@@ -1957,18 +1993,18 @@ function HistoryWorkspaceSection({
           ) : histories.length === 0 ? (
             <GuideState
               icon={FileClock}
-              title={isFiltered ? 'No matching history record' : 'No history recorded'}
+              title={isFiltered ? t('history.noMatchingRecord') : t('history.noHistoryRecorded')}
               description={
                 isFiltered
-                  ? 'No history records matched the current filters. Clear the filter or try a broader search.'
-                  : 'This project does not have any persisted history records yet.'
+                  ? t('history.noMatchingRecordDescription')
+                  : t('history.noHistoryRecordedDescription')
               }
             />
           ) : !selectedHistory ? (
             <GuideState
               icon={FileClock}
-              title="Choose a history record"
-              description="The content area stays focused on a single history record. Pick one from the sidebar to inspect the stored snapshot and diff."
+              title={t('history.chooseRecord')}
+              description={t('history.chooseRecordDescription')}
             />
           ) : (
             <div className="space-y-6">
@@ -1981,22 +2017,22 @@ function HistoryWorkspaceSection({
                           {selectedHistory.entity_type}
                         </Badge>
                         <Badge variant="outline">{selectedHistory.action}</Badge>
-                        <Badge variant="secondary">Record #{selectedHistory.id}</Badge>
+                        <Badge variant="secondary">{t('history.recordNumber', { id: selectedHistory.id })}</Badge>
                       </div>
                       <div>
                         <CardTitle className="text-2xl tracking-tight">
                           {selectedHistory.entity_type} #{selectedHistory.entity_id}
                         </CardTitle>
                         <CardDescription className="mt-2 max-w-4xl leading-6">
-                          {selectedHistory.message || 'No message was recorded for this history entry.'}
+                          {selectedHistory.message || t('history.noMessageForEntry')}
                         </CardDescription>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <InfoBadge label="User" value={`#${selectedHistory.user_id}`} />
+                      <InfoBadge label={t('history.user')} value={`#${selectedHistory.user_id}`} />
                       <InfoBadge
-                        label="Created"
+                        label={t('common.created')}
                         value={formatDate(selectedHistory.created_at, 'YYYY-MM-DD HH:mm')}
                       />
                     </div>
@@ -2007,35 +2043,35 @@ function HistoryWorkspaceSection({
               <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
                 <Card className="border-border/60">
                   <CardHeader>
-                    <CardTitle>History metadata</CardTitle>
-                    <CardDescription>Core fields captured for the selected history record.</CardDescription>
+                    <CardTitle>{t('history.metadata')}</CardTitle>
+                    <CardDescription>{t('history.metadataDescription')}</CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-4 md:grid-cols-2">
-                    <DetailField label="Record ID">{selectedHistory.id}</DetailField>
-                    <DetailField label="Project ID">{selectedHistory.project_id}</DetailField>
-                    <DetailField label="Entity type">{selectedHistory.entity_type}</DetailField>
-                    <DetailField label="Entity ID">{selectedHistory.entity_id}</DetailField>
-                    <DetailField label="Action">{selectedHistory.action}</DetailField>
-                    <DetailField label="User ID">{selectedHistory.user_id}</DetailField>
+                    <DetailField label={t('history.recordId')}>{selectedHistory.id}</DetailField>
+                    <DetailField label={t('common.projectId')}>{selectedHistory.project_id}</DetailField>
+                    <DetailField label={t('history.entityType')}>{selectedHistory.entity_type}</DetailField>
+                    <DetailField label={t('history.entityId')}>{selectedHistory.entity_id}</DetailField>
+                    <DetailField label={t('history.action')}>{selectedHistory.action}</DetailField>
+                    <DetailField label={t('history.userId')}>{selectedHistory.user_id}</DetailField>
                   </CardContent>
                 </Card>
 
                 <Card className="border-border/60">
                   <CardHeader>
-                    <CardTitle>Recorded note</CardTitle>
-                    <CardDescription>Optional message attached to this history entry.</CardDescription>
+                    <CardTitle>{t('history.recordedNote')}</CardTitle>
+                    <CardDescription>{t('history.recordedNoteDescription')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="rounded-2xl border border-border/60 bg-background/70 p-4 text-sm leading-6 text-text-muted">
-                      {selectedHistory.message || 'No message recorded.'}
+                      {selectedHistory.message || t('history.noMessageRecorded')}
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
               <div className="grid gap-6 xl:grid-cols-2">
-                <JsonCard title="Snapshot data" value={selectedHistory.data} />
-                <JsonCard title="Diff" value={selectedHistory.diff} />
+                <JsonCard title={t('history.snapshotData')} value={selectedHistory.data} />
+                <JsonCard title={t('history.diff')} value={selectedHistory.diff} />
               </div>
             </div>
           )}
@@ -2054,7 +2090,10 @@ function PlaceholderWorkspaceSection({
   projectName: string;
   module: ProjectWorkspaceModule;
 }) {
+  const t = useT('project');
   const moduleMeta = getProjectWorkspaceModuleMeta(module);
+  const moduleLabel = getProjectModuleCopy(t, moduleMeta.i18nKey, 'label');
+  const moduleDescription = getProjectModuleCopy(t, moduleMeta.i18nKey, 'description');
   const Icon = moduleMeta.icon;
   const isHistoryModule = module === 'histories';
 
@@ -2063,16 +2102,16 @@ function PlaceholderWorkspaceSection({
       sidebar={
         <ResourceSidebar
           module={module}
-          title={moduleMeta.label}
-          description={moduleMeta.description}
+          title={moduleLabel}
+          description={moduleDescription}
           count={0}
           loading={false}
           error={null}
           emptyState={
             <SidebarEmptyState
               icon={moduleMeta.icon}
-              title={`${moduleMeta.label} placeholder`}
-              description={`The ${moduleMeta.label.toLowerCase()} integration is not wired yet, so the second sidebar intentionally stays empty.`}
+              title={t('workspace.placeholderTitle', { module: moduleLabel })}
+              description={t('workspace.placeholderSidebarDescription', { module: moduleLabel.toLowerCase() })}
             />
           }
         />
@@ -2082,13 +2121,13 @@ function PlaceholderWorkspaceSection({
           projectId={projectId}
           projectName={projectName}
           module={module}
-          currentTitle={`${moduleMeta.label} placeholder`}
-          description={`The new information architecture already includes ${moduleMeta.label.toLowerCase()}, even though the API layer is still pending.`}
+          currentTitle={t('workspace.placeholderTitle', { module: moduleLabel })}
+          description={t('workspace.placeholderContentDescription', { module: moduleLabel.toLowerCase() })}
           actions={
             isHistoryModule ? (
               <Button asChild variant="outline">
                 <Link href={buildProjectTestCasesRoute(projectId)}>
-                  Open legacy test cases
+                  {t('common.openLegacyTestCases')}
                 </Link>
               </Button>
             ) : null
@@ -2096,14 +2135,14 @@ function PlaceholderWorkspaceSection({
         >
           <GuideState
             icon={Icon}
-            title={`${moduleMeta.label} is not connected yet`}
+            title={t('workspace.moduleNotConnected', { module: moduleLabel })}
             description={
               isHistoryModule
-                ? 'History data is not mounted in the current frontend. Until that lands, the existing test case route remains accessible as a legacy operational surface.'
-                : 'This module is intentionally scaffolded as a placeholder so the workspace hierarchy is complete before backend support arrives.'
+                ? t('workspace.historyPlaceholderDescription')
+                : t('workspace.placeholderDescription')
             }
             actionHref={isHistoryModule ? buildProjectTestCasesRoute(projectId) : undefined}
-            actionLabel={isHistoryModule ? 'Open legacy test cases' : undefined}
+            actionLabel={isHistoryModule ? t('common.openLegacyTestCases') : undefined}
           />
         </ResourceContent>
       }
@@ -2155,7 +2194,9 @@ function ResourceSidebar({
   searchPlaceholder?: string;
   headerActions?: React.ReactNode;
 }) {
+  const t = useT('project');
   const moduleMeta = getProjectWorkspaceModuleMeta(module);
+  const moduleShortLabel = getProjectModuleCopy(t, moduleMeta.i18nKey, 'shortLabel');
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -2164,7 +2205,7 @@ function ResourceSidebar({
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-                {moduleMeta.shortLabel}
+                {moduleShortLabel}
               </p>
               <h2 className="mt-2 text-lg font-semibold tracking-tight">{title}</h2>
               <p className="mt-1 text-sm leading-6 text-text-muted">{description}</p>
@@ -2202,9 +2243,9 @@ function ResourceSidebar({
           </div>
         ) : error ? (
           <Alert>
-            <AlertTitle>Unable to load module list</AlertTitle>
+            <AlertTitle>{t('workspace.unableToLoadModuleList')}</AlertTitle>
             <AlertDescription>
-              The second sidebar could not load its project-scoped items.
+              {t('workspace.unableToLoadModuleListDescription')}
             </AlertDescription>
           </Alert>
         ) : count === 0 ? (
@@ -2273,7 +2314,9 @@ function ResourceContent({
   actions?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const t = useT('project');
   const moduleMeta = getProjectWorkspaceModuleMeta(module);
+  const moduleLabel = getProjectModuleCopy(t, moduleMeta.i18nKey, 'label');
 
   return (
     <main className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -2282,7 +2325,7 @@ function ResourceContent({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/project">Projects</Link>
+                <Link href="/project">{t('common.projects')}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -2293,7 +2336,7 @@ function ResourceContent({
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>{moduleMeta.label}</BreadcrumbPage>
+              <BreadcrumbPage>{moduleLabel}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -2302,9 +2345,9 @@ function ResourceContent({
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                {moduleMeta.label}
+                {moduleLabel}
               </Badge>
-              <p className="text-sm text-text-muted">Content area</p>
+              <p className="text-sm text-text-muted">{t('common.contentArea')}</p>
             </div>
             <div>
               <h2 className="text-2xl font-semibold tracking-tight">{currentTitle}</h2>
@@ -2387,6 +2430,8 @@ function ApiSpecsGuideState({
   managerHref: string;
   testCasesHref: string;
 }) {
+  const t = useT('project');
+
   return (
     <Card className="border-border/60">
       <CardContent className="space-y-6 py-8">
@@ -2396,25 +2441,24 @@ function ApiSpecsGuideState({
           </div>
           <div className="space-y-2">
             <p className="text-2xl font-semibold tracking-tight text-text-main">
-              Describe the API, let AI draft the spec
+              {t('apiSpecs.guideTitle')}
             </p>
             <p className="max-w-3xl text-sm leading-6 text-text-muted">
-              Keep the primary flow simple: describe the endpoint in plain language, review the draft,
-              then create the formal spec and move straight into generated test cases.
+              {t('apiSpecs.guideDescription')}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Button type="button" onClick={onOpenAICreate}>
               <Sparkles className="h-4 w-4" />
-              Describe with AI
+              {t('apiSpecs.describeWithAi')}
             </Button>
             <Button type="button" variant="outline" onClick={onOpenManualCreate}>
               <Plus className="h-4 w-4" />
-              Add Spec Manually
+              {t('apiSpecs.addSpecManually')}
             </Button>
             <Button asChild variant="ghost">
               <Link href={managerHref}>
-                Full manager
+                {t('common.fullManager')}
               </Link>
             </Button>
           </div>
@@ -2422,25 +2466,25 @@ function ApiSpecsGuideState({
 
         <div className="grid gap-4 xl:grid-cols-3">
           <div className="rounded-2xl border border-border/60 bg-background/70 p-5">
-            <p className="text-sm font-semibold text-text-main">1. Capture intent</p>
+            <p className="text-sm font-semibold text-text-main">{t('apiSpecs.captureIntentTitle')}</p>
             <p className="mt-2 text-sm leading-6 text-text-muted">
-              Start from a sentence, method, and path instead of a long manual form.
+              {t('apiSpecs.captureIntentDescription')}
             </p>
           </div>
           <div className="rounded-2xl border border-border/60 bg-background/70 p-5">
-            <p className="text-sm font-semibold text-text-main">2. Review the draft</p>
+            <p className="text-sm font-semibold text-text-main">{t('apiSpecs.reviewDraftTitle')}</p>
             <p className="mt-2 text-sm leading-6 text-text-muted">
-              AI uses project conventions to propose parameters, request body, and responses.
+              {t('apiSpecs.reviewDraftDescription')}
             </p>
           </div>
           <div className="rounded-2xl border border-border/60 bg-background/70 p-5">
-            <p className="text-sm font-semibold text-text-main">3. Move into testing</p>
+            <p className="text-sm font-semibold text-text-main">{t('apiSpecs.moveToTestingTitle')}</p>
             <p className="mt-2 text-sm leading-6 text-text-muted">
-              Once the spec exists, switch to test cases and generate coverage from the same source of truth.
+              {t('apiSpecs.moveToTestingDescription')}
             </p>
             <Button asChild size="sm" variant="outline" className="mt-4">
               <Link href={testCasesHref}>
-                Open Test Cases
+                {t('apiSpecs.openTestCases')}
                 <FlaskConical className="h-4 w-4" />
               </Link>
             </Button>
@@ -2458,13 +2502,15 @@ function MissingDetailState({
   moduleLabel: string;
   clearHref: string;
 }) {
+  const t = useT('project');
+
   return (
     <GuideState
       icon={FileClock}
-      title={`${moduleLabel} not found`}
-      description={`The selected ${moduleLabel} could not be resolved. It may have been removed or the current item id is no longer valid.`}
+      title={t('workspace.notFoundTitle', { moduleLabel })}
+      description={t('workspace.missingDetailDescription', { moduleLabel })}
       actionHref={clearHref}
-      actionLabel="Clear selection"
+      actionLabel={t('common.clearSelection')}
     />
   );
 }
@@ -2603,6 +2649,7 @@ function CreateApiSpecDialogBody({
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: CreateApiSpecRequest) => Promise<void>;
 }) {
+  const t = useT('project');
   const [draft, setDraft] = useState<CreateApiSpecDraft>(() => getCreateApiSpecDraft());
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -2623,11 +2670,11 @@ function CreateApiSpecDialogBody({
     const nextErrors: Record<string, string> = {};
 
     if (!trimmedPath) {
-      nextErrors.path = 'Path is required.';
+      nextErrors.path = t('common.fieldRequired', { field: t('common.path') });
     }
 
     if (!trimmedVersion) {
-      nextErrors.version = 'Version is required.';
+      nextErrors.version = t('common.fieldRequired', { field: t('common.version') });
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -2651,9 +2698,9 @@ function CreateApiSpecDialogBody({
   return (
     <DialogContent size="default">
       <DialogHeader>
-        <DialogTitle>Create API Spec</DialogTitle>
+        <DialogTitle>{t('apiSpecs.createDialogTitle')}</DialogTitle>
         <DialogDescription>
-          Add a new API spec directly from the workspace sidebar without leaving the current layout.
+          {t('apiSpecs.createDialogDescription')}
         </DialogDescription>
       </DialogHeader>
 
@@ -2661,7 +2708,7 @@ function CreateApiSpecDialogBody({
         <form id="create-api-spec-form" className="space-y-5 py-1" onSubmit={handleSubmit}>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="space-y-2">
-              <Label htmlFor="workspace-spec-method">Method</Label>
+              <Label htmlFor="workspace-spec-method">{t('common.method')}</Label>
               <Select
                 value={draft.method}
                 onValueChange={(value) => updateDraft('method', value as HttpMethod)}
@@ -2680,7 +2727,7 @@ function CreateApiSpecDialogBody({
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="workspace-spec-path">Path</Label>
+              <Label htmlFor="workspace-spec-path">{t('common.path')}</Label>
               <Input
                 id="workspace-spec-path"
                 value={draft.path}
@@ -2692,7 +2739,7 @@ function CreateApiSpecDialogBody({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="workspace-spec-version">Version</Label>
+              <Label htmlFor="workspace-spec-version">{t('common.version')}</Label>
               <Input
                 id="workspace-spec-version"
                 value={draft.version}
@@ -2706,16 +2753,16 @@ function CreateApiSpecDialogBody({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="workspace-spec-category">Category</Label>
+              <Label htmlFor="workspace-spec-category">{t('common.category')}</Label>
               <Select
                 value={draft.categoryId || 'none'}
                 onValueChange={(value) => updateDraft('categoryId', value === 'none' ? '' : value)}
               >
                 <SelectTrigger id="workspace-spec-category" className="w-full">
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={t('apiSpecs.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Not set</SelectItem>
+                  <SelectItem value="none">{t('common.notSet')}</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.value} value={category.value}>
                       {category.label}
@@ -2726,7 +2773,7 @@ function CreateApiSpecDialogBody({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="workspace-spec-tags">Tags</Label>
+              <Label htmlFor="workspace-spec-tags">{t('common.tags')}</Label>
               <Input
                 id="workspace-spec-tags"
                 value={draft.tags}
@@ -2738,23 +2785,23 @@ function CreateApiSpecDialogBody({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="workspace-spec-summary">Summary</Label>
+            <Label htmlFor="workspace-spec-summary">{t('common.summary')}</Label>
             <Input
               id="workspace-spec-summary"
               value={draft.summary}
               onChange={(event) => updateDraft('summary', event.target.value)}
-              placeholder="Short summary of the endpoint"
+              placeholder={t('apiSpecs.shortSummaryPlaceholder')}
               root
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="workspace-spec-description">Description</Label>
+            <Label htmlFor="workspace-spec-description">{t('common.description')}</Label>
             <Textarea
               id="workspace-spec-description"
               value={draft.description}
               onChange={(event) => updateDraft('description', event.target.value)}
-              placeholder="Describe the purpose and constraints of this API."
+              placeholder={t('apiSpecs.descriptionPlaceholder')}
               rows={6}
               root
             />
@@ -2762,9 +2809,9 @@ function CreateApiSpecDialogBody({
 
           <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
             <div className="space-y-1">
-              <Label htmlFor="workspace-spec-public">Public spec</Label>
+              <Label htmlFor="workspace-spec-public">{t('apiSpecs.publicSpec')}</Label>
               <p className="text-xs text-text-muted">
-                Control whether this spec is exposed as a public-facing definition.
+                {t('apiSpecs.publicSpecDescription')}
               </p>
             </div>
             <Switch
@@ -2778,10 +2825,10 @@ function CreateApiSpecDialogBody({
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" form="create-api-spec-form" loading={isSubmitting}>
-          Create Spec
+          {t('apiSpecs.addSpec')}
         </Button>
       </DialogFooter>
     </DialogContent>

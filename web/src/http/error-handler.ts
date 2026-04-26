@@ -12,11 +12,24 @@ export interface ErrorHandlerConfig {
   fallbackMessage?: string;
 }
 
+export interface ErrorMessageResolver {
+  unexpected: string;
+  genericError: string;
+  tokenExpired: string;
+  statusMessages: Partial<Record<number, string>>;
+  formatErrorCode: (code: string | number) => string;
+}
+
 const DEFAULT_CONFIG: ErrorHandlerConfig = {
   silent: false,
   notify: true,
-  fallbackMessage: 'An unexpected error occurred',
 };
+
+let errorMessageResolver: ErrorMessageResolver | undefined;
+
+export function setErrorMessageResolver(resolver?: ErrorMessageResolver) {
+  errorMessageResolver = resolver;
+}
 
 function getDebugErrorPayload(error: unknown) {
   if (error instanceof ApiError) {
@@ -53,7 +66,7 @@ export function handleError(error: unknown, config: ErrorHandlerConfig = {}): vo
     return;
   }
 
-  let message = mergedConfig.fallbackMessage || 'Error';
+  let message = mergedConfig.fallbackMessage || errorMessageResolver?.unexpected || 'An unexpected error occurred';
   let errorCode: string | number | undefined;
 
   if (error instanceof ApiError) {
@@ -63,17 +76,12 @@ export function handleError(error: unknown, config: ErrorHandlerConfig = {}): vo
     // Automatically map status-based messages if no specific message is provided
     // or if the message is too generic
     if (error.status && !error.message) {
-      switch (error.status) {
-        case 401: message = 'Session expired, please login again'; break;
-        case 403: message = 'You do not have permission to perform this action'; break;
-        case 404: message = 'The requested resource was not found'; break;
-        case 500: message = 'Something went wrong on our server. Please try again later'; break;
-      }
+      message = errorMessageResolver?.statusMessages[error.status] ?? message;
     }
 
     // You can also add mapping based on ErrorCode here if needed
     if (errorCode === ErrorCode.TOKEN_EXPIRED) {
-      message = 'Your session has expired. Please log in again.';
+      message = errorMessageResolver?.tokenExpired ?? 'Your session has expired. Please log in again.';
     }
   } else if (error instanceof Error) {
     message = error.message;
@@ -81,7 +89,9 @@ export function handleError(error: unknown, config: ErrorHandlerConfig = {}): vo
 
   if (mergedConfig.notify) {
     toast.error(message, {
-      description: errorCode ? `Error Code: ${errorCode}` : undefined,
+      description: errorCode
+        ? errorMessageResolver?.formatErrorCode(errorCode) ?? `Error Code: ${errorCode}`
+        : undefined,
     });
   }
 

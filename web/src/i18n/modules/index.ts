@@ -7,6 +7,8 @@ import metadata from './metadata/en-US';
 import dashboard from './dashboard/en-US';
 import test from './test/en-US';
 import marketing from './marketing/en-US';
+import project from './project/en-US';
+import console from './console/en-US';
 
 /**
  * Static messages type derived from English (en-US) files.
@@ -22,6 +24,8 @@ export const messages = {
   dashboard,
   test,
   marketing,
+  project,
+  console,
 } as const;
 
 export type Messages = typeof messages;

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Boxes,
@@ -823,35 +823,6 @@ function CreateFromSpecDialog({
   );
   const [draft, setDraft] = useState<FromSpecDraft>(() => getFromSpecDraft(initialSpec ?? undefined));
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (!open || !initialSpec || !initialSpecId) {
-      return;
-    }
-
-    const nextSpecId = String(initialSpecId);
-
-    setDraft((current) => {
-      if (current.apiSpecId && current.apiSpecId !== nextSpecId) {
-        return current;
-      }
-
-      const nextName = current.name.trim()
-        ? current.name
-        : getDefaultFromSpecName(initialSpec);
-
-      if (current.apiSpecId === nextSpecId && current.name === nextName) {
-        return current;
-      }
-
-      return {
-        ...current,
-        apiSpecId: nextSpecId,
-        name: nextName,
-        exampleId: 'auto',
-      };
-    });
-  }, [initialSpec, initialSpecId, open]);
 
   const selectedSpecId = draft.apiSpecId ? Number(draft.apiSpecId) : undefined;
   const specExamplesQuery = useApiSpecExamples(
@@ -2482,7 +2453,7 @@ export function TestCaseManagementPage({
       />
 
       <CreateFromSpecDialog
-        key={`from-spec-${isFromSpecOpen ? 'open' : 'closed'}`}
+        key={`from-spec-${isFromSpecOpen ? 'open' : 'closed'}-${autoOpenFromSpecSpecId ?? 'none'}-${apiSpecs.length}`}
         open={isFromSpecOpen}
         projectId={projectId}
         apiSpecs={apiSpecs}

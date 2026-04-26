@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useT } from '@/i18n/client';
 import { flowService } from '@/services/flow';
 import type { CreateFlowRequest, SaveFlowRequest, UpdateFlowRequest } from '@/types/flow';
 
@@ -62,18 +63,20 @@ export function useFlowRun(
 
 export function useCreateFlow(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (data: CreateFlowRequest) => flowService.create(projectId, data),
     onSuccess: (flow) => {
       queryClient.invalidateQueries({ queryKey: flowKeys.list(projectId) });
-      toast.success(`Created flow "${flow.name}"`);
+      toast.success(t.project('toasts.flowCreated', { name: flow.name }));
     },
   });
 }
 
 export function useUpdateFlow(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({ flowId, data }: { flowId: number | string; data: UpdateFlowRequest }) =>
@@ -81,13 +84,14 @@ export function useUpdateFlow(projectId: number | string) {
     onSuccess: (flow) => {
       queryClient.invalidateQueries({ queryKey: flowKeys.list(projectId) });
       queryClient.invalidateQueries({ queryKey: flowKeys.detail(projectId, flow.id) });
-      toast.success(`Updated flow "${flow.name}"`);
+      toast.success(t.project('toasts.flowUpdated', { name: flow.name }));
     },
   });
 }
 
 export function useDeleteFlow(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (flowId: number | string) => flowService.delete(projectId, flowId),
@@ -95,13 +99,14 @@ export function useDeleteFlow(projectId: number | string) {
       queryClient.invalidateQueries({ queryKey: flowKeys.list(projectId) });
       queryClient.removeQueries({ queryKey: flowKeys.detail(projectId, flowId) });
       queryClient.removeQueries({ queryKey: flowKeys.runs(projectId, flowId) });
-      toast.success('Flow deleted');
+      toast.success(t.project('toasts.flowDeleted'));
     },
   });
 }
 
 export function useSaveFlow(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({ flowId, data }: { flowId: number | string; data: SaveFlowRequest }) =>
@@ -109,20 +114,21 @@ export function useSaveFlow(projectId: number | string) {
     onSuccess: (flow) => {
       queryClient.invalidateQueries({ queryKey: flowKeys.list(projectId) });
       queryClient.setQueryData(flowKeys.detail(projectId, flow.id), flow);
-      toast.success(`Saved flow "${flow.name}"`);
+      toast.success(t.project('toasts.flowSaved', { name: flow.name }));
     },
   });
 }
 
 export function useRunFlow(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: (flowId: number | string) => flowService.run(projectId, flowId),
     onSuccess: (run) => {
       queryClient.invalidateQueries({ queryKey: flowKeys.runs(projectId, run.flow_id) });
       queryClient.setQueryData(flowKeys.run(projectId, run.flow_id, run.id), run);
-      toast.success('Flow run started');
+      toast.success(t.project('toasts.flowRunStarted'));
     },
   });
 }

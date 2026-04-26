@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiExternalBaseUrl } from '@/config/api';
+import { getT } from '@/i18n/server';
 import type { PublicApiSpecShare } from '@/types/api-spec';
 import { formatDate } from '@/utils';
 
@@ -45,16 +46,21 @@ export async function generateMetadata({
   const { slug } = await params;
 
   try {
+    const t = await getT('project');
     const share = await fetchPublicShare(slug);
     return {
       title: `${share.method} ${share.path}`,
       description:
-        share.summary || share.description || `Public API documentation for ${share.method} ${share.path}.`,
+        share.summary || share.description || t('share.publicDescription', {
+          method: share.method,
+          path: share.path,
+        }),
     };
   } catch {
+    const t = await getT('project');
     return {
-      title: 'Shared API Spec',
-      description: 'Public API documentation shared from Kest.',
+      title: t('share.sharedApiSpec'),
+      description: t('share.sharedApiSpecDescription'),
     };
   }
 }
@@ -107,6 +113,7 @@ function JsonPanel({
 export default async function ApiSpecSharePage({
   params,
 }: ApiSpecSharePageProps) {
+  const t = await getT('project');
   const { slug } = await params;
   const share = await fetchPublicShare(slug);
   const hasDocSections = Boolean(
@@ -126,7 +133,7 @@ export default async function ApiSpecSharePage({
                     v{share.version}
                   </Badge>
                   <Badge variant="outline" className="border-slate-300 bg-white/70 text-slate-700">
-                    Shared
+                    {t('share.shared')}
                   </Badge>
                 </div>
                 <div>
@@ -134,20 +141,20 @@ export default async function ApiSpecSharePage({
                     {share.path}
                   </h1>
                   <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-                    {share.summary || share.description || 'No summary has been published for this API spec yet.'}
+                    {share.summary || share.description || t('share.noSummary')}
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-3xl border border-white/60 bg-white/75 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Published</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('share.published')}</p>
                   <p className="mt-2 text-sm font-medium text-slate-900">
                     {formatDate(share.shared_at, 'YYYY-MM-DD HH:mm')}
                   </p>
                 </div>
                 <div className="rounded-3xl border border-white/60 bg-white/75 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Updated</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('share.updated')}</p>
                   <p className="mt-2 text-sm font-medium text-slate-900">
                     {formatDate(share.updated_at, 'YYYY-MM-DD HH:mm')}
                   </p>
@@ -172,15 +179,15 @@ export default async function ApiSpecSharePage({
 
           <div className="grid gap-4 px-6 py-6 md:grid-cols-3 md:px-8">
             <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Doc Source</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('share.docSource')}</p>
               <p className="mt-2 text-sm font-medium text-slate-900">{share.doc_source || 'manual'}</p>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Path</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('common.path')}</p>
               <p className="mt-2 font-mono text-sm text-slate-900">{share.path}</p>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Method</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('common.method')}</p>
               <p className="mt-2 text-sm font-medium text-slate-900">{share.method}</p>
             </div>
           </div>
@@ -190,35 +197,35 @@ export default async function ApiSpecSharePage({
           <div className="space-y-6">
             <Card className="rounded-[2rem] border-slate-200/80 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
               <CardHeader>
-                <CardTitle>Description</CardTitle>
-                <CardDescription>Published overview for external readers.</CardDescription>
+                <CardTitle>{t('share.descriptionTitle')}</CardTitle>
+                <CardDescription>{t('share.descriptionDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="text-sm leading-7 text-slate-700">
-                {share.description || 'No detailed description was published for this API spec.'}
+                {share.description || t('share.noDetailedDescription')}
               </CardContent>
             </Card>
 
             {hasDocSections ? (
               <Card className="rounded-[2rem] border-slate-200/80 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
                 <CardHeader>
-                  <CardTitle>Published Docs</CardTitle>
-                  <CardDescription>Markdown content captured in the published snapshot.</CardDescription>
+                  <CardTitle>{t('share.publishedDocs')}</CardTitle>
+                  <CardDescription>{t('share.publishedDocsDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <CodePanel
-                    title="Default Markdown"
+                    title={t('share.defaultMarkdown')}
                     value={share.doc_markdown}
-                    emptyLabel="No default markdown was published."
+                    emptyLabel={t('share.noDefaultMarkdown')}
                   />
                   <CodePanel
-                    title="Chinese Markdown"
+                    title={t('share.chineseMarkdown')}
                     value={share.doc_markdown_zh}
-                    emptyLabel="No Chinese markdown was published."
+                    emptyLabel={t('share.noChineseMarkdown')}
                   />
                   <CodePanel
-                    title="English Markdown"
+                    title={t('share.englishMarkdown')}
                     value={share.doc_markdown_en}
-                    emptyLabel="No English markdown was published."
+                    emptyLabel={t('share.noEnglishMarkdown')}
                   />
                 </CardContent>
               </Card>
@@ -228,42 +235,42 @@ export default async function ApiSpecSharePage({
           <div className="space-y-6">
             <Card className="rounded-[2rem] border-slate-200/80 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
               <CardHeader>
-                <CardTitle>Request Schema</CardTitle>
-                <CardDescription>Structured request contract published for this endpoint.</CardDescription>
+                <CardTitle>{t('share.requestSchema')}</CardTitle>
+                <CardDescription>{t('share.requestSchemaDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <JsonPanel
-                  title="Request Body"
+                  title={t('common.requestBody')}
                   value={share.request_body}
-                  emptyLabel="No request body schema was published."
+                  emptyLabel={t('share.noRequestBody')}
                 />
               </CardContent>
             </Card>
 
             <Card className="rounded-[2rem] border-slate-200/80 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
               <CardHeader>
-                <CardTitle>Parameters</CardTitle>
-                <CardDescription>Query, path, header, or cookie inputs exposed publicly.</CardDescription>
+                <CardTitle>{t('common.parameters')}</CardTitle>
+                <CardDescription>{t('share.parametersDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <JsonPanel
-                  title="Parameters"
+                  title={t('common.parameters')}
                   value={share.parameters}
-                  emptyLabel="No parameter schema was published."
+                  emptyLabel={t('share.noParameterSchema')}
                 />
               </CardContent>
             </Card>
 
             <Card className="rounded-[2rem] border-slate-200/80 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
               <CardHeader>
-                <CardTitle>Responses</CardTitle>
-                <CardDescription>Published response schema snapshot.</CardDescription>
+                <CardTitle>{t('common.responses')}</CardTitle>
+                <CardDescription>{t('share.responsesDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <JsonPanel
-                  title="Responses"
+                  title={t('common.responses')}
                   value={share.responses}
-                  emptyLabel="No response schema was published."
+                  emptyLabel={t('share.noResponseSchema')}
                 />
               </CardContent>
             </Card>

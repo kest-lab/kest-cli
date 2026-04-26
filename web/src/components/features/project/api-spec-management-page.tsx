@@ -107,6 +107,7 @@ import {
 } from '@/hooks/use-api-specs';
 import { useProjectMemberRole } from '@/hooks/use-members';
 import { useProject, useProjectStats } from '@/hooks/use-projects';
+import { useT } from '@/i18n/client';
 import type {
   ApiSpec,
   ApiSpecDocSource,
@@ -1382,6 +1383,7 @@ export function ApiSpecManagementPage({
   projectId: number;
   initialSpecId?: number | null;
 }) {
+  const t = useT('project');
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState('');
@@ -1516,7 +1518,7 @@ export function ApiSpecManagementPage({
     }
 
     await Promise.all(tasks);
-    toast.success('Refreshed project API specification data');
+    toast.success(t('toasts.apiSpecDataRefreshed'));
   };
 
   const handleSpecSubmit = async (payload: CreateApiSpecRequest | UpdateApiSpecRequest) => {
@@ -1572,7 +1574,7 @@ export function ApiSpecManagementPage({
     try {
       const payload = await exportSpecsMutation.mutateAsync({ format });
       downloadExportPayload({ payload, format, projectSlug });
-      toast.success(`Exported ${format} file`);
+      toast.success(t('toasts.exportFileCreated', { format }));
       setIsExportOpen(false);
     } catch {
       // HTTP 错误由全局错误处理和 toast 负责提示。
@@ -1630,7 +1632,7 @@ export function ApiSpecManagementPage({
 
     const absoluteUrl = new URL(route, window.location.origin).toString();
     await navigator.clipboard.writeText(absoluteUrl);
-    toast.success('Public share link copied to clipboard');
+    toast.success(t('toasts.publicShareCopied'));
   };
 
   const handlePublishShare = async () => {
@@ -1664,7 +1666,7 @@ export function ApiSpecManagementPage({
     }
 
     await navigator.clipboard.writeText(generatedTestQuery.data);
-    toast.success('Generated test copied to clipboard');
+    toast.success(t('toasts.generatedTestCopied'));
   };
 
   const handleCreateAIDraft = async (

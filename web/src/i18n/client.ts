@@ -24,6 +24,8 @@ export function useT(scope?: string) {
   const dashboardT = useTranslations('dashboard') as unknown as TranslatorFn;
   const testT = useTranslations('test') as unknown as TranslatorFn;
   const marketingT = useTranslations('marketing') as unknown as TranslatorFn;
+  const projectT = useTranslations('project') as unknown as TranslatorFn;
+  const consoleT = useTranslations('console') as unknown as TranslatorFn;
 
   if (scope) {
     return rootT as ScopedTranslations<typeof scope>;
@@ -41,6 +43,8 @@ export function useT(scope?: string) {
     dashboard: dashboardT as Translators['dashboard'],
     test: testT as Translators['test'],
     marketing: marketingT as Translators['marketing'],
+    project: projectT as Translators['project'],
+    console: consoleT as Translators['console'],
   };
 
   return Object.assign(translate, namespaces);

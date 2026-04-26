@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useT } from '@/i18n/client';
 import { exampleService } from '@/services/example';
 import type {
   CreateExampleRequest,
@@ -86,6 +87,7 @@ export function useRequestExample(
 
 export function useCreateRequestExample(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -105,13 +107,14 @@ export function useCreateRequestExample(projectId: number | string) {
         exampleKeys.detail(projectId, variables.collectionId, variables.requestId, example.id),
         example
       );
-      toast.success(`Created example "${example.name}"`);
+      toast.success(t.project('toasts.exampleCreated', { name: example.name }));
     },
   });
 }
 
 export function useUpdateRequestExample(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -133,13 +136,14 @@ export function useUpdateRequestExample(projectId: number | string) {
         exampleKeys.detail(projectId, variables.collectionId, variables.requestId, example.id),
         example
       );
-      toast.success(`Updated example "${example.name}"`);
+      toast.success(t.project('toasts.exampleUpdated', { name: example.name }));
     },
   });
 }
 
 export function useDeleteRequestExample(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -158,13 +162,14 @@ export function useDeleteRequestExample(projectId: number | string) {
       queryClient.removeQueries({
         queryKey: exampleKeys.detail(projectId, variables.collectionId, variables.requestId, variables.exampleId),
       });
-      toast.success('Example deleted');
+      toast.success(t.project('toasts.exampleDeleted'));
     },
   });
 }
 
 export function useSaveRequestExampleResponse(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -186,13 +191,14 @@ export function useSaveRequestExampleResponse(projectId: number | string) {
         exampleKeys.detail(projectId, variables.collectionId, variables.requestId, example.id),
         example
       );
-      toast.success(`Captured response for "${example.name}"`);
+      toast.success(t.project('toasts.responseCaptured', { name: example.name }));
     },
   });
 }
 
 export function useSetDefaultRequestExample(projectId: number | string) {
   const queryClient = useQueryClient();
+  const t = useT();
 
   return useMutation({
     mutationFn: ({
@@ -212,7 +218,7 @@ export function useSetDefaultRequestExample(projectId: number | string) {
         exampleKeys.detail(projectId, variables.collectionId, variables.requestId, example.id),
         example
       );
-      toast.success(`Set "${example.name}" as default example`);
+      toast.success(t.project('toasts.defaultExampleSet', { name: example.name }));
     },
   });
 }

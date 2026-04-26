@@ -68,6 +68,7 @@ import {
 } from '@/hooks/use-project-invitations';
 import { useProject, useProjectStats } from '@/hooks/use-projects';
 import { useUserSearch } from '@/hooks/use-users';
+import { useT } from '@/i18n/client';
 import type { ApiUser } from '@/types/auth';
 import {
   PROJECT_MEMBER_ASSIGNABLE_ROLES,
@@ -197,6 +198,7 @@ function MembersTableSkeleton() {
 }
 
 export function ProjectMemberManagementPage({ projectId }: { projectId: number }) {
+  const t = useT('project');
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | ProjectMemberRole>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -366,9 +368,9 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number }
   const copyInviteLink = async (invitation: ProjectInvitation) => {
     try {
       await navigator.clipboard.writeText(resolveInviteLink(invitation));
-      toast.success('Invite link copied to clipboard');
+      toast.success(t('toasts.inviteLinkCopied'));
     } catch {
-      toast.error('Failed to copy invite link');
+      toast.error(t('toasts.inviteLinkCopyFailed'));
     }
   };
 
