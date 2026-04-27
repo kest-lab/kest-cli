@@ -1424,6 +1424,8 @@ const messages: ProjectMessages = {
     selectTitle: 'Select a flow',
     selectDescriptionWithSidebar: 'Use the left sidebar to open an existing flow or create a new one for this project.',
     selectDescriptionCollapsed: 'Use "Show Flows" to reopen the sidebar, then open an existing flow or create a new one.',
+    runEnvironment: 'Run Environment',
+    runEnvironmentDefault: 'Project origin (default)',
     runLocal: 'Run Local',
     runServer: 'Run Server',
     addStep: 'Add Step',

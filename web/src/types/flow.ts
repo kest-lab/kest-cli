@@ -136,4 +136,5 @@ export interface StreamFlowRunOptions {
   signal?: AbortSignal;
   onStep?: (event: FlowStreamStepEvent) => void;
   onDone?: () => void;
+  baseUrl?: string;
 }

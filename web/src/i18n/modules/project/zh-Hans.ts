@@ -1422,6 +1422,8 @@ const messages = {
     selectTitle: '选择一个流程',
     selectDescriptionWithSidebar: '使用左侧边栏打开现有流程，或为当前项目创建一个新流程。',
     selectDescriptionCollapsed: '使用“显示流程侧栏”重新打开侧边栏，然后打开现有流程或创建新流程。',
+    runEnvironment: '运行环境',
+    runEnvironmentDefault: '项目当前来源（默认）',
     runLocal: '本地运行',
     runServer: '服务端运行',
     addStep: '添加步骤',

@@ -95,6 +95,7 @@ import {
   useRunFlow,
   useSaveFlow,
 } from '@/hooks/use-flows';
+import { useEnvironments } from '@/hooks/use-environments';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProjectMemberRole } from '@/hooks/use-members';
 import { useProject } from '@/hooks/use-projects';
@@ -130,6 +131,7 @@ import { cn, formatDate } from '@/utils';
 const WRITE_ROLES = PROJECT_MEMBER_WRITE_ROLES;
 const EMPTY_RUNS: FlowRun[] = [];
 const FLOW_METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const;
+const RUN_ENVIRONMENT_DEFAULT_VALUE = '__flow-run-environment-default__';
 
 type FlowNodeData = {
   backendStepId?: number;
@@ -1814,6 +1816,7 @@ export function ProjectFlowManagementPage({
   const projectName = projectQuery.data?.name || `Project #${projectId}`;
   const memberRoleQuery = useProjectMemberRole(projectId);
   const flowListQuery = useFlows(projectId);
+  const environmentsQuery = useEnvironments(projectId);
   const createFlowMutation = useCreateFlow(projectId);
   const deleteFlowMutation = useDeleteFlow(projectId);
   const saveFlowMutation = useSaveFlow(projectId);
@@ -1822,6 +1825,7 @@ export function ProjectFlowManagementPage({
   const [searchValue, setSearchValue] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedFlowId, setSelectedFlowId] = useState<number | null>(selectedItemId ?? null);
+  const [selectedRunEnvironmentId, setSelectedRunEnvironmentId] = useState<number | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [localRuns, setLocalRuns] = useState<FlowRun[]>([]);
@@ -1869,6 +1873,21 @@ export function ProjectFlowManagementPage({
 
   const canEdit = WRITE_ROLES.includes(memberRoleQuery.data?.role ?? 'read');
   const flows = flowListQuery.data?.items ?? [];
+  const runEnvironments = useMemo(
+    () =>
+      (environmentsQuery.data?.items ?? []).filter(
+        (environment) => typeof environment.base_url === 'string' && environment.base_url.trim().length > 0
+      ),
+    [environmentsQuery.data?.items]
+  );
+  const selectedRunEnvironment = useMemo(
+    () =>
+      selectedRunEnvironmentId === null
+        ? null
+        : runEnvironments.find((environment) => environment.id === selectedRunEnvironmentId) ?? null,
+    [runEnvironments, selectedRunEnvironmentId]
+  );
+  const selectedRunBaseUrl = selectedRunEnvironment?.base_url?.trim() || undefined;
   const showFlowSidebar = isMobile || !isSidebarCollapsed;
   const filteredFlows = useMemo(() => {
     const keyword = deferredSearch.trim().toLowerCase();
@@ -1882,6 +1901,20 @@ export function ProjectFlowManagementPage({
         .some((value) => value.toLowerCase().includes(keyword))
     );
   }, [deferredSearch, flows]);
+
+  useEffect(() => {
+    if (runEnvironments.length === 0) {
+      setSelectedRunEnvironmentId(null);
+      return;
+    }
+    if (
+      selectedRunEnvironmentId !== null &&
+      runEnvironments.some((environment) => environment.id === selectedRunEnvironmentId)
+    ) {
+      return;
+    }
+    setSelectedRunEnvironmentId(runEnvironments[0].id);
+  }, [runEnvironments, selectedRunEnvironmentId]);
 
   useEffect(() => {
     const detail = selectedFlowQuery.data;
@@ -2331,7 +2364,7 @@ export function ProjectFlowManagementPage({
     }
   };
 
-  const streamRun = async (runId: number) => {
+  const streamRun = async (runId: number, baseUrl?: string) => {
     if (!selectedFlowId) {
       return;
     }
@@ -2343,6 +2376,7 @@ export function ProjectFlowManagementPage({
     try {
       await flowService.streamRun(projectId, selectedFlowId, runId, {
         signal: controller.signal,
+        baseUrl,
         onStep: (event) => {
           const stepResult = event.data;
           if (!stepResult) {
@@ -2389,7 +2423,7 @@ export function ProjectFlowManagementPage({
       setLiveStepResults({});
       const run = await runFlowMutation.mutateAsync(selectedFlowId);
       setSelectedRunId(run.id);
-      await streamRun(run.id);
+      await streamRun(run.id, selectedRunBaseUrl);
     } catch (error) {
       setValidationState((current) => ({
         ...current,
@@ -2452,6 +2486,7 @@ export function ProjectFlowManagementPage({
         runId,
         steps: graph.steps,
         edges: graph.edges,
+        baseUrl: selectedRunBaseUrl,
         onStepEvent: (event) => {
           setLiveStepResults((current) => ({
             ...current,
@@ -2674,6 +2709,45 @@ export function ProjectFlowManagementPage({
   ) : (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b border-border/60 bg-bg-surface/70 px-4 py-4 md:px-6">
+        <Select
+          value={
+            selectedRunEnvironmentId === null
+              ? RUN_ENVIRONMENT_DEFAULT_VALUE
+              : String(selectedRunEnvironmentId)
+          }
+          onValueChange={(value) => {
+            if (value === RUN_ENVIRONMENT_DEFAULT_VALUE) {
+              setSelectedRunEnvironmentId(null);
+              return;
+            }
+            const nextEnvironmentId = Number(value);
+            setSelectedRunEnvironmentId(Number.isNaN(nextEnvironmentId) ? null : nextEnvironmentId);
+          }}
+          disabled={environmentsQuery.isLoading}
+        >
+          <SelectTrigger
+            className="w-[320px]"
+            aria-label={t('flowPage.runEnvironment')}
+            title={selectedRunBaseUrl ?? t('flowPage.runEnvironmentDefault')}
+          >
+            <SelectValue placeholder={t('flowPage.runEnvironmentDefault')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={RUN_ENVIRONMENT_DEFAULT_VALUE}>
+              {t('flowPage.runEnvironmentDefault')}
+            </SelectItem>
+            {runEnvironments.map((environment) => (
+              <SelectItem key={environment.id} value={String(environment.id)}>
+                {(environment.display_name || environment.name).trim()}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {selectedRunBaseUrl ? (
+          <Badge variant="outline" className="max-w-[320px] truncate">
+            {selectedRunBaseUrl}
+          </Badge>
+        ) : null}
         <Button type="button" variant="outline" onClick={() => void saveCurrentFlow()} disabled={!canEdit || !dirty} loading={saveFlowMutation.isPending}>
           <Save className="h-4 w-4" />
           {t('common.saveChanges')}

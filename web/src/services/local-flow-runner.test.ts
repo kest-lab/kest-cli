@@ -106,6 +106,46 @@ describe('runLocalFlow', () => {
     expect(run.step_results?.[0].error_message).toContain('unresolved variables: missingToken');
   });
 
+  it('resolves relative URLs against the selected run environment base URL', async () => {
+    const execute = vi.fn().mockImplementation(async (payload) => {
+      expect(payload.url).toBe('https://staging.kest.dev/v1/health');
+      return {
+        status: 200,
+        status_text: '200 OK',
+        headers: { 'content-type': 'application/json' },
+        body: '{"ok":true}',
+        time: 9,
+        size: 11,
+      };
+    });
+
+    const run = await runLocalFlow(
+      {
+        flowId: 12,
+        runId: -12,
+        steps: [
+          {
+            id: 1,
+            name: 'Health',
+            sort_order: 0,
+            method: 'GET',
+            url: '/health',
+            headers: '',
+            body: '',
+            captures: '',
+            asserts: 'status == 200',
+          },
+        ],
+        edges: [],
+        baseUrl: 'https://staging.kest.dev/v1',
+      },
+      execute
+    );
+
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(run.status).toBe('passed');
+  });
+
   it('uses generated capture paths and same-name edge mappings from response handoff', async () => {
     const steps: LocalFlowStepDefinition[] = [
       {

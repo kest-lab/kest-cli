@@ -2144,10 +2144,16 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/flows/1/runs/1' \
 | `fid` | `integer` | Resource identifier |
 | `rid` | `integer` | Resource identifier |
 
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `base_url` | `string` | Optional. Override the execution base URL used to resolve relative step URLs. Must be an absolute `http` or `https` URL. |
+
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/flows/1/runs/1/events' \
+curl -X GET 'http://localhost:8025/api/v1/projects/1/flows/1/runs/1/events?base_url=https%3A%2F%2Fapi.example.com' \
   -H 'Authorization: Bearer <token>'
 ```
 

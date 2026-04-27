@@ -12,6 +12,7 @@ import type { RunRequestResponse } from '@/types/request';
 const TEMPLATE_PATTERN = /\{\{([^}]+)\}\}/g;
 const INDEX_SYNTAX_PATTERN = /\[(\d+)\]/g;
 const NUMBER_PATTERN = /^[+-]?(\d+(\.\d+)?|\.\d+)$/;
+const ABSOLUTE_HTTP_URL_PATTERN = /^https?:\/\//i;
 
 type LocalFlowAssertResult = {
   expression: string;
@@ -52,6 +53,7 @@ export type LocalFlowRunRequest = {
   runId: number;
   steps: LocalFlowStepDefinition[];
   edges: LocalFlowEdgeDefinition[];
+  baseUrl?: string;
   variables?: Record<string, unknown>;
   onStepEvent?: (event: LocalFlowRunStepEvent) => void;
 };
@@ -264,7 +266,7 @@ const parseHeaders = (
   }
 };
 
-const buildExecutableUrl = (rawUrl: string) => {
+const buildExecutableUrl = (rawUrl: string, baseUrl?: string) => {
   const trimmed = rawUrl.trim();
   if (!trimmed) {
     throw new Error('Request URL is required.');
@@ -274,8 +276,14 @@ const buildExecutableUrl = (rawUrl: string) => {
     return new URL(trimmed).toString();
   } catch {
     const fallbackBase =
+      baseUrl?.trim() ||
       apiExternalBaseUrl ||
       (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1');
+    if (ABSOLUTE_HTTP_URL_PATTERN.test(fallbackBase)) {
+      const normalizedBase = fallbackBase.replace(/\/+$/, '');
+      const normalizedPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+      return `${normalizedBase}${normalizedPath}`;
+    }
     return new URL(trimmed, fallbackBase).toString();
   }
 };
@@ -600,12 +608,14 @@ const executeLocalFlowStep = async ({
   stepResultId,
   variables,
   executeRequest,
+  baseUrl,
 }: {
   step: LocalFlowStepDefinition;
   runId: number;
   stepResultId: number;
   variables: Record<string, unknown>;
   executeRequest: LocalFlowExecuteRequest;
+  baseUrl?: string;
 }) => {
   const resolvedUrl = resolveTemplateValue(step.url, variables);
   const resolvedHeaders = resolveTemplateValue(step.headers, variables);
@@ -624,7 +634,7 @@ const executeLocalFlowStep = async ({
 
   let executableUrl = '';
   try {
-    executableUrl = buildExecutableUrl(resolvedUrl);
+    executableUrl = buildExecutableUrl(resolvedUrl, baseUrl);
   } catch (error) {
     return createFlowStepResult({
       id: stepResultId,
@@ -752,6 +762,7 @@ export const runLocalFlow = async (
       stepResultId: index + 1,
       variables: executionVariables,
       executeRequest,
+      baseUrl: request.baseUrl,
     });
 
     const captured = stepResult.variables_captured

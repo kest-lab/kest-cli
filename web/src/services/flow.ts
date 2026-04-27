@@ -93,17 +93,21 @@ export const flowService = {
     options: StreamFlowRunOptions = {}
   ) => {
     const { accessToken } = getAuthTokens();
-    const response = await fetch(
-      buildApiUrl(`/projects/${projectId}/flows/${flowId}/runs/${runId}/events`),
-      {
-        headers: accessToken
-          ? {
-              Authorization: `Bearer ${accessToken}`,
-            }
-          : undefined,
-        signal: options.signal,
-      }
-    );
+    let streamUrl = buildApiUrl(`/projects/${projectId}/flows/${flowId}/runs/${runId}/events`);
+    const selectedBaseUrl = options.baseUrl?.trim();
+    if (selectedBaseUrl) {
+      const separator = streamUrl.includes('?') ? '&' : '?';
+      streamUrl = `${streamUrl}${separator}base_url=${encodeURIComponent(selectedBaseUrl)}`;
+    }
+
+    const response = await fetch(streamUrl, {
+      headers: accessToken
+        ? {
+            Authorization: `Bearer ${accessToken}`,
+          }
+        : undefined,
+      signal: options.signal,
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to stream flow run: ${response.status}`);

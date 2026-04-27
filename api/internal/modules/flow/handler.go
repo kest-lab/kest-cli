@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kest-labs/kest/api/internal/contracts"
@@ -71,6 +73,26 @@ func (h *Handler) userID(c *gin.Context) uint {
 		return uint(v)
 	}
 	return 0
+}
+
+func resolveRunBaseURL(c *gin.Context) (string, error) {
+	requestedBaseURL := strings.TrimSpace(c.Query("base_url"))
+	if requestedBaseURL != "" {
+		parsed, err := url.Parse(requestedBaseURL)
+		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+			return "", errors.New("Invalid base_url query parameter")
+		}
+		if parsed.Scheme != "http" && parsed.Scheme != "https" {
+			return "", errors.New("Invalid base_url query parameter")
+		}
+		return strings.TrimRight(parsed.String(), "/"), nil
+	}
+
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s", scheme, c.Request.Host), nil
 }
 
 func respondFlowError(c *gin.Context, err error) {
@@ -315,12 +337,11 @@ func (h *Handler) ExecuteFlowSSE(c *gin.Context) {
 		return
 	}
 
-	// Determine base URL from request
-	scheme := "http"
-	if c.Request.TLS != nil {
-		scheme = "https"
+	baseURL, err := resolveRunBaseURL(c)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
 	}
-	baseURL := fmt.Sprintf("%s://%s", scheme, c.Request.Host)
 
 	// Set SSE headers
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
