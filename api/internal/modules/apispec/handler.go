@@ -17,7 +17,7 @@ import (
 
 // TestCaseSaver is a minimal interface to save a generated test case, avoiding import cycles.
 type TestCaseSaver interface {
-	SaveGeneratedTestCase(ctx context.Context, apiSpecID uint, name, flowContent string) error
+	SaveGeneratedTestCase(ctx context.Context, apiSpecID string, name, flowContent string) error
 }
 
 // Handler handles API specification HTTP requests

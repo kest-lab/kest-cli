@@ -10,11 +10,11 @@ import (
 // Repository defines the interface for environment data access
 type Repository interface {
 	Create(ctx context.Context, env *EnvironmentPO) error
-	GetByID(ctx context.Context, id uint) (*EnvironmentPO, error)
-	GetByProjectAndName(ctx context.Context, projectID uint, name string) (*EnvironmentPO, error)
-	ListByProject(ctx context.Context, projectID uint) ([]*EnvironmentPO, error)
+	GetByID(ctx context.Context, id string) (*EnvironmentPO, error)
+	GetByProjectAndName(ctx context.Context, projectID string, name string) (*EnvironmentPO, error)
+	ListByProject(ctx context.Context, projectID string) ([]*EnvironmentPO, error)
 	Update(ctx context.Context, env *EnvironmentPO) error
-	Delete(ctx context.Context, id uint) error
+	Delete(ctx context.Context, id string) error
 }
 
 type repository struct {
@@ -32,7 +32,7 @@ func (r *repository) Create(ctx context.Context, env *EnvironmentPO) error {
 }
 
 // GetByID gets an environment by ID
-func (r *repository) GetByID(ctx context.Context, id uint) (*EnvironmentPO, error) {
+func (r *repository) GetByID(ctx context.Context, id string) (*EnvironmentPO, error) {
 	var env EnvironmentPO
 	err := r.db.WithContext(ctx).First(&env, id).Error
 	if err != nil {
@@ -45,7 +45,7 @@ func (r *repository) GetByID(ctx context.Context, id uint) (*EnvironmentPO, erro
 }
 
 // GetByProjectAndName gets an environment by project ID and name
-func (r *repository) GetByProjectAndName(ctx context.Context, projectID uint, name string) (*EnvironmentPO, error) {
+func (r *repository) GetByProjectAndName(ctx context.Context, projectID string, name string) (*EnvironmentPO, error) {
 	var env EnvironmentPO
 	err := r.db.WithContext(ctx).
 		Where("project_id = ? AND name = ?", projectID, name).
@@ -60,7 +60,7 @@ func (r *repository) GetByProjectAndName(ctx context.Context, projectID uint, na
 }
 
 // ListByProject lists all environments for a project
-func (r *repository) ListByProject(ctx context.Context, projectID uint) ([]*EnvironmentPO, error) {
+func (r *repository) ListByProject(ctx context.Context, projectID string) ([]*EnvironmentPO, error) {
 	var envs []*EnvironmentPO
 	err := r.db.WithContext(ctx).
 		Where("project_id = ?", projectID).
@@ -78,6 +78,6 @@ func (r *repository) Update(ctx context.Context, env *EnvironmentPO) error {
 }
 
 // Delete deletes an environment (soft delete)
-func (r *repository) Delete(ctx context.Context, id uint) error {
+func (r *repository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&EnvironmentPO{}, id).Error
 }

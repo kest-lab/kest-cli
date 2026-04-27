@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"time"
 
-	"github.com/kest-labs/kest/api/internal/infra/config"
 	"github.com/glebarez/sqlite"
+	"github.com/google/uuid"
+	"github.com/kest-labs/kest/api/internal/infra/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -67,6 +69,9 @@ func initDB(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
+	if err := registerUUIDPrimaryKeyCallback(db); err != nil {
+		return nil, fmt.Errorf("failed to register UUID primary key callback: %w", err)
+	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
@@ -84,6 +89,53 @@ func initDB(cfg config.DatabaseConfig) (*gorm.DB, error) {
 	}
 
 	return db, nil
+}
+
+func registerUUIDPrimaryKeyCallback(db *gorm.DB) error {
+	return db.Callback().Create().Before("gorm:before_create").Register("kest:assign_uuid_primary_key", func(tx *gorm.DB) {
+		if tx == nil || tx.Statement == nil || tx.Statement.Schema == nil {
+			return
+		}
+
+		idField := tx.Statement.Schema.LookUpField("ID")
+		if idField == nil || idField.FieldType.Kind() != reflect.String {
+			return
+		}
+
+		assignID := func(value reflect.Value) {
+			if !value.IsValid() {
+				return
+			}
+
+			for value.Kind() == reflect.Ptr {
+				if value.IsNil() {
+					return
+				}
+				value = value.Elem()
+			}
+
+			if value.Kind() != reflect.Struct {
+				return
+			}
+
+			_, isZero := idField.ValueOf(tx.Statement.Context, value)
+			if !isZero {
+				return
+			}
+
+			_ = idField.Set(tx.Statement.Context, value, uuid.NewString())
+		}
+
+		value := tx.Statement.ReflectValue
+		switch value.Kind() {
+		case reflect.Slice, reflect.Array:
+			for i := 0; i < value.Len(); i++ {
+				assignID(value.Index(i))
+			}
+		default:
+			assignID(value)
+		}
+	})
 }
 
 // NewTestDB creates an in-memory SQLite database for testing.

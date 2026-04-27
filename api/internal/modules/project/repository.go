@@ -20,15 +20,15 @@ type ProjectStats struct {
 // Repository defines the interface for project data access
 type Repository interface {
 	Create(ctx context.Context, project *Project) error
-	GetByID(ctx context.Context, id uint) (*Project, error)
+	GetByID(ctx context.Context, id string) (*Project, error)
 	GetBySlug(ctx context.Context, slug string) (*Project, error)
 	Update(ctx context.Context, project *Project) error
-	Delete(ctx context.Context, id uint) error
+	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, userID uint, offset, limit int) ([]*Project, int64, error)
-	GetStats(ctx context.Context, projectID uint) (*ProjectStats, error)
+	GetStats(ctx context.Context, projectID string) (*ProjectStats, error)
 	CreateCLIToken(ctx context.Context, token *ProjectCLIToken, tokenHash string) error
 	GetCLITokenByHash(ctx context.Context, tokenHash string) (*ProjectCLIToken, error)
-	TouchCLIToken(ctx context.Context, id uint, usedAt time.Time) error
+	TouchCLIToken(ctx context.Context, id string, usedAt time.Time) error
 }
 
 // repository implements Repository interface
@@ -53,7 +53,7 @@ func (r *repository) Create(ctx context.Context, project *Project) error {
 	return nil
 }
 
-func (r *repository) GetByID(ctx context.Context, id uint) (*Project, error) {
+func (r *repository) GetByID(ctx context.Context, id string) (*Project, error) {
 	var po ProjectPO
 	if err := r.db.WithContext(ctx).First(&po, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -80,7 +80,7 @@ func (r *repository) Update(ctx context.Context, project *Project) error {
 	return r.db.WithContext(ctx).Model(&ProjectPO{}).Where("id = ?", project.ID).Updates(po).Error
 }
 
-func (r *repository) Delete(ctx context.Context, id uint) error {
+func (r *repository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&ProjectPO{}, id).Error
 }
 
@@ -111,7 +111,7 @@ func (r *repository) List(ctx context.Context, userID uint, offset, limit int) (
 	return toDomainList(poList), total, nil
 }
 
-func (r *repository) GetStats(ctx context.Context, projectID uint) (*ProjectStats, error) {
+func (r *repository) GetStats(ctx context.Context, projectID string) (*ProjectStats, error) {
 	stats := &ProjectStats{}
 	db := r.db.WithContext(ctx)
 

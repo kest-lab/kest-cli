@@ -10,8 +10,8 @@ import (
 // Repository defines data access for history
 type Repository interface {
 	Create(ctx context.Context, history *History) error
-	GetByID(ctx context.Context, id uint) (*History, error)
-	ListByEntity(ctx context.Context, projectID uint, entityType string, entityID uint, page, perPage int) ([]*History, int64, error)
+	GetByID(ctx context.Context, id string) (*History, error)
+	ListByEntity(ctx context.Context, projectID string, entityType string, entityID string, page, perPage int) ([]*History, int64, error)
 }
 
 type repository struct {
@@ -33,7 +33,7 @@ func (r *repository) Create(ctx context.Context, history *History) error {
 	return nil
 }
 
-func (r *repository) GetByID(ctx context.Context, id uint) (*History, error) {
+func (r *repository) GetByID(ctx context.Context, id string) (*History, error) {
 	var po HistoryPO
 	if err := r.db.WithContext(ctx).First(&po, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -44,7 +44,7 @@ func (r *repository) GetByID(ctx context.Context, id uint) (*History, error) {
 	return po.toDomain(), nil
 }
 
-func (r *repository) ListByEntity(ctx context.Context, projectID uint, entityType string, entityID uint, page, perPage int) ([]*History, int64, error) {
+func (r *repository) ListByEntity(ctx context.Context, projectID string, entityType string, entityID string, page, perPage int) ([]*History, int64, error) {
 	var poList []*HistoryPO
 	var total int64
 
@@ -53,7 +53,7 @@ func (r *repository) ListByEntity(ctx context.Context, projectID uint, entityTyp
 	if entityType != "" {
 		query = query.Where("entity_type = ?", entityType)
 	}
-	if entityID > 0 {
+	if entityID != "" {
 		query = query.Where("entity_id = ?", entityID)
 	}
 

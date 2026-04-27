@@ -10,25 +10,25 @@ import (
 // Repository defines the interface for test case data access
 type Repository interface {
 	Create(ctx context.Context, tc *TestCasePO) error
-	GetByID(ctx context.Context, id uint) (*TestCasePO, error)
+	GetByID(ctx context.Context, id string) (*TestCasePO, error)
 	List(ctx context.Context, filter *ListFilter) ([]*TestCasePO, int64, error)
 	Update(ctx context.Context, tc *TestCasePO) error
-	Delete(ctx context.Context, id uint) error
-	CountByAPISpec(ctx context.Context, apiSpecID uint) (int64, error)
+	Delete(ctx context.Context, id string) error
+	CountByAPISpec(ctx context.Context, apiSpecID string) (int64, error)
 
 	// Run history
 	CreateRun(ctx context.Context, run *TestRunPO) error
 	ListRuns(ctx context.Context, filter *ListRunsFilter) ([]*TestRunPO, int64, error)
-	GetRunByID(ctx context.Context, id uint) (*TestRunPO, error)
+	GetRunByID(ctx context.Context, id string) (*TestRunPO, error)
 
 	// SaveGeneratedTestCase creates a test case from AI-generated flow content
-	SaveGeneratedTestCase(ctx context.Context, apiSpecID uint, name, flowContent string) error
+	SaveGeneratedTestCase(ctx context.Context, apiSpecID string, name, flowContent string) error
 }
 
 // ListFilter represents the filter for listing test cases
 type ListFilter struct {
-	ProjectID *uint
-	APISpecID *uint
+	ProjectID *string
+	APISpecID *string
 	Env       *string
 	Keyword   *string
 	Page      int
@@ -50,7 +50,7 @@ func (r *repository) Create(ctx context.Context, tc *TestCasePO) error {
 }
 
 // GetByID gets a test case by ID
-func (r *repository) GetByID(ctx context.Context, id uint) (*TestCasePO, error) {
+func (r *repository) GetByID(ctx context.Context, id string) (*TestCasePO, error) {
 	var tc TestCasePO
 	err := r.db.WithContext(ctx).First(&tc, id).Error
 	if err != nil {
@@ -117,12 +117,12 @@ func (r *repository) Update(ctx context.Context, tc *TestCasePO) error {
 }
 
 // Delete deletes a test case (soft delete)
-func (r *repository) Delete(ctx context.Context, id uint) error {
+func (r *repository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&TestCasePO{}, id).Error
 }
 
 // CountByAPISpec counts test cases for an API spec
-func (r *repository) CountByAPISpec(ctx context.Context, apiSpecID uint) (int64, error) {
+func (r *repository) CountByAPISpec(ctx context.Context, apiSpecID string) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).
 		Model(&TestCasePO{}).
@@ -165,7 +165,7 @@ func (r *repository) ListRuns(ctx context.Context, filter *ListRunsFilter) ([]*T
 }
 
 // SaveGeneratedTestCase creates a test case record from AI-generated flow content
-func (r *repository) SaveGeneratedTestCase(ctx context.Context, apiSpecID uint, name, flowContent string) error {
+func (r *repository) SaveGeneratedTestCase(ctx context.Context, apiSpecID string, name, flowContent string) error {
 	tc := &TestCasePO{
 		APISpecID:   apiSpecID,
 		Name:        name,
@@ -175,7 +175,7 @@ func (r *repository) SaveGeneratedTestCase(ctx context.Context, apiSpecID uint, 
 }
 
 // GetRunByID gets a single test run by ID
-func (r *repository) GetRunByID(ctx context.Context, id uint) (*TestRunPO, error) {
+func (r *repository) GetRunByID(ctx context.Context, id string) (*TestRunPO, error) {
 	var run TestRunPO
 	err := r.db.WithContext(ctx).First(&run, id).Error
 	if err != nil {

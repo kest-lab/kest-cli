@@ -22,27 +22,27 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 		// Single request operations
 		reqs.GET("/:rid", h.Get).
 			Name("requests.show").
-			WhereNumber("rid").
+			WhereUUID("rid").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleRead))
 		reqs.PUT("/:rid", h.Update).
 			Name("requests.update").
-			WhereNumber("rid").
+			WhereUUID("rid").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
 		reqs.DELETE("/:rid", h.Delete).
 			Name("requests.delete").
-			WhereNumber("rid").
+			WhereUUID("rid").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
 
 		// Move request
 		reqs.PATCH("/:rid/move", h.Move).
 			Name("requests.move").
-			WhereNumber("rid").
+			WhereUUID("rid").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
 
 		// Rollback request
 		reqs.POST("/:rid/rollback", h.Rollback).
 			Name("requests.rollback").
-			WhereNumber("rid").
+			WhereUUID("rid").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
 	})
 }

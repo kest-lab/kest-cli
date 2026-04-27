@@ -16,9 +16,9 @@ type UpdateMemberRequest struct {
 // ========== Response DTOs ==========
 
 type MemberResponse struct {
-	ID        uint      `json:"id"`
-	ProjectID uint      `json:"project_id"`
-	UserID    uint      `json:"user_id"`
+	ID string      `json:"id"`
+	ProjectID string      `json:"project_id"`
+	UserID uint      `json:"user_id"`
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
 	Role      string    `json:"role"`

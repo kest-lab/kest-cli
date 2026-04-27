@@ -5,21 +5,21 @@ import "time"
 // ========== Request DTOs ==========
 
 type CreateCategoryRequest struct {
-	Name        string `json:"name" binding:"required,max=255"`
-	ParentID    *uint  `json:"parent_id"`
-	Description string `json:"description"`
-	SortOrder   int    `json:"sort_order"`
+	Name        string  `json:"name" binding:"required,max=255"`
+	ParentID    *string `json:"parent_id"`
+	Description string  `json:"description"`
+	SortOrder   int     `json:"sort_order"`
 }
 
 type UpdateCategoryRequest struct {
-	Name        *string `json:"name" binding:"omitempty,max=255"`
-	ParentID    **uint  `json:"parent_id"` // Double pointer to allow setting to nil
-	Description *string `json:"description"`
-	SortOrder   *int    `json:"sort_order"`
+	Name        *string  `json:"name" binding:"omitempty,max=255"`
+	ParentID    **string `json:"parent_id"` // Double pointer to allow setting to nil
+	Description *string  `json:"description"`
+	SortOrder   *int     `json:"sort_order"`
 }
 
 type SortCategoriesRequest struct {
-	CategoryIDs []uint `json:"category_ids" binding:"required"`
+	CategoryIDs []string `json:"category_ids" binding:"required"`
 }
 
 type CategoryPagination struct {
@@ -40,10 +40,10 @@ type CategoryListResponse struct {
 // ========== Response DTOs ==========
 
 type CategoryResponse struct {
-	ID          uint               `json:"id"`
-	ProjectID   uint               `json:"project_id"`
+	ID          string             `json:"id"`
+	ProjectID   string             `json:"project_id"`
 	Name        string             `json:"name"`
-	ParentID    *uint              `json:"parent_id"`
+	ParentID    *string            `json:"parent_id"`
 	Description string             `json:"description,omitempty"`
 	SortOrder   int                `json:"sort_order"`
 	Children    []CategoryResponse `json:"children,omitempty"` // For tree structure if needed
@@ -52,7 +52,7 @@ type CategoryResponse struct {
 }
 
 // ToCategoryPO converts CreateCategoryRequest to CategoryPO
-func ToCategoryPO(projectID uint, req *CreateCategoryRequest) *CategoryPO {
+func ToCategoryPO(projectID string, req *CreateCategoryRequest) *CategoryPO {
 	return &CategoryPO{
 		ProjectID:   projectID,
 		Name:        req.Name,

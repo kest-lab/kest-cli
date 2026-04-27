@@ -9,11 +9,11 @@ import (
 // Service defines the interface for environment business logic
 type Service interface {
 	CreateEnvironment(ctx context.Context, req *CreateEnvironmentRequest) (*EnvironmentResponse, error)
-	GetEnvironment(ctx context.Context, id uint) (*EnvironmentResponse, error)
-	ListEnvironments(ctx context.Context, projectID uint) ([]*EnvironmentResponse, error)
-	UpdateEnvironment(ctx context.Context, id uint, req *UpdateEnvironmentRequest) (*EnvironmentResponse, error)
-	DeleteEnvironment(ctx context.Context, id uint) error
-	DuplicateEnvironment(ctx context.Context, id uint, req *DuplicateEnvironmentRequest) (*EnvironmentResponse, error)
+	GetEnvironment(ctx context.Context, id string) (*EnvironmentResponse, error)
+	ListEnvironments(ctx context.Context, projectID string) ([]*EnvironmentResponse, error)
+	UpdateEnvironment(ctx context.Context, id string, req *UpdateEnvironmentRequest) (*EnvironmentResponse, error)
+	DeleteEnvironment(ctx context.Context, id string) error
+	DuplicateEnvironment(ctx context.Context, id string, req *DuplicateEnvironmentRequest) (*EnvironmentResponse, error)
 }
 
 type service struct {
@@ -57,7 +57,7 @@ func (s *service) CreateEnvironment(ctx context.Context, req *CreateEnvironmentR
 }
 
 // GetEnvironment gets an environment by ID
-func (s *service) GetEnvironment(ctx context.Context, id uint) (*EnvironmentResponse, error) {
+func (s *service) GetEnvironment(ctx context.Context, id string) (*EnvironmentResponse, error) {
 	env, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get environment: %w", err)
@@ -75,7 +75,7 @@ func (s *service) GetEnvironment(ctx context.Context, id uint) (*EnvironmentResp
 }
 
 // ListEnvironments lists all environments for a project
-func (s *service) ListEnvironments(ctx context.Context, projectID uint) ([]*EnvironmentResponse, error) {
+func (s *service) ListEnvironments(ctx context.Context, projectID string) ([]*EnvironmentResponse, error) {
 	envs, err := s.repo.ListByProject(ctx, projectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list environments: %w", err)
@@ -90,7 +90,7 @@ func (s *service) ListEnvironments(ctx context.Context, projectID uint) ([]*Envi
 }
 
 // UpdateEnvironment updates an environment
-func (s *service) UpdateEnvironment(ctx context.Context, id uint, req *UpdateEnvironmentRequest) (*EnvironmentResponse, error) {
+func (s *service) UpdateEnvironment(ctx context.Context, id string, req *UpdateEnvironmentRequest) (*EnvironmentResponse, error) {
 	// Get existing environment
 	env, err := s.repo.GetByID(ctx, id)
 	if err != nil {
@@ -154,7 +154,7 @@ func (s *service) UpdateEnvironment(ctx context.Context, id uint, req *UpdateEnv
 }
 
 // DeleteEnvironment deletes an environment
-func (s *service) DeleteEnvironment(ctx context.Context, id uint) error {
+func (s *service) DeleteEnvironment(ctx context.Context, id string) error {
 	// Check if environment exists
 	env, err := s.repo.GetByID(ctx, id)
 	if err != nil {
@@ -173,7 +173,7 @@ func (s *service) DeleteEnvironment(ctx context.Context, id uint) error {
 }
 
 // DuplicateEnvironment duplicates an environment
-func (s *service) DuplicateEnvironment(ctx context.Context, id uint, req *DuplicateEnvironmentRequest) (*EnvironmentResponse, error) {
+func (s *service) DuplicateEnvironment(ctx context.Context, id string, req *DuplicateEnvironmentRequest) (*EnvironmentResponse, error) {
 	// Get source environment
 	source, err := s.repo.GetByID(ctx, id)
 	if err != nil {

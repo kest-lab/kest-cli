@@ -6,12 +6,12 @@ import (
 )
 
 type Service interface {
-	AddMember(ctx context.Context, projectID uint, req *AddMemberRequest) (*MemberResponse, error)
-	UpdateMember(ctx context.Context, projectID, userID uint, req *UpdateMemberRequest) (*MemberResponse, error)
-	RemoveMember(ctx context.Context, projectID, userID uint) error
-	ListMembers(ctx context.Context, projectID uint) ([]MemberResponse, error)
-	GetMember(ctx context.Context, projectID, userID uint) (*MemberResponse, error)
-	CheckPermission(ctx context.Context, projectID, userID uint, requiredRole string) (bool, error)
+	AddMember(ctx context.Context, projectID string, req *AddMemberRequest) (*MemberResponse, error)
+	UpdateMember(ctx context.Context, projectID string, userID uint, req *UpdateMemberRequest) (*MemberResponse, error)
+	RemoveMember(ctx context.Context, projectID string, userID uint) error
+	ListMembers(ctx context.Context, projectID string) ([]MemberResponse, error)
+	GetMember(ctx context.Context, projectID string, userID uint) (*MemberResponse, error)
+	CheckPermission(ctx context.Context, projectID string, userID uint, requiredRole string) (bool, error)
 }
 
 type service struct {
@@ -22,7 +22,7 @@ func NewService(repo Repository) Service {
 	return &service{repo: repo}
 }
 
-func (s *service) AddMember(ctx context.Context, projectID uint, req *AddMemberRequest) (*MemberResponse, error) {
+func (s *service) AddMember(ctx context.Context, projectID string, req *AddMemberRequest) (*MemberResponse, error) {
 	// Check if already a member
 	existing, _ := s.repo.GetMember(ctx, projectID, req.UserID)
 	if existing != nil {
@@ -42,7 +42,7 @@ func (s *service) AddMember(ctx context.Context, projectID uint, req *AddMemberR
 	return FromMemberPO(po), nil
 }
 
-func (s *service) UpdateMember(ctx context.Context, projectID, userID uint, req *UpdateMemberRequest) (*MemberResponse, error) {
+func (s *service) UpdateMember(ctx context.Context, projectID string, userID uint, req *UpdateMemberRequest) (*MemberResponse, error) {
 	po, err := s.repo.GetMember(ctx, projectID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("member not found")
@@ -56,7 +56,7 @@ func (s *service) UpdateMember(ctx context.Context, projectID, userID uint, req 
 	return FromMemberPO(po), nil
 }
 
-func (s *service) RemoveMember(ctx context.Context, projectID, userID uint) error {
+func (s *service) RemoveMember(ctx context.Context, projectID string, userID uint) error {
 	po, err := s.repo.GetMember(ctx, projectID, userID)
 	if err != nil {
 		return fmt.Errorf("member not found")
@@ -79,7 +79,7 @@ func (s *service) RemoveMember(ctx context.Context, projectID, userID uint) erro
 	return s.repo.DeleteMember(ctx, projectID, userID)
 }
 
-func (s *service) ListMembers(ctx context.Context, projectID uint) ([]MemberResponse, error) {
+func (s *service) ListMembers(ctx context.Context, projectID string) ([]MemberResponse, error) {
 	pos, err := s.repo.ListMembers(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func (s *service) ListMembers(ctx context.Context, projectID uint) ([]MemberResp
 	return FromMemberPOs(pos), nil
 }
 
-func (s *service) GetMember(ctx context.Context, projectID, userID uint) (*MemberResponse, error) {
+func (s *service) GetMember(ctx context.Context, projectID string, userID uint) (*MemberResponse, error) {
 	po, err := s.repo.GetMember(ctx, projectID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("member not found")
@@ -95,7 +95,7 @@ func (s *service) GetMember(ctx context.Context, projectID, userID uint) (*Membe
 	return FromMemberPO(po), nil
 }
 
-func (s *service) CheckPermission(ctx context.Context, projectID, userID uint, requiredRole string) (bool, error) {
+func (s *service) CheckPermission(ctx context.Context, projectID string, userID uint, requiredRole string) (bool, error) {
 	po, err := s.repo.GetMember(ctx, projectID, userID)
 	if err != nil {
 		// No membership means no permissions (unless it's a public project, but here we enforce membership)

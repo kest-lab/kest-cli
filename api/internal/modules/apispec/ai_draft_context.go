@@ -97,7 +97,7 @@ func selectAIDraftReferences(req *CreateAPISpecAIDraftRequest, specs []*APISpecP
 		return nil
 	}
 
-	explicitIDs := make(map[uint]struct{}, len(req.ReferenceSpecIDs))
+	explicitIDs := make(map[string]struct{}, len(req.ReferenceSpecIDs))
 	for _, id := range req.ReferenceSpecIDs {
 		explicitIDs[id] = struct{}{}
 	}

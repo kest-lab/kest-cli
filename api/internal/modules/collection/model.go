@@ -9,11 +9,11 @@ import (
 
 // CollectionPO is the persistent object for database operations
 type CollectionPO struct {
-	ID          uint   `gorm:"primaryKey"`
+	ID string   `gorm:"primaryKey"`
 	Name        string `gorm:"size:100;not null"`
 	Description string `gorm:"size:500"`
-	ProjectID   uint   `gorm:"not null;index"`
-	ParentID    *uint  `gorm:"index"` // For folder hierarchy
+	ProjectID string   `gorm:"not null;index"`
+	ParentID *string  `gorm:"index"` // For folder hierarchy
 	IsFolder    bool   `gorm:"default:false"`
 	SortOrder   int    `gorm:"default:0"`
 	Settings    string `gorm:"type:text"` // JSON settings as string
@@ -29,11 +29,11 @@ func (CollectionPO) TableName() string {
 
 // Collection is the domain entity
 type Collection struct {
-	ID          uint                   `json:"id"`
+	ID string                   `json:"id"`
 	Name        string                 `json:"name"`
 	Description string                 `json:"description"`
-	ProjectID   uint                   `json:"project_id"`
-	ParentID    *uint                  `json:"parent_id,omitempty"`
+	ProjectID string                   `json:"project_id"`
+	ParentID *string                  `json:"parent_id,omitempty"`
 	IsFolder    bool                   `json:"is_folder"`
 	SortOrder   int                    `json:"sort_order"`
 	Settings    map[string]interface{} `json:"settings,omitempty"`

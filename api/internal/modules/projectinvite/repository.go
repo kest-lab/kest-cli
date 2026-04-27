@@ -14,11 +14,11 @@ import (
 
 type Repository interface {
 	CreateInvitation(ctx context.Context, invitation *ProjectInvitation, tokenHash string) error
-	ListInvitationsByProject(ctx context.Context, projectID uint) ([]*ProjectInvitation, error)
-	GetInvitationByProject(ctx context.Context, projectID, invitationID uint) (*ProjectInvitation, error)
+	ListInvitationsByProject(ctx context.Context, projectID string) ([]*ProjectInvitation, error)
+	GetInvitationByProject(ctx context.Context, projectID, invitationID string) (*ProjectInvitation, error)
 	GetInvitationBySlug(ctx context.Context, slug string) (*ProjectInvitation, error)
 	UpdateInvitation(ctx context.Context, invitation *ProjectInvitation) error
-	GetProjectSummary(ctx context.Context, projectID uint) (*ProjectSummary, error)
+	GetProjectSummary(ctx context.Context, projectID string) (*ProjectSummary, error)
 	AcceptInvitation(ctx context.Context, invitation *ProjectInvitation, userID uint, acceptedAt time.Time) error
 }
 
@@ -42,7 +42,7 @@ func (r *repository) CreateInvitation(ctx context.Context, invitation *ProjectIn
 	return nil
 }
 
-func (r *repository) ListInvitationsByProject(ctx context.Context, projectID uint) ([]*ProjectInvitation, error) {
+func (r *repository) ListInvitationsByProject(ctx context.Context, projectID string) ([]*ProjectInvitation, error) {
 	var poList []ProjectInvitationPO
 	if err := r.db.WithContext(ctx).
 		Where("project_id = ?", projectID).
@@ -60,7 +60,7 @@ func (r *repository) ListInvitationsByProject(ctx context.Context, projectID uin
 
 func (r *repository) GetInvitationByProject(
 	ctx context.Context,
-	projectID, invitationID uint,
+	projectID, invitationID string,
 ) (*ProjectInvitation, error) {
 	var po ProjectInvitationPO
 	if err := r.db.WithContext(ctx).
@@ -103,7 +103,7 @@ func (r *repository) UpdateInvitation(ctx context.Context, invitation *ProjectIn
 		}).Error
 }
 
-func (r *repository) GetProjectSummary(ctx context.Context, projectID uint) (*ProjectSummary, error) {
+func (r *repository) GetProjectSummary(ctx context.Context, projectID string) (*ProjectSummary, error) {
 	var po project.ProjectPO
 	if err := r.db.WithContext(ctx).First(&po, projectID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

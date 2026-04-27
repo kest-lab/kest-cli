@@ -6,7 +6,7 @@ import (
 )
 
 type APISpecAIDraftSpec struct {
-	CategoryID  *uint                   `json:"category_id,omitempty"`
+	CategoryID *string                   `json:"category_id,omitempty"`
 	Method      string                  `json:"method"`
 	Path        string                  `json:"path"`
 	Summary     string                  `json:"summary"`
@@ -25,7 +25,7 @@ type APISpecAIDraftFieldInsight struct {
 }
 
 type APISpecAIDraftReference struct {
-	ID       uint     `json:"id"`
+	ID string     `json:"id"`
 	Method   string   `json:"method"`
 	Path     string   `json:"path"`
 	Summary  string   `json:"summary"`
@@ -49,9 +49,9 @@ type CreateAPISpecAIDraftRequest struct {
 	Intent                string `json:"intent" binding:"required"`
 	Method                string `json:"method" binding:"omitempty,oneof=GET POST PUT DELETE PATCH HEAD OPTIONS"`
 	Path                  string `json:"path" binding:"omitempty,max=500"`
-	CategoryID            *uint  `json:"category_id"`
+	CategoryID *string  `json:"category_id"`
 	UseProjectConventions *bool  `json:"use_project_conventions"`
-	ReferenceSpecIDs      []uint `json:"reference_spec_ids"`
+	ReferenceSpecIDs      []string `json:"reference_spec_ids"`
 	Lang                  string `json:"lang" binding:"omitempty,oneof=en zh"`
 }
 
@@ -70,10 +70,10 @@ type AcceptAPISpecAIDraftRequest struct {
 }
 
 type APISpecAIDraftResponse struct {
-	ID             uint                                  `json:"id"`
-	ProjectID      uint                                  `json:"project_id"`
+	ID string                                  `json:"id"`
+	ProjectID string                                  `json:"project_id"`
 	CreatedBy      uint                                  `json:"created_by"`
-	AcceptedSpecID *uint                                 `json:"accepted_spec_id,omitempty"`
+	AcceptedSpecID *string                                 `json:"accepted_spec_id,omitempty"`
 	Status         string                                `json:"status"`
 	Intent         string                                `json:"intent"`
 	SeedInput      CreateAPISpecAIDraftRequest           `json:"seed_input"`
@@ -88,7 +88,7 @@ type APISpecAIDraftResponse struct {
 }
 
 type AcceptAPISpecAIDraftResponse struct {
-	DraftID       uint             `json:"draft_id"`
+	DraftID string             `json:"draft_id"`
 	Spec          *APISpecResponse `json:"spec"`
 	GeneratedTest string           `json:"generated_test,omitempty"`
 	Warnings      []string         `json:"warnings,omitempty"`
@@ -164,7 +164,7 @@ func fromAIDraftPO(po *APISpecAIDraftPO) (*APISpecAIDraftResponse, error) {
 	return resp, nil
 }
 
-func (draft *APISpecAIDraftSpec) toCreateSpecRequest(projectID uint) *CreateAPISpecRequest {
+func (draft *APISpecAIDraftSpec) toCreateSpecRequest(projectID string) *CreateAPISpecRequest {
 	if draft == nil {
 		return nil
 	}

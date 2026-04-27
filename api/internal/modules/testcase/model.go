@@ -8,8 +8,8 @@ import (
 
 // TestCasePO represents a test case in the database
 type TestCasePO struct {
-	ID          uint   `gorm:"primaryKey" json:"id"`
-	APISpecID   uint   `gorm:"not null;index:idx_testcase_api_spec" json:"api_spec_id"`
+	ID string   `gorm:"primaryKey" json:"id"`
+	APISpecID string   `gorm:"not null;index:idx_testcase_api_spec" json:"api_spec_id"`
 	Name        string `gorm:"size:255;not null" json:"name"`
 	Description string `gorm:"type:text" json:"description"`
 	Env         string `gorm:"size:50" json:"env"` // dev, test, staging, prod
@@ -59,8 +59,8 @@ type ExtractVar struct {
 
 // TestRunPO represents a single execution record of a test case
 type TestRunPO struct {
-	ID         uint   `gorm:"primaryKey"`
-	TestCaseID uint   `gorm:"not null;index"`
+	ID string   `gorm:"primaryKey"`
+	TestCaseID string   `gorm:"not null;index"`
 	Status     string `gorm:"size:20;not null"` // pass, fail, error
 	DurationMs int64  `gorm:"not null"`
 	Request    string `gorm:"type:text"` // JSON: RunRequestInfo

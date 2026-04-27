@@ -6,11 +6,11 @@ import (
 )
 
 type SpecSyncer interface {
-	SyncSpecsFromCLI(ctx context.Context, projectID uint, req *CLISpecSyncRequest) (*CLISpecSyncResponseBody, error)
+	SyncSpecsFromCLI(ctx context.Context, projectID string, req *CLISpecSyncRequest) (*CLISpecSyncResponseBody, error)
 }
 
 type CLISpecSyncRequest struct {
-	ProjectID *uint             `json:"project_id,omitempty"`
+	ProjectID *string             `json:"project_id,omitempty"`
 	Source    string            `json:"source"`
 	Metadata  json.RawMessage   `json:"metadata,omitempty"`
 	Specs     []CLISpecSyncSpec `json:"specs" binding:"required,min=1"`

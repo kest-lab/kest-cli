@@ -78,7 +78,7 @@ type PostmanScript struct {
 }
 
 type Service interface {
-	ExportPostman(ctx context.Context, projectID, collectionID uint) ([]byte, error)
+	ExportPostman(ctx context.Context, projectID, collectionID string) ([]byte, error)
 }
 
 type service struct {
@@ -93,7 +93,7 @@ func NewService(collectionService collection.Service, requestService request.Ser
 	}
 }
 
-func (s *service) ExportPostman(ctx context.Context, projectID, collectionID uint) ([]byte, error) {
+func (s *service) ExportPostman(ctx context.Context, projectID, collectionID string) ([]byte, error) {
 	col, err := s.collectionService.GetByID(ctx, collectionID, projectID)
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func (s *service) ExportPostman(ctx context.Context, projectID, collectionID uin
 	return json.MarshalIndent(postmanCol, "", "  ")
 }
 
-func findNode(node *collection.CollectionTreeNode, id uint) *collection.CollectionTreeNode {
+func findNode(node *collection.CollectionTreeNode, id string) *collection.CollectionTreeNode {
 	if node.ID == id {
 		return node
 	}

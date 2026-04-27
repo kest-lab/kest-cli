@@ -18,13 +18,13 @@ var (
 
 // Service defines the interface for request business logic
 type Service interface {
-	Create(ctx context.Context, projectID uint, req *CreateRequestRequest) (*Request, error)
-	GetByID(ctx context.Context, id, collectionID, projectID uint) (*Request, error)
-	Update(ctx context.Context, id, collectionID, projectID uint, req *UpdateRequestRequest) (*Request, error)
-	Delete(ctx context.Context, id, collectionID, projectID uint) error
-	List(ctx context.Context, collectionID, projectID uint, page, perPage int) ([]*Request, int64, error)
-	Move(ctx context.Context, id, collectionID, projectID uint, req *MoveRequestRequest) (*Request, error)
-	Rollback(ctx context.Context, id, collectionID, versionID uint) (*Request, error)
+	Create(ctx context.Context, projectID string, req *CreateRequestRequest) (*Request, error)
+	GetByID(ctx context.Context, id, collectionID, projectID string) (*Request, error)
+	Update(ctx context.Context, id, collectionID, projectID string, req *UpdateRequestRequest) (*Request, error)
+	Delete(ctx context.Context, id, collectionID, projectID string) error
+	List(ctx context.Context, collectionID, projectID string, page, perPage int) ([]*Request, int64, error)
+	Move(ctx context.Context, id, collectionID, projectID string, req *MoveRequestRequest) (*Request, error)
+	Rollback(ctx context.Context, id, collectionID, versionID string) (*Request, error)
 }
 
 // service implements Service interface
@@ -41,7 +41,7 @@ func NewService(repo Repository, collectionRepo collection.Repository) Service {
 	}
 }
 
-func (s *service) Create(ctx context.Context, projectID uint, req *CreateRequestRequest) (*Request, error) {
+func (s *service) Create(ctx context.Context, projectID string, req *CreateRequestRequest) (*Request, error) {
 	parentCollection, err := s.collectionRepo.GetByIDAndProject(ctx, req.CollectionID, projectID)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (s *service) Create(ctx context.Context, projectID uint, req *CreateRequest
 	return request, nil
 }
 
-func (s *service) GetByID(ctx context.Context, id, collectionID, projectID uint) (*Request, error) {
+func (s *service) GetByID(ctx context.Context, id, collectionID, projectID string) (*Request, error) {
 	if err := s.ensureProjectCollection(ctx, collectionID, projectID); err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (s *service) GetByID(ctx context.Context, id, collectionID, projectID uint)
 	return request, nil
 }
 
-func (s *service) Update(ctx context.Context, id, collectionID, projectID uint, req *UpdateRequestRequest) (*Request, error) {
+func (s *service) Update(ctx context.Context, id, collectionID, projectID string, req *UpdateRequestRequest) (*Request, error) {
 	if err := s.ensureProjectCollection(ctx, collectionID, projectID); err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func (s *service) Update(ctx context.Context, id, collectionID, projectID uint, 
 	return request, nil
 }
 
-func (s *service) Delete(ctx context.Context, id, collectionID, projectID uint) error {
+func (s *service) Delete(ctx context.Context, id, collectionID, projectID string) error {
 	if err := s.ensureProjectCollection(ctx, collectionID, projectID); err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func (s *service) Delete(ctx context.Context, id, collectionID, projectID uint) 
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *service) List(ctx context.Context, collectionID, projectID uint, page, perPage int) ([]*Request, int64, error) {
+func (s *service) List(ctx context.Context, collectionID, projectID string, page, perPage int) ([]*Request, int64, error) {
 	if err := s.ensureProjectCollection(ctx, collectionID, projectID); err != nil {
 		return nil, 0, err
 	}
@@ -197,7 +197,7 @@ func (s *service) List(ctx context.Context, collectionID, projectID uint, page, 
 	return s.repo.List(ctx, collectionID, offset, perPage)
 }
 
-func (s *service) Move(ctx context.Context, id, collectionID, projectID uint, req *MoveRequestRequest) (*Request, error) {
+func (s *service) Move(ctx context.Context, id, collectionID, projectID string, req *MoveRequestRequest) (*Request, error) {
 	if err := s.ensureProjectCollection(ctx, collectionID, projectID); err != nil {
 		return nil, err
 	}
@@ -232,13 +232,13 @@ func (s *service) Move(ctx context.Context, id, collectionID, projectID uint, re
 	return request, nil
 }
 
-func (s *service) Rollback(ctx context.Context, id, collectionID, versionID uint) (*Request, error) {
+func (s *service) Rollback(ctx context.Context, id, collectionID, versionID string) (*Request, error) {
 	// For now, return ErrVersionNotFound since history is tracked in another module
 	// We will integrate with history module later
 	return nil, ErrVersionNotFound
 }
 
-func (s *service) ensureProjectCollection(ctx context.Context, collectionID, projectID uint) error {
+func (s *service) ensureProjectCollection(ctx context.Context, collectionID, projectID string) error {
 	parentCollection, err := s.collectionRepo.GetByIDAndProject(ctx, collectionID, projectID)
 	if err != nil {
 		return err

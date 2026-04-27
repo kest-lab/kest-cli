@@ -2,7 +2,6 @@ package environment
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kest-labs/kest/api/internal/contracts"
@@ -52,14 +51,13 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 
 // ListEnvironments handles GET /api/v1/projects/:project_id/environments
 func (h *Handler) ListEnvironments(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
 
-	envs, err := h.service.ListEnvironments(c.Request.Context(), uint(projectID))
+	envs, err := h.service.ListEnvironments(c.Request.Context(), projectID)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -73,9 +71,8 @@ func (h *Handler) ListEnvironments(c *gin.Context) {
 
 // CreateEnvironment handles POST /api/v1/projects/:project_id/environments
 func (h *Handler) CreateEnvironment(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
@@ -87,7 +84,7 @@ func (h *Handler) CreateEnvironment(c *gin.Context) {
 	}
 
 	// Ensure project_id matches
-	req.ProjectID = uint(projectID)
+	req.ProjectID = projectID
 
 	env, err := h.service.CreateEnvironment(c.Request.Context(), &req)
 	if err != nil {
@@ -100,14 +97,13 @@ func (h *Handler) CreateEnvironment(c *gin.Context) {
 
 // GetEnvironment handles GET /api/v1/projects/:id/environments/:eid
 func (h *Handler) GetEnvironment(c *gin.Context) {
-	idStr := c.Param("eid")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	id := c.Param("eid")
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid environment ID")
 		return
 	}
 
-	env, err := h.service.GetEnvironment(c.Request.Context(), uint(id))
+	env, err := h.service.GetEnvironment(c.Request.Context(), id)
 	if err != nil {
 		if err.Error() == "environment not found" {
 			response.Error(c, http.StatusNotFound, err.Error())
@@ -122,9 +118,8 @@ func (h *Handler) GetEnvironment(c *gin.Context) {
 
 // UpdateEnvironment handles PATCH /api/v1/projects/:id/environments/:eid
 func (h *Handler) UpdateEnvironment(c *gin.Context) {
-	idStr := c.Param("eid")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	id := c.Param("eid")
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid environment ID")
 		return
 	}
@@ -135,7 +130,7 @@ func (h *Handler) UpdateEnvironment(c *gin.Context) {
 		return
 	}
 
-	env, err := h.service.UpdateEnvironment(c.Request.Context(), uint(id), &req)
+	env, err := h.service.UpdateEnvironment(c.Request.Context(), id, &req)
 	if err != nil {
 		if err.Error() == "environment not found" {
 			response.Error(c, http.StatusNotFound, err.Error())
@@ -150,14 +145,13 @@ func (h *Handler) UpdateEnvironment(c *gin.Context) {
 
 // DeleteEnvironment handles DELETE /api/v1/projects/:id/environments/:eid
 func (h *Handler) DeleteEnvironment(c *gin.Context) {
-	idStr := c.Param("eid")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	id := c.Param("eid")
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid environment ID")
 		return
 	}
 
-	if err := h.service.DeleteEnvironment(c.Request.Context(), uint(id)); err != nil {
+	if err := h.service.DeleteEnvironment(c.Request.Context(), id); err != nil {
 		if err.Error() == "environment not found" {
 			response.Error(c, http.StatusNotFound, err.Error())
 			return
@@ -171,9 +165,8 @@ func (h *Handler) DeleteEnvironment(c *gin.Context) {
 
 // DuplicateEnvironment handles POST /api/v1/projects/:id/environments/:eid/duplicate
 func (h *Handler) DuplicateEnvironment(c *gin.Context) {
-	idStr := c.Param("eid")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	id := c.Param("eid")
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid environment ID")
 		return
 	}
@@ -184,7 +177,7 @@ func (h *Handler) DuplicateEnvironment(c *gin.Context) {
 		return
 	}
 
-	env, err := h.service.DuplicateEnvironment(c.Request.Context(), uint(id), &req)
+	env, err := h.service.DuplicateEnvironment(c.Request.Context(), id, &req)
 	if err != nil {
 		if err.Error() == "source environment not found" {
 			response.Error(c, http.StatusNotFound, err.Error())

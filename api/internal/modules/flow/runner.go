@@ -16,8 +16,8 @@ import (
 
 // StepEvent represents a real-time event during flow execution
 type StepEvent struct {
-	RunID    uint   `json:"run_id"`
-	StepID   uint   `json:"step_id"`
+	RunID string   `json:"run_id"`
+	StepID string   `json:"step_id"`
 	StepName string `json:"step_name"`
 	Status   string `json:"status"`
 	Data     any    `json:"data,omitempty"`
@@ -59,7 +59,7 @@ func (r *Runner) Execute(ctx context.Context, run *FlowRunPO, steps []FlowStepPO
 	if err != nil {
 		return err
 	}
-	resultMap := make(map[uint]*FlowStepResultPO)
+	resultMap := make(map[string]*FlowStepResultPO)
 	for _, result := range results {
 		resultMap[result.StepID] = result
 	}
@@ -69,7 +69,7 @@ func (r *Runner) Execute(ctx context.Context, run *FlowRunPO, steps []FlowStepPO
 
 	// Variable store for captures
 	variables := make(map[string]any)
-	capturedByStep := make(map[uint]map[string]any)
+	capturedByStep := make(map[string]map[string]any)
 	allPassed := true
 
 	for _, step := range orderedSteps {
@@ -594,9 +594,9 @@ func (r *Runner) topologicalSort(steps []FlowStepPO, edges []FlowEdgePO) []FlowS
 	}
 
 	// Build adjacency list and in-degree map
-	adj := make(map[uint][]uint)
-	inDegree := make(map[uint]int)
-	stepMap := make(map[uint]FlowStepPO)
+	adj := make(map[string][]string)
+	inDegree := make(map[string]int)
+	stepMap := make(map[string]FlowStepPO)
 
 	for _, step := range steps {
 		inDegree[step.ID] = 0
@@ -609,7 +609,7 @@ func (r *Runner) topologicalSort(steps []FlowStepPO, edges []FlowEdgePO) []FlowS
 	}
 
 	// BFS
-	var queue []uint
+	var queue []string
 	zeroInDegree := make([]FlowStepPO, 0)
 	for _, step := range steps {
 		if inDegree[step.ID] == 0 {
@@ -654,7 +654,7 @@ func (r *Runner) topologicalSort(steps []FlowStepPO, edges []FlowEdgePO) []FlowS
 
 	// If some steps weren't reached (disconnected), append them
 	if len(ordered) < len(steps) {
-		reachedSet := make(map[uint]bool)
+		reachedSet := make(map[string]bool)
 		for _, s := range ordered {
 			reachedSet[s.ID] = true
 		}

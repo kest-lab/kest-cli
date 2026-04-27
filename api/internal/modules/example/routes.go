@@ -14,12 +14,12 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 		exs.GET("", h.List).Name("examples.list")
 
 		// Single example operations
-		exs.GET("/:eid", h.Get).Name("examples.show").WhereNumber("eid")
-		exs.PUT("/:eid", h.Update).Name("examples.update").WhereNumber("eid")
-		exs.DELETE("/:eid", h.Delete).Name("examples.delete").WhereNumber("eid")
+		exs.GET("/:eid", h.Get).Name("examples.show").WhereUUID("eid")
+		exs.PUT("/:eid", h.Update).Name("examples.update").WhereUUID("eid")
+		exs.DELETE("/:eid", h.Delete).Name("examples.delete").WhereUUID("eid")
 
 		// Response operations
-		exs.POST("/:eid/response", h.SaveResponse).Name("examples.save_response").WhereNumber("eid")
-		exs.POST("/:eid/default", h.SetDefault).Name("examples.set_default").WhereNumber("eid")
+		exs.POST("/:eid/response", h.SaveResponse).Name("examples.save_response").WhereUUID("eid")
+		exs.POST("/:eid/default", h.SetDefault).Name("examples.set_default").WhereUUID("eid")
 	})
 }

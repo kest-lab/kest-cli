@@ -16,14 +16,14 @@ type CollectionStats struct {
 // Repository defines the interface for collection data access
 type Repository interface {
 	Create(ctx context.Context, collection *Collection) error
-	GetByID(ctx context.Context, id uint) (*Collection, error)
-	GetByIDAndProject(ctx context.Context, id, projectID uint) (*Collection, error)
+	GetByID(ctx context.Context, id string) (*Collection, error)
+	GetByIDAndProject(ctx context.Context, id, projectID string) (*Collection, error)
 	Update(ctx context.Context, collection *Collection) error
-	Delete(ctx context.Context, id uint) error
-	List(ctx context.Context, projectID uint, offset, limit int) ([]*Collection, int64, error)
-	ListAll(ctx context.Context, projectID uint) ([]*Collection, error)
-	GetByParentID(ctx context.Context, projectID uint, parentID *uint) ([]*Collection, error)
-	GetStats(ctx context.Context, collectionID uint) (*CollectionStats, error)
+	Delete(ctx context.Context, id string) error
+	List(ctx context.Context, projectID string, offset, limit int) ([]*Collection, int64, error)
+	ListAll(ctx context.Context, projectID string) ([]*Collection, error)
+	GetByParentID(ctx context.Context, projectID string, parentID *string) ([]*Collection, error)
+	GetStats(ctx context.Context, collectionID string) (*CollectionStats, error)
 }
 
 // repository implements Repository interface
@@ -47,7 +47,7 @@ func (r *repository) Create(ctx context.Context, collection *Collection) error {
 	return nil
 }
 
-func (r *repository) GetByID(ctx context.Context, id uint) (*Collection, error) {
+func (r *repository) GetByID(ctx context.Context, id string) (*Collection, error) {
 	var po CollectionPO
 	if err := r.db.WithContext(ctx).First(&po, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -58,7 +58,7 @@ func (r *repository) GetByID(ctx context.Context, id uint) (*Collection, error) 
 	return po.toDomain(), nil
 }
 
-func (r *repository) GetByIDAndProject(ctx context.Context, id, projectID uint) (*Collection, error) {
+func (r *repository) GetByIDAndProject(ctx context.Context, id, projectID string) (*Collection, error) {
 	var po CollectionPO
 	if err := r.db.WithContext(ctx).Where("id = ? AND project_id = ?", id, projectID).First(&po).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -74,11 +74,11 @@ func (r *repository) Update(ctx context.Context, collection *Collection) error {
 	return r.db.WithContext(ctx).Model(&CollectionPO{}).Where("id = ?", collection.ID).Updates(po).Error
 }
 
-func (r *repository) Delete(ctx context.Context, id uint) error {
+func (r *repository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&CollectionPO{}, id).Error
 }
 
-func (r *repository) List(ctx context.Context, projectID uint, offset, limit int) ([]*Collection, int64, error) {
+func (r *repository) List(ctx context.Context, projectID string, offset, limit int) ([]*Collection, int64, error) {
 	var poList []*CollectionPO
 	var total int64
 
@@ -93,7 +93,7 @@ func (r *repository) List(ctx context.Context, projectID uint, offset, limit int
 	return toDomainList(poList), total, nil
 }
 
-func (r *repository) ListAll(ctx context.Context, projectID uint) ([]*Collection, error) {
+func (r *repository) ListAll(ctx context.Context, projectID string) ([]*Collection, error) {
 	var poList []*CollectionPO
 
 	if err := r.db.WithContext(ctx).
@@ -106,7 +106,7 @@ func (r *repository) ListAll(ctx context.Context, projectID uint) ([]*Collection
 	return toDomainList(poList), nil
 }
 
-func (r *repository) GetByParentID(ctx context.Context, projectID uint, parentID *uint) ([]*Collection, error) {
+func (r *repository) GetByParentID(ctx context.Context, projectID string, parentID *string) ([]*Collection, error) {
 	var poList []*CollectionPO
 
 	query := r.db.WithContext(ctx).Where("project_id = ?", projectID)
@@ -123,7 +123,7 @@ func (r *repository) GetByParentID(ctx context.Context, projectID uint, parentID
 	return toDomainList(poList), nil
 }
 
-func (r *repository) GetStats(ctx context.Context, collectionID uint) (*CollectionStats, error) {
+func (r *repository) GetStats(ctx context.Context, collectionID string) (*CollectionStats, error) {
 	stats := &CollectionStats{}
 	db := r.db.WithContext(ctx)
 

@@ -15,12 +15,12 @@ var (
 // Service defines the interface for collection business logic
 type Service interface {
 	Create(ctx context.Context, req *CreateCollectionRequest) (*Collection, error)
-	GetByID(ctx context.Context, id, projectID uint) (*Collection, error)
-	Update(ctx context.Context, id, projectID uint, req *UpdateCollectionRequest) (*Collection, error)
-	Delete(ctx context.Context, id, projectID uint) error
-	List(ctx context.Context, projectID uint, page, perPage int) ([]*Collection, int64, error)
-	GetTree(ctx context.Context, projectID uint) ([]*CollectionTreeNode, error)
-	Move(ctx context.Context, id, projectID uint, req *MoveCollectionRequest) (*Collection, error)
+	GetByID(ctx context.Context, id, projectID string) (*Collection, error)
+	Update(ctx context.Context, id, projectID string, req *UpdateCollectionRequest) (*Collection, error)
+	Delete(ctx context.Context, id, projectID string) error
+	List(ctx context.Context, projectID string, page, perPage int) ([]*Collection, int64, error)
+	GetTree(ctx context.Context, projectID string) ([]*CollectionTreeNode, error)
+	Move(ctx context.Context, id, projectID string, req *MoveCollectionRequest) (*Collection, error)
 }
 
 // service implements Service interface
@@ -68,7 +68,7 @@ func (s *service) Create(ctx context.Context, req *CreateCollectionRequest) (*Co
 	return collection, nil
 }
 
-func (s *service) GetByID(ctx context.Context, id, projectID uint) (*Collection, error) {
+func (s *service) GetByID(ctx context.Context, id, projectID string) (*Collection, error) {
 	collection, err := s.repo.GetByIDAndProject(ctx, id, projectID)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (s *service) GetByID(ctx context.Context, id, projectID uint) (*Collection,
 	return collection, nil
 }
 
-func (s *service) Update(ctx context.Context, id, projectID uint, req *UpdateCollectionRequest) (*Collection, error) {
+func (s *service) Update(ctx context.Context, id, projectID string, req *UpdateCollectionRequest) (*Collection, error) {
 	collection, err := s.repo.GetByIDAndProject(ctx, id, projectID)
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func (s *service) Update(ctx context.Context, id, projectID uint, req *UpdateCol
 	return collection, nil
 }
 
-func (s *service) Delete(ctx context.Context, id, projectID uint) error {
+func (s *service) Delete(ctx context.Context, id, projectID string) error {
 	collection, err := s.repo.GetByIDAndProject(ctx, id, projectID)
 	if err != nil {
 		return err
@@ -157,7 +157,7 @@ func (s *service) Delete(ctx context.Context, id, projectID uint) error {
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *service) List(ctx context.Context, projectID uint, page, perPage int) ([]*Collection, int64, error) {
+func (s *service) List(ctx context.Context, projectID string, page, perPage int) ([]*Collection, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -172,7 +172,7 @@ func (s *service) List(ctx context.Context, projectID uint, page, perPage int) (
 	return s.repo.List(ctx, projectID, offset, perPage)
 }
 
-func (s *service) GetTree(ctx context.Context, projectID uint) ([]*CollectionTreeNode, error) {
+func (s *service) GetTree(ctx context.Context, projectID string) ([]*CollectionTreeNode, error) {
 	allCollections, err := s.repo.ListAll(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -182,7 +182,7 @@ func (s *service) GetTree(ctx context.Context, projectID uint) ([]*CollectionTre
 	return buildTree(allCollections), nil
 }
 
-func (s *service) Move(ctx context.Context, id, projectID uint, req *MoveCollectionRequest) (*Collection, error) {
+func (s *service) Move(ctx context.Context, id, projectID string, req *MoveCollectionRequest) (*Collection, error) {
 	updateReq := &UpdateCollectionRequest{
 		ParentID:  req.ParentID,
 		SortOrder: req.SortOrder,
@@ -190,11 +190,11 @@ func (s *service) Move(ctx context.Context, id, projectID uint, req *MoveCollect
 	return s.Update(ctx, id, projectID, updateReq)
 }
 
-func (s *service) wouldCreateCycle(ctx context.Context, projectID, collectionID, parentID uint) (bool, error) {
-	visited := map[uint]struct{}{}
+func (s *service) wouldCreateCycle(ctx context.Context, projectID, collectionID, parentID string) (bool, error) {
+	visited := map[string]struct{}{}
 	currentID := parentID
 
-	for currentID != 0 {
+	for currentID != "" {
 		if currentID == collectionID {
 			return true, nil
 		}
@@ -217,8 +217,8 @@ func (s *service) wouldCreateCycle(ctx context.Context, projectID, collectionID,
 	return false, nil
 }
 
-func normalizeParentID(parentID *uint) *uint {
-	if parentID == nil || *parentID == 0 {
+func normalizeParentID(parentID *string) *string {
+	if parentID == nil || *parentID == "" {
 		return nil
 	}
 
@@ -227,8 +227,8 @@ func normalizeParentID(parentID *uint) *uint {
 
 // buildTree converts flat collection list to tree structure
 func buildTree(collections []*Collection) []*CollectionTreeNode {
-	nodeMap := make(map[uint]*CollectionTreeNode)
-	collectionMap := make(map[uint]*Collection)
+	nodeMap := make(map[string]*CollectionTreeNode)
+	collectionMap := make(map[string]*Collection)
 	var rootNodes []*CollectionTreeNode
 
 	for _, c := range collections {
@@ -268,24 +268,24 @@ func buildTree(collections []*Collection) []*CollectionTreeNode {
 	return rootNodes
 }
 
-func resolveTreeParentID(collection *Collection, collectionMap map[uint]*Collection) (uint, bool) {
+func resolveTreeParentID(collection *Collection, collectionMap map[string]*Collection) (string, bool) {
 	if collection == nil || collection.ParentID == nil {
-		return 0, false
+		return "", false
 	}
 
 	immediateParentID := *collection.ParentID
-	visited := map[uint]struct{}{collection.ID: {}}
+	visited := map[string]struct{}{collection.ID: {}}
 	currentID := immediateParentID
 
-	for currentID != 0 {
+	for currentID != "" {
 		if _, seen := visited[currentID]; seen {
-			return 0, false
+			return "", false
 		}
 		visited[currentID] = struct{}{}
 
 		parent, exists := collectionMap[currentID]
 		if !exists {
-			return 0, false
+			return "", false
 		}
 		if parent.ParentID == nil {
 			return immediateParentID, true
@@ -294,7 +294,7 @@ func resolveTreeParentID(collection *Collection, collectionMap map[uint]*Collect
 		currentID = *parent.ParentID
 	}
 
-	return 0, false
+	return "", false
 }
 
 // sortNodes sorts tree nodes by sort_order

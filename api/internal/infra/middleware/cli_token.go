@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -11,7 +10,7 @@ import (
 )
 
 type ProjectCLITokenValidator interface {
-	ValidateCLIToken(ctx context.Context, projectID uint, rawToken string, requiredScopes []string) (uint, uint, error)
+	ValidateCLIToken(ctx context.Context, projectID string, rawToken string, requiredScopes []string) (string, uint, error)
 }
 
 // RequireProjectCLIToken validates a project-scoped CLI token and enforces required scopes.
@@ -35,14 +34,13 @@ func RequireProjectCLIToken(validator ProjectCLITokenValidator, requiredScopes .
 		if projectIDStr == "" {
 			projectIDStr = c.Param("pid")
 		}
-		projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-		if err != nil {
+		if projectIDStr == "" {
 			response.Error(c, http.StatusBadRequest, "Invalid Project ID")
 			c.Abort()
 			return
 		}
 
-		tokenID, createdBy, err := validator.ValidateCLIToken(c.Request.Context(), uint(projectID), parts[1], requiredScopes)
+		tokenID, createdBy, err := validator.ValidateCLIToken(c.Request.Context(), projectIDStr, parts[1], requiredScopes)
 		if err != nil {
 			response.Error(c, http.StatusUnauthorized, err.Error())
 			c.Abort()

@@ -26,36 +26,36 @@ var (
 type Service interface {
 	// API Spec operations
 	CreateSpec(ctx context.Context, req *CreateAPISpecRequest) (*APISpecResponse, error)
-	GetSpecByID(ctx context.Context, projectID, id uint) (*APISpecResponse, error)
-	UpdateSpec(ctx context.Context, projectID, id uint, req *UpdateAPISpecRequest) (*APISpecResponse, error)
-	DeleteSpec(ctx context.Context, projectID, id uint) error
+	GetSpecByID(ctx context.Context, projectID, id string) (*APISpecResponse, error)
+	UpdateSpec(ctx context.Context, projectID, id string, req *UpdateAPISpecRequest) (*APISpecResponse, error)
+	DeleteSpec(ctx context.Context, projectID, id string) error
 	ListSpecs(ctx context.Context, filter *SpecListFilter) ([]*APISpecResponse, int64, error)
-	GetSpecWithExamples(ctx context.Context, projectID, id uint) (*APISpecResponse, error)
-	GenDoc(ctx context.Context, projectID, id uint, lang string) (*APISpecResponse, error)
-	GenTest(ctx context.Context, projectID, id uint, lang string) (string, error)
+	GetSpecWithExamples(ctx context.Context, projectID, id string) (*APISpecResponse, error)
+	GenDoc(ctx context.Context, projectID, id string, lang string) (*APISpecResponse, error)
+	GenTest(ctx context.Context, projectID, id string, lang string) (string, error)
 
 	// API Example operations
-	CreateExample(ctx context.Context, projectID uint, req *CreateAPIExampleRequest) (*APIExampleResponse, error)
-	GetExamplesBySpecID(ctx context.Context, projectID, specID uint) ([]*APIExampleResponse, error)
-	DeleteExample(ctx context.Context, id uint) error
+	CreateExample(ctx context.Context, projectID string, req *CreateAPIExampleRequest) (*APIExampleResponse, error)
+	GetExamplesBySpecID(ctx context.Context, projectID, specID string) ([]*APIExampleResponse, error)
+	DeleteExample(ctx context.Context, id string) error
 
 	// AI draft operations
-	CreateAIDraft(ctx context.Context, projectID, userID uint, req *CreateAPISpecAIDraftRequest) (*APISpecAIDraftResponse, error)
-	GetAIDraft(ctx context.Context, projectID, draftID uint) (*APISpecAIDraftResponse, error)
-	RefineAIDraft(ctx context.Context, projectID, draftID uint, req *RefineAPISpecAIDraftRequest) (*APISpecAIDraftResponse, error)
-	AcceptAIDraft(ctx context.Context, projectID, draftID uint, req *AcceptAPISpecAIDraftRequest) (*AcceptAPISpecAIDraftResponse, error)
+	CreateAIDraft(ctx context.Context, projectID string, userID uint, req *CreateAPISpecAIDraftRequest) (*APISpecAIDraftResponse, error)
+	GetAIDraft(ctx context.Context, projectID, draftID string) (*APISpecAIDraftResponse, error)
+	RefineAIDraft(ctx context.Context, projectID, draftID string, req *RefineAPISpecAIDraftRequest) (*APISpecAIDraftResponse, error)
+	AcceptAIDraft(ctx context.Context, projectID, draftID string, req *AcceptAPISpecAIDraftRequest) (*AcceptAPISpecAIDraftResponse, error)
 
 	// Share operations
-	GetShareBySpecID(ctx context.Context, projectID, specID uint) (*APISpecShareResponse, error)
-	PublishShare(ctx context.Context, projectID, specID, createdBy uint) (*APISpecShareResponse, error)
-	DeleteShareBySpecID(ctx context.Context, projectID, specID uint) error
+	GetShareBySpecID(ctx context.Context, projectID, specID string) (*APISpecShareResponse, error)
+	PublishShare(ctx context.Context, projectID, specID string, createdBy uint) (*APISpecShareResponse, error)
+	DeleteShareBySpecID(ctx context.Context, projectID, specID string) error
 	GetPublicShareBySlug(ctx context.Context, slug string) (*PublicAPISpecShareResponse, error)
 
 	// Batch operations
-	ImportSpecs(ctx context.Context, projectID uint, specs []*CreateAPISpecRequest) error
-	SyncSpecsFromCLI(ctx context.Context, projectID uint, req *CLISpecSyncInput) (*CLISpecSyncResult, error)
-	ExportSpecs(ctx context.Context, projectID uint, format string) (interface{}, error)
-	BatchGenDoc(ctx context.Context, projectID uint, req *BatchGenDocRequest) (*BatchGenDocResponse, error)
+	ImportSpecs(ctx context.Context, projectID string, specs []*CreateAPISpecRequest) error
+	SyncSpecsFromCLI(ctx context.Context, projectID string, req *CLISpecSyncInput) (*CLISpecSyncResult, error)
+	ExportSpecs(ctx context.Context, projectID string, format string) (interface{}, error)
+	BatchGenDoc(ctx context.Context, projectID string, req *BatchGenDocRequest) (*BatchGenDocResponse, error)
 }
 
 // service is the private implementation
@@ -68,7 +68,7 @@ func NewService(repo Repository) Service {
 	return &service{repo: repo}
 }
 
-func (s *service) GenDoc(ctx context.Context, projectID, id uint, lang string) (*APISpecResponse, error) {
+func (s *service) GenDoc(ctx context.Context, projectID, id string, lang string) (*APISpecResponse, error) {
 	po, err := s.getProjectSpec(ctx, projectID, id)
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (s *service) GenDoc(ctx context.Context, projectID, id uint, lang string) (
 	return FromAPISpecPO(po), nil
 }
 
-func (s *service) GenTest(ctx context.Context, projectID, id uint, lang string) (string, error) {
+func (s *service) GenTest(ctx context.Context, projectID, id string, lang string) (string, error) {
 	po, err := s.getProjectSpec(ctx, projectID, id)
 	if err != nil {
 		return "", err
@@ -175,7 +175,7 @@ func (s *service) CreateSpec(ctx context.Context, req *CreateAPISpecRequest) (*A
 	return FromAPISpecPO(po), nil
 }
 
-func (s *service) GetSpecByID(ctx context.Context, projectID, id uint) (*APISpecResponse, error) {
+func (s *service) GetSpecByID(ctx context.Context, projectID, id string) (*APISpecResponse, error) {
 	po, err := s.getProjectSpec(ctx, projectID, id)
 	if err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func (s *service) GetSpecByID(ctx context.Context, projectID, id uint) (*APISpec
 	return FromAPISpecPO(po), nil
 }
 
-func (s *service) UpdateSpec(ctx context.Context, projectID, id uint, req *UpdateAPISpecRequest) (*APISpecResponse, error) {
+func (s *service) UpdateSpec(ctx context.Context, projectID, id string, req *UpdateAPISpecRequest) (*APISpecResponse, error) {
 	po, err := s.getProjectSpec(ctx, projectID, id)
 	if err != nil {
 		return nil, err
@@ -255,7 +255,7 @@ func (s *service) UpdateSpec(ctx context.Context, projectID, id uint, req *Updat
 	return FromAPISpecPO(po), nil
 }
 
-func (s *service) DeleteSpec(ctx context.Context, projectID, id uint) error {
+func (s *service) DeleteSpec(ctx context.Context, projectID, id string) error {
 	po, err := s.getProjectSpec(ctx, projectID, id)
 	if err != nil {
 		return err
@@ -289,7 +289,7 @@ func (s *service) ListSpecs(ctx context.Context, filter *SpecListFilter) ([]*API
 	return responses, total, nil
 }
 
-func (s *service) GetSpecWithExamples(ctx context.Context, projectID, id uint) (*APISpecResponse, error) {
+func (s *service) GetSpecWithExamples(ctx context.Context, projectID, id string) (*APISpecResponse, error) {
 	po, err := s.getProjectSpec(ctx, projectID, id)
 	if err != nil {
 		return nil, err
@@ -310,7 +310,7 @@ func (s *service) GetSpecWithExamples(ctx context.Context, projectID, id uint) (
 
 // ========== API Example Operations ==========
 
-func (s *service) CreateExample(ctx context.Context, projectID uint, req *CreateAPIExampleRequest) (*APIExampleResponse, error) {
+func (s *service) CreateExample(ctx context.Context, projectID string, req *CreateAPIExampleRequest) (*APIExampleResponse, error) {
 	if _, err := s.getProjectSpec(ctx, projectID, req.APISpecID); err != nil {
 		return nil, err
 	}
@@ -323,7 +323,7 @@ func (s *service) CreateExample(ctx context.Context, projectID uint, req *Create
 	return FromAPIExamplePO(po), nil
 }
 
-func (s *service) GetExamplesBySpecID(ctx context.Context, projectID, specID uint) ([]*APIExampleResponse, error) {
+func (s *service) GetExamplesBySpecID(ctx context.Context, projectID, specID string) ([]*APIExampleResponse, error) {
 	if _, err := s.getProjectSpec(ctx, projectID, specID); err != nil {
 		return nil, err
 	}
@@ -340,13 +340,13 @@ func (s *service) GetExamplesBySpecID(ctx context.Context, projectID, specID uin
 	return result, nil
 }
 
-func (s *service) DeleteExample(ctx context.Context, id uint) error {
+func (s *service) DeleteExample(ctx context.Context, id string) error {
 	return s.repo.DeleteExample(ctx, id)
 }
 
 // ========== Share Operations ==========
 
-func (s *service) GetShareBySpecID(ctx context.Context, projectID, specID uint) (*APISpecShareResponse, error) {
+func (s *service) GetShareBySpecID(ctx context.Context, projectID, specID string) (*APISpecShareResponse, error) {
 	if _, err := s.getProjectSpec(ctx, projectID, specID); err != nil {
 		return nil, err
 	}
@@ -362,7 +362,7 @@ func (s *service) GetShareBySpecID(ctx context.Context, projectID, specID uint) 
 	return fromAPISpecSharePO(share), nil
 }
 
-func (s *service) PublishShare(ctx context.Context, projectID, specID, createdBy uint) (*APISpecShareResponse, error) {
+func (s *service) PublishShare(ctx context.Context, projectID, specID string, createdBy uint) (*APISpecShareResponse, error) {
 	spec, err := s.getProjectSpec(ctx, projectID, specID)
 	if err != nil {
 		return nil, err
@@ -404,7 +404,7 @@ func (s *service) PublishShare(ctx context.Context, projectID, specID, createdBy
 	return fromAPISpecSharePO(share), nil
 }
 
-func (s *service) DeleteShareBySpecID(ctx context.Context, projectID, specID uint) error {
+func (s *service) DeleteShareBySpecID(ctx context.Context, projectID, specID string) error {
 	if _, err := s.getProjectSpec(ctx, projectID, specID); err != nil {
 		return err
 	}
@@ -438,7 +438,7 @@ func (s *service) GetPublicShareBySlug(ctx context.Context, slug string) (*Publi
 
 // ========== Batch Operations ==========
 
-func (s *service) ImportSpecs(ctx context.Context, projectID uint, specs []*CreateAPISpecRequest) error {
+func (s *service) ImportSpecs(ctx context.Context, projectID string, specs []*CreateAPISpecRequest) error {
 	for _, spec := range specs {
 		spec.ProjectID = projectID
 
@@ -464,7 +464,7 @@ func (s *service) ImportSpecs(ctx context.Context, projectID uint, specs []*Crea
 	return nil
 }
 
-func (s *service) ExportSpecs(ctx context.Context, projectID uint, format string) (interface{}, error) {
+func (s *service) ExportSpecs(ctx context.Context, projectID string, format string) (interface{}, error) {
 	specs, err := s.repo.ListAllSpecs(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -540,7 +540,7 @@ const batchGenConcurrency = 3
 
 // BatchGenDoc generates AI documentation for multiple specs concurrently.
 // It returns immediately after queuing the work; generation runs in the background.
-func (s *service) BatchGenDoc(ctx context.Context, projectID uint, req *BatchGenDocRequest) (*BatchGenDocResponse, error) {
+func (s *service) BatchGenDoc(ctx context.Context, projectID string, req *BatchGenDocRequest) (*BatchGenDocResponse, error) {
 	cfg := config.GlobalConfig
 	if cfg == nil || cfg.OpenAI.APIKey == "" {
 		return nil, fmt.Errorf("AI documentation generation is not configured (OPENAI_API_KEY missing)")
@@ -631,7 +631,7 @@ func (s *service) BatchGenDoc(ctx context.Context, projectID uint, req *BatchGen
 	return resp, nil
 }
 
-func (s *service) getProjectSpec(ctx context.Context, projectID, specID uint) (*APISpecPO, error) {
+func (s *service) getProjectSpec(ctx context.Context, projectID, specID string) (*APISpecPO, error) {
 	po, err := s.repo.GetSpecByIDAndProject(ctx, specID, projectID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

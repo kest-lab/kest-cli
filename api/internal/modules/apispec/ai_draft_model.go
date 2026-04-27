@@ -14,10 +14,10 @@ const (
 
 // APISpecAIDraftPO stores an AI-generated draft before it becomes a formal API spec.
 type APISpecAIDraftPO struct {
-	ID             uint   `gorm:"primaryKey"`
-	ProjectID      uint   `gorm:"index;not null"`
+	ID string   `gorm:"primaryKey"`
+	ProjectID string   `gorm:"index;not null"`
 	CreatedBy      uint   `gorm:"index;not null"`
-	AcceptedSpecID *uint  `gorm:"index"`
+	AcceptedSpecID *string  `gorm:"index"`
 	Status         string `gorm:"size:20;not null;default:draft"`
 	Intent         string `gorm:"type:text;not null"`
 	SeedInput      string `gorm:"type:text"`

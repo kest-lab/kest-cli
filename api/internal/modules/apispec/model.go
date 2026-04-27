@@ -8,9 +8,9 @@ import (
 
 // APISpecPO is the persistent object for API specifications
 type APISpecPO struct {
-	ID             uint   `gorm:"primaryKey"`
-	ProjectID      uint   `gorm:"index;not null"`          // Foreign key to projects table
-	CategoryID     *uint  `gorm:"index"`                   // Optional category
+	ID string   `gorm:"primaryKey"`
+	ProjectID string   `gorm:"index;not null"`          // Foreign key to projects table
+	CategoryID *string  `gorm:"index"`                   // Optional category
 	Method         string `gorm:"size:10;not null;index"`  // GET, POST, etc.
 	Path           string `gorm:"size:500;not null;index"` // /api/users/:id
 	Summary        string `gorm:"size:500"`                // Short description
@@ -44,8 +44,8 @@ func (APISpecPO) TableName() string {
 
 // APIExamplePO is the persistent object for API request/response examples
 type APIExamplePO struct {
-	ID              uint   `gorm:"primaryKey"`
-	APISpecID       uint   `gorm:"index;not null"`    // Foreign key to api_specs
+	ID string   `gorm:"primaryKey"`
+	APISpecID string   `gorm:"index;not null"`    // Foreign key to api_specs
 	Name            string `gorm:"size:255;not null"` // Example name
 	Description     string `gorm:"type:text"`         // Example description
 	Path            string `gorm:"size:500"`          // Request path

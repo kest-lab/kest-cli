@@ -12,15 +12,15 @@ import (
 // Service defines the interface for test case business logic
 type Service interface {
 	CreateTestCase(ctx context.Context, req *CreateTestCaseRequest) (*TestCaseResponse, error)
-	GetTestCase(ctx context.Context, id uint) (*TestCaseResponse, error)
+	GetTestCase(ctx context.Context, id string) (*TestCaseResponse, error)
 	ListTestCases(ctx context.Context, filter *ListFilter) ([]*TestCaseResponse, *PaginationMeta, error)
-	UpdateTestCase(ctx context.Context, id uint, req *UpdateTestCaseRequest) (*TestCaseResponse, error)
-	DeleteTestCase(ctx context.Context, id uint) error
-	DuplicateTestCase(ctx context.Context, id uint, req *DuplicateRequest) (*TestCaseResponse, error)
+	UpdateTestCase(ctx context.Context, id string, req *UpdateTestCaseRequest) (*TestCaseResponse, error)
+	DeleteTestCase(ctx context.Context, id string) error
+	DuplicateTestCase(ctx context.Context, id string, req *DuplicateRequest) (*TestCaseResponse, error)
 	CreateTestCaseFromSpec(ctx context.Context, req *FromSpecRequest) (*TestCaseResponse, error)
-	RunTestCase(ctx context.Context, id uint, req *RunTestCaseRequest) (*RunTestCaseResponse, error)
+	RunTestCase(ctx context.Context, id string, req *RunTestCaseRequest) (*RunTestCaseResponse, error)
 	ListRuns(ctx context.Context, filter *ListRunsFilter) ([]*TestRunResponse, *PaginationMeta, error)
-	GetRun(ctx context.Context, runID uint) (*TestRunResponse, error)
+	GetRun(ctx context.Context, runID string) (*TestRunResponse, error)
 }
 
 // Runner defines the interface for executing test cases
@@ -60,7 +60,7 @@ func (s *service) CreateTestCase(ctx context.Context, req *CreateTestCaseRequest
 }
 
 // GetTestCase gets a test case by ID
-func (s *service) GetTestCase(ctx context.Context, id uint) (*TestCaseResponse, error) {
+func (s *service) GetTestCase(ctx context.Context, id string) (*TestCaseResponse, error) {
 	tc, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get test case: %w", err)
@@ -101,7 +101,7 @@ func (s *service) ListTestCases(ctx context.Context, filter *ListFilter) ([]*Tes
 }
 
 // UpdateTestCase updates a test case
-func (s *service) UpdateTestCase(ctx context.Context, id uint, req *UpdateTestCaseRequest) (*TestCaseResponse, error) {
+func (s *service) UpdateTestCase(ctx context.Context, id string, req *UpdateTestCaseRequest) (*TestCaseResponse, error) {
 	tc, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get test case: %w", err)
@@ -159,7 +159,7 @@ func (s *service) UpdateTestCase(ctx context.Context, id uint, req *UpdateTestCa
 }
 
 // DeleteTestCase deletes a test case
-func (s *service) DeleteTestCase(ctx context.Context, id uint) error {
+func (s *service) DeleteTestCase(ctx context.Context, id string) error {
 	tc, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return err
@@ -172,7 +172,7 @@ func (s *service) DeleteTestCase(ctx context.Context, id uint) error {
 }
 
 // DuplicateTestCase duplicates a test case
-func (s *service) DuplicateTestCase(ctx context.Context, id uint, req *DuplicateRequest) (*TestCaseResponse, error) {
+func (s *service) DuplicateTestCase(ctx context.Context, id string, req *DuplicateRequest) (*TestCaseResponse, error) {
 	source, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -262,7 +262,7 @@ func (s *service) CreateTestCaseFromSpec(ctx context.Context, req *FromSpecReque
 }
 
 // RunTestCase executes a test case
-func (s *service) RunTestCase(ctx context.Context, id uint, req *RunTestCaseRequest) (*RunTestCaseResponse, error) {
+func (s *service) RunTestCase(ctx context.Context, id string, req *RunTestCaseRequest) (*RunTestCaseResponse, error) {
 	tc, err := s.GetTestCase(ctx, id)
 	if err != nil {
 		return nil, err
@@ -386,7 +386,7 @@ func (s *service) ListRuns(ctx context.Context, filter *ListRunsFilter) ([]*Test
 }
 
 // GetRun returns a single run record
-func (s *service) GetRun(ctx context.Context, runID uint) (*TestRunResponse, error) {
+func (s *service) GetRun(ctx context.Context, runID string) (*TestRunResponse, error) {
 	run, err := s.repo.GetRunByID(ctx, runID)
 	if err != nil {
 		return nil, err

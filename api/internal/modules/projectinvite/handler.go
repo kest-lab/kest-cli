@@ -36,15 +36,15 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 
 		auth.POST("/projects/:id/invitations", h.CreateInvitation).
 			Name("projects.invitations.create").
-			WhereNumber("id").
+			WhereUUID("id").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleAdmin))
 		auth.GET("/projects/:id/invitations", h.ListInvitations).
 			Name("projects.invitations.list").
-			WhereNumber("id").
+			WhereUUID("id").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleAdmin))
 		auth.DELETE("/projects/:id/invitations/:inviteId", h.DeleteInvitation).
 			Name("projects.invitations.delete").
-			WhereNumber("id", "inviteId").
+			WhereUUID("id", "inviteId").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleAdmin))
 
 		auth.POST("/project-invitations/:slug/accept", h.AcceptInvitation).

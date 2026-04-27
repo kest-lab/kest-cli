@@ -9,7 +9,7 @@ import (
 // Repository defines the interface for audit logging
 type Repository interface {
 	Create(ctx context.Context, log *AuditLogPO) error
-	ListByProject(ctx context.Context, projectID uint, page, pageSize int) ([]AuditLogPO, int64, error)
+	ListByProject(ctx context.Context, projectID string, page, pageSize int) ([]AuditLogPO, int64, error)
 	ListAll(ctx context.Context, page, pageSize int) ([]AuditLogPO, int64, error)
 }
 
@@ -28,7 +28,7 @@ func (r *repository) Create(ctx context.Context, log *AuditLogPO) error {
 }
 
 // ListByProject retrieves audit logs for a specific project
-func (r *repository) ListByProject(ctx context.Context, projectID uint, page, pageSize int) ([]AuditLogPO, int64, error) {
+func (r *repository) ListByProject(ctx context.Context, projectID string, page, pageSize int) ([]AuditLogPO, int64, error) {
 	var logs []AuditLogPO
 	var total int64
 	offset := (page - 1) * pageSize

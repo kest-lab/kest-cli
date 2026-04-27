@@ -9,11 +9,11 @@ import (
 
 // HistoryPO is the database model for version history
 type HistoryPO struct {
-	ID           uint           `gorm:"primaryKey" json:"id"`
+	ID string           `gorm:"primaryKey" json:"id"`
 	EntityType   string         `gorm:"size:50;not null;index" json:"entity_type"` // e.g., "collection", "request"
-	EntityID     uint           `gorm:"not null;index" json:"entity_id"`
-	ProjectID    uint           `gorm:"not null;index" json:"project_id"`
-	UserID       uint           `gorm:"not null" json:"user_id"` // who made the change
+	EntityID string           `gorm:"not null;index" json:"entity_id"`
+	ProjectID string           `gorm:"not null;index" json:"project_id"`
+	UserID uint           `gorm:"not null" json:"user_id"` // who made the change
 	Action       string         `gorm:"size:20;not null" json:"action"` // "create", "update", "delete", "move"
 	Data         string         `gorm:"type:text" json:"data"`          // JSON snapshot of the entity at this version
 	Diff         string         `gorm:"type:text" json:"diff"`          // JSON describing what changed (optional)
@@ -29,11 +29,11 @@ func (HistoryPO) TableName() string {
 
 // History represents the domain model
 type History struct {
-	ID         uint                   `json:"id"`
+	ID string                   `json:"id"`
 	EntityType string                 `json:"entity_type"`
-	EntityID   uint                   `json:"entity_id"`
-	ProjectID  uint                   `json:"project_id"`
-	UserID     uint                   `json:"user_id"`
+	EntityID string                   `json:"entity_id"`
+	ProjectID string                   `json:"project_id"`
+	UserID uint                   `json:"user_id"`
 	Action     string                 `json:"action"`
 	Data       map[string]interface{} `json:"data"`
 	Diff       map[string]interface{} `json:"diff,omitempty"`

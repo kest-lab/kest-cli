@@ -39,5 +39,5 @@ func (h *Handler) Rollback(c *gin.Context) {
 }
 
 type RollbackRequest struct {
-	VersionID uint `json:"version_id" binding:"required"`
+	VersionID string `json:"version_id" binding:"required"`
 }

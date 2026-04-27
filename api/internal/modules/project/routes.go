@@ -17,36 +17,36 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 		auth.GET("/projects", h.List).Name("projects.list")
 		auth.GET("/projects/:id", h.Get).
 			Name("projects.show").
-			WhereNumber("id").
+			WhereUUID("id").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleRead))
 		auth.PUT("/projects/:id", h.Update).
 			Name("projects.update").
-			WhereNumber("id").
+			WhereUUID("id").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
 		auth.PATCH("/projects/:id", h.Update).
 			Name("projects.patch").
-			WhereNumber("id").
+			WhereUUID("id").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
 		auth.DELETE("/projects/:id", h.Delete).
 			Name("projects.delete").
-			WhereNumber("id").
+			WhereUUID("id").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleAdmin))
 
 		// Stats endpoint
 		auth.GET("/projects/:id/stats", h.GetStats).
 			Name("projects.stats").
-			WhereNumber("id").
+			WhereUUID("id").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleRead))
 		auth.POST("/projects/:id/cli-tokens", h.GenerateCLIToken).
 			Name("projects.cli_tokens.create").
-			WhereNumber("id").
+			WhereUUID("id").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
 	})
 
 	r.Group("", func(cli *router.Router) {
 		cli.POST("/projects/:id/cli/spec-sync", h.SyncSpecsFromCLI).
 			Name("projects.cli.spec_sync").
-			WhereNumber("id").
+			WhereUUID("id").
 			Middleware(middleware.RequireProjectCLIToken(h.service, CLITokenScopeSpecWrite))
 	})
 }

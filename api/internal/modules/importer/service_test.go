@@ -156,7 +156,7 @@ func TestImportPostmanCollectionFlattensNestedFoldersIntoSingleCollection(t *tes
 
 type stubCollectionService struct {
 	created   []*collection.CreateCollectionRequest
-	nextID    uint
+	nextID string
 	createErr error
 }
 
@@ -205,7 +205,7 @@ func (s *stubCollectionService) Move(context.Context, uint, uint, *collection.Mo
 
 type stubRequestService struct {
 	created []*request.CreateRequestRequest
-	nextID  uint
+	nextID string
 }
 
 func (s *stubRequestService) Create(_ context.Context, _ uint, req *request.CreateRequestRequest) (*request.Request, error) {

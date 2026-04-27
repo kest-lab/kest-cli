@@ -13,12 +13,12 @@ var (
 // Service defines the interface for example business logic
 type Service interface {
 	Create(ctx context.Context, req *CreateExampleRequest) (*Example, error)
-	GetByID(ctx context.Context, id, requestID uint) (*Example, error)
-	Update(ctx context.Context, id, requestID uint, req *UpdateExampleRequest) (*Example, error)
-	Delete(ctx context.Context, id, requestID uint) error
-	List(ctx context.Context, requestID uint) ([]*Example, error)
-	SaveResponse(ctx context.Context, id, requestID uint, req *SaveResponseRequest) (*Example, error)
-	SetDefault(ctx context.Context, id, requestID uint) (*Example, error)
+	GetByID(ctx context.Context, id, requestID string) (*Example, error)
+	Update(ctx context.Context, id, requestID string, req *UpdateExampleRequest) (*Example, error)
+	Delete(ctx context.Context, id, requestID string) error
+	List(ctx context.Context, requestID string) ([]*Example, error)
+	SaveResponse(ctx context.Context, id, requestID string, req *SaveResponseRequest) (*Example, error)
+	SetDefault(ctx context.Context, id, requestID string) (*Example, error)
 }
 
 // service implements Service interface
@@ -71,7 +71,7 @@ func (s *service) Create(ctx context.Context, req *CreateExampleRequest) (*Examp
 	return example, nil
 }
 
-func (s *service) GetByID(ctx context.Context, id, requestID uint) (*Example, error) {
+func (s *service) GetByID(ctx context.Context, id, requestID string) (*Example, error) {
 	example, err := s.repo.GetByIDAndRequest(ctx, id, requestID)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (s *service) GetByID(ctx context.Context, id, requestID uint) (*Example, er
 	return example, nil
 }
 
-func (s *service) Update(ctx context.Context, id, requestID uint, req *UpdateExampleRequest) (*Example, error) {
+func (s *service) Update(ctx context.Context, id, requestID string, req *UpdateExampleRequest) (*Example, error) {
 	example, err := s.repo.GetByIDAndRequest(ctx, id, requestID)
 	if err != nil {
 		return nil, err
@@ -136,7 +136,7 @@ func (s *service) Update(ctx context.Context, id, requestID uint, req *UpdateExa
 	return example, nil
 }
 
-func (s *service) Delete(ctx context.Context, id, requestID uint) error {
+func (s *service) Delete(ctx context.Context, id, requestID string) error {
 	example, err := s.repo.GetByIDAndRequest(ctx, id, requestID)
 	if err != nil {
 		return err
@@ -148,11 +148,11 @@ func (s *service) Delete(ctx context.Context, id, requestID uint) error {
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *service) List(ctx context.Context, requestID uint) ([]*Example, error) {
+func (s *service) List(ctx context.Context, requestID string) ([]*Example, error) {
 	return s.repo.List(ctx, requestID)
 }
 
-func (s *service) SaveResponse(ctx context.Context, id, requestID uint, req *SaveResponseRequest) (*Example, error) {
+func (s *service) SaveResponse(ctx context.Context, id, requestID string, req *SaveResponseRequest) (*Example, error) {
 	example, err := s.repo.GetByIDAndRequest(ctx, id, requestID)
 	if err != nil {
 		return nil, err
@@ -173,7 +173,7 @@ func (s *service) SaveResponse(ctx context.Context, id, requestID uint, req *Sav
 	return example, nil
 }
 
-func (s *service) SetDefault(ctx context.Context, id, requestID uint) (*Example, error) {
+func (s *service) SetDefault(ctx context.Context, id, requestID string) (*Example, error) {
 	example, err := s.repo.GetByIDAndRequest(ctx, id, requestID)
 	if err != nil {
 		return nil, err

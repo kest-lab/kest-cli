@@ -14,7 +14,7 @@ type testProjectRepo struct {
 }
 
 func (r *testProjectRepo) Create(ctx context.Context, project *Project) error { return nil }
-func (r *testProjectRepo) GetByID(ctx context.Context, id uint) (*Project, error) {
+func (r *testProjectRepo) GetByID(ctx context.Context, id string) (*Project, error) {
 	if r.project == nil || r.project.ID != id {
 		return nil, nil
 	}
@@ -24,11 +24,11 @@ func (r *testProjectRepo) GetBySlug(ctx context.Context, slug string) (*Project,
 	return nil, nil
 }
 func (r *testProjectRepo) Update(ctx context.Context, project *Project) error { return nil }
-func (r *testProjectRepo) Delete(ctx context.Context, id uint) error          { return nil }
+func (r *testProjectRepo) Delete(ctx context.Context, id string) error          { return nil }
 func (r *testProjectRepo) List(ctx context.Context, userID uint, offset, limit int) ([]*Project, int64, error) {
 	return nil, 0, nil
 }
-func (r *testProjectRepo) GetStats(ctx context.Context, projectID uint) (*ProjectStats, error) {
+func (r *testProjectRepo) GetStats(ctx context.Context, projectID string) (*ProjectStats, error) {
 	return &ProjectStats{}, nil
 }
 func (r *testProjectRepo) CreateCLIToken(ctx context.Context, token *ProjectCLIToken, tokenHash string) error {
@@ -45,7 +45,7 @@ func (r *testProjectRepo) GetCLITokenByHash(ctx context.Context, tokenHash strin
 	}
 	return r.token, nil
 }
-func (r *testProjectRepo) TouchCLIToken(ctx context.Context, id uint, usedAt time.Time) error {
+func (r *testProjectRepo) TouchCLIToken(ctx context.Context, id string, usedAt time.Time) error {
 	r.lastTouchedAt = &usedAt
 	return nil
 }

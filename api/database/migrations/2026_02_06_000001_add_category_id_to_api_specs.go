@@ -20,7 +20,7 @@ func (m *addCategoryIDToApiSpecs) Up(db *gorm.DB) error {
 
 	// Add category_id column if it doesn't exist
 	if !db.Migrator().HasColumn("api_specs", "category_id") {
-		return db.Exec("ALTER TABLE api_specs ADD COLUMN category_id BIGINT").Error
+		return db.Exec("ALTER TABLE api_specs ADD COLUMN category_id VARCHAR(36)").Error
 	}
 	return nil
 }

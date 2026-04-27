@@ -21,10 +21,11 @@ import (
 
 	"github.com/kest-labs/kest/api/pkg/response"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
-// ParseID extracts and validates an ID parameter from the URL.
-// Returns 0 and false if invalid, automatically sends error response.
+// ParseID extracts and validates a UUID parameter from the URL.
+// Returns empty string and false if invalid, automatically sends error response.
 //
 // Example:
 //
@@ -32,7 +33,18 @@ import (
 //	if !ok {
 //	    return // Error response already sent
 //	}
-func ParseID(c *gin.Context, param string) (uint, bool) {
+func ParseID(c *gin.Context, param string) (string, bool) {
+	idStr := c.Param(param)
+	if _, err := uuid.Parse(idStr); err != nil {
+		response.BadRequest(c, "Invalid ID format", err)
+		return "", false
+	}
+	return idStr, true
+}
+
+// ParseUintID extracts and validates an unsigned integer ID parameter from the URL.
+// Returns 0 and false if invalid, automatically sends error response.
+func ParseUintID(c *gin.Context, param string) (uint, bool) {
 	idStr := c.Param(param)
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {

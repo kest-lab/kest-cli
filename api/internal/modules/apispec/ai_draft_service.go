@@ -23,7 +23,8 @@ var pathParameterPattern = regexp.MustCompile(`[:{]([A-Za-z0-9_]+)[}]?`)
 
 func (s *service) CreateAIDraft(
 	ctx context.Context,
-	projectID, userID uint,
+	projectID string,
+	userID uint,
 	req *CreateAPISpecAIDraftRequest,
 ) (*APISpecAIDraftResponse, error) {
 	client, err := newConfiguredLLMClient()
@@ -110,7 +111,7 @@ func (s *service) CreateAIDraft(
 	return fromAIDraftPO(po)
 }
 
-func (s *service) GetAIDraft(ctx context.Context, projectID, draftID uint) (*APISpecAIDraftResponse, error) {
+func (s *service) GetAIDraft(ctx context.Context, projectID, draftID string) (*APISpecAIDraftResponse, error) {
 	po, err := s.repo.GetAIDraftByIDAndProject(ctx, draftID, projectID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -124,7 +125,7 @@ func (s *service) GetAIDraft(ctx context.Context, projectID, draftID uint) (*API
 
 func (s *service) RefineAIDraft(
 	ctx context.Context,
-	projectID, draftID uint,
+	projectID, draftID string,
 	req *RefineAPISpecAIDraftRequest,
 ) (*APISpecAIDraftResponse, error) {
 	client, err := newConfiguredLLMClient()
@@ -199,7 +200,7 @@ func (s *service) RefineAIDraft(
 
 func (s *service) AcceptAIDraft(
 	ctx context.Context,
-	projectID, draftID uint,
+	projectID, draftID string,
 	req *AcceptAPISpecAIDraftRequest,
 ) (*AcceptAPISpecAIDraftResponse, error) {
 	po, err := s.repo.GetAIDraftByIDAndProject(ctx, draftID, projectID)

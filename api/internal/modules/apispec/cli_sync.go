@@ -66,7 +66,7 @@ type CLISpecSyncResult struct {
 	Errors  []string
 }
 
-func (h *Handler) SyncSpecsFromCLI(ctx context.Context, projectID uint, req *project.CLISpecSyncRequest) (*project.CLISpecSyncResponseBody, error) {
+func (h *Handler) SyncSpecsFromCLI(ctx context.Context, projectID string, req *project.CLISpecSyncRequest) (*project.CLISpecSyncResponseBody, error) {
 	input := &CLISpecSyncInput{
 		Source:   req.Source,
 		Metadata: req.Metadata,
@@ -101,7 +101,7 @@ func (h *Handler) SyncSpecsFromCLI(ctx context.Context, projectID uint, req *pro
 	}, nil
 }
 
-func (s *service) SyncSpecsFromCLI(ctx context.Context, projectID uint, req *CLISpecSyncInput) (*CLISpecSyncResult, error) {
+func (s *service) SyncSpecsFromCLI(ctx context.Context, projectID string, req *CLISpecSyncInput) (*CLISpecSyncResult, error) {
 	result := &CLISpecSyncResult{}
 
 	for _, spec := range req.Specs {
@@ -112,7 +112,7 @@ func (s *service) SyncSpecsFromCLI(ctx context.Context, projectID uint, req *CLI
 			continue
 		}
 
-		var specID uint
+		var specID string
 		switch {
 		case existing == nil:
 			po := ToAPISpecPO(specReq)
@@ -156,7 +156,7 @@ func (s *service) SyncSpecsFromCLI(ctx context.Context, projectID uint, req *CLI
 	return result, nil
 }
 
-func toCreateAPISpecRequest(projectID uint, spec CLISpecSyncSpecInput) *CreateAPISpecRequest {
+func toCreateAPISpecRequest(projectID string, spec CLISpecSyncSpecInput) *CreateAPISpecRequest {
 	req := &CreateAPISpecRequest{
 		ProjectID:   projectID,
 		Method:      strings.ToUpper(strings.TrimSpace(spec.Method)),
@@ -236,7 +236,7 @@ func applyCLISpecUpdate(existing *APISpecPO, req *CreateAPISpecRequest) bool {
 	return changed
 }
 
-func (s *service) syncCLIExamples(ctx context.Context, specID uint, method, path string, examples []CLISpecSyncExampleInput) (int, error) {
+func (s *service) syncCLIExamples(ctx context.Context, specID string, method, path string, examples []CLISpecSyncExampleInput) (int, error) {
 	if len(examples) == 0 {
 		return 0, nil
 	}

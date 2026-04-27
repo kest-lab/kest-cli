@@ -37,12 +37,7 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 
 // ListByProject handles GET /v1/projects/:id/audit-logs
 func (h *Handler) ListByProject(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid project ID")
-		return
-	}
+	projectID := c.Param("id")
 
 	page := 1
 	pageSize := 20
@@ -57,7 +52,7 @@ func (h *Handler) ListByProject(c *gin.Context) {
 		}
 	}
 
-	logs, total, err := h.repo.ListByProject(c.Request.Context(), uint(projectID), page, pageSize)
+	logs, total, err := h.repo.ListByProject(c.Request.Context(), projectID, page, pageSize)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return

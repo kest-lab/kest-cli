@@ -10,13 +10,13 @@ import (
 // Repository defines the interface for example data access
 type Repository interface {
 	Create(ctx context.Context, example *Example) error
-	GetByID(ctx context.Context, id uint) (*Example, error)
-	GetByIDAndRequest(ctx context.Context, id, requestID uint) (*Example, error)
+	GetByID(ctx context.Context, id string) (*Example, error)
+	GetByIDAndRequest(ctx context.Context, id, requestID string) (*Example, error)
 	Update(ctx context.Context, example *Example) error
-	Delete(ctx context.Context, id uint) error
-	List(ctx context.Context, requestID uint) ([]*Example, error)
-	GetDefault(ctx context.Context, requestID uint) (*Example, error)
-	ClearDefault(ctx context.Context, requestID uint) error
+	Delete(ctx context.Context, id string) error
+	List(ctx context.Context, requestID string) ([]*Example, error)
+	GetDefault(ctx context.Context, requestID string) (*Example, error)
+	ClearDefault(ctx context.Context, requestID string) error
 }
 
 // repository implements Repository interface
@@ -40,7 +40,7 @@ func (r *repository) Create(ctx context.Context, example *Example) error {
 	return nil
 }
 
-func (r *repository) GetByID(ctx context.Context, id uint) (*Example, error) {
+func (r *repository) GetByID(ctx context.Context, id string) (*Example, error) {
 	var po ExamplePO
 	if err := r.db.WithContext(ctx).First(&po, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -51,7 +51,7 @@ func (r *repository) GetByID(ctx context.Context, id uint) (*Example, error) {
 	return po.toDomain(), nil
 }
 
-func (r *repository) GetByIDAndRequest(ctx context.Context, id, requestID uint) (*Example, error) {
+func (r *repository) GetByIDAndRequest(ctx context.Context, id, requestID string) (*Example, error) {
 	var po ExamplePO
 	if err := r.db.WithContext(ctx).Where("id = ? AND request_id = ?", id, requestID).First(&po).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -67,11 +67,11 @@ func (r *repository) Update(ctx context.Context, example *Example) error {
 	return r.db.WithContext(ctx).Model(&ExamplePO{}).Where("id = ?", example.ID).Updates(po).Error
 }
 
-func (r *repository) Delete(ctx context.Context, id uint) error {
+func (r *repository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&ExamplePO{}, id).Error
 }
 
-func (r *repository) List(ctx context.Context, requestID uint) ([]*Example, error) {
+func (r *repository) List(ctx context.Context, requestID string) ([]*Example, error) {
 	var poList []*ExamplePO
 	if err := r.db.WithContext(ctx).Where("request_id = ?", requestID).Order("sort_order ASC, created_at DESC").Find(&poList).Error; err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (r *repository) List(ctx context.Context, requestID uint) ([]*Example, erro
 	return toDomainList(poList), nil
 }
 
-func (r *repository) GetDefault(ctx context.Context, requestID uint) (*Example, error) {
+func (r *repository) GetDefault(ctx context.Context, requestID string) (*Example, error) {
 	var po ExamplePO
 	if err := r.db.WithContext(ctx).Where("request_id = ? AND is_default = ?", requestID, true).First(&po).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -90,6 +90,6 @@ func (r *repository) GetDefault(ctx context.Context, requestID uint) (*Example, 
 	return po.toDomain(), nil
 }
 
-func (r *repository) ClearDefault(ctx context.Context, requestID uint) error {
+func (r *repository) ClearDefault(ctx context.Context, requestID string) error {
 	return r.db.WithContext(ctx).Model(&ExamplePO{}).Where("request_id = ?", requestID).Update("is_default", false).Error
 }

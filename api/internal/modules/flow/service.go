@@ -9,28 +9,28 @@ import (
 // Service defines the business logic interface for flows
 type Service interface {
 	// Flow CRUD
-	CreateFlow(ctx context.Context, projectID, userID uint, req *CreateFlowRequest) (*FlowResponse, error)
-	GetFlow(ctx context.Context, id uint) (*FlowDetailResponse, error)
-	ListFlows(ctx context.Context, projectID uint) ([]*FlowResponse, error)
-	UpdateFlow(ctx context.Context, id uint, req *UpdateFlowRequest) (*FlowResponse, error)
-	DeleteFlow(ctx context.Context, id uint) error
-	SaveFlow(ctx context.Context, id uint, req *SaveFlowRequest) (*FlowDetailResponse, error)
+	CreateFlow(ctx context.Context, projectID string, userID uint, req *CreateFlowRequest) (*FlowResponse, error)
+	GetFlow(ctx context.Context, id string) (*FlowDetailResponse, error)
+	ListFlows(ctx context.Context, projectID string) ([]*FlowResponse, error)
+	UpdateFlow(ctx context.Context, id string, req *UpdateFlowRequest) (*FlowResponse, error)
+	DeleteFlow(ctx context.Context, id string) error
+	SaveFlow(ctx context.Context, id string, req *SaveFlowRequest) (*FlowDetailResponse, error)
 
 	// Step CRUD
-	CreateStep(ctx context.Context, flowID uint, req *CreateStepRequest) (*StepResponse, error)
-	UpdateStep(ctx context.Context, id uint, req *UpdateStepRequest) (*StepResponse, error)
-	DeleteStep(ctx context.Context, id uint) error
+	CreateStep(ctx context.Context, flowID string, req *CreateStepRequest) (*StepResponse, error)
+	UpdateStep(ctx context.Context, id string, req *UpdateStepRequest) (*StepResponse, error)
+	DeleteStep(ctx context.Context, id string) error
 
 	// Edge CRUD
-	CreateEdge(ctx context.Context, flowID uint, req *CreateEdgeRequest) (*EdgeResponse, error)
-	UpdateEdge(ctx context.Context, id uint, req *UpdateEdgeRequest) (*EdgeResponse, error)
-	DeleteEdge(ctx context.Context, id uint) error
+	CreateEdge(ctx context.Context, flowID string, req *CreateEdgeRequest) (*EdgeResponse, error)
+	UpdateEdge(ctx context.Context, id string, req *UpdateEdgeRequest) (*EdgeResponse, error)
+	DeleteEdge(ctx context.Context, id string) error
 
 	// Run
-	RunFlow(ctx context.Context, flowID, userID uint) (*RunResponse, error)
-	ExecuteFlow(ctx context.Context, runID uint, baseURL string, events chan<- StepEvent) error
-	GetRun(ctx context.Context, runID uint) (*RunResponse, error)
-	ListRuns(ctx context.Context, flowID uint) ([]*RunResponse, error)
+	RunFlow(ctx context.Context, flowID string, userID uint) (*RunResponse, error)
+	ExecuteFlow(ctx context.Context, runID string, baseURL string, events chan<- StepEvent) error
+	GetRun(ctx context.Context, runID string) (*RunResponse, error)
+	ListRuns(ctx context.Context, flowID string) ([]*RunResponse, error)
 }
 
 type service struct {
@@ -44,7 +44,7 @@ func NewService(repo Repository) Service {
 
 // --- Flow CRUD ---
 
-func (s *service) CreateFlow(ctx context.Context, projectID, userID uint, req *CreateFlowRequest) (*FlowResponse, error) {
+func (s *service) CreateFlow(ctx context.Context, projectID string, userID uint, req *CreateFlowRequest) (*FlowResponse, error) {
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
 		return nil, newFlowError(422, "flow name is required")
@@ -62,7 +62,7 @@ func (s *service) CreateFlow(ctx context.Context, projectID, userID uint, req *C
 	return ToFlowResponse(flow), nil
 }
 
-func (s *service) GetFlow(ctx context.Context, id uint) (*FlowDetailResponse, error) {
+func (s *service) GetFlow(ctx context.Context, id string) (*FlowDetailResponse, error) {
 	flow, err := s.repo.GetFlowByID(ctx, id)
 	if err != nil {
 		return nil, newFlowError(404, "flow not found")
@@ -98,7 +98,7 @@ func (s *service) GetFlow(ctx context.Context, id uint) (*FlowDetailResponse, er
 	return resp, nil
 }
 
-func (s *service) ListFlows(ctx context.Context, projectID uint) ([]*FlowResponse, error) {
+func (s *service) ListFlows(ctx context.Context, projectID string) ([]*FlowResponse, error) {
 	flows, err := s.repo.ListFlowsByProject(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func (s *service) ListFlows(ctx context.Context, projectID uint) ([]*FlowRespons
 	return responses, nil
 }
 
-func (s *service) UpdateFlow(ctx context.Context, id uint, req *UpdateFlowRequest) (*FlowResponse, error) {
+func (s *service) UpdateFlow(ctx context.Context, id string, req *UpdateFlowRequest) (*FlowResponse, error) {
 	flow, err := s.repo.GetFlowByID(ctx, id)
 	if err != nil {
 		return nil, newFlowError(404, "flow not found")
@@ -138,7 +138,7 @@ func (s *service) UpdateFlow(ctx context.Context, id uint, req *UpdateFlowReques
 	return ToFlowResponse(flow), nil
 }
 
-func (s *service) DeleteFlow(ctx context.Context, id uint) error {
+func (s *service) DeleteFlow(ctx context.Context, id string) error {
 	_, err := s.repo.GetFlowByID(ctx, id)
 	if err != nil {
 		return newFlowError(404, "flow not found")
@@ -154,7 +154,7 @@ func (s *service) DeleteFlow(ctx context.Context, id uint) error {
 	return s.repo.DeleteFlow(ctx, id)
 }
 
-func (s *service) SaveFlow(ctx context.Context, id uint, req *SaveFlowRequest) (*FlowDetailResponse, error) {
+func (s *service) SaveFlow(ctx context.Context, id string, req *SaveFlowRequest) (*FlowDetailResponse, error) {
 	if _, err := s.repo.GetFlowByID(ctx, id); err != nil {
 		return nil, newFlowError(404, "flow not found")
 	}
@@ -193,7 +193,7 @@ func (s *service) SaveFlow(ctx context.Context, id uint, req *SaveFlowRequest) (
 		for _, stepReq := range req.Steps {
 			stepPOs = append(stepPOs, &FlowStepPO{
 				FlowID:    id,
-				ClientKey: normalizeStepClientKey(0, stepReq.ClientKey),
+				ClientKey: normalizeStepClientKey("", stepReq.ClientKey),
 				Name:      stepReq.Name,
 				SortOrder: stepReq.SortOrder,
 				Method:    stepReq.Method,
@@ -210,7 +210,7 @@ func (s *service) SaveFlow(ctx context.Context, id uint, req *SaveFlowRequest) (
 			return err
 		}
 
-		stepIDByClientKey := make(map[string]uint, len(stepPOs))
+		stepIDByClientKey := make(map[string]string, len(stepPOs))
 		for _, step := range stepPOs {
 			stepIDByClientKey[step.ClientKey] = step.ID
 		}
@@ -247,7 +247,7 @@ func (s *service) SaveFlow(ctx context.Context, id uint, req *SaveFlowRequest) (
 
 // --- Step CRUD ---
 
-func (s *service) CreateStep(ctx context.Context, flowID uint, req *CreateStepRequest) (*StepResponse, error) {
+func (s *service) CreateStep(ctx context.Context, flowID string, req *CreateStepRequest) (*StepResponse, error) {
 	_, err := s.repo.GetFlowByID(ctx, flowID)
 	if err != nil {
 		return nil, newFlowError(404, "flow not found")
@@ -280,7 +280,7 @@ func (s *service) CreateStep(ctx context.Context, flowID uint, req *CreateStepRe
 	return ToStepResponse(step), nil
 }
 
-func (s *service) UpdateStep(ctx context.Context, id uint, req *UpdateStepRequest) (*StepResponse, error) {
+func (s *service) UpdateStep(ctx context.Context, id string, req *UpdateStepRequest) (*StepResponse, error) {
 	step, err := s.repo.GetStepByID(ctx, id)
 	if err != nil {
 		return nil, newFlowError(404, "step not found")
@@ -326,7 +326,7 @@ func (s *service) UpdateStep(ctx context.Context, id uint, req *UpdateStepReques
 	return ToStepResponse(step), nil
 }
 
-func (s *service) DeleteStep(ctx context.Context, id uint) error {
+func (s *service) DeleteStep(ctx context.Context, id string) error {
 	_, err := s.repo.GetStepByID(ctx, id)
 	if err != nil {
 		return newFlowError(404, "step not found")
@@ -336,7 +336,7 @@ func (s *service) DeleteStep(ctx context.Context, id uint) error {
 
 // --- Edge CRUD ---
 
-func (s *service) CreateEdge(ctx context.Context, flowID uint, req *CreateEdgeRequest) (*EdgeResponse, error) {
+func (s *service) CreateEdge(ctx context.Context, flowID string, req *CreateEdgeRequest) (*EdgeResponse, error) {
 	_, err := s.repo.GetFlowByID(ctx, flowID)
 	if err != nil {
 		return nil, newFlowError(404, "flow not found")
@@ -387,7 +387,7 @@ func (s *service) CreateEdge(ctx context.Context, flowID uint, req *CreateEdgeRe
 	return ToEdgeResponse(edge), nil
 }
 
-func (s *service) UpdateEdge(ctx context.Context, id uint, req *UpdateEdgeRequest) (*EdgeResponse, error) {
+func (s *service) UpdateEdge(ctx context.Context, id string, req *UpdateEdgeRequest) (*EdgeResponse, error) {
 	edge, err := s.repo.GetEdgeByID(ctx, id)
 	if err != nil {
 		return nil, newFlowError(404, "edge not found")
@@ -442,7 +442,7 @@ func (s *service) UpdateEdge(ctx context.Context, id uint, req *UpdateEdgeReques
 	return ToEdgeResponse(edge), nil
 }
 
-func (s *service) DeleteEdge(ctx context.Context, id uint) error {
+func (s *service) DeleteEdge(ctx context.Context, id string) error {
 	_, err := s.repo.GetEdgeByID(ctx, id)
 	if err != nil {
 		return newFlowError(404, "edge not found")
@@ -452,7 +452,7 @@ func (s *service) DeleteEdge(ctx context.Context, id uint) error {
 
 // --- Run ---
 
-func (s *service) ExecuteFlow(ctx context.Context, runID uint, baseURL string, events chan<- StepEvent) error {
+func (s *service) ExecuteFlow(ctx context.Context, runID string, baseURL string, events chan<- StepEvent) error {
 	run, err := s.repo.GetRunByID(ctx, runID)
 	if err != nil {
 		close(events)
@@ -490,7 +490,7 @@ func (s *service) ExecuteFlow(ctx context.Context, runID uint, baseURL string, e
 	return runner.Execute(ctx, run, stepValues, edgeValues, events)
 }
 
-func (s *service) RunFlow(ctx context.Context, flowID, userID uint) (*RunResponse, error) {
+func (s *service) RunFlow(ctx context.Context, flowID string, userID uint) (*RunResponse, error) {
 	flowDetail, err := s.GetFlow(ctx, flowID)
 	if err != nil {
 		return nil, err
@@ -537,7 +537,7 @@ func (s *service) RunFlow(ctx context.Context, flowID, userID uint) (*RunRespons
 	return ToRunResponse(run), nil
 }
 
-func (s *service) GetRun(ctx context.Context, runID uint) (*RunResponse, error) {
+func (s *service) GetRun(ctx context.Context, runID string) (*RunResponse, error) {
 	run, err := s.repo.GetRunByID(ctx, runID)
 	if err != nil {
 		return nil, newFlowError(404, "run not found")
@@ -559,7 +559,7 @@ func (s *service) GetRun(ctx context.Context, runID uint) (*RunResponse, error) 
 	return resp, nil
 }
 
-func (s *service) ListRuns(ctx context.Context, flowID uint) ([]*RunResponse, error) {
+func (s *service) ListRuns(ctx context.Context, flowID string) ([]*RunResponse, error) {
 	runs, err := s.repo.ListRunsByFlow(ctx, flowID)
 	if err != nil {
 		return nil, err
@@ -579,12 +579,12 @@ func ensureUniqueStepClientKeys(steps []StepResponse) {
 		base := normalizeStepClientKey(steps[index].ID, steps[index].ClientKey)
 		candidate := base
 		if _, exists := used[candidate]; exists {
-			candidate = fmt.Sprintf("%s-%d", base, steps[index].ID)
+			candidate = fmt.Sprintf("%s-%s", base, steps[index].ID)
 			for suffix := 2; ; suffix += 1 {
 				if _, exists := used[candidate]; !exists {
 					break
 				}
-				candidate = fmt.Sprintf("%s-%d-%d", base, steps[index].ID, suffix)
+				candidate = fmt.Sprintf("%s-%s-%d", base, steps[index].ID, suffix)
 			}
 		}
 

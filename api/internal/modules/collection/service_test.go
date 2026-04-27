@@ -13,7 +13,7 @@ func TestServiceUpdateRejectsDescendantParent(t *testing.T) {
 	childID := uint(2)
 
 	repo := &stubCollectionRepository{
-		collections: map[uint]*Collection{
+		collections: map[string]*Collection{
 			rootID: {
 				ID:        rootID,
 				Name:      "Root",
@@ -48,7 +48,7 @@ func TestServiceGetTreeHandlesCorruptHierarchy(t *testing.T) {
 	orphanParent := uint(999)
 
 	repo := &stubCollectionRepository{
-		collections: map[uint]*Collection{
+		collections: map[string]*Collection{
 			cycleA: {
 				ID:        cycleA,
 				Name:      "Cycle A",
@@ -96,7 +96,7 @@ func TestServiceGetTreeHandlesCorruptHierarchy(t *testing.T) {
 }
 
 type stubCollectionRepository struct {
-	collections  map[uint]*Collection
+	collections  map[string]*Collection
 	listAllCalls int
 }
 
@@ -105,11 +105,11 @@ func (r *stubCollectionRepository) Create(_ context.Context, collection *Collect
 	return nil
 }
 
-func (r *stubCollectionRepository) GetByID(_ context.Context, id uint) (*Collection, error) {
+func (r *stubCollectionRepository) GetByID(_ context.Context, id string) (*Collection, error) {
 	return cloneCollection(r.collections[id]), nil
 }
 
-func (r *stubCollectionRepository) GetByIDAndProject(_ context.Context, id, projectID uint) (*Collection, error) {
+func (r *stubCollectionRepository) GetByIDAndProject(_ context.Context, id, projectID string) (*Collection, error) {
 	collection := r.collections[id]
 	if collection == nil || collection.ProjectID != projectID {
 		return nil, nil
@@ -123,12 +123,12 @@ func (r *stubCollectionRepository) Update(_ context.Context, collection *Collect
 	return nil
 }
 
-func (r *stubCollectionRepository) Delete(_ context.Context, id uint) error {
+func (r *stubCollectionRepository) Delete(_ context.Context, id string) error {
 	delete(r.collections, id)
 	return nil
 }
 
-func (r *stubCollectionRepository) List(_ context.Context, projectID uint, _, _ int) ([]*Collection, int64, error) {
+func (r *stubCollectionRepository) List(_ context.Context, projectID string, _, _ int) ([]*Collection, int64, error) {
 	var collections []*Collection
 	for _, collection := range r.collections {
 		if collection.ProjectID == projectID {
@@ -139,7 +139,7 @@ func (r *stubCollectionRepository) List(_ context.Context, projectID uint, _, _ 
 	return collections, int64(len(collections)), nil
 }
 
-func (r *stubCollectionRepository) ListAll(_ context.Context, projectID uint) ([]*Collection, error) {
+func (r *stubCollectionRepository) ListAll(_ context.Context, projectID string) ([]*Collection, error) {
 	r.listAllCalls++
 
 	var collections []*Collection
@@ -152,7 +152,7 @@ func (r *stubCollectionRepository) ListAll(_ context.Context, projectID uint) ([
 	return collections, nil
 }
 
-func (r *stubCollectionRepository) GetByParentID(_ context.Context, projectID uint, parentID *uint) ([]*Collection, error) {
+func (r *stubCollectionRepository) GetByParentID(_ context.Context, projectID string, parentID *string) ([]*Collection, error) {
 	var collections []*Collection
 	for _, collection := range r.collections {
 		if collection.ProjectID != projectID {

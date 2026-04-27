@@ -34,7 +34,7 @@ func (r *repository) GetCLITokenByHash(ctx context.Context, tokenHash string) (*
 	return po.toDomain(), nil
 }
 
-func (r *repository) TouchCLIToken(ctx context.Context, id uint, usedAt time.Time) error {
+func (r *repository) TouchCLIToken(ctx context.Context, id string, usedAt time.Time) error {
 	return r.db.WithContext(ctx).
 		Model(&ProjectCLITokenPO{}).
 		Where("id = ?", id).

@@ -11,7 +11,7 @@ import (
 
 // PermissionProvider is an interface for checking project permissions
 type PermissionProvider interface {
-	CheckPermission(ctx context.Context, projectID, userID uint, requiredRole string) (bool, error)
+	CheckPermission(ctx context.Context, projectID string, userID uint, requiredRole string) (bool, error)
 }
 
 // MockAuth extracts User ID from X-User-ID header for testing
@@ -63,14 +63,7 @@ func RequireProjectRole(memberService PermissionProvider, requiredRole string) g
 			return
 		}
 
-		projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-		if err != nil {
-			response.Error(c, http.StatusBadRequest, "Invalid Project ID")
-			c.Abort()
-			return
-		}
-
-		allowed, err := memberService.CheckPermission(c.Request.Context(), uint(projectID), userID, requiredRole)
+			allowed, err := memberService.CheckPermission(c.Request.Context(), projectIDStr, userID, requiredRole)
 		if err != nil {
 			response.Error(c, http.StatusInternalServerError, "Permission check failed")
 			c.Abort()

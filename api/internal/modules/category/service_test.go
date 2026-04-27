@@ -8,7 +8,7 @@ import (
 
 func TestServiceGetCategoryRespectsProjectScope(t *testing.T) {
 	repo := &stubCategoryRepository{
-		categories: map[uint]*CategoryPO{
+		categories: map[string]*CategoryPO{
 			7: {
 				ID:        7,
 				ProjectID: 2,
@@ -30,7 +30,7 @@ func TestServiceUpdateCategoryRejectsCrossProjectParent(t *testing.T) {
 	foreignParentID := uint(99)
 
 	repo := &stubCategoryRepository{
-		categories: map[uint]*CategoryPO{
+		categories: map[string]*CategoryPO{
 			categoryID: {
 				ID:        categoryID,
 				ProjectID: projectID,
@@ -57,7 +57,7 @@ func TestServiceUpdateCategoryRejectsCrossProjectParent(t *testing.T) {
 
 func TestServiceDeleteCategoryRespectsProjectScope(t *testing.T) {
 	repo := &stubCategoryRepository{
-		categories: map[uint]*CategoryPO{
+		categories: map[string]*CategoryPO{
 			8: {
 				ID:        8,
 				ProjectID: 2,
@@ -74,7 +74,7 @@ func TestServiceDeleteCategoryRespectsProjectScope(t *testing.T) {
 }
 
 type stubCategoryRepository struct {
-	categories map[uint]*CategoryPO
+	categories map[string]*CategoryPO
 }
 
 func (r *stubCategoryRepository) Create(_ context.Context, category *CategoryPO) error {
@@ -82,11 +82,11 @@ func (r *stubCategoryRepository) Create(_ context.Context, category *CategoryPO)
 	return nil
 }
 
-func (r *stubCategoryRepository) GetByID(_ context.Context, id uint) (*CategoryPO, error) {
+func (r *stubCategoryRepository) GetByID(_ context.Context, id string) (*CategoryPO, error) {
 	return cloneCategory(r.categories[id]), nil
 }
 
-func (r *stubCategoryRepository) GetByIDAndProject(_ context.Context, id, projectID uint) (*CategoryPO, error) {
+func (r *stubCategoryRepository) GetByIDAndProject(_ context.Context, id, projectID string) (*CategoryPO, error) {
 	category := r.categories[id]
 	if category == nil || category.ProjectID != projectID {
 		return nil, nil
@@ -95,7 +95,7 @@ func (r *stubCategoryRepository) GetByIDAndProject(_ context.Context, id, projec
 	return cloneCategory(category), nil
 }
 
-func (r *stubCategoryRepository) ListByProject(_ context.Context, projectID uint) ([]*CategoryPO, error) {
+func (r *stubCategoryRepository) ListByProject(_ context.Context, projectID string) ([]*CategoryPO, error) {
 	var categories []*CategoryPO
 	for _, category := range r.categories {
 		if category.ProjectID == projectID {
@@ -110,12 +110,12 @@ func (r *stubCategoryRepository) Update(_ context.Context, category *CategoryPO)
 	return nil
 }
 
-func (r *stubCategoryRepository) Delete(_ context.Context, id uint) error {
+func (r *stubCategoryRepository) Delete(_ context.Context, id string) error {
 	delete(r.categories, id)
 	return nil
 }
 
-func (r *stubCategoryRepository) UpdateSortOrder(_ context.Context, projectID uint, categoryIDs []uint) error {
+func (r *stubCategoryRepository) UpdateSortOrder(_ context.Context, projectID string, categoryIDs []string) error {
 	for i, id := range categoryIDs {
 		category := r.categories[id]
 		if category == nil || category.ProjectID != projectID {

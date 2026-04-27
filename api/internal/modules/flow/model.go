@@ -8,8 +8,8 @@ import (
 
 // FlowPO represents a test flow (scenario) in the database
 type FlowPO struct {
-	ID          uint           `gorm:"primaryKey" json:"id"`
-	ProjectID   uint           `gorm:"not null;index:idx_flows_project" json:"project_id"`
+	ID string           `gorm:"primaryKey" json:"id"`
+	ProjectID string           `gorm:"not null;index:idx_flows_project" json:"project_id"`
 	Name        string         `gorm:"size:255;not null" json:"name"`
 	Description string         `gorm:"type:text" json:"description"`
 	CreatedBy   uint           `gorm:"not null" json:"created_by"`
@@ -25,8 +25,8 @@ func (FlowPO) TableName() string {
 
 // FlowStepPO represents a single step (node) in a flow
 type FlowStepPO struct {
-	ID        uint           `gorm:"primaryKey" json:"id"`
-	FlowID    uint           `gorm:"not null;index:idx_flow_steps_flow" json:"flow_id"`
+	ID string           `gorm:"primaryKey" json:"id"`
+	FlowID string           `gorm:"not null;index:idx_flow_steps_flow" json:"flow_id"`
 	ClientKey string         `gorm:"size:128;not null;default:'';index:idx_flow_steps_client_key" json:"client_key"`
 	Name      string         `gorm:"size:255;not null" json:"name"`
 	SortOrder int            `gorm:"default:0" json:"sort_order"`
@@ -50,10 +50,10 @@ func (FlowStepPO) TableName() string {
 
 // FlowEdgePO represents a connection between two steps
 type FlowEdgePO struct {
-	ID              uint           `gorm:"primaryKey" json:"id"`
-	FlowID          uint           `gorm:"not null;index:idx_flow_edges_flow" json:"flow_id"`
-	SourceStepID    uint           `gorm:"not null" json:"source_step_id"`
-	TargetStepID    uint           `gorm:"not null" json:"target_step_id"`
+	ID string           `gorm:"primaryKey" json:"id"`
+	FlowID string           `gorm:"not null;index:idx_flow_edges_flow" json:"flow_id"`
+	SourceStepID string           `gorm:"not null" json:"source_step_id"`
+	TargetStepID string           `gorm:"not null" json:"target_step_id"`
 	VariableMapping string         `gorm:"type:text" json:"variable_mapping"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
@@ -67,8 +67,8 @@ func (FlowEdgePO) TableName() string {
 
 // FlowRunPO represents a single execution of a flow
 type FlowRunPO struct {
-	ID          uint           `gorm:"primaryKey" json:"id"`
-	FlowID      uint           `gorm:"not null;index:idx_flow_runs_flow" json:"flow_id"`
+	ID string           `gorm:"primaryKey" json:"id"`
+	FlowID string           `gorm:"not null;index:idx_flow_runs_flow" json:"flow_id"`
 	Status      string         `gorm:"size:20;not null;default:'pending'" json:"status"`
 	TriggeredBy uint           `gorm:"not null" json:"triggered_by"`
 	StartedAt   *time.Time     `json:"started_at"`
@@ -85,9 +85,9 @@ func (FlowRunPO) TableName() string {
 
 // FlowStepResultPO represents the result of a single step execution
 type FlowStepResultPO struct {
-	ID                uint           `gorm:"primaryKey" json:"id"`
-	RunID             uint           `gorm:"not null;index:idx_flow_step_results_run" json:"run_id"`
-	StepID            uint           `gorm:"not null" json:"step_id"`
+	ID string           `gorm:"primaryKey" json:"id"`
+	RunID string           `gorm:"not null;index:idx_flow_step_results_run" json:"run_id"`
+	StepID string           `gorm:"not null" json:"step_id"`
 	Status            string         `gorm:"size:20;not null;default:'pending'" json:"status"`
 	Request           string         `gorm:"type:text" json:"request"`
 	Response          string         `gorm:"type:text" json:"response"`

@@ -25,21 +25,21 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 		// Single collection operations
 		cols.GET("/:cid", h.Get).
 			Name("collections.show").
-			WhereNumber("cid").
+			WhereUUID("cid").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleRead))
 		cols.PUT("/:cid", h.Update).
 			Name("collections.update").
-			WhereNumber("cid").
+			WhereUUID("cid").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
 		cols.DELETE("/:cid", h.Delete).
 			Name("collections.delete").
-			WhereNumber("cid").
+			WhereUUID("cid").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
 
 		// Move collection
 		cols.PATCH("/:cid/move", h.Move).
 			Name("collections.move").
-			WhereNumber("cid").
+			WhereUUID("cid").
 			Middleware(middleware.RequireProjectRole(h.memberService, member.RoleWrite))
 	})
 }

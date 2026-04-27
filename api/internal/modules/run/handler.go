@@ -31,7 +31,7 @@ func (h *Handler) Name() string {
 }
 
 type RunRequest struct {
-	EnvironmentID *uint             `json:"environment_id"`
+	EnvironmentID *string             `json:"environment_id"`
 	Variables     map[string]string `json:"variables"`
 }
 

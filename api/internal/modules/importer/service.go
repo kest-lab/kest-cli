@@ -59,8 +59,8 @@ type PostmanBody struct {
 }
 
 type Service interface {
-	ImportPostman(ctx context.Context, projectID, parentID uint, file *multipart.FileHeader) error
-	ImportMarkdown(ctx context.Context, projectID, parentID uint, file *multipart.FileHeader) (*MarkdownImportResult, error)
+	ImportPostman(ctx context.Context, projectID, parentID string, file *multipart.FileHeader) error
+	ImportMarkdown(ctx context.Context, projectID, parentID string, file *multipart.FileHeader) (*MarkdownImportResult, error)
 }
 
 type service struct {
@@ -75,7 +75,7 @@ func NewService(collectionService collection.Service, requestService request.Ser
 	}
 }
 
-func (s *service) ImportPostman(ctx context.Context, projectID, parentID uint, file *multipart.FileHeader) error {
+func (s *service) ImportPostman(ctx context.Context, projectID, parentID string, file *multipart.FileHeader) error {
 	f, err := file.Open()
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
@@ -97,7 +97,7 @@ func (s *service) ImportPostman(ctx context.Context, projectID, parentID uint, f
 
 func (s *service) importPostmanCollection(
 	ctx context.Context,
-	projectID, parentID uint,
+	projectID, parentID string,
 	pmCol *PostmanCollection,
 ) error {
 	rootName := pmCol.Info.Name
@@ -111,7 +111,7 @@ func (s *service) importPostmanCollection(
 		Description: pmCol.Info.Description,
 		IsFolder:    false,
 	}
-	if parentID > 0 {
+	if parentID != "" {
 		rootReq.ParentID = &parentID
 	}
 
@@ -152,7 +152,7 @@ func flattenPostmanRequests(items []PostmanItem) []PostmanItem {
 
 func (s *service) convertFromPostmanRequest(
 	item PostmanItem,
-	collectionID uint,
+	collectionID string,
 	sortOrder int,
 ) *request.CreateRequestRequest {
 	requestName := item.Name

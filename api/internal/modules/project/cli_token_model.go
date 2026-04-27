@@ -19,11 +19,11 @@ var supportedCLITokenScopes = map[string]struct{}{
 
 // ProjectCLITokenPO persists project-scoped CLI tokens.
 type ProjectCLITokenPO struct {
-	ID          uint `gorm:"primaryKey"`
+	ID string `gorm:"primaryKey"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
-	ProjectID   uint           `gorm:"not null;index"`
+	ProjectID string           `gorm:"not null;index"`
 	CreatedBy   uint           `gorm:"not null;index"`
 	Name        string         `gorm:"size:100;not null"`
 	TokenPrefix string         `gorm:"size:32;not null;index"`
@@ -39,8 +39,8 @@ func (ProjectCLITokenPO) TableName() string {
 
 // ProjectCLIToken is the service-layer representation of a CLI token.
 type ProjectCLIToken struct {
-	ID          uint       `json:"id"`
-	ProjectID   uint       `json:"project_id"`
+	ID string       `json:"id"`
+	ProjectID string       `json:"project_id"`
 	CreatedBy   uint       `json:"created_by"`
 	Name        string     `json:"name"`
 	TokenPrefix string     `json:"token_prefix"`

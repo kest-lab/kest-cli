@@ -22,7 +22,7 @@ var (
 )
 
 type MarkdownImportResult struct {
-	RootFolderID       uint                         `json:"root_folder_id"`
+	RootFolderID       string                       `json:"root_folder_id"`
 	RootFolderName     string                       `json:"root_folder_name"`
 	CollectionsCreated int                          `json:"collections_created"`
 	RequestsCreated    int                          `json:"requests_created"`
@@ -31,7 +31,7 @@ type MarkdownImportResult struct {
 
 type MarkdownImportModuleResult struct {
 	Name         string `json:"name"`
-	CollectionID uint   `json:"collection_id"`
+	CollectionID string `json:"collection_id"`
 	RequestCount int    `json:"request_count"`
 }
 
@@ -80,7 +80,7 @@ var (
 
 func (s *service) ImportMarkdown(
 	ctx context.Context,
-	projectID, parentID uint,
+	projectID, parentID string,
 	file *multipart.FileHeader,
 ) (*MarkdownImportResult, error) {
 	f, err := file.Open()
@@ -104,7 +104,7 @@ func (s *service) ImportMarkdown(
 
 func (s *service) importMarkdownDocument(
 	ctx context.Context,
-	projectID, parentID uint,
+	projectID, parentID string,
 	doc *markdownDocument,
 ) (*MarkdownImportResult, error) {
 	if doc == nil || len(doc.Modules) == 0 {
@@ -116,7 +116,7 @@ func (s *service) importMarkdownDocument(
 		Name:      doc.Title,
 		IsFolder:  true,
 	}
-	if parentID > 0 {
+	if parentID != "" {
 		rootReq.ParentID = &parentID
 	}
 

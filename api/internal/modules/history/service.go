@@ -11,8 +11,8 @@ var (
 
 type Service interface {
 	Record(ctx context.Context, req *RecordHistoryRequest) (*History, error)
-	GetByID(ctx context.Context, id uint) (*History, error)
-	List(ctx context.Context, projectID uint, entityType string, entityID uint, page, perPage int) ([]*History, int64, error)
+	GetByID(ctx context.Context, id string) (*History, error)
+	List(ctx context.Context, projectID string, entityType string, entityID string, page, perPage int) ([]*History, int64, error)
 }
 
 type service struct {
@@ -45,7 +45,7 @@ func (s *service) Record(ctx context.Context, req *RecordHistoryRequest) (*Histo
 	return history, nil
 }
 
-func (s *service) GetByID(ctx context.Context, id uint) (*History, error) {
+func (s *service) GetByID(ctx context.Context, id string) (*History, error) {
 	history, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -56,6 +56,6 @@ func (s *service) GetByID(ctx context.Context, id uint) (*History, error) {
 	return history, nil
 }
 
-func (s *service) List(ctx context.Context, projectID uint, entityType string, entityID uint, page, perPage int) ([]*History, int64, error) {
+func (s *service) List(ctx context.Context, projectID string, entityType string, entityID string, page, perPage int) ([]*History, int64, error) {
 	return s.repo.ListByEntity(ctx, projectID, entityType, entityID, page, perPage)
 }

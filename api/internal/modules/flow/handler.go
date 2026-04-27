@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -44,22 +43,49 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 
 // --- helpers ---
 
-func (h *Handler) projectID(c *gin.Context) (uint, bool) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
+func (h *Handler) projectID(c *gin.Context) (string, bool) {
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
-		return 0, false
+		return "", false
 	}
-	return uint(id), true
+	return id, true
 }
 
-func (h *Handler) flowID(c *gin.Context) (uint, bool) {
-	id, err := strconv.ParseUint(c.Param("fid"), 10, 32)
-	if err != nil {
+func (h *Handler) flowID(c *gin.Context) (string, bool) {
+	id := strings.TrimSpace(c.Param("fid"))
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid flow ID")
-		return 0, false
+		return "", false
 	}
-	return uint(id), true
+	return id, true
+}
+
+func (h *Handler) stepID(c *gin.Context) (string, bool) {
+	id := strings.TrimSpace(c.Param("sid"))
+	if id == "" {
+		response.Error(c, http.StatusBadRequest, "Invalid step ID")
+		return "", false
+	}
+	return id, true
+}
+
+func (h *Handler) edgeID(c *gin.Context) (string, bool) {
+	id := strings.TrimSpace(c.Param("eid"))
+	if id == "" {
+		response.Error(c, http.StatusBadRequest, "Invalid edge ID")
+		return "", false
+	}
+	return id, true
+}
+
+func (h *Handler) runID(c *gin.Context) (string, bool) {
+	id := strings.TrimSpace(c.Param("rid"))
+	if id == "" {
+		response.Error(c, http.StatusBadRequest, "Invalid run ID")
+		return "", false
+	}
+	return id, true
 }
 
 func (h *Handler) userID(c *gin.Context) uint {
@@ -249,9 +275,8 @@ func (h *Handler) CreateStep(c *gin.Context) {
 
 // UpdateStep handles PATCH /projects/:id/flows/:fid/steps/:sid
 func (h *Handler) UpdateStep(c *gin.Context) {
-	sid, err := strconv.ParseUint(c.Param("sid"), 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid step ID")
+	sid, ok := h.stepID(c)
+	if !ok {
 		return
 	}
 
@@ -261,7 +286,7 @@ func (h *Handler) UpdateStep(c *gin.Context) {
 		return
 	}
 
-	step, err2 := h.service.UpdateStep(c.Request.Context(), uint(sid), &req)
+	step, err2 := h.service.UpdateStep(c.Request.Context(), sid, &req)
 	if err2 != nil {
 		respondFlowError(c, err2)
 		return
@@ -272,13 +297,12 @@ func (h *Handler) UpdateStep(c *gin.Context) {
 
 // DeleteStep handles DELETE /projects/:id/flows/:fid/steps/:sid
 func (h *Handler) DeleteStep(c *gin.Context) {
-	sid, err := strconv.ParseUint(c.Param("sid"), 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid step ID")
+	sid, ok := h.stepID(c)
+	if !ok {
 		return
 	}
 
-	if err := h.service.DeleteStep(c.Request.Context(), uint(sid)); err != nil {
+	if err := h.service.DeleteStep(c.Request.Context(), sid); err != nil {
 		respondFlowError(c, err)
 		return
 	}
@@ -312,13 +336,12 @@ func (h *Handler) CreateEdge(c *gin.Context) {
 
 // DeleteEdge handles DELETE /projects/:id/flows/:fid/edges/:eid
 func (h *Handler) DeleteEdge(c *gin.Context) {
-	eid, err := strconv.ParseUint(c.Param("eid"), 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid edge ID")
+	eid, ok := h.edgeID(c)
+	if !ok {
 		return
 	}
 
-	if err := h.service.DeleteEdge(c.Request.Context(), uint(eid)); err != nil {
+	if err := h.service.DeleteEdge(c.Request.Context(), eid); err != nil {
 		respondFlowError(c, err)
 		return
 	}
@@ -331,9 +354,8 @@ func (h *Handler) DeleteEdge(c *gin.Context) {
 // ExecuteFlowSSE handles GET /projects/:id/flows/:fid/runs/:rid/events (SSE)
 // Streams real-time step execution events to the client
 func (h *Handler) ExecuteFlowSSE(c *gin.Context) {
-	rid, err := strconv.ParseUint(c.Param("rid"), 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid run ID")
+	rid, ok := h.runID(c)
+	if !ok {
 		return
 	}
 
@@ -354,7 +376,7 @@ func (h *Handler) ExecuteFlowSSE(c *gin.Context) {
 
 	// Start execution in background
 	go func() {
-		_ = h.service.ExecuteFlow(c.Request.Context(), uint(rid), baseURL, events)
+		_ = h.service.ExecuteFlow(c.Request.Context(), rid, baseURL, events)
 	}()
 
 	// Stream events to client
@@ -390,13 +412,12 @@ func (h *Handler) RunFlow(c *gin.Context) {
 
 // GetRun handles GET /projects/:id/flows/:fid/runs/:rid
 func (h *Handler) GetRun(c *gin.Context) {
-	rid, err := strconv.ParseUint(c.Param("rid"), 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid run ID")
+	rid, ok := h.runID(c)
+	if !ok {
 		return
 	}
 
-	run, err2 := h.service.GetRun(c.Request.Context(), uint(rid))
+	run, err2 := h.service.GetRun(c.Request.Context(), rid)
 	if err2 != nil {
 		respondFlowError(c, err2)
 		return

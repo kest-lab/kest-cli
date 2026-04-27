@@ -9,12 +9,12 @@ import (
 // Repository defines the interface for category data access
 type Repository interface {
 	Create(ctx context.Context, category *CategoryPO) error
-	GetByID(ctx context.Context, id uint) (*CategoryPO, error)
-	GetByIDAndProject(ctx context.Context, id, projectID uint) (*CategoryPO, error)
-	ListByProject(ctx context.Context, projectID uint) ([]*CategoryPO, error)
+	GetByID(ctx context.Context, id string) (*CategoryPO, error)
+	GetByIDAndProject(ctx context.Context, id, projectID string) (*CategoryPO, error)
+	ListByProject(ctx context.Context, projectID string) ([]*CategoryPO, error)
 	Update(ctx context.Context, category *CategoryPO) error
-	Delete(ctx context.Context, id uint) error
-	UpdateSortOrder(ctx context.Context, projectID uint, categoryIDs []uint) error
+	Delete(ctx context.Context, id string) error
+	UpdateSortOrder(ctx context.Context, projectID string, categoryIDs []string) error
 }
 
 type repository struct {
@@ -30,7 +30,7 @@ func (r *repository) Create(ctx context.Context, category *CategoryPO) error {
 	return r.db.WithContext(ctx).Create(category).Error
 }
 
-func (r *repository) GetByID(ctx context.Context, id uint) (*CategoryPO, error) {
+func (r *repository) GetByID(ctx context.Context, id string) (*CategoryPO, error) {
 	var category CategoryPO
 	if err := r.db.WithContext(ctx).First(&category, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -41,7 +41,7 @@ func (r *repository) GetByID(ctx context.Context, id uint) (*CategoryPO, error) 
 	return &category, nil
 }
 
-func (r *repository) GetByIDAndProject(ctx context.Context, id, projectID uint) (*CategoryPO, error) {
+func (r *repository) GetByIDAndProject(ctx context.Context, id, projectID string) (*CategoryPO, error) {
 	var category CategoryPO
 	if err := r.db.WithContext(ctx).
 		Where("id = ? AND project_id = ?", id, projectID).
@@ -55,7 +55,7 @@ func (r *repository) GetByIDAndProject(ctx context.Context, id, projectID uint) 
 	return &category, nil
 }
 
-func (r *repository) ListByProject(ctx context.Context, projectID uint) ([]*CategoryPO, error) {
+func (r *repository) ListByProject(ctx context.Context, projectID string) ([]*CategoryPO, error) {
 	var categories []*CategoryPO
 	if err := r.db.WithContext(ctx).
 		Where("project_id = ?", projectID).
@@ -70,7 +70,7 @@ func (r *repository) Update(ctx context.Context, category *CategoryPO) error {
 	return r.db.WithContext(ctx).Save(category).Error
 }
 
-func (r *repository) Delete(ctx context.Context, id uint) error {
+func (r *repository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Set parent_id to nil for children
 		if err := tx.Model(&CategoryPO{}).Where("parent_id = ?", id).Update("parent_id", nil).Error; err != nil {
@@ -81,7 +81,7 @@ func (r *repository) Delete(ctx context.Context, id uint) error {
 	})
 }
 
-func (r *repository) UpdateSortOrder(ctx context.Context, projectID uint, categoryIDs []uint) error {
+func (r *repository) UpdateSortOrder(ctx context.Context, projectID string, categoryIDs []string) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for i, id := range categoryIDs {
 			if err := tx.Model(&CategoryPO{}).

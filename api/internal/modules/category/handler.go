@@ -40,19 +40,21 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 
 // ListCategories handles GET /api/v1/projects/:pid/categories
 func (h *Handler) ListCategories(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
 
-	var categories []*CategoryResponse
+	var (
+		categories []*CategoryResponse
+		err        error
+	)
 
 	if c.Query("tree") == "true" {
-		categories, err = h.service.GetCategoryTree(c.Request.Context(), uint(projectID))
+		categories, err = h.service.GetCategoryTree(c.Request.Context(), projectID)
 	} else {
-		categories, err = h.service.ListCategories(c.Request.Context(), uint(projectID))
+		categories, err = h.service.ListCategories(c.Request.Context(), projectID)
 	}
 
 	if err != nil {
@@ -84,9 +86,8 @@ func (h *Handler) ListCategories(c *gin.Context) {
 
 // CreateCategory handles POST /api/v1/projects/:pid/categories
 func (h *Handler) CreateCategory(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
@@ -97,7 +98,7 @@ func (h *Handler) CreateCategory(c *gin.Context) {
 		return
 	}
 
-	category, err := h.service.CreateCategory(c.Request.Context(), uint(projectID), &req)
+	category, err := h.service.CreateCategory(c.Request.Context(), projectID, &req)
 	if err != nil {
 		if errors.Is(err, ErrInvalidParentCategory) {
 			response.Error(c, http.StatusBadRequest, err.Error())
@@ -112,21 +113,19 @@ func (h *Handler) CreateCategory(c *gin.Context) {
 
 // GetCategory handles GET /api/v1/projects/:id/categories/:cid
 func (h *Handler) GetCategory(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
 
-	idStr := c.Param("cid")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	id := c.Param("cid")
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
-	category, err := h.service.GetCategory(c.Request.Context(), uint(projectID), uint(id))
+	category, err := h.service.GetCategory(c.Request.Context(), projectID, id)
 	if err != nil {
 		if errors.Is(err, ErrCategoryNotFound) {
 			response.Error(c, http.StatusNotFound, err.Error())
@@ -141,16 +140,14 @@ func (h *Handler) GetCategory(c *gin.Context) {
 
 // UpdateCategory handles PATCH /api/v1/projects/:id/categories/:cid
 func (h *Handler) UpdateCategory(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
 
-	idStr := c.Param("cid")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	id := c.Param("cid")
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
@@ -161,7 +158,7 @@ func (h *Handler) UpdateCategory(c *gin.Context) {
 		return
 	}
 
-	category, err := h.service.UpdateCategory(c.Request.Context(), uint(projectID), uint(id), &req)
+	category, err := h.service.UpdateCategory(c.Request.Context(), projectID, id, &req)
 	if err != nil {
 		if errors.Is(err, ErrCategoryNotFound) {
 			response.Error(c, http.StatusNotFound, err.Error())
@@ -180,21 +177,19 @@ func (h *Handler) UpdateCategory(c *gin.Context) {
 
 // DeleteCategory handles DELETE /api/v1/projects/:id/categories/:cid
 func (h *Handler) DeleteCategory(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
 
-	idStr := c.Param("cid")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	id := c.Param("cid")
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
-	if err := h.service.DeleteCategory(c.Request.Context(), uint(projectID), uint(id)); err != nil {
+	if err := h.service.DeleteCategory(c.Request.Context(), projectID, id); err != nil {
 		if errors.Is(err, ErrCategoryNotFound) {
 			response.Error(c, http.StatusNotFound, err.Error())
 			return
@@ -208,9 +203,8 @@ func (h *Handler) DeleteCategory(c *gin.Context) {
 
 // SortCategories handles PUT /api/v1/projects/:pid/categories/sort
 func (h *Handler) SortCategories(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
@@ -221,7 +215,7 @@ func (h *Handler) SortCategories(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.SortCategories(c.Request.Context(), uint(projectID), &req); err != nil {
+	if err := h.service.SortCategories(c.Request.Context(), projectID, &req); err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -274,7 +268,7 @@ func filterCategories(categories []*CategoryResponse, search string) []*Category
 		return categories
 	}
 
-	categoryNames := make(map[uint]string, len(categories))
+	categoryNames := make(map[string]string, len(categories))
 	for _, category := range categories {
 		categoryNames[category.ID] = category.Name
 	}

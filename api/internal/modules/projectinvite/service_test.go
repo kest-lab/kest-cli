@@ -9,7 +9,7 @@ import (
 type testProjectInviteRepo struct {
 	invitation     *ProjectInvitation
 	projectSummary *ProjectSummary
-	acceptedUserID uint
+	acceptedUserID string
 	acceptedAt     *time.Time
 }
 
@@ -37,7 +37,7 @@ func (r *testProjectInviteRepo) ListInvitationsByProject(
 
 func (r *testProjectInviteRepo) GetInvitationByProject(
 	_ context.Context,
-	_, invitationID uint,
+	_, invitationID string,
 ) (*ProjectInvitation, error) {
 	if r.invitation == nil || r.invitation.ID != invitationID {
 		return nil, nil

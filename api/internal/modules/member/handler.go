@@ -43,14 +43,13 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 }
 
 func (h *Handler) ListMembers(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
 
-	members, err := h.service.ListMembers(c.Request.Context(), uint(projectID))
+	members, err := h.service.ListMembers(c.Request.Context(), projectID)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -60,9 +59,8 @@ func (h *Handler) ListMembers(c *gin.Context) {
 }
 
 func (h *Handler) AddMember(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
@@ -73,7 +71,7 @@ func (h *Handler) AddMember(c *gin.Context) {
 		return
 	}
 
-	member, err := h.service.AddMember(c.Request.Context(), uint(projectID), &req)
+	member, err := h.service.AddMember(c.Request.Context(), projectID, &req)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -83,9 +81,8 @@ func (h *Handler) AddMember(c *gin.Context) {
 }
 
 func (h *Handler) UpdateMember(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
@@ -103,7 +100,7 @@ func (h *Handler) UpdateMember(c *gin.Context) {
 		return
 	}
 
-	member, err := h.service.UpdateMember(c.Request.Context(), uint(projectID), uint(userID), &req)
+	member, err := h.service.UpdateMember(c.Request.Context(), projectID, uint(userID), &req)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -113,9 +110,8 @@ func (h *Handler) UpdateMember(c *gin.Context) {
 }
 
 func (h *Handler) RemoveMember(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
@@ -127,7 +123,7 @@ func (h *Handler) RemoveMember(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.RemoveMember(c.Request.Context(), uint(projectID), uint(userID)); err != nil {
+	if err := h.service.RemoveMember(c.Request.Context(), projectID, uint(userID)); err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -154,9 +150,8 @@ func (h *Handler) Delete(c *gin.Context) {
 
 // GetMyRole returns the current user's role in the project
 func (h *Handler) GetMyRole(c *gin.Context) {
-	projectIDStr := c.Param("id")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
-	if err != nil {
+	projectID := c.Param("id")
+	if projectID == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid project ID")
 		return
 	}
@@ -173,7 +168,7 @@ func (h *Handler) GetMyRole(c *gin.Context) {
 		return
 	}
 
-	member, err := h.service.GetMember(c.Request.Context(), uint(projectID), uid)
+	member, err := h.service.GetMember(c.Request.Context(), projectID, uid)
 	if err != nil {
 		response.Error(c, http.StatusNotFound, "Not a member of this project")
 		return

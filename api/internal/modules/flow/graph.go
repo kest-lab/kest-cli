@@ -15,7 +15,7 @@ type VariableMappingRule struct {
 }
 
 type graphStep struct {
-	ID        uint
+	ID        string
 	ClientKey string
 	SortOrder int
 }
@@ -46,13 +46,17 @@ func parseVariableMappingRules(raw string) ([]VariableMappingRule, error) {
 	return rules, nil
 }
 
-func normalizeStepClientKey(stepID uint, clientKey string) string {
+func normalizeStepClientKey(stepID string, clientKey string) string {
 	trimmed := strings.TrimSpace(clientKey)
-	if trimmed != "" && !(stepID > 0 && trimmed == "step-0") {
+	if trimmed != "" && !(stepID != "" && trimmed == "step-0") {
 		return trimmed
 	}
 
-	return fmt.Sprintf("step-%d", stepID)
+	if stepID == "" {
+		return "step-0"
+	}
+
+	return fmt.Sprintf("step-%s", stepID)
 }
 
 func validateSaveGraph(steps []SaveStepRequest, edges []SaveEdgeRequest) error {
@@ -106,7 +110,7 @@ func validateStoredGraph(steps []*FlowStepPO, edges []*FlowEdgePO) error {
 		})
 	}
 
-	stepKeysByID := make(map[uint]string, len(graphSteps))
+	stepKeysByID := make(map[string]string, len(graphSteps))
 	for _, step := range graphSteps {
 		stepKeysByID[step.ID] = step.ClientKey
 	}

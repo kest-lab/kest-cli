@@ -10,12 +10,12 @@ import (
 // Repository defines the interface for request data access
 type Repository interface {
 	Create(ctx context.Context, request *Request) error
-	GetByID(ctx context.Context, id uint) (*Request, error)
-	GetByIDAndCollection(ctx context.Context, id, collectionID uint) (*Request, error)
+	GetByID(ctx context.Context, id string) (*Request, error)
+	GetByIDAndCollection(ctx context.Context, id, collectionID string) (*Request, error)
 	Update(ctx context.Context, request *Request) error
-	Delete(ctx context.Context, id uint) error
-	List(ctx context.Context, collectionID uint, offset, limit int) ([]*Request, int64, error)
-	GetByCollectionID(ctx context.Context, collectionID uint) ([]*Request, error)
+	Delete(ctx context.Context, id string) error
+	List(ctx context.Context, collectionID string, offset, limit int) ([]*Request, int64, error)
+	GetByCollectionID(ctx context.Context, collectionID string) ([]*Request, error)
 }
 
 // repository implements Repository interface
@@ -39,7 +39,7 @@ func (r *repository) Create(ctx context.Context, request *Request) error {
 	return nil
 }
 
-func (r *repository) GetByID(ctx context.Context, id uint) (*Request, error) {
+func (r *repository) GetByID(ctx context.Context, id string) (*Request, error) {
 	var po RequestPO
 	if err := r.db.WithContext(ctx).First(&po, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -50,7 +50,7 @@ func (r *repository) GetByID(ctx context.Context, id uint) (*Request, error) {
 	return po.toDomain(), nil
 }
 
-func (r *repository) GetByIDAndCollection(ctx context.Context, id, collectionID uint) (*Request, error) {
+func (r *repository) GetByIDAndCollection(ctx context.Context, id, collectionID string) (*Request, error) {
 	var po RequestPO
 	if err := r.db.WithContext(ctx).Where("id = ? AND collection_id = ?", id, collectionID).First(&po).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -66,11 +66,11 @@ func (r *repository) Update(ctx context.Context, request *Request) error {
 	return r.db.WithContext(ctx).Model(&RequestPO{}).Where("id = ?", request.ID).Updates(po).Error
 }
 
-func (r *repository) Delete(ctx context.Context, id uint) error {
+func (r *repository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&RequestPO{}, id).Error
 }
 
-func (r *repository) List(ctx context.Context, collectionID uint, offset, limit int) ([]*Request, int64, error) {
+func (r *repository) List(ctx context.Context, collectionID string, offset, limit int) ([]*Request, int64, error) {
 	var poList []*RequestPO
 	var total int64
 
@@ -85,7 +85,7 @@ func (r *repository) List(ctx context.Context, collectionID uint, offset, limit 
 	return toDomainList(poList), total, nil
 }
 
-func (r *repository) GetByCollectionID(ctx context.Context, collectionID uint) ([]*Request, error) {
+func (r *repository) GetByCollectionID(ctx context.Context, collectionID string) ([]*Request, error) {
 	var poList []*RequestPO
 	if err := r.db.WithContext(ctx).Where("collection_id = ?", collectionID).Order("sort_order ASC, created_at DESC").Find(&poList).Error; err != nil {
 		return nil, err

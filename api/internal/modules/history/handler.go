@@ -64,11 +64,11 @@ func (h *Handler) List(c *gin.Context) {
 	}
 
 	entityType := c.Query("entity_type")
-	entityID := handler.QueryInt(c, "entity_id", 0)
+	entityID := c.Query("entity_id")
 	page := handler.QueryInt(c, "page", 1)
 	perPage := handler.QueryInt(c, "per_page", 20)
 
-	histories, total, err := h.service.List(c.Request.Context(), projectID, entityType, uint(entityID), page, perPage)
+	histories, total, err := h.service.List(c.Request.Context(), projectID, entityType, entityID, page, perPage)
 	if err != nil {
 		response.InternalServerError(c, err.Error(), err)
 		return

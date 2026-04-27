@@ -67,11 +67,8 @@ func (h *Handler) ListTestCases(c *gin.Context) {
 	}
 
 	if apiSpecID := c.Query("api_spec_id"); apiSpecID != "" {
-		id, err := strconv.ParseUint(apiSpecID, 10, 32)
-		if err == nil {
-			uid := uint(id)
-			filter.APISpecID = &uid
-		}
+		id := apiSpecID
+		filter.APISpecID = &id
 	}
 
 	if env := c.Query("env"); env != "" {
@@ -125,14 +122,13 @@ func (h *Handler) CreateTestCase(c *gin.Context) {
 
 // GetTestCase handles GET /api/v1/projects/:id/test-cases/:tcid
 func (h *Handler) GetTestCase(c *gin.Context) {
-	idStr := c.Param("tcid")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	id := c.Param("tcid")
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid test case ID")
 		return
 	}
 
-	testCase, err := h.service.GetTestCase(c.Request.Context(), uint(id))
+	testCase, err := h.service.GetTestCase(c.Request.Context(), id)
 	if err != nil {
 		if err.Error() == "test case not found" {
 			response.Error(c, http.StatusNotFound, err.Error())
@@ -147,9 +143,8 @@ func (h *Handler) GetTestCase(c *gin.Context) {
 
 // UpdateTestCase handles PATCH /api/v1/projects/:id/test-cases/:tcid
 func (h *Handler) UpdateTestCase(c *gin.Context) {
-	idStr := c.Param("tcid")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	id := c.Param("tcid")
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid test case ID")
 		return
 	}
@@ -160,7 +155,7 @@ func (h *Handler) UpdateTestCase(c *gin.Context) {
 		return
 	}
 
-	testCase, err := h.service.UpdateTestCase(c.Request.Context(), uint(id), &req)
+	testCase, err := h.service.UpdateTestCase(c.Request.Context(), id, &req)
 	if err != nil {
 		if err.Error() == "test case not found" {
 			response.Error(c, http.StatusNotFound, err.Error())
@@ -175,14 +170,13 @@ func (h *Handler) UpdateTestCase(c *gin.Context) {
 
 // DeleteTestCase handles DELETE /api/v1/projects/:id/test-cases/:tcid
 func (h *Handler) DeleteTestCase(c *gin.Context) {
-	idStr := c.Param("tcid")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	id := c.Param("tcid")
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid test case ID")
 		return
 	}
 
-	if err := h.service.DeleteTestCase(c.Request.Context(), uint(id)); err != nil {
+	if err := h.service.DeleteTestCase(c.Request.Context(), id); err != nil {
 		if err.Error() == "test case not found" {
 			response.Error(c, http.StatusNotFound, err.Error())
 			return
@@ -196,9 +190,8 @@ func (h *Handler) DeleteTestCase(c *gin.Context) {
 
 // DuplicateTestCase handles POST /api/v1/projects/:id/test-cases/:tcid/duplicate
 func (h *Handler) DuplicateTestCase(c *gin.Context) {
-	idStr := c.Param("tcid")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	id := c.Param("tcid")
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid test case ID")
 		return
 	}
@@ -209,7 +202,7 @@ func (h *Handler) DuplicateTestCase(c *gin.Context) {
 		return
 	}
 
-	testCase, err := h.service.DuplicateTestCase(c.Request.Context(), uint(id), &req)
+	testCase, err := h.service.DuplicateTestCase(c.Request.Context(), id, &req)
 	if err != nil {
 		if err.Error() == "source test case not found" {
 			response.Error(c, http.StatusNotFound, err.Error())
@@ -224,9 +217,8 @@ func (h *Handler) DuplicateTestCase(c *gin.Context) {
 
 // RunTestCase handles POST /api/v1/projects/:id/test-cases/:tcid/run
 func (h *Handler) RunTestCase(c *gin.Context) {
-	idStr := c.Param("tcid")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	id := c.Param("tcid")
+	if id == "" {
 		response.Error(c, http.StatusBadRequest, "Invalid test case ID")
 		return
 	}
@@ -236,7 +228,7 @@ func (h *Handler) RunTestCase(c *gin.Context) {
 		// Its okay if body is empty
 	}
 
-	result, err := h.service.RunTestCase(c.Request.Context(), uint(id), &req)
+	result, err := h.service.RunTestCase(c.Request.Context(), id, &req)
 	if err != nil {
 		if err.Error() == "test case not found" {
 			response.Error(c, http.StatusNotFound, err.Error())
@@ -272,14 +264,14 @@ func (h *Handler) CreateFromSpec(c *gin.Context) {
 
 // ListRuns handles GET /projects/:id/test-cases/:tcid/runs
 func (h *Handler) ListRuns(c *gin.Context) {
-	tcid, err := strconv.ParseUint(c.Param("tcid"), 10, 32)
-	if err != nil {
+	tcid := c.Param("tcid")
+	if tcid == "" {
 		response.BadRequest(c, "Invalid test case ID")
 		return
 	}
 
 	filter := &ListRunsFilter{
-		TestCaseID: uint(tcid),
+		TestCaseID: tcid,
 		Page:       1,
 		PageSize:   20,
 	}
@@ -305,13 +297,13 @@ func (h *Handler) ListRuns(c *gin.Context) {
 
 // GetRun handles GET /projects/:id/test-cases/:tcid/runs/:rid
 func (h *Handler) GetRun(c *gin.Context) {
-	rid, err := strconv.ParseUint(c.Param("rid"), 10, 32)
-	if err != nil {
+	rid := c.Param("rid")
+	if rid == "" {
 		response.BadRequest(c, "Invalid run ID")
 		return
 	}
 
-	run, err := h.service.GetRun(c.Request.Context(), uint(rid))
+	run, err := h.service.GetRun(c.Request.Context(), rid)
 	if err != nil {
 		if err.Error() == "run not found" {
 			response.NotFound(c, err.Error(), err)

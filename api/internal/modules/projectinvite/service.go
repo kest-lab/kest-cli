@@ -27,11 +27,12 @@ var (
 type Service interface {
 	CreateInvitation(
 		ctx context.Context,
-		projectID, createdBy uint,
+		projectID string,
+		createdBy uint,
 		req *CreateProjectInvitationRequest,
 	) (*ProjectInvitationResponse, error)
-	ListInvitations(ctx context.Context, projectID uint) ([]*ProjectInvitationResponse, error)
-	RevokeInvitation(ctx context.Context, projectID, invitationID uint) error
+	ListInvitations(ctx context.Context, projectID string) ([]*ProjectInvitationResponse, error)
+	RevokeInvitation(ctx context.Context, projectID, invitationID string) error
 	GetInvitationDetail(
 		ctx context.Context,
 		slug string,
@@ -58,7 +59,8 @@ func NewService(repo Repository) Service {
 
 func (s *service) CreateInvitation(
 	ctx context.Context,
-	projectID, createdBy uint,
+	projectID string,
+	createdBy uint,
 	req *CreateProjectInvitationRequest,
 ) (*ProjectInvitationResponse, error) {
 	if req == nil {
@@ -109,7 +111,7 @@ func (s *service) CreateInvitation(
 
 func (s *service) ListInvitations(
 	ctx context.Context,
-	projectID uint,
+	projectID string,
 ) ([]*ProjectInvitationResponse, error) {
 	invitations, err := s.repo.ListInvitationsByProject(ctx, projectID)
 	if err != nil {
@@ -124,7 +126,7 @@ func (s *service) ListInvitations(
 	return result, nil
 }
 
-func (s *service) RevokeInvitation(ctx context.Context, projectID, invitationID uint) error {
+func (s *service) RevokeInvitation(ctx context.Context, projectID, invitationID string) error {
 	invitation, err := s.repo.GetInvitationByProject(ctx, projectID, invitationID)
 	if err != nil {
 		return err
@@ -196,7 +198,7 @@ func (s *service) AcceptInvitation(
 			UserID: userID,
 			Role:   invitation.Role,
 		},
-		RedirectTo: fmt.Sprintf("/project/%d", invitation.ProjectID),
+		RedirectTo: fmt.Sprintf("/project/%s", invitation.ProjectID),
 	}, nil
 }
 

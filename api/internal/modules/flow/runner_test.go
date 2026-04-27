@@ -13,9 +13,9 @@ import (
 )
 
 type runnerRepoStub struct {
-	stepResultsByRun map[uint][]*FlowStepResultPO
+	stepResultsByRun map[string][]*FlowStepResultPO
 	updatedRuns      []*FlowRunPO
-	updatedResults   map[uint]*FlowStepResultPO
+	updatedResults   map[string]*FlowStepResultPO
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -26,7 +26,7 @@ func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 
 var _ Repository = (*runnerRepoStub)(nil)
 
-func newRunnerRepoStub(runID uint, stepIDs ...uint) *runnerRepoStub {
+func newRunnerRepoStub(runID string, stepIDs ...uint) *runnerRepoStub {
 	results := make([]*FlowStepResultPO, 0, len(stepIDs))
 	for index, stepID := range stepIDs {
 		results = append(results, &FlowStepResultPO{
@@ -38,8 +38,8 @@ func newRunnerRepoStub(runID uint, stepIDs ...uint) *runnerRepoStub {
 	}
 
 	return &runnerRepoStub{
-		stepResultsByRun: map[uint][]*FlowStepResultPO{runID: results},
-		updatedResults:   make(map[uint]*FlowStepResultPO),
+		stepResultsByRun: map[string][]*FlowStepResultPO{runID: results},
+		updatedResults:   make(map[string]*FlowStepResultPO),
 	}
 }
 
@@ -109,7 +109,7 @@ func (r *runnerRepoStub) UpdateRun(_ context.Context, run *FlowRunPO) error {
 func (r *runnerRepoStub) CreateStepResult(context.Context, *FlowStepResultPO) error {
 	panic("unexpected CreateStepResult call")
 }
-func (r *runnerRepoStub) ListStepResultsByRun(_ context.Context, runID uint) ([]*FlowStepResultPO, error) {
+func (r *runnerRepoStub) ListStepResultsByRun(_ context.Context, runID string) ([]*FlowStepResultPO, error) {
 	return r.stepResultsByRun[runID], nil
 }
 func (r *runnerRepoStub) UpdateStepResult(_ context.Context, result *FlowStepResultPO) error {

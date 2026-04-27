@@ -5,9 +5,9 @@ import "time"
 // RecordHistoryRequest defines the request body for creating history record
 type RecordHistoryRequest struct {
 	EntityType string                 `json:"entity_type" binding:"required"`
-	EntityID   uint                   `json:"entity_id" binding:"required"`
-	ProjectID  uint                   `json:"project_id"`
-	UserID     uint                   `json:"user_id"`
+	EntityID string                   `json:"entity_id" binding:"required"`
+	ProjectID string                   `json:"project_id"`
+	UserID uint                   `json:"user_id"`
 	Action     string                 `json:"action" binding:"required"`
 	Data       map[string]interface{} `json:"data" binding:"required"`
 	Diff       map[string]interface{} `json:"diff,omitempty"`
@@ -16,11 +16,11 @@ type RecordHistoryRequest struct {
 
 // HistoryResponse defines the response structure for a history record
 type HistoryResponse struct {
-	ID         uint                   `json:"id"`
+	ID string                   `json:"id"`
 	EntityType string                 `json:"entity_type"`
-	EntityID   uint                   `json:"entity_id"`
-	ProjectID  uint                   `json:"project_id"`
-	UserID     uint                   `json:"user_id"`
+	EntityID string                   `json:"entity_id"`
+	ProjectID string                   `json:"project_id"`
+	UserID uint                   `json:"user_id"`
 	Action     string                 `json:"action"`
 	Data       map[string]interface{} `json:"data"`
 	Diff       map[string]interface{} `json:"diff,omitempty"`
@@ -30,7 +30,7 @@ type HistoryResponse struct {
 
 // RollbackRequest defines the request body for rolling back an entity
 type RollbackRequest struct {
-	VersionID uint `json:"version_id" binding:"required"`
+	VersionID string `json:"version_id" binding:"required"`
 }
 
 func toResponse(h *History) *HistoryResponse {

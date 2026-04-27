@@ -3,6 +3,7 @@ package importer
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kest-labs/kest/api/internal/contracts"
@@ -34,7 +35,7 @@ func (h *Handler) ImportPostman(c *gin.Context) {
 		return
 	}
 
-	parentID := handler.QueryInt(c, "parent_id", 0)
+	parentID := strings.TrimSpace(c.Query("parent_id"))
 
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -42,7 +43,7 @@ func (h *Handler) ImportPostman(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ImportPostman(c.Request.Context(), projectID, uint(parentID), file); err != nil {
+	if err := h.service.ImportPostman(c.Request.Context(), projectID, parentID, file); err != nil {
 		if errors.Is(err, ErrInvalidPostmanCollection) ||
 			errors.Is(err, collection.ErrInvalidParent) ||
 			errors.Is(err, request.ErrInvalidCollection) {
@@ -63,7 +64,7 @@ func (h *Handler) ImportMarkdown(c *gin.Context) {
 		return
 	}
 
-	parentID := handler.QueryInt(c, "parent_id", 0)
+	parentID := strings.TrimSpace(c.Query("parent_id"))
 
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -71,7 +72,7 @@ func (h *Handler) ImportMarkdown(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.ImportMarkdown(c.Request.Context(), projectID, uint(parentID), file)
+	result, err := h.service.ImportMarkdown(c.Request.Context(), projectID, parentID, file)
 	if err != nil {
 		if errors.Is(err, ErrInvalidMarkdownDocument) ||
 			errors.Is(err, ErrMarkdownBaseURLNotFound) ||

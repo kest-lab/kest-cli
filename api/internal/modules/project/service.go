@@ -29,13 +29,13 @@ var (
 // Service defines the interface for project business logic
 type Service interface {
 	Create(ctx context.Context, userID uint, req *CreateProjectRequest) (*Project, error)
-	GetByID(ctx context.Context, id uint) (*Project, error)
-	Update(ctx context.Context, id uint, req *UpdateProjectRequest) (*Project, error)
-	Delete(ctx context.Context, id uint) error
+	GetByID(ctx context.Context, id string) (*Project, error)
+	Update(ctx context.Context, id string, req *UpdateProjectRequest) (*Project, error)
+	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, userID uint, page, perPage int) ([]*Project, int64, error)
-	GetStats(ctx context.Context, projectID uint) (*ProjectStats, error)
-	GenerateCLIToken(ctx context.Context, projectID, createdBy uint, req *GenerateProjectCLITokenRequest) (*GenerateProjectCLITokenResponse, error)
-	ValidateCLIToken(ctx context.Context, projectID uint, rawToken string, requiredScopes []string) (uint, uint, error)
+	GetStats(ctx context.Context, projectID string) (*ProjectStats, error)
+	GenerateCLIToken(ctx context.Context, projectID string, createdBy uint, req *GenerateProjectCLITokenRequest) (*GenerateProjectCLITokenResponse, error)
+	ValidateCLIToken(ctx context.Context, projectID string, rawToken string, requiredScopes []string) (string, uint, error)
 }
 
 // service implements Service interface
@@ -100,7 +100,7 @@ func (s *service) Create(ctx context.Context, userID uint, req *CreateProjectReq
 	return project, nil
 }
 
-func (s *service) GetByID(ctx context.Context, id uint) (*Project, error) {
+func (s *service) GetByID(ctx context.Context, id string) (*Project, error) {
 	project, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (s *service) GetByID(ctx context.Context, id uint) (*Project, error) {
 	return project, nil
 }
 
-func (s *service) Update(ctx context.Context, id uint, req *UpdateProjectRequest) (*Project, error) {
+func (s *service) Update(ctx context.Context, id string, req *UpdateProjectRequest) (*Project, error) {
 	project, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -138,7 +138,7 @@ func (s *service) Update(ctx context.Context, id uint, req *UpdateProjectRequest
 	return project, nil
 }
 
-func (s *service) Delete(ctx context.Context, id uint) error {
+func (s *service) Delete(ctx context.Context, id string) error {
 	project, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return err
@@ -165,11 +165,11 @@ func (s *service) List(ctx context.Context, userID uint, page, perPage int) ([]*
 	return s.repo.List(ctx, userID, offset, perPage)
 }
 
-func (s *service) GetStats(ctx context.Context, projectID uint) (*ProjectStats, error) {
+func (s *service) GetStats(ctx context.Context, projectID string) (*ProjectStats, error) {
 	return s.repo.GetStats(ctx, projectID)
 }
 
-func (s *service) GenerateCLIToken(ctx context.Context, projectID, createdBy uint, req *GenerateProjectCLITokenRequest) (*GenerateProjectCLITokenResponse, error) {
+func (s *service) GenerateCLIToken(ctx context.Context, projectID string, createdBy uint, req *GenerateProjectCLITokenRequest) (*GenerateProjectCLITokenResponse, error) {
 	if req == nil {
 		req = &GenerateProjectCLITokenRequest{}
 	}
@@ -218,36 +218,36 @@ func (s *service) GenerateCLIToken(ctx context.Context, projectID, createdBy uin
 	}, nil
 }
 
-func (s *service) ValidateCLIToken(ctx context.Context, projectID uint, rawToken string, requiredScopes []string) (uint, uint, error) {
+func (s *service) ValidateCLIToken(ctx context.Context, projectID string, rawToken string, requiredScopes []string) (string, uint, error) {
 	tokenHash := hashCLIToken(strings.TrimSpace(rawToken))
 	if tokenHash == "" {
-		return 0, 0, ErrInvalidCLIToken
+		return "", 0, ErrInvalidCLIToken
 	}
 
 	token, err := s.repo.GetCLITokenByHash(ctx, tokenHash)
 	if err != nil {
-		return 0, 0, err
+		return "", 0, err
 	}
 	if token == nil {
-		return 0, 0, ErrInvalidCLIToken
+		return "", 0, ErrInvalidCLIToken
 	}
 	if token.ProjectID != projectID {
-		return 0, 0, ErrCLITokenProjectMismatch
+		return "", 0, ErrCLITokenProjectMismatch
 	}
 	if token.ExpiresAt != nil && token.ExpiresAt.Before(time.Now()) {
-		return 0, 0, ErrCLITokenExpired
+		return "", 0, ErrCLITokenExpired
 	}
 
 	scopes, err := normalizeRequiredCLITokenScopes(requiredScopes)
 	if err != nil {
-		return 0, 0, err
+		return "", 0, err
 	}
 	if !hasRequiredScopes(token.Scopes, scopes) {
-		return 0, 0, ErrCLITokenScopeDenied
+		return "", 0, ErrCLITokenScopeDenied
 	}
 
 	if err := s.repo.TouchCLIToken(ctx, token.ID, time.Now().UTC()); err != nil {
-		return 0, 0, err
+		return "", 0, err
 	}
 
 	return token.ID, token.CreatedBy, nil

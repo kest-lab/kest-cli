@@ -7,9 +7,9 @@ import (
 
 // APISpecShareResponse is the internal management view for a published share.
 type APISpecShareResponse struct {
-	ID        uint      `json:"id"`
-	ProjectID uint      `json:"project_id"`
-	APISpecID uint      `json:"api_spec_id"`
+	ID string      `json:"id"`
+	ProjectID string      `json:"project_id"`
+	APISpecID string      `json:"api_spec_id"`
 	Slug      string    `json:"slug"`
 	CreatedBy uint      `json:"created_by"`
 	CreatedAt time.Time `json:"created_at"`

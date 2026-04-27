@@ -9,8 +9,8 @@ import (
 
 // ExamplePO is the persistent object for request examples
 type ExamplePO struct {
-	ID          uint           `gorm:"primaryKey"`
-	RequestID   uint           `gorm:"not null;index"`
+	ID string           `gorm:"primaryKey"`
+	RequestID string           `gorm:"not null;index"`
 	Name        string         `gorm:"size:100;not null"`
 	Description string         `gorm:"size:500"`
 	URL         string         `gorm:"size:2000"` // Resolved URL with variables
@@ -42,8 +42,8 @@ func (ExamplePO) TableName() string {
 
 // Example is the domain entity
 type Example struct {
-	ID              uint                   `json:"id"`
-	RequestID       uint                   `json:"request_id"`
+	ID string                   `json:"id"`
+	RequestID string                   `json:"request_id"`
 	Name            string                 `json:"name"`
 	Description     string                 `json:"description"`
 	URL             string                 `json:"url"`
