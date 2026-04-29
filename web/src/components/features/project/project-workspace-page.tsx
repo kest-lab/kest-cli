@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import {
   Bot,
   Boxes,
@@ -145,6 +145,46 @@ const formatJson = (value: unknown) => {
 
   return JSON.stringify(value, null, 2);
 };
+
+const getHistoryDataRecord = (history?: ProjectHistory | null) => {
+  if (!history?.data || typeof history.data !== 'object' || Array.isArray(history.data)) {
+    return null;
+  }
+
+  return history.data as Record<string, unknown>;
+};
+
+const getHistoryNestedRecord = (value: unknown) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+};
+
+const getHistoryFlowName = (history?: ProjectHistory | null) => {
+  const flowRecord = getHistoryNestedRecord(getHistoryDataRecord(history)?.flow);
+  const flowName = flowRecord?.name;
+  return typeof flowName === 'string' && flowName.trim() ? flowName.trim() : null;
+};
+
+const getHistoryRunStatus = (history?: ProjectHistory | null) => {
+  const runRecord = getHistoryNestedRecord(getHistoryDataRecord(history)?.run);
+  const status = runRecord?.status;
+  return typeof status === 'string' && status.trim() ? status.trim() : null;
+};
+
+const getHistoryExecutionMode = (history?: ProjectHistory | null) => {
+  const runRecord = getHistoryNestedRecord(getHistoryDataRecord(history)?.run);
+  const executionMode = runRecord?.execution_mode;
+  return typeof executionMode === 'string' && executionMode.trim() ? executionMode.trim() : null;
+};
+
+const getHistoryPrimaryTitle = (history: ProjectHistory) =>
+  getHistoryFlowName(history) ?? `${history.entity_type} #${history.entity_id}`;
+
+const getHistoryFallbackDescription = (history: ProjectHistory) =>
+  `${history.action} recorded for ${history.entity_type} #${history.entity_id}`;
 
 type EnvironmentFormMode = 'create' | 'edit';
 
@@ -573,11 +613,13 @@ export function ProjectWorkspacePage({
   module,
   selectedItemId,
   autoOpenAICreate = false,
+  initialHistoryEntityType,
 }: {
   projectId: number | string;
   module: ProjectWorkspaceModule;
   selectedItemId?: string | number | null;
   autoOpenAICreate?: boolean;
+  initialHistoryEntityType?: string | null;
 }) {
   const t = useT('project');
   const projectQuery = useProject(projectId);
@@ -617,6 +659,7 @@ export function ProjectWorkspacePage({
           projectId={projectId}
           projectName={projectName}
           selectedItemId={selectedItemId}
+          initialEntityTypeFilter={initialHistoryEntityType}
         />
       );
     case 'flows':
@@ -1838,15 +1881,21 @@ function HistoryWorkspaceSection({
   projectId,
   projectName,
   selectedItemId,
+  initialEntityTypeFilter,
 }: {
   projectId: number | string;
   projectName: string;
   selectedItemId?: string | number | null;
+  initialEntityTypeFilter?: string | null;
 }) {
   const t = useT('project');
   const [searchQuery, setSearchQuery] = useState('');
-  const [entityTypeFilter, setEntityTypeFilter] = useState('all');
+  const [entityTypeFilter, setEntityTypeFilter] = useState(initialEntityTypeFilter?.trim() || 'all');
   const deferredSearch = useDeferredValue(searchQuery);
+
+  useEffect(() => {
+    setEntityTypeFilter(initialEntityTypeFilter?.trim() || 'all');
+  }, [initialEntityTypeFilter]);
 
   const historiesQuery = useProjectHistories({
     projectId,
@@ -1944,14 +1993,19 @@ function HistoryWorkspaceSection({
               key={history.id}
               href={buildModuleHref(projectId, 'histories', history.id)}
               active={history.id === selectedHistory?.id}
-              title={`${history.entity_type} #${history.entity_id}`}
+              title={getHistoryPrimaryTitle(history)}
               description={
-                history.message ||
-                `${history.action} recorded for ${history.entity_type} #${history.entity_id}`
+                history.message || getHistoryFallbackDescription(history)
               }
               meta={
                 <>
                   <Badge variant="outline">{history.action}</Badge>
+                  {getHistoryRunStatus(history) ? (
+                    <Badge variant="secondary">{getHistoryRunStatus(history)}</Badge>
+                  ) : null}
+                  {getHistoryExecutionMode(history) ? (
+                    <span>{getHistoryExecutionMode(history)}</span>
+                  ) : null}
                   <span>{t('history.user')} #{history.user_id}</span>
                   <span>{formatDate(history.created_at, 'YYYY-MM-DD HH:mm')}</span>
                 </>
@@ -1967,7 +2021,7 @@ function HistoryWorkspaceSection({
           module="histories"
           currentTitle={
             selectedHistory
-              ? `${selectedHistory.entity_type} #${selectedHistory.entity_id}`
+              ? getHistoryPrimaryTitle(selectedHistory)
               : t('history.projectHistory')
           }
           description={
@@ -2019,11 +2073,14 @@ function HistoryWorkspaceSection({
                           {selectedHistory.entity_type}
                         </Badge>
                         <Badge variant="outline">{selectedHistory.action}</Badge>
+                        {getHistoryRunStatus(selectedHistory) ? (
+                          <Badge variant="secondary">{getHistoryRunStatus(selectedHistory)}</Badge>
+                        ) : null}
                         <Badge variant="secondary">{t('history.recordNumber', { id: selectedHistory.id })}</Badge>
                       </div>
                       <div>
                         <CardTitle className="text-2xl tracking-tight">
-                          {selectedHistory.entity_type} #{selectedHistory.entity_id}
+                          {getHistoryPrimaryTitle(selectedHistory)}
                         </CardTitle>
                         <CardDescription className="mt-2 max-w-4xl leading-6">
                           {selectedHistory.message || t('history.noMessageForEntry')}

@@ -6,6 +6,7 @@ interface ProjectHistoriesPageProps {
   }>;
   searchParams: Promise<{
     item?: string;
+    entityType?: string;
   }>;
 }
 
@@ -16,14 +17,16 @@ export default async function ProjectHistoriesPage({
   searchParams,
 }: ProjectHistoriesPageProps) {
   const { projectId } = await params;
-  const { item } = await searchParams;
+  const { item, entityType } = await searchParams;
   const selectedItemId = item?.trim() ? item : null;
+  const initialHistoryEntityType = entityType?.trim() ? entityType : null;
 
   return (
     <ProjectWorkspacePage
       projectId={projectId}
       module="histories"
       selectedItemId={selectedItemId}
+      initialHistoryEntityType={initialHistoryEntityType}
     />
   );
 }

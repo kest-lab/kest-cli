@@ -84,7 +84,11 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { buildProjectFlowsRoute, buildProjectDetailRoute } from '@/constants/routes';
+import {
+  buildProjectDetailRoute,
+  buildProjectFlowsRoute,
+  buildProjectHistoriesRoute,
+} from '@/constants/routes';
 import {
   useCreateFlow,
   useDeleteFlow,
@@ -95,6 +99,7 @@ import {
   useRunFlow,
   useSaveFlow,
 } from '@/hooks/use-flows';
+import { useCreateProjectHistory } from '@/hooks/use-histories';
 import { useEnvironments } from '@/hooks/use-environments';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProjectMemberRole } from '@/hooks/use-members';
@@ -114,6 +119,7 @@ import {
   type LocalFlowEdgeDefinition,
   type LocalFlowStepDefinition,
 } from '@/services/local-flow-runner';
+import type { CreateHistoryRequest } from '@/types/history';
 import type {
   CreateFlowRequest,
   FlowDetail,
@@ -132,6 +138,15 @@ const WRITE_ROLES = PROJECT_MEMBER_WRITE_ROLES;
 const EMPTY_RUNS: FlowRun[] = [];
 const FLOW_METHOD_OPTIONS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const;
 const RUN_ENVIRONMENT_DEFAULT_VALUE = '__flow-run-environment-default__';
+const FLOW_HISTORY_ENTITY_TYPE = 'flow';
+const HISTORY_SENSITIVE_HEADER_NAMES = new Set([
+  'authorization',
+  'proxy-authorization',
+  'cookie',
+  'set-cookie',
+  'x-api-key',
+  'api-key',
+]);
 
 const toPositiveIntId = (value: string | number | null | undefined): number | null => {
   if (typeof value === 'number') {
@@ -299,6 +314,180 @@ const parseJsonString = (value?: string | null) => {
   } catch {
     return trimmed;
   }
+};
+
+const maskHistoryValue = (value: string) => {
+  if (!value) {
+    return '';
+  }
+
+  if (value.length <= 6) {
+    return '****';
+  }
+
+  return `${value.slice(0, 3)}****${value.slice(-2)}`;
+};
+
+const sanitizeSensitiveHeaderValue = (value: unknown) => {
+  if (typeof value === 'string') {
+    return maskHistoryValue(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => (typeof item === 'string' ? maskHistoryValue(item) : item));
+  }
+
+  return value;
+};
+
+const sanitizeHistoryHeaderMap = (headers: Record<string, unknown>) =>
+  Object.fromEntries(
+    Object.entries(headers).map(([key, value]) => [
+      key,
+      HISTORY_SENSITIVE_HEADER_NAMES.has(key.trim().toLowerCase())
+        ? sanitizeSensitiveHeaderValue(value)
+        : value,
+    ])
+  );
+
+const sanitizeFlowLogPayload = (raw?: string | null) => {
+  const parsed = parseJsonString(raw);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return parsed;
+  }
+
+  const nextPayload = { ...(parsed as Record<string, unknown>) };
+  const rawHeaders = nextPayload.headers;
+
+  if (typeof rawHeaders === 'string') {
+    const parsedHeaders = parseJsonString(rawHeaders);
+    if (parsedHeaders && typeof parsedHeaders === 'object' && !Array.isArray(parsedHeaders)) {
+      nextPayload.headers = sanitizeHistoryHeaderMap(parsedHeaders as Record<string, unknown>);
+    }
+  } else if (rawHeaders && typeof rawHeaders === 'object' && !Array.isArray(rawHeaders)) {
+    nextPayload.headers = sanitizeHistoryHeaderMap(rawHeaders as Record<string, unknown>);
+  }
+
+  return nextPayload;
+};
+
+const summarizeFlowRun = (stepResults: FlowStepResult[] = []) =>
+  stepResults.reduce(
+    (summary, result) => {
+      summary.total_steps += 1;
+
+      switch (result.status) {
+        case 'passed':
+          summary.passed_steps += 1;
+          break;
+        case 'failed':
+          summary.failed_steps += 1;
+          break;
+        case 'running':
+          summary.running_steps += 1;
+          break;
+        case 'canceled':
+          summary.canceled_steps += 1;
+          break;
+        default:
+          summary.pending_steps += 1;
+          break;
+      }
+
+      return summary;
+    },
+    {
+      total_steps: 0,
+      passed_steps: 0,
+      failed_steps: 0,
+      running_steps: 0,
+      canceled_steps: 0,
+      pending_steps: 0,
+    }
+  );
+
+const buildFlowRunHistoryPayload = ({
+  flow,
+  run,
+  environment,
+  baseUrl,
+  messages,
+}: {
+  flow: FlowDetail;
+  run: FlowRun;
+  environment: {
+    id: number | string;
+    name: string;
+    displayName?: string;
+  } | null;
+  baseUrl?: string;
+  messages: {
+    executed: (flowName: string) => string;
+    failed: (flowName: string) => string;
+    canceled: (flowName: string) => string;
+  };
+}): CreateHistoryRequest => {
+  const stepResults = run.step_results ?? [];
+  const flowName = flow.name.trim() || `Flow #${flow.id}`;
+  const action =
+    run.status === 'failed' ? 'run_failed' : run.status === 'canceled' ? 'run_canceled' : 'run';
+
+  return {
+    entity_type: FLOW_HISTORY_ENTITY_TYPE,
+    entity_id: flow.id,
+    action,
+    message:
+      action === 'run_failed'
+        ? messages.failed(flowName)
+        : action === 'run_canceled'
+          ? messages.canceled(flowName)
+          : messages.executed(flowName),
+    data: {
+      flow: {
+        id: flow.id,
+        name: flow.name,
+        description: flow.description,
+        step_count: flow.steps.length,
+      },
+      run: {
+        id: run.id,
+        flow_id: run.flow_id,
+        status: run.status,
+        execution_mode: run.execution_mode ?? 'server',
+        triggered_by: run.triggered_by,
+        started_at: run.started_at ?? null,
+        finished_at: run.finished_at ?? null,
+        created_at: run.created_at,
+        updated_at: run.updated_at,
+      },
+      environment: environment
+        ? {
+            id: environment.id,
+            name: environment.name,
+            display_name: environment.displayName ?? environment.name,
+            base_url: baseUrl ?? null,
+          }
+        : {
+            id: null,
+            name: null,
+            display_name: null,
+            base_url: baseUrl ?? null,
+          },
+      summary: summarizeFlowRun(stepResults),
+      step_results: stepResults.map((result) => ({
+        id: result.id,
+        step_id: result.step_id,
+        status: result.status,
+        duration_ms: result.duration_ms,
+        request: sanitizeFlowLogPayload(result.request),
+        response: sanitizeFlowLogPayload(result.response),
+        assert_results: parseJsonString(result.assert_results),
+        variables_captured: parseJsonString(result.variables_captured),
+        error_message: result.error_message,
+        created_at: result.created_at,
+      })),
+    },
+  };
 };
 
 const buildClientKey = () => {
@@ -977,6 +1166,7 @@ function FlowInspector({
   selectedStepResult,
   getParameterTargetOptions,
   onPassParameters,
+  historyHref,
 }: {
   flowName: string;
   flowDescription: string;
@@ -999,6 +1189,7 @@ function FlowInspector({
   selectedStepResult: FlowStepResult | null;
   getParameterTargetOptions: (sourceStepId: number) => FlowParameterTargetOption[];
   onPassParameters: (payload: FlowParameterHandoffPayload) => void;
+  historyHref: string;
 }) {
   if (selectedNode) {
     const selectedNodeErrors = nodeErrors[selectedNode.id] ?? {};
@@ -1166,6 +1357,7 @@ function FlowInspector({
           canEdit={canEdit}
           getParameterTargetOptions={getParameterTargetOptions}
           onPassParameters={onPassParameters}
+          historyHref={historyHref}
         />
       </div>
     );
@@ -1276,6 +1468,7 @@ function FlowInspector({
           canEdit={canEdit}
           getParameterTargetOptions={getParameterTargetOptions}
           onPassParameters={onPassParameters}
+          historyHref={historyHref}
         />
       </div>
     );
@@ -1326,6 +1519,7 @@ function FlowInspector({
         canEdit={canEdit}
         getParameterTargetOptions={getParameterTargetOptions}
         onPassParameters={onPassParameters}
+        historyHref={historyHref}
       />
     </div>
   );
@@ -1343,6 +1537,7 @@ function RunHistoryPanel({
   canEdit,
   getParameterTargetOptions,
   onPassParameters,
+  historyHref,
 }: {
   runs: FlowRun[];
   selectedRun: FlowRun | null;
@@ -1355,7 +1550,9 @@ function RunHistoryPanel({
   canEdit: boolean;
   getParameterTargetOptions: (sourceStepId: number) => FlowParameterTargetOption[];
   onPassParameters: (payload: FlowParameterHandoffPayload) => void;
+  historyHref: string;
 }) {
+  const t = useT('project');
   const [activeStepId, setActiveStepId] = useState<number | null>(null);
   const [handoffStepResult, setHandoffStepResult] = useState<FlowStepResult | null>(null);
 
@@ -1395,8 +1592,15 @@ function RunHistoryPanel({
     <div className="space-y-6">
       <Card className="border-border/60">
         <CardHeader>
-          <CardTitle>Run history</CardTitle>
-          <CardDescription>Select a local or server run to overlay status and inspect step results.</CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <CardTitle>{t('flowPage.historyPanelTitle')}</CardTitle>
+              <CardDescription>{t('flowPage.historyPanelDescription')}</CardDescription>
+            </div>
+            <Button asChild type="button" variant="outline" size="sm">
+              <Link href={historyHref}>{t('flowPage.openHistory')}</Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {runs.length === 0 ? (
@@ -1832,6 +2036,7 @@ export function ProjectFlowManagementPage({
   const deleteFlowMutation = useDeleteFlow(projectId);
   const saveFlowMutation = useSaveFlow(projectId);
   const runFlowMutation = useRunFlow(projectId);
+  const createHistoryMutation = useCreateProjectHistory(projectId);
 
   const [searchValue, setSearchValue] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -1859,6 +2064,8 @@ export function ProjectFlowManagementPage({
   const streamAbortRef = useRef<AbortController | null>(null);
   const skipNextHydrationRef = useRef(false);
   const previousFlowIdRef = useRef<number | null>(toPositiveIntId(selectedItemId));
+  const persistedRunHistoryKeysRef = useRef<Set<string>>(new Set());
+  const persistingRunHistoryKeysRef = useRef<Set<string>>(new Set());
 
   const [nodes, setNodes] = useState<FlowCanvasNode[]>([]);
   const [edges, setEdges] = useState<FlowCanvasEdge[]>([]);
@@ -1901,6 +2108,7 @@ export function ProjectFlowManagementPage({
     [runEnvironments, selectedRunEnvironmentId]
   );
   const selectedRunBaseUrl = selectedRunEnvironment?.base_url?.trim() || undefined;
+  const flowHistoryHref = `${buildProjectHistoriesRoute(projectId)}?entityType=${FLOW_HISTORY_ENTITY_TYPE}`;
   const showFlowSidebar = isMobile || !isSidebarCollapsed;
   const filteredFlows = useMemo(() => {
     const keyword = deferredSearch.trim().toLowerCase();
@@ -2350,17 +2558,72 @@ export function ProjectFlowManagementPage({
     }
   };
 
+  const persistFlowRunHistory = async (flow: FlowDetail, run: FlowRun) => {
+    if (run.status === 'pending' || run.status === 'running') {
+      return null;
+    }
+
+    const historyKey = `${run.execution_mode ?? 'server'}:${String(run.id)}`;
+    if (
+      persistedRunHistoryKeysRef.current.has(historyKey) ||
+      persistingRunHistoryKeysRef.current.has(historyKey)
+    ) {
+      return null;
+    }
+
+    persistingRunHistoryKeysRef.current.add(historyKey);
+
+    try {
+      const history = await createHistoryMutation.mutateAsync(
+        buildFlowRunHistoryPayload({
+          flow,
+          run,
+          environment: selectedRunEnvironment
+            ? {
+                id: selectedRunEnvironment.id,
+                name: selectedRunEnvironment.name,
+                displayName: selectedRunEnvironment.display_name,
+              }
+            : null,
+          baseUrl: selectedRunBaseUrl,
+          messages: {
+            executed: (flowName) => t('flowPage.historyExecuted', { name: flowName }),
+            failed: (flowName) => t('flowPage.historyFailed', { name: flowName }),
+            canceled: (flowName) => t('flowPage.historyCanceled', { name: flowName }),
+          },
+        })
+      );
+      persistedRunHistoryKeysRef.current.add(historyKey);
+      return history;
+    } catch {
+      return null;
+    } finally {
+      persistingRunHistoryKeysRef.current.delete(historyKey);
+    }
+  };
+
   const finalizeRun = async (runId: number) => {
+    if (!selectedFlowId) {
+      return null;
+    }
+
+    const run = await flowService.getRun(projectId, selectedFlowId, runId);
+    if (run.step_results) {
+      const nextResults = Object.fromEntries(run.step_results.map((result) => [result.step_id, result]));
+      setLiveStepResults(nextResults);
+    }
+
     await Promise.all([
       flowRunsQuery.refetch(),
       selectedRunQuery.refetch(),
     ]);
     setSelectedRunId(runId);
+    return run;
   };
 
   const pollRunUntilSettled = async (runId: number) => {
     if (!selectedFlowId) {
-      return;
+      return null;
     }
 
     for (let attempt = 0; attempt < 20; attempt += 1) {
@@ -2370,16 +2633,17 @@ export function ProjectFlowManagementPage({
         setLiveStepResults(nextResults);
       }
       if (run.status !== 'pending' && run.status !== 'running') {
-        await finalizeRun(runId);
-        return;
+        return finalizeRun(runId);
       }
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
+
+    return null;
   };
 
   const streamRun = async (runId: number, baseUrl?: string) => {
     if (!selectedFlowId) {
-      return;
+      return null;
     }
 
     streamAbortRef.current?.abort();
@@ -2400,15 +2664,20 @@ export function ProjectFlowManagementPage({
             [stepResult.step_id]: stepResult,
           }));
         },
-        onDone: () => {
-          void finalizeRun(runId);
-        },
+        onDone: () => {},
       });
+
+      const finalizedRun = await finalizeRun(runId);
+      if (finalizedRun?.status === 'pending' || finalizedRun?.status === 'running') {
+        return pollRunUntilSettled(runId);
+      }
+
+      return finalizedRun;
     } catch {
       if (controller.signal.aborted) {
-        return;
+        return null;
       }
-      await pollRunUntilSettled(runId);
+      return pollRunUntilSettled(runId);
     }
   };
 
@@ -2426,17 +2695,25 @@ export function ProjectFlowManagementPage({
     clearValidationState();
 
     try {
+      let savedFlow = selectedFlowQuery.data ?? null;
       if (dirty) {
-        const saved = await saveCurrentFlow();
-        if (!saved) {
+        savedFlow = await saveCurrentFlow();
+        if (!savedFlow) {
           return;
         }
+      }
+
+      if (!savedFlow) {
+        throw new Error('Load this flow again before starting a flow run.');
       }
 
       setLiveStepResults({});
       const run = await runFlowMutation.mutateAsync(selectedFlowId);
       setSelectedRunId(run.id);
-      await streamRun(run.id, selectedRunBaseUrl);
+      const completedRun = await streamRun(run.id, selectedRunBaseUrl);
+      if (completedRun) {
+        void persistFlowRunHistory(savedFlow, completedRun);
+      }
     } catch (error) {
       setValidationState((current) => ({
         ...current,
@@ -2537,6 +2814,7 @@ export function ProjectFlowManagementPage({
         completedRun,
         ...current.filter((run) => run.id !== runId),
       ]);
+      void persistFlowRunHistory(savedFlow, completedRun);
     } catch (error) {
       setValidationState((current) => ({
         ...current,
@@ -2893,6 +3171,7 @@ export function ProjectFlowManagementPage({
               selectedStepResult={selectedStepResult}
               getParameterTargetOptions={getParameterTargetOptions}
               onPassParameters={handlePassParameters}
+              historyHref={flowHistoryHref}
             />
           </div>
         </aside>
@@ -3003,6 +3282,7 @@ export function ProjectFlowManagementPage({
                 selectedStepResult={selectedStepResult}
                 getParameterTargetOptions={getParameterTargetOptions}
                 onPassParameters={handlePassParameters}
+                historyHref={flowHistoryHref}
               />
             </div>
           </DrawerContent>
