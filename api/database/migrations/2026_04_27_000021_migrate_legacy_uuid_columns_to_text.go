@@ -87,13 +87,23 @@ func (m *migrateLegacyUUIDColumnsToText) Up(db *gorm.DB) error {
 		{table: "audit_logs", column: "project_id"},
 	}
 
+	targetColumns := make(map[string]struct{}, len(columns))
+	for _, tc := range columns {
+		targetColumns[targetColumnKey(tc.table, tc.column)] = struct{}{}
+	}
+
+	constraints, err := dropForeignKeysForTargetColumns(db, targetColumns)
+	if err != nil {
+		return err
+	}
+
 	for _, tc := range columns {
 		if err := alterColumnToTextIfNumeric(db, tc.table, tc.column); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return restoreForeignKeys(db, constraints)
 }
 
 func (m *migrateLegacyUUIDColumnsToText) Down(db *gorm.DB) error {

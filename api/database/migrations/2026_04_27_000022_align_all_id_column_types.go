@@ -124,6 +124,16 @@ func (m *alignAllIDColumnTypes) Up(db *gorm.DB) error {
 		{table: "workspace_members", column: "invited_by", expectedType: idTypeBigInt},
 	}
 
+	targetColumns := make(map[string]struct{}, len(expectations))
+	for _, expectation := range expectations {
+		targetColumns[targetColumnKey(expectation.table, expectation.column)] = struct{}{}
+	}
+
+	constraints, err := dropForeignKeysForTargetColumns(db, targetColumns)
+	if err != nil {
+		return err
+	}
+
 	for _, expectation := range expectations {
 		switch expectation.expectedType {
 		case idTypeText:
@@ -142,7 +152,7 @@ func (m *alignAllIDColumnTypes) Up(db *gorm.DB) error {
 		}
 	}
 
-	return nil
+	return restoreForeignKeys(db, constraints)
 }
 
 func (m *alignAllIDColumnTypes) Down(db *gorm.DB) error {
