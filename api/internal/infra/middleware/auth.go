@@ -3,15 +3,15 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
+	idpkg "github.com/kest-labs/kest/api/pkg/id"
 	"github.com/kest-labs/kest/api/pkg/response"
 )
 
 // PermissionProvider is an interface for checking project permissions
 type PermissionProvider interface {
-	CheckPermission(ctx context.Context, projectID string, userID uint, requiredRole string) (bool, error)
+	CheckPermission(ctx context.Context, projectID string, userID string, requiredRole string) (bool, error)
 }
 
 // MockAuth extracts User ID from X-User-ID header for testing
@@ -25,14 +25,14 @@ func MockAuth() gin.HandlerFunc {
 			return
 		}
 
-		userID, err := strconv.ParseUint(userIDStr, 10, 32)
+		userID, err := idpkg.Parse(userIDStr)
 		if err != nil {
 			response.Error(c, http.StatusUnauthorized, "Invalid User ID in header")
 			c.Abort()
 			return
 		}
 
-		c.Set("userID", uint(userID))
+		c.Set("userID", userID)
 		c.Next()
 	}
 }
@@ -47,7 +47,12 @@ func RequireProjectRole(memberService PermissionProvider, requiredRole string) g
 			c.Abort()
 			return
 		}
-		userID := val.(uint)
+		userID, err := idpkg.Normalize(val)
+		if err != nil {
+			response.Error(c, http.StatusUnauthorized, "Invalid user ID")
+			c.Abort()
+			return
+		}
 
 		// Try to find projectID in params
 		projectIDStr := c.Param("id")
@@ -63,7 +68,7 @@ func RequireProjectRole(memberService PermissionProvider, requiredRole string) g
 			return
 		}
 
-			allowed, err := memberService.CheckPermission(c.Request.Context(), projectIDStr, userID, requiredRole)
+		allowed, err := memberService.CheckPermission(c.Request.Context(), projectIDStr, userID, requiredRole)
 		if err != nil {
 			response.Error(c, http.StatusInternalServerError, "Permission check failed")
 			c.Abort()

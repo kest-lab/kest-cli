@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kest-labs/kest/api/internal/infra/config"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/kest-labs/kest/api/internal/infra/config"
+	idpkg "github.com/kest-labs/kest/api/pkg/id"
 )
 
 // Service provides JWT helpers bound to a configuration instance.
@@ -34,16 +35,16 @@ func NewTestService() *Service {
 
 // Claims represents custom JWT claims
 type Claims struct {
-	UserID   uint   `json:"user_id"`
-	Username string `json:"username"`
+	UserID   idpkg.Compatible `json:"user_id"`
+	Username string           `json:"username"`
 	jwt.RegisteredClaims
 }
 
 // GenerateToken generates a JWT token
-func (s *Service) GenerateToken(userID uint, username string) (string, error) {
+func (s *Service) GenerateToken(userID string, username string) (string, error) {
 	now := time.Now()
 	claims := Claims{
-		UserID:   userID,
+		UserID:   idpkg.Compatible(userID),
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(s.expire)),

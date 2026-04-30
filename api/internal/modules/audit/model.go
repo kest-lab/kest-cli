@@ -8,9 +8,9 @@ import (
 
 // AuditLogPO persists audit events to the database
 type AuditLogPO struct {
-	ID string           `gorm:"primaryKey"`
-	UserID uint           `gorm:"index;not null"`
-	ProjectID string           `gorm:"index;default:0"`        // 0 means global/non-project action
+	ID        string         `gorm:"primaryKey"`
+	UserID    string         `gorm:"index;not null"`
+	ProjectID string         `gorm:"index;default:0"`        // 0 means global/non-project action
 	Action    string         `gorm:"size:50;not null;index"` // e.g., "create", "update", "delete"
 	Resource  string         `gorm:"size:50;not null;index"` // e.g., "project", "user"
 	Method    string         `gorm:"size:10;not null"`       // e.g., "POST", "PATCH"
@@ -25,9 +25,9 @@ type AuditLogPO struct {
 
 // AuditLogResponse is the API response for an audit log entry
 type AuditLogResponse struct {
-	ID string      `json:"id"`
-	UserID uint      `json:"user_id"`
-	ProjectID string      `json:"project_id,omitempty"`
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	ProjectID string    `json:"project_id,omitempty"`
 	Action    string    `json:"action"`
 	Resource  string    `json:"resource"`
 	Method    string    `json:"method"`

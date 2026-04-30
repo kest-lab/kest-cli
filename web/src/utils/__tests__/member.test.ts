@@ -24,24 +24,24 @@ describe('project member helpers', () => {
   });
 
   it('protects owner rows and the current user from member mutations', () => {
-    const ownerMember = { role: 'owner', user_id: 7 } as Pick<ProjectMember, 'role' | 'user_id'>;
-    const selfMember = { role: 'admin', user_id: 9 } as Pick<ProjectMember, 'role' | 'user_id'>;
-    const otherMember = { role: 'write', user_id: 11 } as Pick<ProjectMember, 'role' | 'user_id'>;
+    const ownerMember = { role: 'owner', user_id: '7' } as Pick<ProjectMember, 'role' | 'user_id'>;
+    const selfMember = { role: 'admin', user_id: '9' } as Pick<ProjectMember, 'role' | 'user_id'>;
+    const otherMember = { role: 'write', user_id: '11' } as Pick<ProjectMember, 'role' | 'user_id'>;
 
-    expect(canEditProjectMember(ownerMember, 'owner', 1)).toBe(false);
-    expect(canRemoveProjectMember(ownerMember, 'owner', 1)).toBe(false);
-    expect(canEditProjectMember(selfMember, 'admin', 9)).toBe(false);
-    expect(canRemoveProjectMember(selfMember, 'admin', 9)).toBe(false);
-    expect(canEditProjectMember(otherMember, 'admin', 9)).toBe(true);
-    expect(canRemoveProjectMember(otherMember, 'owner', 9)).toBe(true);
+    expect(canEditProjectMember(ownerMember, 'owner', '1')).toBe(false);
+    expect(canRemoveProjectMember(ownerMember, 'owner', '1')).toBe(false);
+    expect(canEditProjectMember(selfMember, 'admin', '9')).toBe(false);
+    expect(canRemoveProjectMember(selfMember, 'admin', '9')).toBe(false);
+    expect(canEditProjectMember(otherMember, 'admin', '9')).toBe(true);
+    expect(canRemoveProjectMember(otherMember, 'owner', '9')).toBe(true);
   });
 
   it('sorts members by role priority before username', () => {
     const members: ProjectMember[] = [
       {
-        id: 1,
-        project_id: 10,
-        user_id: 101,
+        id: '1',
+        project_id: '10',
+        user_id: '101',
         username: 'zoe',
         email: 'zoe@example.com',
         role: 'read',
@@ -49,9 +49,9 @@ describe('project member helpers', () => {
         updated_at: '',
       },
       {
-        id: 2,
-        project_id: 10,
-        user_id: 102,
+        id: '2',
+        project_id: '10',
+        user_id: '102',
         username: 'amy',
         email: 'amy@example.com',
         role: 'admin',
@@ -59,9 +59,9 @@ describe('project member helpers', () => {
         updated_at: '',
       },
       {
-        id: 3,
-        project_id: 10,
-        user_id: 103,
+        id: '3',
+        project_id: '10',
+        user_id: '103',
         username: 'ben',
         email: 'ben@example.com',
         role: 'owner',
@@ -69,9 +69,9 @@ describe('project member helpers', () => {
         updated_at: '',
       },
       {
-        id: 4,
-        project_id: 10,
-        user_id: 104,
+        id: '4',
+        project_id: '10',
+        user_id: '104',
         username: 'anna',
         email: 'anna@example.com',
         role: 'admin',
@@ -80,7 +80,7 @@ describe('project member helpers', () => {
       },
     ];
 
-    expect(sortProjectMembers(members).map((member) => member.username)).toEqual([
+    expect(sortProjectMembers(members).map(member => member.username)).toEqual([
       'ben',
       'amy',
       'anna',

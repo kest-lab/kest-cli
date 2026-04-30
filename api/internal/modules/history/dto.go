@@ -7,7 +7,7 @@ type RecordHistoryRequest struct {
 	EntityType    string                 `json:"entity_type" binding:"required"`
 	EntityID      string                 `json:"entity_id" binding:"required"`
 	ProjectID     string                 `json:"project_id"`
-	UserID        uint                   `json:"user_id"`
+	UserID        string                 `json:"user_id"`
 	Source        string                 `json:"source,omitempty"`
 	SourceEventID string                 `json:"source_event_id,omitempty"`
 	Action        string                 `json:"action" binding:"required"`
@@ -22,7 +22,7 @@ type HistoryResponse struct {
 	EntityType    string                 `json:"entity_type"`
 	EntityID      string                 `json:"entity_id"`
 	ProjectID     string                 `json:"project_id"`
-	UserID        uint                   `json:"user_id"`
+	UserID        string                 `json:"user_id"`
 	Source        string                 `json:"source,omitempty"`
 	SourceEventID string                 `json:"source_event_id,omitempty"`
 	Action        string                 `json:"action"`

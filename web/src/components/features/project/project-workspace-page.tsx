@@ -2129,12 +2129,15 @@ function HistoryWorkspaceSection({
   }, [initialEntityTypeFilter]);
 
   const historiesQuery = useProjectHistories({
-    projectId,
+    projectId: String(projectId),
     page: 1,
     pageSize: MAX_MODULE_ITEMS,
     entityType: entityTypeFilter !== 'all' ? entityTypeFilter : undefined,
   });
-  const selectedHistoryQuery = useProjectHistory(projectId, selectedItemId ?? undefined);
+  const selectedHistoryQuery = useProjectHistory(
+    String(projectId),
+    selectedItemId != null ? String(selectedItemId) : undefined
+  );
 
   const histories = historiesQuery.data?.items ?? EMPTY_HISTORIES;
   const entityTypeOptions = useMemo(

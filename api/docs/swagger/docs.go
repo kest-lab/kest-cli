@@ -39,7 +39,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_permission.PermissionResponse"
+                                "$ref": "#/definitions/permission.PermissionResponse"
                             }
                         }
                     }
@@ -61,7 +61,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_permission.RoleResponse"
+                                "$ref": "#/definitions/permission.RoleResponse"
                             }
                         }
                     }
@@ -85,7 +85,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_permission.CreateRoleRequest"
+                            "$ref": "#/definitions/permission.CreateRoleRequest"
                         }
                     }
                 ],
@@ -93,7 +93,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_permission.RoleResponse"
+                            "$ref": "#/definitions/permission.RoleResponse"
                         }
                     }
                 }
@@ -115,7 +115,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_permission.AssignRoleRequest"
+                            "$ref": "#/definitions/permission.AssignRoleRequest"
                         }
                     }
                 ],
@@ -142,7 +142,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_permission.AssignRoleRequest"
+                            "$ref": "#/definitions/permission.AssignRoleRequest"
                         }
                     }
                 ],
@@ -164,7 +164,7 @@ const docTemplate = `{
                 "summary": "Get a role",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Role ID",
                         "name": "id",
                         "in": "path",
@@ -175,7 +175,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_permission.RoleResponse"
+                            "$ref": "#/definitions/permission.RoleResponse"
                         }
                     }
                 }
@@ -193,7 +193,7 @@ const docTemplate = `{
                 "summary": "Update a role",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Role ID",
                         "name": "id",
                         "in": "path",
@@ -205,7 +205,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_permission.UpdateRoleRequest"
+                            "$ref": "#/definitions/permission.UpdateRoleRequest"
                         }
                     }
                 ],
@@ -213,7 +213,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_permission.RoleResponse"
+                            "$ref": "#/definitions/permission.RoleResponse"
                         }
                     }
                 }
@@ -225,7 +225,7 @@ const docTemplate = `{
                 "summary": "Delete a role",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Role ID",
                         "name": "id",
                         "in": "path",
@@ -250,7 +250,7 @@ const docTemplate = `{
                 "summary": "Get user roles",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "User ID",
                         "name": "id",
                         "in": "path",
@@ -261,7 +261,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_permission.UserRolesResponse"
+                            "$ref": "#/definitions/permission.UserRolesResponse"
                         }
                     }
                 }
@@ -282,7 +282,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_workspace.WorkspaceResponse"
+                                "$ref": "#/definitions/workspace.WorkspaceResponse"
                             }
                         }
                     }
@@ -306,7 +306,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_workspace.CreateWorkspaceRequest"
+                            "$ref": "#/definitions/workspace.CreateWorkspaceRequest"
                         }
                     }
                 ],
@@ -314,7 +314,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_workspace.WorkspaceResponse"
+                            "$ref": "#/definitions/workspace.WorkspaceResponse"
                         }
                     }
                 }
@@ -331,7 +331,7 @@ const docTemplate = `{
                 "summary": "Get workspace details",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Workspace ID",
                         "name": "id",
                         "in": "path",
@@ -342,7 +342,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_workspace.WorkspaceResponse"
+                            "$ref": "#/definitions/workspace.WorkspaceResponse"
                         }
                     }
                 }
@@ -354,7 +354,7 @@ const docTemplate = `{
                 "summary": "Delete workspace",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Workspace ID",
                         "name": "id",
                         "in": "path",
@@ -380,7 +380,7 @@ const docTemplate = `{
                 "summary": "Update workspace",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Workspace ID",
                         "name": "id",
                         "in": "path",
@@ -392,7 +392,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_workspace.UpdateWorkspaceRequest"
+                            "$ref": "#/definitions/workspace.UpdateWorkspaceRequest"
                         }
                     }
                 ],
@@ -400,7 +400,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_workspace.WorkspaceResponse"
+                            "$ref": "#/definitions/workspace.WorkspaceResponse"
                         }
                     }
                 }
@@ -417,7 +417,7 @@ const docTemplate = `{
                 "summary": "List workspace members",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Workspace ID",
                         "name": "id",
                         "in": "path",
@@ -430,7 +430,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_modules_workspace.WorkspaceMemberResponse"
+                                "$ref": "#/definitions/workspace.WorkspaceMemberResponse"
                             }
                         }
                     }
@@ -449,7 +449,7 @@ const docTemplate = `{
                 "summary": "Add workspace member",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Workspace ID",
                         "name": "id",
                         "in": "path",
@@ -461,7 +461,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_workspace.AddMemberRequest"
+                            "$ref": "#/definitions/workspace.AddMemberRequest"
                         }
                     }
                 ],
@@ -480,14 +480,14 @@ const docTemplate = `{
                 "summary": "Remove workspace member",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Workspace ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "User ID",
                         "name": "uid",
                         "in": "path",
@@ -513,14 +513,14 @@ const docTemplate = `{
                 "summary": "Update member role",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Workspace ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "User ID",
                         "name": "uid",
                         "in": "path",
@@ -532,7 +532,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_modules_workspace.UpdateMemberRoleRequest"
+                            "$ref": "#/definitions/workspace.UpdateMemberRoleRequest"
                         }
                     }
                 ],
@@ -545,7 +545,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "internal_modules_permission.AssignRoleRequest": {
+        "permission.AssignRoleRequest": {
             "type": "object",
             "required": [
                 "role_id",
@@ -553,14 +553,14 @@ const docTemplate = `{
             ],
             "properties": {
                 "role_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "user_id": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },
-        "internal_modules_permission.CreateRoleRequest": {
+        "permission.CreateRoleRequest": {
             "type": "object",
             "required": [
                 "name"
@@ -580,7 +580,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_permission.PermissionResponse": {
+        "permission.PermissionResponse": {
             "type": "object",
             "properties": {
                 "description": {
@@ -590,7 +590,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "module": {
                     "type": "string"
@@ -600,7 +600,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_permission.RoleResponse": {
+        "permission.RoleResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -613,7 +613,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -623,7 +623,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_permission.UpdateRoleRequest": {
+        "permission.UpdateRoleRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -637,21 +637,21 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_permission.UserRolesResponse": {
+        "permission.UserRolesResponse": {
             "type": "object",
             "properties": {
                 "roles": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_modules_permission.RoleResponse"
+                        "$ref": "#/definitions/permission.RoleResponse"
                     }
                 },
                 "user_id": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },
-        "internal_modules_workspace.AddMemberRequest": {
+        "workspace.AddMemberRequest": {
             "type": "object",
             "required": [
                 "role",
@@ -668,11 +668,11 @@ const docTemplate = `{
                     ]
                 },
                 "user_id": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },
-        "internal_modules_workspace.CreateWorkspaceRequest": {
+        "workspace.CreateWorkspaceRequest": {
             "type": "object",
             "required": [
                 "name",
@@ -710,7 +710,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_workspace.UpdateMemberRoleRequest": {
+        "workspace.UpdateMemberRoleRequest": {
             "type": "object",
             "required": [
                 "role"
@@ -727,7 +727,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_workspace.UpdateWorkspaceRequest": {
+        "workspace.UpdateWorkspaceRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -748,7 +748,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_modules_workspace.WorkspaceMemberResponse": {
+        "workspace.WorkspaceMemberResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -756,10 +756,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "invited_by": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "joined_at": {
                     "type": "string"
@@ -768,18 +768,18 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "username": {
                     "description": "Joined from users table",
                     "type": "string"
                 },
                 "workspace_id": {
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },
-        "internal_modules_workspace.WorkspaceResponse": {
+        "workspace.WorkspaceResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -789,13 +789,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
                 "owner_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "settings": {
                     "type": "object",

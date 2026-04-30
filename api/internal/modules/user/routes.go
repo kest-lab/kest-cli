@@ -25,7 +25,7 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 		// User management
 		auth.GET("/users", h.List).Name("users.index")
 		auth.GET("/users/search", h.SearchUsers).Name("users.search")
-		auth.GET("/users/:id", h.Get).Name("users.show").WhereNumber("id")
-		auth.GET("/users/:id/info", h.GetUserInfo).Name("users.info").WhereNumber("id")
+		auth.GET("/users/:id", h.Get).Name("users.show").WhereUUIDOrNumber("id")
+		auth.GET("/users/:id/info", h.GetUserInfo).Name("users.info").WhereUUIDOrNumber("id")
 	})
 }

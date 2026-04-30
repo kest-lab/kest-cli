@@ -8,7 +8,7 @@ import (
 
 // Role represents a user role
 type Role struct {
-	ID          uint           `gorm:"primaryKey" json:"id"`
+	ID          string         `gorm:"primaryKey" json:"id"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
@@ -25,7 +25,7 @@ func (Role) TableName() string {
 
 // Permission represents a granular permission
 type Permission struct {
-	ID          uint           `gorm:"primaryKey" json:"id"`
+	ID          string         `gorm:"primaryKey" json:"id"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
@@ -42,9 +42,9 @@ func (Permission) TableName() string {
 
 // RolePermission is the many-to-many relationship between roles and permissions
 type RolePermission struct {
-	ID           uint      `gorm:"primaryKey" json:"id"`
-	RoleID       uint      `gorm:"not null;index" json:"role_id"`
-	PermissionID uint      `gorm:"not null;index" json:"permission_id"`
+	ID           string    `gorm:"primaryKey" json:"id"`
+	RoleID       string    `gorm:"not null;index" json:"role_id"`
+	PermissionID string    `gorm:"not null;index" json:"permission_id"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -55,9 +55,9 @@ func (RolePermission) TableName() string {
 
 // UserRole is the many-to-many relationship between users and roles
 type UserRole struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	UserID    uint      `gorm:"not null;index" json:"user_id"`
-	RoleID    uint      `gorm:"not null;index" json:"role_id"`
+	ID        string    `gorm:"primaryKey" json:"id"`
+	UserID    string    `gorm:"not null;index" json:"user_id"`
+	RoleID    string    `gorm:"not null;index" json:"role_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
 

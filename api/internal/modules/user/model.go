@@ -11,7 +11,7 @@ import (
 // This struct contains GORM tags and is NOT exposed outside the repository layer.
 // JSON tags are removed to prevent accidental exposure of database structure.
 type UserPO struct {
-	ID        uint `gorm:"primaryKey"`
+	ID        string `gorm:"primaryKey"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`

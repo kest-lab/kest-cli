@@ -577,15 +577,9 @@ func (h *Handler) PublishShare(c *gin.Context) {
 		return
 	}
 
-	userIDValue, exists := c.Get("userID")
-	if !exists {
+	userID, ok := handler.GetUserID(c)
+	if !ok {
 		response.Unauthorized(c, "Authentication required")
-		return
-	}
-
-	userID, typeOK := userIDValue.(uint)
-	if !typeOK {
-		response.Error(c, http.StatusUnauthorized, "Invalid user context")
 		return
 	}
 
@@ -656,33 +650,8 @@ func (h *Handler) Create(c *gin.Context) {
 	h.CreateSpec(c)
 }
 
-func getCurrentUserID(c *gin.Context) (uint, bool) {
-	value, exists := c.Get("userID")
-	if !exists {
-		return 0, false
-	}
-
-	switch userID := value.(type) {
-	case uint:
-		return userID, true
-	case int:
-		if userID < 0 {
-			return 0, false
-		}
-		return uint(userID), true
-	case int64:
-		if userID < 0 {
-			return 0, false
-		}
-		return uint(userID), true
-	case float64:
-		if userID < 0 {
-			return 0, false
-		}
-		return uint(userID), true
-	default:
-		return 0, false
-	}
+func getCurrentUserID(c *gin.Context) (string, bool) {
+	return handler.GetUserID(c)
 }
 
 func (h *Handler) Get(c *gin.Context) {

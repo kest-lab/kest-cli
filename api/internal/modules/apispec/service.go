@@ -40,14 +40,14 @@ type Service interface {
 	DeleteExample(ctx context.Context, id string) error
 
 	// AI draft operations
-	CreateAIDraft(ctx context.Context, projectID string, userID uint, req *CreateAPISpecAIDraftRequest) (*APISpecAIDraftResponse, error)
+	CreateAIDraft(ctx context.Context, projectID string, userID string, req *CreateAPISpecAIDraftRequest) (*APISpecAIDraftResponse, error)
 	GetAIDraft(ctx context.Context, projectID, draftID string) (*APISpecAIDraftResponse, error)
 	RefineAIDraft(ctx context.Context, projectID, draftID string, req *RefineAPISpecAIDraftRequest) (*APISpecAIDraftResponse, error)
 	AcceptAIDraft(ctx context.Context, projectID, draftID string, req *AcceptAPISpecAIDraftRequest) (*AcceptAPISpecAIDraftResponse, error)
 
 	// Share operations
 	GetShareBySpecID(ctx context.Context, projectID, specID string) (*APISpecShareResponse, error)
-	PublishShare(ctx context.Context, projectID, specID string, createdBy uint) (*APISpecShareResponse, error)
+	PublishShare(ctx context.Context, projectID, specID string, createdBy string) (*APISpecShareResponse, error)
 	DeleteShareBySpecID(ctx context.Context, projectID, specID string) error
 	GetPublicShareBySlug(ctx context.Context, slug string) (*PublicAPISpecShareResponse, error)
 
@@ -362,7 +362,7 @@ func (s *service) GetShareBySpecID(ctx context.Context, projectID, specID string
 	return fromAPISpecSharePO(share), nil
 }
 
-func (s *service) PublishShare(ctx context.Context, projectID, specID string, createdBy uint) (*APISpecShareResponse, error) {
+func (s *service) PublishShare(ctx context.Context, projectID, specID string, createdBy string) (*APISpecShareResponse, error) {
 	spec, err := s.getProjectSpec(ctx, projectID, specID)
 	if err != nil {
 		return nil, err

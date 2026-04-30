@@ -1,5 +1,5 @@
 export interface ApiUser {
-  id: number;
+  id: string;
   username: string;
   email: string;
   nickname?: string;
@@ -81,4 +81,3 @@ export interface PaginatedUsersResponse {
   meta: PaginationMeta;
   links: PaginationLinks;
 }
-

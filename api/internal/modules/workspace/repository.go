@@ -9,24 +9,24 @@ type Repository interface {
 	// Workspace CRUD
 	Create(workspace *WorkspacePO) error
 	Update(workspace *WorkspacePO) error
-	Delete(id uint) error
-	FindByID(id uint) (*WorkspacePO, error)
+	Delete(id string) error
+	FindByID(id string) (*WorkspacePO, error)
 	FindBySlug(slug string) (*WorkspacePO, error)
-	FindByOwnerID(ownerID uint) ([]*WorkspacePO, error)
+	FindByOwnerID(ownerID string) ([]*WorkspacePO, error)
 
 	// List workspaces accessible to a user (as member or super admin)
-	ListByUserID(userID uint, isSuperAdmin bool) ([]*WorkspacePO, error)
+	ListByUserID(userID string, isSuperAdmin bool) ([]*WorkspacePO, error)
 
 	// Member management
 	AddMember(member *WorkspaceMemberPO) error
-	RemoveMember(workspaceID, userID uint) error
-	UpdateMemberRole(workspaceID, userID uint, role string) error
-	FindMember(workspaceID, userID uint) (*WorkspaceMemberPO, error)
-	ListMembers(workspaceID uint) ([]*WorkspaceMemberPO, error)
+	RemoveMember(workspaceID, userID string) error
+	UpdateMemberRole(workspaceID, userID string, role string) error
+	FindMember(workspaceID, userID string) (*WorkspaceMemberPO, error)
+	ListMembers(workspaceID string) ([]*WorkspaceMemberPO, error)
 
 	// Permission checks
-	CheckPermission(workspaceID, userID uint, isSuperAdmin bool) (string, error)
-	HasPermission(workspaceID, userID uint, requiredRole string, isSuperAdmin bool) (bool, error)
+	CheckPermission(workspaceID, userID string, isSuperAdmin bool) (string, error)
+	HasPermission(workspaceID, userID string, requiredRole string, isSuperAdmin bool) (bool, error)
 }
 
 // repository implements Repository interface
@@ -50,12 +50,12 @@ func (r *repository) Update(workspace *WorkspacePO) error {
 }
 
 // Delete soft deletes a workspace
-func (r *repository) Delete(id uint) error {
+func (r *repository) Delete(id string) error {
 	return r.db.Delete(&WorkspacePO{}, id).Error
 }
 
 // FindByID finds a workspace by ID
-func (r *repository) FindByID(id uint) (*WorkspacePO, error) {
+func (r *repository) FindByID(id string) (*WorkspacePO, error) {
 	var workspace WorkspacePO
 	err := r.db.First(&workspace, id).Error
 	if err != nil {
@@ -75,7 +75,7 @@ func (r *repository) FindBySlug(slug string) (*WorkspacePO, error) {
 }
 
 // FindByOwnerID finds all workspaces owned by a user
-func (r *repository) FindByOwnerID(ownerID uint) ([]*WorkspacePO, error) {
+func (r *repository) FindByOwnerID(ownerID string) ([]*WorkspacePO, error) {
 	var workspaces []*WorkspacePO
 	err := r.db.Where("owner_id = ?", ownerID).Find(&workspaces).Error
 	return workspaces, err
@@ -83,7 +83,7 @@ func (r *repository) FindByOwnerID(ownerID uint) ([]*WorkspacePO, error) {
 
 // ListByUserID lists all workspaces accessible to a user
 // Super admins can see all workspaces
-func (r *repository) ListByUserID(userID uint, isSuperAdmin bool) ([]*WorkspacePO, error) {
+func (r *repository) ListByUserID(userID string, isSuperAdmin bool) ([]*WorkspacePO, error) {
 	var workspaces []*WorkspacePO
 
 	// Super admin can see everything
@@ -108,14 +108,14 @@ func (r *repository) AddMember(member *WorkspaceMemberPO) error {
 }
 
 // RemoveMember removes a member from a workspace
-func (r *repository) RemoveMember(workspaceID, userID uint) error {
+func (r *repository) RemoveMember(workspaceID, userID string) error {
 	return r.db.
 		Where("workspace_id = ? AND user_id = ?", workspaceID, userID).
 		Delete(&WorkspaceMemberPO{}).Error
 }
 
 // UpdateMemberRole updates a member's role
-func (r *repository) UpdateMemberRole(workspaceID, userID uint, role string) error {
+func (r *repository) UpdateMemberRole(workspaceID, userID string, role string) error {
 	return r.db.
 		Model(&WorkspaceMemberPO{}).
 		Where("workspace_id = ? AND user_id = ?", workspaceID, userID).
@@ -123,7 +123,7 @@ func (r *repository) UpdateMemberRole(workspaceID, userID uint, role string) err
 }
 
 // FindMember finds a specific workspace member
-func (r *repository) FindMember(workspaceID, userID uint) (*WorkspaceMemberPO, error) {
+func (r *repository) FindMember(workspaceID, userID string) (*WorkspaceMemberPO, error) {
 	var member WorkspaceMemberPO
 	err := r.db.
 		Where("workspace_id = ? AND user_id = ?", workspaceID, userID).
@@ -135,7 +135,7 @@ func (r *repository) FindMember(workspaceID, userID uint) (*WorkspaceMemberPO, e
 }
 
 // ListMembers lists all members of a workspace
-func (r *repository) ListMembers(workspaceID uint) ([]*WorkspaceMemberPO, error) {
+func (r *repository) ListMembers(workspaceID string) ([]*WorkspaceMemberPO, error) {
 	var members []*WorkspaceMemberPO
 	err := r.db.
 		Where("workspace_id = ?", workspaceID).
@@ -146,7 +146,7 @@ func (r *repository) ListMembers(workspaceID uint) ([]*WorkspaceMemberPO, error)
 
 // CheckPermission returns the user's role in a workspace
 // Super admins are treated as having owner role
-func (r *repository) CheckPermission(workspaceID, userID uint, isSuperAdmin bool) (string, error) {
+func (r *repository) CheckPermission(workspaceID, userID string, isSuperAdmin bool) (string, error) {
 	// Super admin has owner-level access everywhere
 	if isSuperAdmin {
 		return RoleOwner, nil
@@ -161,7 +161,7 @@ func (r *repository) CheckPermission(workspaceID, userID uint, isSuperAdmin bool
 
 // HasPermission checks if a user has at least the required role level
 // Super admins always have permission
-func (r *repository) HasPermission(workspaceID, userID uint, requiredRole string, isSuperAdmin bool) (bool, error) {
+func (r *repository) HasPermission(workspaceID, userID string, requiredRole string, isSuperAdmin bool) (bool, error) {
 	// Super admin bypasses all permission checks
 	if isSuperAdmin {
 		return true, nil

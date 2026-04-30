@@ -24,7 +24,7 @@ type Repository interface {
 	GetBySlug(ctx context.Context, slug string) (*Project, error)
 	Update(ctx context.Context, project *Project) error
 	Delete(ctx context.Context, id string) error
-	List(ctx context.Context, userID uint, offset, limit int) ([]*Project, int64, error)
+	List(ctx context.Context, userID string, offset, limit int) ([]*Project, int64, error)
 	GetStats(ctx context.Context, projectID string) (*ProjectStats, error)
 	CreateCLIToken(ctx context.Context, token *ProjectCLIToken, tokenHash string) error
 	GetCLITokenByHash(ctx context.Context, tokenHash string) (*ProjectCLIToken, error)
@@ -84,7 +84,7 @@ func (r *repository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&ProjectPO{}, id).Error
 }
 
-func (r *repository) List(ctx context.Context, userID uint, offset, limit int) ([]*Project, int64, error) {
+func (r *repository) List(ctx context.Context, userID string, offset, limit int) ([]*Project, int64, error) {
 	var poList []*ProjectPO
 	var total int64
 

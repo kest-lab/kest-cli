@@ -5,9 +5,9 @@ export type ProjectMemberRole = 'owner' | 'admin' | 'write' | 'read';
 export type AssignableProjectMemberRole = 'admin' | 'write' | 'read';
 
 export interface ProjectMember {
-  id: number;
-  project_id: number;
-  user_id: number;
+  id: string;
+  project_id: string;
+  user_id: string;
   username: string;
   email: string;
   role: ProjectMemberRole;
@@ -16,7 +16,7 @@ export interface ProjectMember {
 }
 
 export interface CreateProjectMemberRequest {
-  user_id: number;
+  user_id: string;
   role: AssignableProjectMemberRole;
 }
 
@@ -24,7 +24,11 @@ export interface UpdateProjectMemberRequest {
   role: AssignableProjectMemberRole;
 }
 
-export const PROJECT_MEMBER_ASSIGNABLE_ROLES: AssignableProjectMemberRole[] = ['admin', 'write', 'read'];
+export const PROJECT_MEMBER_ASSIGNABLE_ROLES: AssignableProjectMemberRole[] = [
+  'admin',
+  'write',
+  'read',
+];
 export const PROJECT_MEMBER_WRITE_ROLES: ProjectMemberRole[] = ['write', 'admin', 'owner'];
 export const PROJECT_MEMBER_MANAGE_ROLES: ProjectMemberRole[] = ['admin', 'owner'];
 
@@ -51,13 +55,13 @@ export const canManageProjectMembers = (role?: ProjectMemberRole) =>
 
 export const isProtectedProjectMember = (
   member: Pick<ProjectMember, 'role' | 'user_id'>,
-  currentUserId?: number
+  currentUserId?: string
 ) => member.role === 'owner' || (currentUserId !== undefined && member.user_id === currentUserId);
 
 export const canEditProjectMember = (
   member: Pick<ProjectMember, 'role' | 'user_id'>,
   currentUserRole?: ProjectMemberRole,
-  currentUserId?: number
+  currentUserId?: string
 ) => canManageProjectMembers(currentUserRole) && !isProtectedProjectMember(member, currentUserId);
 
 export const canRemoveProjectMember = canEditProjectMember;
@@ -80,5 +84,5 @@ export const sortProjectMembers = <T extends Pick<ProjectMember, 'role' | 'usern
       return usernameDiff;
     }
 
-    return left.user_id - right.user_id;
+    return left.user_id.localeCompare(right.user_id);
   });

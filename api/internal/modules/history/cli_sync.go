@@ -32,7 +32,7 @@ type CLIHistorySyncResult struct {
 	Errors  []string
 }
 
-func (h *Handler) SyncHistoryFromCLI(ctx context.Context, projectID string, createdBy uint, req *project.CLIHistorySyncRequest) (*project.CLIHistorySyncResponseBody, error) {
+func (h *Handler) SyncHistoryFromCLI(ctx context.Context, projectID string, createdBy string, req *project.CLIHistorySyncRequest) (*project.CLIHistorySyncResponseBody, error) {
 	input := &CLIHistorySyncInput{
 		Source:   req.Source,
 		Metadata: req.Metadata,

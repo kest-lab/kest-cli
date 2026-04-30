@@ -28,7 +28,7 @@ type Service interface {
 	CreateInvitation(
 		ctx context.Context,
 		projectID string,
-		createdBy uint,
+		createdBy string,
 		req *CreateProjectInvitationRequest,
 	) (*ProjectInvitationResponse, error)
 	ListInvitations(ctx context.Context, projectID string) ([]*ProjectInvitationResponse, error)
@@ -40,12 +40,12 @@ type Service interface {
 	AcceptInvitation(
 		ctx context.Context,
 		slug string,
-		userID uint,
+		userID string,
 	) (*AcceptProjectInvitationResponse, error)
 	RejectInvitation(
 		ctx context.Context,
 		slug string,
-		userID uint,
+		userID string,
 	) (*RejectProjectInvitationResponse, error)
 }
 
@@ -60,7 +60,7 @@ func NewService(repo Repository) Service {
 func (s *service) CreateInvitation(
 	ctx context.Context,
 	projectID string,
-	createdBy uint,
+	createdBy string,
 	req *CreateProjectInvitationRequest,
 ) (*ProjectInvitationResponse, error) {
 	if req == nil {
@@ -173,7 +173,7 @@ func (s *service) GetInvitationDetail(
 func (s *service) AcceptInvitation(
 	ctx context.Context,
 	slug string,
-	userID uint,
+	userID string,
 ) (*AcceptProjectInvitationResponse, error) {
 	invitation, err := s.repo.GetInvitationBySlug(ctx, strings.TrimSpace(slug))
 	if err != nil {
@@ -205,7 +205,7 @@ func (s *service) AcceptInvitation(
 func (s *service) RejectInvitation(
 	ctx context.Context,
 	slug string,
-	_ uint,
+	_ string,
 ) (*RejectProjectInvitationResponse, error) {
 	invitation, err := s.repo.GetInvitationBySlug(ctx, strings.TrimSpace(slug))
 	if err != nil {

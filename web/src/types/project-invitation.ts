@@ -4,8 +4,8 @@ export type ProjectInvitationRole = AssignableProjectMemberRole;
 export type ProjectInvitationStatus = 'active' | 'expired' | 'revoked' | 'used_up';
 
 export interface ProjectInvitation {
-  id: number;
-  project_id: number;
+  id: string;
+  project_id: string;
   token_prefix: string;
   slug: string;
   role: ProjectInvitationRole;
@@ -16,7 +16,7 @@ export interface ProjectInvitation {
   remaining_uses: number | null;
   expires_at: string | null;
   last_used_at: string | null;
-  created_by: number;
+  created_by: string;
   created_at: string;
   updated_at: string;
 }
@@ -28,7 +28,7 @@ export interface CreateProjectInvitationRequest {
 }
 
 export interface PublicProjectInvitation {
-  project_id: number;
+  project_id: string;
   project_name: string;
   project_slug: string;
   role: ProjectInvitationRole;
@@ -39,9 +39,9 @@ export interface PublicProjectInvitation {
 }
 
 export interface AcceptProjectInvitationResponse {
-  project_id: number;
+  project_id: string;
   member: {
-    user_id: number;
+    user_id: string;
     role: ProjectInvitationRole;
   };
   redirect_to: string;

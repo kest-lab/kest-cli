@@ -4,12 +4,12 @@ import "time"
 
 // APISpecSharePO stores the published public snapshot for an API specification.
 type APISpecSharePO struct {
-	ID string   `gorm:"primaryKey"`
-	ProjectID string   `gorm:"index;not null"`
-	APISpecID string   `gorm:"not null;uniqueIndex"`
+	ID        string `gorm:"primaryKey"`
+	ProjectID string `gorm:"index;not null"`
+	APISpecID string `gorm:"not null;uniqueIndex"`
 	Slug      string `gorm:"size:64;not null;uniqueIndex"`
 	Snapshot  string `gorm:"type:text;not null"`
-	CreatedBy uint   `gorm:"not null"`
+	CreatedBy string `gorm:"not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

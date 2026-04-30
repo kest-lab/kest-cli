@@ -8,6 +8,7 @@ import (
 	"github.com/kest-labs/kest/api/internal/contracts"
 	"github.com/kest-labs/kest/api/internal/modules/member"
 	"github.com/kest-labs/kest/api/pkg/handler"
+	idpkg "github.com/kest-labs/kest/api/pkg/id"
 	"github.com/kest-labs/kest/api/pkg/response"
 )
 
@@ -275,24 +276,15 @@ func (h *Handler) SyncHistoryFromCLI(c *gin.Context) {
 	response.Success(c, result)
 }
 
-func getCLITokenCreatedBy(c *gin.Context) (uint, bool) {
+func getCLITokenCreatedBy(c *gin.Context) (string, bool) {
 	value, exists := c.Get("cliTokenCreatedBy")
 	if !exists {
-		return 0, false
+		return "", false
 	}
 
-	switch typed := value.(type) {
-	case uint:
-		return typed, true
-	case int:
-		return uint(typed), true
-	case int64:
-		return uint(typed), true
-	case uint64:
-		return uint(typed), true
-	case float64:
-		return uint(typed), true
-	default:
-		return 0, false
+	createdBy, err := idpkg.Normalize(value)
+	if err != nil {
+		return "", false
 	}
+	return createdBy, true
 }

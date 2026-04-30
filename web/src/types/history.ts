@@ -2,11 +2,11 @@
 // 作用：统一约束项目历史记录列表、详情和查询参数的数据结构。
 
 export interface ProjectHistory {
-  id: number | string;
+  id: string;
   entity_type: string;
-  entity_id: number | string;
-  project_id: number | string;
-  user_id: number;
+  entity_id: string;
+  project_id: string;
+  user_id: string;
   source?: string;
   source_event_id?: string;
   action: string;
@@ -18,7 +18,7 @@ export interface ProjectHistory {
 
 export interface CreateHistoryRequest {
   entity_type: string;
-  entity_id: number | string;
+  entity_id: string;
   action: string;
   data: Record<string, unknown>;
   diff?: Record<string, unknown>;
@@ -33,11 +33,11 @@ export interface HistoryListMeta {
 }
 
 export interface HistoryListParams {
-  projectId: number | string;
+  projectId: string;
   page?: number;
   pageSize?: number;
   entityType?: string;
-  entityId?: number | string;
+  entityId?: string;
 }
 
 export interface HistoryListResponse {

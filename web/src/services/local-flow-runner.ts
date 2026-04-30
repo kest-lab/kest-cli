@@ -1,12 +1,7 @@
 import { apiExternalBaseUrl } from '@/config/api';
 import { localRunnerService } from '@/services/local-runner';
 import type { LocalRunnerExecuteRequest } from '@/services/local-runner';
-import type {
-  FlowRun,
-  FlowRunStatus,
-  FlowStepResult,
-  FlowVariableMappingRule,
-} from '@/types/flow';
+import type { FlowRun, FlowRunStatus, FlowStepResult, FlowVariableMappingRule } from '@/types/flow';
 import type { RunRequestResponse } from '@/types/request';
 
 const TEMPLATE_PATTERN = /\{\{([^}]+)\}\}/g;
@@ -23,7 +18,7 @@ type LocalFlowAssertResult = {
 };
 
 export type LocalFlowStepDefinition = {
-  id: number;
+  id: string;
   name: string;
   sort_order: number;
   method: string;
@@ -35,22 +30,22 @@ export type LocalFlowStepDefinition = {
 };
 
 export type LocalFlowEdgeDefinition = {
-  source_step_id: number;
-  target_step_id: number;
+  source_step_id: string;
+  target_step_id: string;
   mappings: FlowVariableMappingRule[];
 };
 
 export type LocalFlowRunStepEvent = {
-  run_id: number;
-  step_id: number;
+  run_id: string;
+  step_id: string;
   step_name: string;
   status: FlowRunStatus;
   data: FlowStepResult;
 };
 
 export type LocalFlowRunRequest = {
-  flowId: number;
-  runId: number;
+  flowId: string;
+  runId: string;
   steps: LocalFlowStepDefinition[];
   edges: LocalFlowEdgeDefinition[];
   baseUrl?: string;
@@ -58,9 +53,7 @@ export type LocalFlowRunRequest = {
   onStepEvent?: (event: LocalFlowRunStepEvent) => void;
 };
 
-type LocalFlowExecuteRequest = (
-  payload: LocalRunnerExecuteRequest
-) => Promise<RunRequestResponse>;
+type LocalFlowExecuteRequest = (payload: LocalRunnerExecuteRequest) => Promise<RunRequestResponse>;
 
 const toTemplateValue = (value: unknown) => {
   if (value === null || value === undefined) {
@@ -97,18 +90,14 @@ const resolveTemplateValue = (value: string, variables: Record<string, unknown>)
 const collectUnresolvedVariables = (...values: string[]) =>
   Array.from(
     new Set(
-      values.flatMap((value) =>
-        Array.from(value.matchAll(TEMPLATE_PATTERN)).map((match) => match[1].trim())
+      values.flatMap(value =>
+        Array.from(value.matchAll(TEMPLATE_PATTERN)).map(match => match[1].trim())
       )
     )
   ).sort();
 
 const normalizeJsonPath = (value: string) =>
-  value
-    .replace(INDEX_SYNTAX_PATTERN, '.$1')
-    .replaceAll('..', '.')
-    .replace(/^\./, '')
-    .trim();
+  value.replace(INDEX_SYNTAX_PATTERN, '.$1').replaceAll('..', '.').replace(/^\./, '').trim();
 
 const getJsonPathValue = (input: unknown, rawPath: string): unknown => {
   if (!rawPath.trim()) {
@@ -221,9 +210,9 @@ const createFlowStepResult = ({
   variablesCaptured = '',
   errorMessage = '',
 }: {
-  id: number;
-  runId: number;
-  stepId: number;
+  id: string;
+  runId: string;
+  stepId: string;
   status: FlowRunStatus;
   request?: string;
   response?: string;
@@ -291,8 +280,8 @@ const buildExecutableUrl = (rawUrl: string, baseUrl?: string) => {
 const parseCaptureLines = (captures: string) =>
   captures
     .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#'));
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith('#'));
 
 const captureValue = (
   rawCapture: string,
@@ -364,14 +353,22 @@ const evaluateAssert = ({
   if (containsIndex !== -1) {
     const key = assertion.slice(0, containsIndex).trim();
     const expected = resolveTemplateValue(
-      assertion.slice(containsIndex + ' contains '.length).trim().replace(/^["']|["']$/g, ''),
+      assertion
+        .slice(containsIndex + ' contains '.length)
+        .trim()
+        .replace(/^["']|["']$/g, ''),
       variables
     );
-    const actual = key === 'status' ? status : key === 'duration' ? durationMs : getJsonPathValue(responseBody, key);
+    const actual =
+      key === 'status'
+        ? status
+        : key === 'duration'
+          ? durationMs
+          : getJsonPathValue(responseBody, key);
     result.expected = expected;
     result.actual = stringifyResultValue(actual);
     result.passed = Array.isArray(actual)
-      ? actual.some((item) => stringifyResultValue(item) === expected)
+      ? actual.some(item => stringifyResultValue(item) === expected)
       : stringifyResultValue(actual).includes(expected);
     if (!result.passed) {
       result.message = `${key} does not contain "${expected}"`;
@@ -383,10 +380,18 @@ const evaluateAssert = ({
   if (startsWithIndex !== -1) {
     const key = assertion.slice(0, startsWithIndex).trim();
     const expected = resolveTemplateValue(
-      assertion.slice(startsWithIndex + ' startsWith '.length).trim().replace(/^["']|["']$/g, ''),
+      assertion
+        .slice(startsWithIndex + ' startsWith '.length)
+        .trim()
+        .replace(/^["']|["']$/g, ''),
       variables
     );
-    const actual = key === 'status' ? status : key === 'duration' ? durationMs : getJsonPathValue(responseBody, key);
+    const actual =
+      key === 'status'
+        ? status
+        : key === 'duration'
+          ? durationMs
+          : getJsonPathValue(responseBody, key);
     result.expected = expected;
     result.actual = stringifyResultValue(actual);
     result.passed = stringifyResultValue(actual).startsWith(expected);
@@ -400,10 +405,18 @@ const evaluateAssert = ({
   if (endsWithIndex !== -1) {
     const key = assertion.slice(0, endsWithIndex).trim();
     const expected = resolveTemplateValue(
-      assertion.slice(endsWithIndex + ' endsWith '.length).trim().replace(/^["']|["']$/g, ''),
+      assertion
+        .slice(endsWithIndex + ' endsWith '.length)
+        .trim()
+        .replace(/^["']|["']$/g, ''),
       variables
     );
-    const actual = key === 'status' ? status : key === 'duration' ? durationMs : getJsonPathValue(responseBody, key);
+    const actual =
+      key === 'status'
+        ? status
+        : key === 'duration'
+          ? durationMs
+          : getJsonPathValue(responseBody, key);
     result.expected = expected;
     result.actual = stringifyResultValue(actual);
     result.passed = stringifyResultValue(actual).endsWith(expected);
@@ -541,12 +554,14 @@ const topologicalSortSteps = (
   edges: LocalFlowEdgeDefinition[]
 ) => {
   if (edges.length === 0) {
-    return [...steps].sort((left, right) => left.sort_order - right.sort_order || left.id - right.id);
+    return [...steps].sort(
+      (left, right) => left.sort_order - right.sort_order || left.id.localeCompare(right.id)
+    );
   }
 
-  const adjacency = new Map<number, number[]>();
-  const inDegree = new Map<number, number>();
-  const stepById = new Map(steps.map((step) => [step.id, step]));
+  const adjacency = new Map<string, string[]>();
+  const inDegree = new Map<string, number>();
+  const stepById = new Map(steps.map(step => [step.id, step]));
 
   for (const step of steps) {
     adjacency.set(step.id, []);
@@ -559,9 +574,9 @@ const topologicalSortSteps = (
   }
 
   const queue = steps
-    .filter((step) => (inDegree.get(step.id) ?? 0) === 0)
-    .sort((left, right) => left.sort_order - right.sort_order || left.id - right.id)
-    .map((step) => step.id);
+    .filter(step => (inDegree.get(step.id) ?? 0) === 0)
+    .sort((left, right) => left.sort_order - right.sort_order || left.id.localeCompare(right.id))
+    .map(step => step.id);
 
   const ordered: LocalFlowStepDefinition[] = [];
 
@@ -576,9 +591,9 @@ const topologicalSortSteps = (
       const leftStep = stepById.get(left);
       const rightStep = stepById.get(right);
       if (!leftStep || !rightStep) {
-        return left - right;
+        return left.localeCompare(right);
       }
-      return leftStep.sort_order - rightStep.sort_order || leftStep.id - rightStep.id;
+      return leftStep.sort_order - rightStep.sort_order || leftStep.id.localeCompare(rightStep.id);
     });
 
     for (const next of nextSteps) {
@@ -594,10 +609,10 @@ const topologicalSortSteps = (
     return ordered;
   }
 
-  const reached = new Set(ordered.map((step) => step.id));
+  const reached = new Set(ordered.map(step => step.id));
   const disconnected = steps
-    .filter((step) => !reached.has(step.id))
-    .sort((left, right) => left.sort_order - right.sort_order || left.id - right.id);
+    .filter(step => !reached.has(step.id))
+    .sort((left, right) => left.sort_order - right.sort_order || left.id.localeCompare(right.id));
 
   return [...ordered, ...disconnected];
 };
@@ -611,8 +626,8 @@ const executeLocalFlowStep = async ({
   baseUrl,
 }: {
   step: LocalFlowStepDefinition;
-  runId: number;
-  stepResultId: number;
+  runId: string;
+  stepResultId: string;
   variables: Record<string, unknown>;
   executeRequest: LocalFlowExecuteRequest;
   baseUrl?: string;
@@ -674,15 +689,15 @@ const executeLocalFlowStep = async ({
 
   const parsedBody = parseJsonBody(response.body);
   const capturedEntries = parseCaptureLines(step.captures)
-    .map((capture) => captureValue(capture, parsedBody, variables))
+    .map(capture => captureValue(capture, parsedBody, variables))
     .filter(Boolean) as Array<readonly [string, unknown]>;
   const captured = Object.fromEntries(capturedEntries);
 
   const assertResults = step.asserts
     .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#'))
-    .map((assertion) =>
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith('#'))
+    .map(assertion =>
       evaluateAssert({
         assertion,
         status: response.status,
@@ -692,7 +707,7 @@ const executeLocalFlowStep = async ({
       })
     );
 
-  const failedAssertions = assertResults.filter((result) => !result.passed);
+  const failedAssertions = assertResults.filter(result => !result.passed);
 
   return createFlowStepResult({
     id: stepResultId,
@@ -708,7 +723,7 @@ const executeLocalFlowStep = async ({
     assertResults: JSON.stringify(assertResults),
     durationMs: response.time,
     variablesCaptured: JSON.stringify(captured),
-    errorMessage: failedAssertions.map((result) => result.message || result.expression).join('; '),
+    errorMessage: failedAssertions.map(result => result.message || result.expression).join('; '),
   });
 };
 
@@ -720,7 +735,7 @@ export const runLocalFlow = async (
   const stepResults: FlowStepResult[] = [];
   const orderedSteps = topologicalSortSteps(request.steps, request.edges);
   const variables: Record<string, unknown> = { ...(request.variables ?? {}) };
-  const capturedByStep = new Map<number, Record<string, unknown>>();
+  const capturedByStep = new Map<string, Record<string, unknown>>();
 
   for (const [index, step] of orderedSteps.entries()) {
     const executionVariables = { ...variables };
@@ -749,7 +764,7 @@ export const runLocalFlow = async (
       step_name: step.name,
       status: 'running',
       data: createFlowStepResult({
-        id: index + 1,
+        id: String(index + 1),
         runId: request.runId,
         stepId: step.id,
         status: 'running',
@@ -759,7 +774,7 @@ export const runLocalFlow = async (
     const stepResult = await executeLocalFlowStep({
       step,
       runId: request.runId,
-      stepResultId: index + 1,
+      stepResultId: String(index + 1),
       variables: executionVariables,
       executeRequest,
       baseUrl: request.baseUrl,
@@ -790,7 +805,7 @@ export const runLocalFlow = async (
 
   const finishedAt = new Date();
   const status: FlowRunStatus =
-    stepResults.length === 0 || stepResults.some((result) => result.status === 'failed')
+    stepResults.length === 0 || stepResults.some(result => result.status === 'failed')
       ? 'failed'
       : 'passed';
 
@@ -798,7 +813,7 @@ export const runLocalFlow = async (
     id: request.runId,
     flow_id: request.flowId,
     status,
-    triggered_by: 0,
+    triggered_by: '',
     started_at: startedAt.toISOString(),
     finished_at: finishedAt.toISOString(),
     created_at: startedAt.toISOString(),

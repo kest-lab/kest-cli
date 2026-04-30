@@ -183,7 +183,7 @@ export interface ApiSpecShare {
   project_id: number | string;
   api_spec_id: number | string;
   slug: string;
-  created_by: number;
+  created_by: string;
   created_at: string;
   updated_at: string;
 }
@@ -277,7 +277,7 @@ export interface AcceptApiSpecAIDraftRequest {
 export interface ApiSpecAIDraft {
   id: number | string;
   project_id: number | string;
-  created_by: number;
+  created_by: string;
   accepted_spec_id?: number | string | null;
   status: string;
   intent: string;

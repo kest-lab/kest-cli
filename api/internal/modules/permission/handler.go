@@ -2,10 +2,10 @@ package permission
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kest-labs/kest/api/internal/contracts"
+	"github.com/kest-labs/kest/api/pkg/handler"
 	"github.com/kest-labs/kest/api/pkg/response"
 )
 
@@ -53,17 +53,16 @@ func (h *Handler) CreateRole(c *gin.Context) {
 // @Summary Get a role
 // @Tags Roles
 // @Produce json
-// @Param id path int true "Role ID"
+// @Param id path string true "Role ID"
 // @Success 200 {object} RoleResponse
 // @Router /api/v1/roles/{id} [get]
 func (h *Handler) GetRole(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid role ID", err)
+	id, ok := handler.ParseID(c, "id")
+	if !ok {
 		return
 	}
 
-	role, err := h.service.GetRole(c.Request.Context(), uint(id))
+	role, err := h.service.GetRole(c.Request.Context(), id)
 	if err != nil {
 		response.NotFound(c, "Role not found", err)
 		return
@@ -93,14 +92,13 @@ func (h *Handler) ListRoles(c *gin.Context) {
 // @Tags Roles
 // @Accept json
 // @Produce json
-// @Param id path int true "Role ID"
+// @Param id path string true "Role ID"
 // @Param request body UpdateRoleRequest true "Role details"
 // @Success 200 {object} RoleResponse
 // @Router /api/v1/roles/{id} [put]
 func (h *Handler) UpdateRole(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid role ID", err)
+	id, ok := handler.ParseID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -110,7 +108,7 @@ func (h *Handler) UpdateRole(c *gin.Context) {
 		return
 	}
 
-	role, err := h.service.UpdateRole(c.Request.Context(), uint(id), &req)
+	role, err := h.service.UpdateRole(c.Request.Context(), id, &req)
 	if err != nil {
 		response.InternalServerError(c, "Failed to update role", err)
 		return
@@ -122,17 +120,16 @@ func (h *Handler) UpdateRole(c *gin.Context) {
 // DeleteRole deletes a role
 // @Summary Delete a role
 // @Tags Roles
-// @Param id path int true "Role ID"
+// @Param id path string true "Role ID"
 // @Success 204
 // @Router /api/v1/roles/{id} [delete]
 func (h *Handler) DeleteRole(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid role ID", err)
+	id, ok := handler.ParseID(c, "id")
+	if !ok {
 		return
 	}
 
-	if err := h.service.DeleteRole(c.Request.Context(), uint(id)); err != nil {
+	if err := h.service.DeleteRole(c.Request.Context(), id); err != nil {
 		response.InternalServerError(c, "Failed to delete role", err)
 		return
 	}
@@ -154,7 +151,7 @@ func (h *Handler) AssignRole(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.AssignRoleToUser(c.Request.Context(), req.UserID, req.RoleID); err != nil {
+	if err := h.service.AssignRoleToUser(c.Request.Context(), req.UserID.String(), req.RoleID.String()); err != nil {
 		response.InternalServerError(c, "Failed to assign role", err)
 		return
 	}
@@ -176,7 +173,7 @@ func (h *Handler) RemoveRole(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.RemoveRoleFromUser(c.Request.Context(), req.UserID, req.RoleID); err != nil {
+	if err := h.service.RemoveRoleFromUser(c.Request.Context(), req.UserID.String(), req.RoleID.String()); err != nil {
 		response.InternalServerError(c, "Failed to remove role", err)
 		return
 	}
@@ -188,24 +185,23 @@ func (h *Handler) RemoveRole(c *gin.Context) {
 // @Summary Get user roles
 // @Tags Roles
 // @Produce json
-// @Param id path int true "User ID"
+// @Param id path string true "User ID"
 // @Success 200 {object} UserRolesResponse
 // @Router /api/v1/users/{id}/roles [get]
 func (h *Handler) GetUserRoles(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID", err)
+	userID, ok := handler.ParseID(c, "id")
+	if !ok {
 		return
 	}
 
-	roles, err := h.service.GetUserRoles(c.Request.Context(), uint(userID))
+	roles, err := h.service.GetUserRoles(c.Request.Context(), userID)
 	if err != nil {
 		response.InternalServerError(c, "Failed to get user roles", err)
 		return
 	}
 
 	c.JSON(http.StatusOK, UserRolesResponse{
-		UserID: uint(userID),
+		UserID: userID,
 		Roles:  roles,
 	})
 }

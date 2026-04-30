@@ -143,7 +143,7 @@ wire:
 docs:
 	@echo "Generating API documentation..."
 	@which swag > /dev/null || (echo "Installing swag..." && go install github.com/swaggo/swag/cmd/swag@latest)
-	swag init -g cmd/server/main.go -o docs/swagger
+	swag init -g cmd/api/main.go -o docs/swagger
 
 # Generate mocks
 mock:

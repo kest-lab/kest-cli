@@ -13,7 +13,7 @@ type HistoryPO struct {
 	EntityType    string         `gorm:"size:50;not null;index" json:"entity_type"` // e.g., "collection", "request"
 	EntityID      string         `gorm:"not null;index" json:"entity_id"`
 	ProjectID     string         `gorm:"not null;index;uniqueIndex:idx_history_project_source_event,priority:1" json:"project_id"`
-	UserID        uint           `gorm:"not null" json:"user_id"` // who made the change
+	UserID        string         `gorm:"not null" json:"user_id"` // who made the change
 	Source        string         `gorm:"size:32;not null;default:web;index;uniqueIndex:idx_history_project_source_event,priority:2" json:"source"`
 	SourceEventID string         `gorm:"size:191;not null;index;uniqueIndex:idx_history_project_source_event,priority:3" json:"source_event_id"`
 	Action        string         `gorm:"size:20;not null" json:"action"` // "create", "update", "delete", "move"
@@ -35,7 +35,7 @@ type History struct {
 	EntityType    string                 `json:"entity_type"`
 	EntityID      string                 `json:"entity_id"`
 	ProjectID     string                 `json:"project_id"`
-	UserID        uint                   `json:"user_id"`
+	UserID        string                 `json:"user_id"`
 	Source        string                 `json:"source"`
 	SourceEventID string                 `json:"source_event_id"`
 	Action        string                 `json:"action"`

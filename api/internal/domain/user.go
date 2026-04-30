@@ -11,7 +11,7 @@ import (
 // For most cases, just use response.Success(c, user) directly.
 // The Password field is automatically excluded from JSON output.
 type User struct {
-	ID           uint       `json:"id"`
+	ID           string     `json:"id"`
 	Username     string     `json:"username"`
 	Email        string     `json:"email"`
 	Password     string     `json:"-"` // Always hidden in JSON output
@@ -36,8 +36,8 @@ func (u *User) IsActive() bool {
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	Update(ctx context.Context, user *User) error
-	Delete(ctx context.Context, id uint) error
-	FindByID(ctx context.Context, id uint) (*User, error)
+	Delete(ctx context.Context, id string) error
+	FindByID(ctx context.Context, id string) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByUsername(ctx context.Context, username string) (*User, error)
 	FindAll(ctx context.Context, page, pageSize int) ([]*User, int64, error)

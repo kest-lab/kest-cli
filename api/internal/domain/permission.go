@@ -7,7 +7,7 @@ import (
 
 // Role represents a role in the RBAC system
 type Role struct {
-	ID          uint
+	ID          string
 	Name        string
 	DisplayName string
 	Description string
@@ -17,7 +17,7 @@ type Role struct {
 
 // Permission represents a permission in the RBAC system
 type Permission struct {
-	ID          uint
+	ID          string
 	Name        string
 	DisplayName string
 	Description string
@@ -27,15 +27,15 @@ type Permission struct {
 
 // UserRole represents the association between a user and a role
 type UserRole struct {
-	UserID    uint
-	RoleID    uint
+	UserID    string
+	RoleID    string
 	CreatedAt time.Time
 }
 
 // RolePermission represents the association between a role and a permission
 type RolePermission struct {
-	RoleID       uint
-	PermissionID uint
+	RoleID       string
+	PermissionID string
 	CreatedAt    time.Time
 }
 
@@ -43,39 +43,39 @@ type RolePermission struct {
 type RoleRepository interface {
 	Create(ctx context.Context, role *Role) error
 	Update(ctx context.Context, role *Role) error
-	Delete(ctx context.Context, id uint) error
-	FindByID(ctx context.Context, id uint) (*Role, error)
+	Delete(ctx context.Context, id string) error
+	FindByID(ctx context.Context, id string) (*Role, error)
 	FindByName(ctx context.Context, name string) (*Role, error)
 	FindAll(ctx context.Context) ([]*Role, error)
-	FindByUserID(ctx context.Context, userID uint) ([]*Role, error)
+	FindByUserID(ctx context.Context, userID string) ([]*Role, error)
 }
 
 // PermissionRepository defines the contract for permission data operations
 type PermissionRepository interface {
 	Create(ctx context.Context, permission *Permission) error
 	Update(ctx context.Context, permission *Permission) error
-	Delete(ctx context.Context, id uint) error
-	FindByID(ctx context.Context, id uint) (*Permission, error)
+	Delete(ctx context.Context, id string) error
+	FindByID(ctx context.Context, id string) (*Permission, error)
 	FindByName(ctx context.Context, name string) (*Permission, error)
 	FindAll(ctx context.Context) ([]*Permission, error)
-	FindByRoleID(ctx context.Context, roleID uint) ([]*Permission, error)
-	FindByUserID(ctx context.Context, userID uint) ([]*Permission, error)
+	FindByRoleID(ctx context.Context, roleID string) ([]*Permission, error)
+	FindByUserID(ctx context.Context, userID string) ([]*Permission, error)
 }
 
 // UserRoleRepository defines the contract for user-role association operations
 type UserRoleRepository interface {
-	Assign(ctx context.Context, userID, roleID uint) error
-	Revoke(ctx context.Context, userID, roleID uint) error
-	HasRole(ctx context.Context, userID, roleID uint) (bool, error)
-	GetUserRoles(ctx context.Context, userID uint) ([]*Role, error)
+	Assign(ctx context.Context, userID, roleID string) error
+	Revoke(ctx context.Context, userID, roleID string) error
+	HasRole(ctx context.Context, userID, roleID string) (bool, error)
+	GetUserRoles(ctx context.Context, userID string) ([]*Role, error)
 }
 
 // RolePermissionRepository defines the contract for role-permission association operations
 type RolePermissionRepository interface {
-	Grant(ctx context.Context, roleID, permissionID uint) error
-	Revoke(ctx context.Context, roleID, permissionID uint) error
-	HasPermission(ctx context.Context, roleID, permissionID uint) (bool, error)
-	GetRolePermissions(ctx context.Context, roleID uint) ([]*Permission, error)
+	Grant(ctx context.Context, roleID, permissionID string) error
+	Revoke(ctx context.Context, roleID, permissionID string) error
+	HasPermission(ctx context.Context, roleID, permissionID string) (bool, error)
+	GetRolePermissions(ctx context.Context, roleID string) ([]*Permission, error)
 }
 
 // AuthorizationService handles authorization logic
@@ -99,12 +99,12 @@ func NewAuthorizationService(
 }
 
 // HasRole checks if a user has a specific role
-func (s *AuthorizationService) HasRole(ctx context.Context, userID, roleID uint) (bool, error) {
+func (s *AuthorizationService) HasRole(ctx context.Context, userID, roleID string) (bool, error) {
 	return s.userRoleRepo.HasRole(ctx, userID, roleID)
 }
 
 // HasPermission checks if a user has a specific permission (through any of their roles)
-func (s *AuthorizationService) HasPermission(ctx context.Context, userID uint, permissionName string) (bool, error) {
+func (s *AuthorizationService) HasPermission(ctx context.Context, userID string, permissionName string) (bool, error) {
 	// Get user's permissions
 	permissions, err := s.permissionRepo.FindByUserID(ctx, userID)
 	if err != nil {
@@ -120,7 +120,7 @@ func (s *AuthorizationService) HasPermission(ctx context.Context, userID uint, p
 }
 
 // HasAnyPermission checks if a user has any of the specified permissions
-func (s *AuthorizationService) HasAnyPermission(ctx context.Context, userID uint, permissionNames ...string) (bool, error) {
+func (s *AuthorizationService) HasAnyPermission(ctx context.Context, userID string, permissionNames ...string) (bool, error) {
 	permissions, err := s.permissionRepo.FindByUserID(ctx, userID)
 	if err != nil {
 		return false, err
@@ -140,7 +140,7 @@ func (s *AuthorizationService) HasAnyPermission(ctx context.Context, userID uint
 }
 
 // HasAllPermissions checks if a user has all of the specified permissions
-func (s *AuthorizationService) HasAllPermissions(ctx context.Context, userID uint, permissionNames ...string) (bool, error) {
+func (s *AuthorizationService) HasAllPermissions(ctx context.Context, userID string, permissionNames ...string) (bool, error) {
 	permissions, err := s.permissionRepo.FindByUserID(ctx, userID)
 	if err != nil {
 		return false, err

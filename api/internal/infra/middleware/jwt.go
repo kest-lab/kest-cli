@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/kest-labs/kest/api/internal/infra/jwt"
 	"github.com/kest-labs/kest/api/pkg/response"
-	"github.com/gin-gonic/gin"
 )
 
 // jwtService holds the JWT service instance for middleware use.
@@ -53,7 +53,7 @@ func JWTAuth() gin.HandlerFunc {
 		}
 
 		// Store user information in context
-		c.Set("userID", claims.UserID)
+		c.Set("userID", claims.UserID.String())
 		c.Set("username", claims.Username)
 
 		c.Next()
@@ -85,7 +85,7 @@ func JWTAuthWithService(svc *jwt.Service) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("userID", claims.UserID)
+		c.Set("userID", claims.UserID.String())
 		c.Set("username", claims.Username)
 
 		c.Next()

@@ -34,7 +34,7 @@ export interface ProjectTestCase {
   post_script?: string;
   assertions?: TestCaseAssertion[];
   extract_vars?: ExtractVariable[];
-  created_by: number;
+  created_by: string;
   created_at: string;
   updated_at: string;
 }

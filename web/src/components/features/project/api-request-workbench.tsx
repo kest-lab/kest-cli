@@ -1,7 +1,15 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -346,10 +354,7 @@ const resolveNextActiveTabId = (
   }
 
   return (
-    nextOpenTabIds[currentIndex] ??
-    nextOpenTabIds[currentIndex - 1] ??
-    nextOpenTabIds[0] ??
-    null
+    nextOpenTabIds[currentIndex] ?? nextOpenTabIds[currentIndex - 1] ?? nextOpenTabIds[0] ?? null
   );
 };
 
@@ -422,7 +427,7 @@ const toAuthorizationValue = (auth?: RequestAuthConfig | null) => {
 
 const toKeyValueRows = (rows: RequestKeyValue[] | undefined) =>
   rows && rows.length > 0
-    ? rows.map((row) => createKeyValueRow(row.key, row.value, row.description ?? ''))
+    ? rows.map(row => createKeyValueRow(row.key, row.value, row.description ?? ''))
     : [createKeyValueRow()];
 
 const toScriptsValue = (request: ProjectRequest) =>
@@ -441,8 +446,7 @@ const toRequestPageTab = (request: ProjectRequest): RequestPageTab => {
     url:
       request.url === PERSISTED_DRAFT_URL_PLACEHOLDER ? DEFAULT_NEW_REQUEST_URL : request.url || '',
     pathParams: request.path_params ?? {},
-    activeSection:
-      method === 'POST' || method === 'PUT' || method === 'PATCH' ? 'body' : 'params',
+    activeSection: method === 'POST' || method === 'PUT' || method === 'PATCH' ? 'body' : 'params',
     paramsRows,
     paramsBulk: rowsToBulkText(paramsRows),
     authorizationMode: toAuthorizationMode(request.auth),
@@ -483,37 +487,41 @@ const createRequestPageTab = (
   authorizationMode: overrides.authorizationMode ?? 'none',
   authorizationValue: overrides.authorizationValue ?? '',
   headersMode: overrides.headersMode ?? 'table',
-  headersRows:
-    overrides.headersRows ??
-    [createKeyValueRow('Accept', 'application/json', copy?.defaultHeaderDescription ?? 'Default header')],
+  headersRows: overrides.headersRows ?? [
+    createKeyValueRow(
+      'Accept',
+      'application/json',
+      copy?.defaultHeaderDescription ?? 'Default header'
+    ),
+  ],
   headersBulk: overrides.headersBulk ?? 'Accept: application/json',
   bodyMode: overrides.bodyMode ?? 'json',
-  bodyContent: overrides.bodyContent ?? (copy?.defaultBodyContent ?? '{\n  "ping": "hello"\n}'),
+  bodyContent: overrides.bodyContent ?? copy?.defaultBodyContent ?? '{\n  "ping": "hello"\n}',
   scripts:
     overrides.scripts ??
-    (copy?.defaultScripts ?? "// Inspect the response here\npm.test('status should be 200', () => true);"),
-  settings:
-    overrides.settings ?? {
-      followRedirects: true,
-      strictTls: true,
-      persistCookies: false,
-    },
+    copy?.defaultScripts ??
+    "// Inspect the response here\npm.test('status should be 200', () => true);",
+  settings: overrides.settings ?? {
+    followRedirects: true,
+    strictTls: true,
+    persistCookies: false,
+  },
   response: overrides.response ?? createEmptyResponse(),
   isSending: overrides.isSending ?? false,
 });
 
 const rowsToBulkText = (rows: KeyValueRow[]) =>
   rows
-    .filter((row) => row.key.trim() || row.value.trim() || row.description.trim())
-    .map((row) => `${row.key}: ${row.value}${row.description ? ` # ${row.description}` : ''}`)
+    .filter(row => row.key.trim() || row.value.trim() || row.description.trim())
+    .map(row => `${row.key}: ${row.value}${row.description ? ` # ${row.description}` : ''}`)
     .join('\n');
 
 const bulkTextToRows = (value: string) => {
   const rows = value
     .split('\n')
-    .map((line) => line.trim())
+    .map(line => line.trim())
     .filter(Boolean)
-    .map((line) => {
+    .map(line => {
       const [pairPart, descriptionPart = ''] = line.split('#');
       const separatorIndex = pairPart.includes(':') ? pairPart.indexOf(':') : pairPart.indexOf('=');
       const key = separatorIndex >= 0 ? pairPart.slice(0, separatorIndex).trim() : pairPart.trim();
@@ -571,20 +579,21 @@ const requestBodyTypeFromMode = (mode: BodyMode, value: string) => {
   }
 };
 
-const toRequestKeyValues = (mode: BulkMode, rows: KeyValueRow[], bulkValue: string): RequestKeyValue[] =>
+const toRequestKeyValues = (
+  mode: BulkMode,
+  rows: KeyValueRow[],
+  bulkValue: string
+): RequestKeyValue[] =>
   (mode === 'bulk' ? bulkTextToRows(bulkValue) : rows)
-    .filter((row) => row.key.trim())
-    .map((row) => ({
+    .filter(row => row.key.trim())
+    .map(row => ({
       key: row.key.trim(),
       value: row.value,
       enabled: true,
       description: row.description.trim() || undefined,
     }));
 
-const toRequestAuthConfig = (
-  mode: AuthorizationMode,
-  value: string
-): RequestAuthConfig | null => {
+const toRequestAuthConfig = (mode: AuthorizationMode, value: string): RequestAuthConfig | null => {
   if (mode === 'none') {
     return null;
   }
@@ -653,8 +662,7 @@ const toResponseDraft = (response: RunRequestResponse): ResponseDraft => ({
   error: null,
 });
 
-const canCaptureResponse = (response: ResponseDraft) =>
-  response.status !== null && !response.error;
+const canCaptureResponse = (response: ResponseDraft) => response.status !== null && !response.error;
 
 const getExampleFormDraft = (requestLabel: string): ExampleFormDraft => ({
   name: requestLabel,
@@ -722,7 +730,7 @@ const maskSecret = (value: string, emptyLabel: string) => {
 const formatExampleKeyValues = (rows: RequestKeyValue[] | undefined, emptyState: string) =>
   rows && rows.length > 0
     ? rows
-        .map((row) => `${row.key}: ${row.value}${row.description ? ` # ${row.description}` : ''}`)
+        .map(row => `${row.key}: ${row.value}${row.description ? ` # ${row.description}` : ''}`)
         .join('\n')
     : emptyState;
 
@@ -792,7 +800,7 @@ const maskHistoryValue = (value: string) => {
 };
 
 const sanitizeHistoryHeaders = (headers: RequestKeyValue[]) =>
-  headers.map((header) => {
+  headers.map(header => {
     const normalizedKey = header.key.trim().toLowerCase();
     return HISTORY_SENSITIVE_HEADER_NAMES.has(normalizedKey)
       ? { ...header, value: maskHistoryValue(header.value) }
@@ -803,7 +811,9 @@ const sanitizeHistoryHeaderMap = (headers: Record<string, string>) =>
   Object.fromEntries(
     Object.entries(headers).map(([key, value]) => [
       key,
-      HISTORY_SENSITIVE_HEADER_NAMES.has(key.trim().toLowerCase()) ? maskHistoryValue(value) : value,
+      HISTORY_SENSITIVE_HEADER_NAMES.has(key.trim().toLowerCase())
+        ? maskHistoryValue(value)
+        : value,
     ])
   );
 
@@ -867,12 +877,14 @@ const buildRequestRunHistoryPayload = ({
   };
 }): CreateHistoryRequest => {
   const requestLabel =
-    request.url === PERSISTED_DRAFT_URL_PLACEHOLDER ? request.name : `${request.method} ${request.url}`;
+    request.url === PERSISTED_DRAFT_URL_PLACEHOLDER
+      ? request.name
+      : `${request.method} ${request.url}`;
   const succeeded = !errorMessage;
 
   return {
     entity_type: 'request',
-    entity_id: request.id,
+    entity_id: String(request.id),
     action: succeeded ? 'run' : 'run_failed',
     message: succeeded
       ? messages.executed(requestLabel, response?.status)
@@ -922,8 +934,7 @@ const applyExampleToTab = (tab: RequestPageTab, example: RequestExample): Reques
     ...tab,
     method,
     url: example.url || '',
-    activeSection:
-      method === 'POST' || method === 'PUT' || method === 'PATCH' ? 'body' : 'params',
+    activeSection: method === 'POST' || method === 'PUT' || method === 'PATCH' ? 'body' : 'params',
     paramsMode: 'table',
     paramsRows,
     paramsBulk: rowsToBulkText(paramsRows),
@@ -937,10 +948,10 @@ const applyExampleToTab = (tab: RequestPageTab, example: RequestExample): Reques
   };
 };
 
-const isEnabledRequestKeyValue = (row: RequestKeyValue) => row.enabled !== false && row.key.trim().length > 0;
+const isEnabledRequestKeyValue = (row: RequestKeyValue) =>
+  row.enabled !== false && row.key.trim().length > 0;
 
-const headersToObject = (headers: Headers) =>
-  Object.fromEntries(Array.from(headers.entries()));
+const headersToObject = (headers: Headers) => Object.fromEntries(Array.from(headers.entries()));
 
 const toEnvironmentVariableValue = (value: unknown) => {
   if (value === null || value === undefined) {
@@ -980,7 +991,9 @@ const resolveTemplateValue = (value: string, variables: Record<string, string>) 
   });
 
 const findUnresolvedTemplateKeys = (value: string) =>
-  Array.from(new Set(Array.from(value.matchAll(REQUEST_TEMPLATE_PATTERN)).map((match) => match[1].trim())));
+  Array.from(
+    new Set(Array.from(value.matchAll(REQUEST_TEMPLATE_PATTERN)).map(match => match[1].trim()))
+  );
 
 const getMissingVariableMessage = (
   keys: string[],
@@ -1040,7 +1053,11 @@ const buildExecutableRequestUrl = (
     applyPathParamsToUrl(request.url, resolvedPathParams),
     variables
   );
-  const missingVariableMessage = getMissingVariableMessage(findUnresolvedTemplateKeys(resolvedUrl), environment, t);
+  const missingVariableMessage = getMissingVariableMessage(
+    findUnresolvedTemplateKeys(resolvedUrl),
+    environment,
+    t
+  );
   if (missingVariableMessage) {
     throw new Error(missingVariableMessage);
   }
@@ -1052,13 +1069,11 @@ const buildExecutableRequestUrl = (
     throw new Error(t('collections.invalidResolvedUrl'));
   }
 
-  request.query_params
-    .filter(isEnabledRequestKeyValue)
-    .forEach((queryParam) => {
-      const key = resolveTemplateValue(queryParam.key.trim(), variables);
-      const value = resolveTemplateValue(queryParam.value, variables);
-      targetUrl.searchParams.append(key, value);
-    });
+  request.query_params.filter(isEnabledRequestKeyValue).forEach(queryParam => {
+    const key = resolveTemplateValue(queryParam.key.trim(), variables);
+    const value = resolveTemplateValue(queryParam.value, variables);
+    targetUrl.searchParams.append(key, value);
+  });
 
   if (request.auth?.type === 'api-key') {
     const apiKeyLocation = request.auth.api_key?.add_to ?? request.auth.api_key?.in;
@@ -1086,20 +1101,28 @@ const buildDirectRequestHeaders = (
   const variables = buildExecutionVariables(environment);
 
   Object.entries(environment?.headers ?? {}).forEach(([key, value]) => {
-    headers.set(resolveTemplateValue(key.trim(), variables), resolveTemplateValue(value, variables));
+    headers.set(
+      resolveTemplateValue(key.trim(), variables),
+      resolveTemplateValue(value, variables)
+    );
   });
 
-  request.headers
-    .filter(isEnabledRequestKeyValue)
-    .forEach((header) => {
-      headers.set(
-        resolveTemplateValue(header.key.trim(), variables),
-        resolveTemplateValue(header.value, variables)
-      );
-    });
+  request.headers.filter(isEnabledRequestKeyValue).forEach(header => {
+    headers.set(
+      resolveTemplateValue(header.key.trim(), variables),
+      resolveTemplateValue(header.value, variables)
+    );
+  });
 
-  if (request.auth?.type === 'bearer' && request.auth.bearer?.token && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${resolveTemplateValue(request.auth.bearer.token, variables)}`);
+  if (
+    request.auth?.type === 'bearer' &&
+    request.auth.bearer?.token &&
+    !headers.has('Authorization')
+  ) {
+    headers.set(
+      'Authorization',
+      `Bearer ${resolveTemplateValue(request.auth.bearer.token, variables)}`
+    );
   }
 
   if (request.auth?.type === 'basic' && request.auth.basic && !headers.has('Authorization')) {
@@ -1150,7 +1173,7 @@ const buildDirectRequestBody = (
 };
 
 const flattenCollectionTree = (nodes: ProjectCollectionTreeNode[]): ProjectCollectionTreeNode[] =>
-  nodes.flatMap((node) => [node, ...flattenCollectionTree(node.children ?? [])]);
+  nodes.flatMap(node => [node, ...flattenCollectionTree(node.children ?? [])]);
 
 const sortCollectionTreeNodes = (nodes: ProjectCollectionTreeNode[]) => {
   nodes.sort((left, right) => {
@@ -1161,7 +1184,7 @@ const sortCollectionTreeNodes = (nodes: ProjectCollectionTreeNode[]) => {
     return String(left.id).localeCompare(String(right.id));
   });
 
-  nodes.forEach((node) => {
+  nodes.forEach(node => {
     if (node.children?.length) {
       sortCollectionTreeNodes(node.children);
     }
@@ -1172,12 +1195,12 @@ const buildCollectionTreeFromList = (
   collections: ProjectCollection[]
 ): ProjectCollectionTreeNode[] => {
   const uniqueCollections = Array.from(
-    new Map(collections.map((collection) => [String(collection.id), collection])).values()
+    new Map(collections.map(collection => [String(collection.id), collection])).values()
   );
   const nodeMap = new Map<string, ProjectCollectionTreeNode>();
   const rootNodes: ProjectCollectionTreeNode[] = [];
 
-  uniqueCollections.forEach((collection) => {
+  uniqueCollections.forEach(collection => {
     nodeMap.set(String(collection.id), {
       id: collection.id,
       name: collection.name,
@@ -1190,7 +1213,7 @@ const buildCollectionTreeFromList = (
     });
   });
 
-  uniqueCollections.forEach((collection) => {
+  uniqueCollections.forEach(collection => {
     const node = nodeMap.get(String(collection.id));
     if (!node) {
       return;
@@ -1235,7 +1258,7 @@ const fetchAllProjectCollections = async (
   } while (page <= totalPages);
 
   const dedupedItems = Array.from(
-    new Map(items.map((collection) => [collection.id, collection])).values()
+    new Map(items.map(collection => [collection.id, collection])).values()
   );
 
   return buildCollectionTreeFromList(dedupedItems);
@@ -1275,10 +1298,12 @@ const buildWorkbenchStateFromServer = (
     name: collection.name,
     color: COLLECTION_COLORS[index % COLLECTION_COLORS.length],
     isFolder: collection.is_folder,
-    requestIds: (requestsByCollectionId[String(collection.id)] ?? []).map((request) => `request-${request.id}`),
+    requestIds: (requestsByCollectionId[String(collection.id)] ?? []).map(
+      request => `request-${request.id}`
+    ),
   }));
-  const tabs = flattenedCollections.flatMap((collection) =>
-    (requestsByCollectionId[String(collection.id)] ?? []).map((request) => toRequestPageTab(request))
+  const tabs = flattenedCollections.flatMap(collection =>
+    (requestsByCollectionId[String(collection.id)] ?? []).map(request => toRequestPageTab(request))
   );
   const firstTab = tabs[0] ?? null;
 
@@ -1288,7 +1313,7 @@ const buildWorkbenchStateFromServer = (
     activeTabId: firstTab?.id ?? null,
     openTabIds: firstTab ? [firstTab.id] : [],
     activeCollectionId: firstTab?.collectionId ?? collections[0]?.id ?? null,
-    expandedCollectionIds: collections.map((collection) => collection.id),
+    expandedCollectionIds: collections.map(collection => collection.id),
     nextTabIndex: tabs.length + 1,
   };
 };
@@ -1297,18 +1322,18 @@ const mergeServerCollections = (
   currentCollections: CollectionNode[],
   serverCollections: CollectionNode[]
 ) => {
-  const currentById = new Map(currentCollections.map((collection) => [collection.id, collection]));
-  const serverIds = new Set(serverCollections.map((collection) => collection.id));
+  const currentById = new Map(currentCollections.map(collection => [collection.id, collection]));
+  const serverIds = new Set(serverCollections.map(collection => collection.id));
   const localOnlyCollections = currentCollections.filter(
-    (collection) => !serverIds.has(collection.id) && !isPersistedCollectionId(collection.id)
+    collection => !serverIds.has(collection.id) && !isPersistedCollectionId(collection.id)
   );
 
   return [
-    ...serverCollections.map((collection) => {
+    ...serverCollections.map(collection => {
       const currentCollection = currentById.get(collection.id);
       const localOnlyRequestIds =
         currentCollection?.requestIds.filter(
-          (requestId) => getPersistedRequestId(requestId) === null
+          requestId => getPersistedRequestId(requestId) === null
         ) ?? [];
 
       return {
@@ -1323,9 +1348,9 @@ const mergeServerCollections = (
 };
 
 const mergeServerTabs = (currentTabs: RequestPageTab[], serverTabs: RequestPageTab[]) => {
-  const serverIds = new Set(serverTabs.map((tab) => tab.id));
+  const serverIds = new Set(serverTabs.map(tab => tab.id));
   const localOnlyTabs = currentTabs.filter(
-    (tab) => !serverIds.has(tab.id) && getPersistedRequestId(tab.id) === null
+    tab => !serverIds.has(tab.id) && getPersistedRequestId(tab.id) === null
   );
 
   return [...serverTabs, ...localOnlyTabs];
@@ -1343,7 +1368,7 @@ const normalizeCollectionNodes = (items: CollectionNode[]) => {
   const orderedIds: string[] = [];
   const mergedById = new Map<string, CollectionNode>();
 
-  items.forEach((collection) => {
+  items.forEach(collection => {
     const existing = mergedById.get(collection.id);
     const nextRequestIds = existing
       ? Array.from(new Set([...existing.requestIds, ...collection.requestIds]))
@@ -1361,7 +1386,7 @@ const normalizeCollectionNodes = (items: CollectionNode[]) => {
   });
 
   return orderedIds
-    .map((collectionId) => mergedById.get(collectionId))
+    .map(collectionId => mergedById.get(collectionId))
     .filter((collection): collection is CollectionNode => Boolean(collection));
 };
 
@@ -1409,11 +1434,7 @@ const getInitialWorkbenchState = (): InitialWorkbenchState => {
   };
 };
 
-export function ApiRequestWorkbench({
-  projectId,
-}: {
-  projectId: number | string;
-}) {
+export function ApiRequestWorkbench({ projectId }: { projectId: number | string }) {
   const t = useT('project');
   const defaultRequestTitle = t('collections.workbench.defaultRequestTitle');
   const pathname = usePathname();
@@ -1450,7 +1471,9 @@ export function ApiRequestWorkbench({
   const [viewingExampleId, setViewingExampleId] = useState<number | string | null>(null);
   const [editingExampleId, setEditingExampleId] = useState<number | string | null>(null);
   const [deleteExampleTarget, setDeleteExampleTarget] = useState<RequestExample | null>(null);
-  const [savingResponseExampleId, setSavingResponseExampleId] = useState<number | string | null>(null);
+  const [savingResponseExampleId, setSavingResponseExampleId] = useState<number | string | null>(
+    null
+  );
   const [defaultingExampleId, setDefaultingExampleId] = useState<number | string | null>(null);
   const [deletingExampleId, setDeletingExampleId] = useState<number | string | null>(null);
   const createCollectionMutation = useCreateCollection(projectId);
@@ -1473,7 +1496,7 @@ export function ApiRequestWorkbench({
     queryFn: () => fetchAllProjectCollections(projectId),
     enabled: Boolean(projectId),
     staleTime: 60_000,
-    placeholderData: (previousData) => previousData,
+    placeholderData: previousData => previousData,
   });
 
   const deferredSidebarQuery = useDeferredValue(sidebarQuery);
@@ -1485,7 +1508,8 @@ export function ApiRequestWorkbench({
     () =>
       !selectedEnvironmentId || selectedEnvironmentId === 'none'
         ? null
-        : environments.find((environment) => String(environment.id) === selectedEnvironmentId) ?? null,
+        : (environments.find(environment => String(environment.id) === selectedEnvironmentId) ??
+          null),
     [environments, selectedEnvironmentId]
   );
   const createDraftTab = useCallback(
@@ -1507,8 +1531,8 @@ export function ApiRequestWorkbench({
   const persistedRequestCollectionIds = useMemo(
     () =>
       serverCollections
-        .filter((collection) => !collection.is_folder)
-        .map((collection) => collection.id),
+        .filter(collection => !collection.is_folder)
+        .map(collection => collection.id),
     [serverCollections]
   );
   const collectionRequestsQuery = useQuery({
@@ -1521,7 +1545,7 @@ export function ApiRequestWorkbench({
     ],
     queryFn: async () => {
       const entries = await Promise.all(
-        persistedRequestCollectionIds.map(async (collectionId) => {
+        persistedRequestCollectionIds.map(async collectionId => {
           try {
             const requests = await fetchAllCollectionRequests(projectId, collectionId);
             return [collectionId, requests] as const;
@@ -1535,19 +1559,14 @@ export function ApiRequestWorkbench({
     },
     enabled: collectionTreeQuery.isSuccess && persistedRequestCollectionIds.length > 0,
     staleTime: 60_000,
-    placeholderData: (previousData) => previousData,
+    placeholderData: previousData => previousData,
   });
 
-  const tabMap = useMemo(() => new Map(tabs.map((tab) => [tab.id, tab])), [tabs]);
+  const tabMap = useMemo(() => new Map(tabs.map(tab => [tab.id, tab])), [tabs]);
   const updateCollections = useCallback(
-    (
-      updater:
-        | CollectionNode[]
-        | ((currentCollections: CollectionNode[]) => CollectionNode[])
-    ) => {
-      setCollections((current) => {
-        const nextCollections =
-          typeof updater === 'function' ? updater(current) : updater;
+    (updater: CollectionNode[] | ((currentCollections: CollectionNode[]) => CollectionNode[])) => {
+      setCollections(current => {
+        const nextCollections = typeof updater === 'function' ? updater(current) : updater;
         const normalizedCollections = normalizeCollectionNodes(nextCollections);
 
         return areCollectionNodesEqual(current, normalizedCollections)
@@ -1560,12 +1579,12 @@ export function ApiRequestWorkbench({
   const openTabs = useMemo(
     () =>
       openTabIds
-        .map((tabId) => tabMap.get(tabId))
+        .map(tabId => tabMap.get(tabId))
         .filter((tab): tab is RequestPageTab => Boolean(tab)),
     [openTabIds, tabMap]
   );
   const activeTab = useMemo(
-    () => (activeTabId ? tabMap.get(activeTabId) ?? null : openTabs[0] ?? null),
+    () => (activeTabId ? (tabMap.get(activeTabId) ?? null) : (openTabs[0] ?? null)),
     [activeTabId, openTabs, tabMap]
   );
   const persistedActiveCollectionId = useMemo(() => {
@@ -1621,14 +1640,11 @@ export function ApiRequestWorkbench({
 
     return (
       exampleDetailQuery.data ??
-      requestExamples.find((example) => String(example.id) === String(selectedExampleId)) ??
+      requestExamples.find(example => String(example.id) === String(selectedExampleId)) ??
       null
     );
   }, [exampleDetailQuery.data, requestExamples, selectedExampleId]);
-  const scratchpadTabs = useMemo(
-    () => tabs.filter((tab) => !tab.collectionId),
-    [tabs]
-  );
+  const scratchpadTabs = useMemo(() => tabs.filter(tab => !tab.collectionId), [tabs]);
 
   const collectionViews = useMemo(() => {
     const normalizedQuery = deferredSidebarQuery.trim().toLowerCase();
@@ -1636,7 +1652,7 @@ export function ApiRequestWorkbench({
     return collections.reduce<Array<{ collection: CollectionNode; requests: RequestPageTab[] }>>(
       (accumulator, collection) => {
         const requests = collection.requestIds
-          .map((requestId) => tabMap.get(requestId))
+          .map(requestId => tabMap.get(requestId))
           .filter((request): request is RequestPageTab => Boolean(request));
 
         if (!normalizedQuery) {
@@ -1645,9 +1661,10 @@ export function ApiRequestWorkbench({
         }
 
         const collectionMatches = collection.name.toLowerCase().includes(normalizedQuery);
-        const requestMatches = requests.filter((request) =>
-          [request.title, request.url, request.method]
-            .some((value) => value.toLowerCase().includes(normalizedQuery))
+        const requestMatches = requests.filter(request =>
+          [request.title, request.url, request.method].some(value =>
+            value.toLowerCase().includes(normalizedQuery)
+          )
         );
 
         if (collectionMatches || requestMatches.length > 0) {
@@ -1670,15 +1687,13 @@ export function ApiRequestWorkbench({
       return scratchpadTabs;
     }
 
-    return scratchpadTabs.filter((tab) =>
-      [tab.title, tab.url, tab.method].some((value) =>
-        value.toLowerCase().includes(normalizedQuery)
-      )
+    return scratchpadTabs.filter(tab =>
+      [tab.title, tab.url, tab.method].some(value => value.toLowerCase().includes(normalizedQuery))
     );
   }, [deferredSidebarQuery, scratchpadTabs]);
 
   const updateTab = (tabId: string, updater: (tab: RequestPageTab) => RequestPageTab) => {
-    setTabs((current) => current.map((tab) => (tab.id === tabId ? updater(tab) : tab)));
+    setTabs(current => current.map(tab => (tab.id === tabId ? updater(tab) : tab)));
   };
 
   const refreshWorkbenchFromServer = useCallback(async () => {
@@ -1686,35 +1701,38 @@ export function ApiRequestWorkbench({
     const flattenedCollections = flattenCollectionTree(treeNodes);
     const requestEntries = await Promise.all(
       flattenedCollections
-        .filter((collection) => !collection.is_folder)
-        .map(async (collection) => {
-        try {
-          const requests = await fetchAllCollectionRequests(projectId, collection.id);
-          return [collection.id, requests] as const;
-        } catch {
-          return [collection.id, []] as const;
-        }
-      })
+        .filter(collection => !collection.is_folder)
+        .map(async collection => {
+          try {
+            const requests = await fetchAllCollectionRequests(projectId, collection.id);
+            return [collection.id, requests] as const;
+          } catch {
+            return [collection.id, []] as const;
+          }
+        })
     );
-    const requestsByCollectionId = Object.fromEntries(requestEntries) as Record<string, ProjectRequest[]>;
+    const requestsByCollectionId = Object.fromEntries(requestEntries) as Record<
+      string,
+      ProjectRequest[]
+    >;
     const nextState = buildWorkbenchStateFromServer(treeNodes, requestsByCollectionId);
 
-    updateCollections((current) => {
+    updateCollections(current => {
       const mergedCollections = mergeServerCollections(current, nextState.collections);
       return mergedCollections;
     });
-    setTabs((current) => {
+    setTabs(current => {
       const mergedTabs = mergeServerTabs(current, nextState.tabs);
       return areTabsEquivalent(current, mergedTabs) ? current : mergedTabs;
     });
-    setOpenTabIds((current) => (current.length > 0 ? current : nextState.openTabIds));
-    setActiveTabId((current) => current ?? nextState.activeTabId);
-    setActiveCollectionId((current) => current ?? nextState.activeCollectionId);
-    setExpandedCollectionIds((current) => {
+    setOpenTabIds(current => (current.length > 0 ? current : nextState.openTabIds));
+    setActiveTabId(current => current ?? nextState.activeTabId);
+    setActiveCollectionId(current => current ?? nextState.activeCollectionId);
+    setExpandedCollectionIds(current => {
       const mergedIds = mergeExpandedCollectionIds(current, nextState.expandedCollectionIds);
       return areStringArraysEqual(current, mergedIds) ? current : mergedIds;
     });
-    setNextTabIndex((current) => Math.max(current, nextState.nextTabIndex));
+    setNextTabIndex(current => Math.max(current, nextState.nextTabIndex));
   }, [projectId, updateCollections]);
 
   useEffect(() => {
@@ -1727,15 +1745,15 @@ export function ApiRequestWorkbench({
       collectionRequestsQuery.data ?? {}
     ).collections;
 
-    updateCollections((current) => {
+    updateCollections(current => {
       const mergedCollections = mergeServerCollections(current, nextCollections);
       return mergedCollections;
     });
-    setActiveCollectionId((current) => current ?? nextCollections[0]?.id ?? null);
-    setExpandedCollectionIds((current) => {
+    setActiveCollectionId(current => current ?? nextCollections[0]?.id ?? null);
+    setExpandedCollectionIds(current => {
       const mergedIds = mergeExpandedCollectionIds(
         current,
-        nextCollections.map((collection) => collection.id)
+        nextCollections.map(collection => collection.id)
       );
       return areStringArraysEqual(current, mergedIds) ? current : mergedIds;
     });
@@ -1747,7 +1765,7 @@ export function ApiRequestWorkbench({
   ]);
 
   useEffect(() => {
-    const hasPersistedRequestTabs = tabs.some((tab) => getPersistedRequestId(tab.id) !== null);
+    const hasPersistedRequestTabs = tabs.some(tab => getPersistedRequestId(tab.id) !== null);
 
     if (
       !collectionTreeQuery.isSuccess ||
@@ -1762,24 +1780,24 @@ export function ApiRequestWorkbench({
       collectionRequestsQuery.data ?? {}
     );
 
-    setTabs((current) => {
+    setTabs(current => {
       const mergedTabs = mergeServerTabs(current, nextState.tabs);
       return areTabsEquivalent(current, mergedTabs) ? current : mergedTabs;
     });
-    setOpenTabIds((current) => {
+    setOpenTabIds(current => {
       if (current.length > 0) {
         return current;
       }
 
       return areStringArraysEqual(current, nextState.openTabIds) ? current : nextState.openTabIds;
     });
-    setActiveTabId((current) => current ?? nextState.activeTabId);
-    setActiveCollectionId((current) => current ?? nextState.activeCollectionId);
-    setExpandedCollectionIds((current) => {
+    setActiveTabId(current => current ?? nextState.activeTabId);
+    setActiveCollectionId(current => current ?? nextState.activeCollectionId);
+    setExpandedCollectionIds(current => {
       const mergedIds = mergeExpandedCollectionIds(current, nextState.expandedCollectionIds);
       return areStringArraysEqual(current, mergedIds) ? current : mergedIds;
     });
-    setNextTabIndex((current) => Math.max(current, nextState.nextTabIndex));
+    setNextTabIndex(current => Math.max(current, nextState.nextTabIndex));
   }, [
     collectionRequestsQuery.data,
     collectionRequestsQuery.isSuccess,
@@ -1805,7 +1823,7 @@ export function ApiRequestWorkbench({
 
     if (selectedEnvironmentId === '') {
       const preferredEnvironment =
-        environments.find((environment) => environment.base_url?.trim()) ?? environments[0];
+        environments.find(environment => environment.base_url?.trim()) ?? environments[0];
       setSelectedEnvironmentId(String(preferredEnvironment.id));
       return;
     }
@@ -1815,14 +1833,14 @@ export function ApiRequestWorkbench({
     }
 
     const exists = environments.some(
-      (environment) => String(environment.id) === selectedEnvironmentId
+      environment => String(environment.id) === selectedEnvironmentId
     );
     if (exists) {
       return;
     }
 
     const preferredEnvironment =
-      environments.find((environment) => environment.base_url?.trim()) ?? environments[0];
+      environments.find(environment => environment.base_url?.trim()) ?? environments[0];
     setSelectedEnvironmentId(String(preferredEnvironment.id));
   }, [environments, selectedEnvironmentId]);
 
@@ -1889,8 +1907,8 @@ export function ApiRequestWorkbench({
   ) => {
     const nextTab = toRequestPageTab(persistedRequest);
 
-    setTabs((current) =>
-      current.map((tab) =>
+    setTabs(current =>
+      current.map(tab =>
         tab.id === sourceTabId
           ? {
               ...nextTab,
@@ -1906,22 +1924,22 @@ export function ApiRequestWorkbench({
     );
 
     if (nextTab.id !== sourceTabId) {
-      updateCollections((current) =>
-        current.map((collection) =>
+      updateCollections(current =>
+        current.map(collection =>
           collection.requestIds.includes(sourceTabId)
             ? {
                 ...collection,
-                requestIds: collection.requestIds.map((requestId) =>
+                requestIds: collection.requestIds.map(requestId =>
                   requestId === sourceTabId ? nextTab.id : requestId
                 ),
               }
             : collection
         )
       );
-      setOpenTabIds((current) =>
-        current.map((requestId) => (requestId === sourceTabId ? nextTab.id : requestId))
+      setOpenTabIds(current =>
+        current.map(requestId => (requestId === sourceTabId ? nextTab.id : requestId))
       );
-      setActiveTabId((current) => (current === sourceTabId ? nextTab.id : current));
+      setActiveTabId(current => (current === sourceTabId ? nextTab.id : current));
     }
 
     return nextTab.id;
@@ -1935,9 +1953,7 @@ export function ApiRequestWorkbench({
     } = {}
   ) => {
     const persistedCollectionId =
-      tab.collectionId && isPersistedCollectionId(tab.collectionId)
-        ? tab.collectionId
-        : null;
+      tab.collectionId && isPersistedCollectionId(tab.collectionId) ? tab.collectionId : null;
 
     if (!persistedCollectionId) {
       throw new Error(t('collections.saveBeforeSend'));
@@ -1959,7 +1975,7 @@ export function ApiRequestWorkbench({
       );
     }
 
-    const targetCollection = collections.find((collection) => collection.id === tab.collectionId);
+    const targetCollection = collections.find(collection => collection.id === tab.collectionId);
     return requestService.create(
       projectId,
       persistedCollectionId,
@@ -2051,7 +2067,7 @@ export function ApiRequestWorkbench({
       return;
     }
 
-    updateActiveTab((tab) => applyExampleToTab(tab, example));
+    updateActiveTab(tab => applyExampleToTab(tab, example));
     toast.success(t('collections.applyExample', { name: example.name }));
   };
 
@@ -2205,8 +2221,8 @@ export function ApiRequestWorkbench({
         requestIds: [],
       };
 
-      updateCollections((current) => [nextCollection, ...current]);
-      setExpandedCollectionIds((current) =>
+      updateCollections(current => [nextCollection, ...current]);
+      setExpandedCollectionIds(current =>
         current.includes(nextCollection.id) ? current : [nextCollection.id, ...current]
       );
       setActiveCollectionId(nextCollection.id);
@@ -2263,7 +2279,7 @@ export function ApiRequestWorkbench({
 
     if (importDialogTarget.parentCollectionId) {
       const targetCollection = collections.find(
-        (collection) => collection.id === importDialogTarget.parentCollectionId
+        collection => collection.id === importDialogTarget.parentCollectionId
       );
 
       if (!targetCollection?.isFolder) {
@@ -2288,7 +2304,7 @@ export function ApiRequestWorkbench({
       await refreshWorkbenchFromServer();
 
       if (importDialogTarget.parentCollectionId) {
-        setExpandedCollectionIds((current) =>
+        setExpandedCollectionIds(current =>
           current.includes(importDialogTarget.parentCollectionId as string)
             ? current
             : [...current, importDialogTarget.parentCollectionId as string]
@@ -2300,24 +2316,24 @@ export function ApiRequestWorkbench({
   };
 
   const removeCollectionFromWorkbench = (collectionId: string) => {
-    const targetCollection = collections.find((collection) => collection.id === collectionId);
+    const targetCollection = collections.find(collection => collection.id === collectionId);
     if (!targetCollection) {
       return;
     }
 
     const removedTabIds = new Set(targetCollection.requestIds);
-    const remainingCollections = collections.filter((collection) => collection.id !== collectionId);
-    const remainingTabs = tabs.filter((tab) => tab.collectionId !== collectionId);
-    const nextOpenTabIds = openTabIds.filter((tabId) => !removedTabIds.has(tabId));
+    const remainingCollections = collections.filter(collection => collection.id !== collectionId);
+    const remainingTabs = tabs.filter(tab => tab.collectionId !== collectionId);
+    const nextOpenTabIds = openTabIds.filter(tabId => !removedTabIds.has(tabId));
     const nextActiveTabId = resolveNextActiveTabId(openTabIds, nextOpenTabIds, activeTabId);
 
     startTransition(() => {
       updateCollections(remainingCollections);
       setTabs(remainingTabs);
       setOpenTabIds(nextOpenTabIds);
-      setExpandedCollectionIds((current) => current.filter((id) => id !== collectionId));
-      setActiveCollectionId((current) =>
-        current === collectionId ? remainingCollections[0]?.id ?? null : current
+      setExpandedCollectionIds(current => current.filter(id => id !== collectionId));
+      setActiveCollectionId(current =>
+        current === collectionId ? (remainingCollections[0]?.id ?? null) : current
       );
       setActiveTabId(nextActiveTabId);
     });
@@ -2377,7 +2393,7 @@ export function ApiRequestWorkbench({
     }
 
     const targetCollection = collections.find(
-      (collection) => collection.id === renameDialogCollectionId
+      collection => collection.id === renameDialogCollectionId
     );
     if (!targetCollection) {
       closeRenameCollectionDialog(false);
@@ -2395,8 +2411,8 @@ export function ApiRequestWorkbench({
       }
 
       startTransition(() => {
-        updateCollections((current) =>
-          current.map((collection) =>
+        updateCollections(current =>
+          current.map(collection =>
             collection.id === targetCollection.id ? { ...collection, name: nextName } : collection
           )
         );
@@ -2410,20 +2426,20 @@ export function ApiRequestWorkbench({
 
   const toggleCollection = (collectionId: string) => {
     setActiveCollectionId(collectionId);
-    setExpandedCollectionIds((current) =>
+    setExpandedCollectionIds(current =>
       current.includes(collectionId)
-        ? current.filter((id) => id !== collectionId)
+        ? current.filter(id => id !== collectionId)
         : [...current, collectionId]
     );
   };
 
   const selectRequest = (tabId: string, collectionId: string | null) => {
     setActiveTabId(tabId);
-    setOpenTabIds((current) => (current.includes(tabId) ? current : [...current, tabId]));
+    setOpenTabIds(current => (current.includes(tabId) ? current : [...current, tabId]));
 
     if (collectionId) {
       setActiveCollectionId(collectionId);
-      setExpandedCollectionIds((current) =>
+      setExpandedCollectionIds(current =>
         current.includes(collectionId) ? current : [...current, collectionId]
       );
     }
@@ -2431,24 +2447,24 @@ export function ApiRequestWorkbench({
 
   const renameRequestInWorkbench = (tabId: string, nextName: string) => {
     startTransition(() => {
-      setTabs((current) =>
-        current.map((tab) => (tab.id === tabId ? { ...tab, title: nextName } : tab))
+      setTabs(current =>
+        current.map(tab => (tab.id === tabId ? { ...tab, title: nextName } : tab))
       );
     });
   };
 
   const removeRequestFromWorkbench = (tabId: string) => {
-    const nextOpenTabIds = openTabIds.filter((id) => id !== tabId);
+    const nextOpenTabIds = openTabIds.filter(id => id !== tabId);
     const nextActiveTabId = resolveNextActiveTabId(openTabIds, nextOpenTabIds, activeTabId);
 
     startTransition(() => {
-      setTabs((current) => current.filter((tab) => tab.id !== tabId));
-      updateCollections((current) =>
-        current.map((collection) =>
+      setTabs(current => current.filter(tab => tab.id !== tabId));
+      updateCollections(current =>
+        current.map(collection =>
           collection.requestIds.includes(tabId)
             ? {
                 ...collection,
-                requestIds: collection.requestIds.filter((requestId) => requestId !== tabId),
+                requestIds: collection.requestIds.filter(requestId => requestId !== tabId),
               }
             : collection
         )
@@ -2469,17 +2485,17 @@ export function ApiRequestWorkbench({
       title: t('collections.workbench.copyTitle', { title: activeTab.title }),
       response: createEmptyResponse(),
       isSending: false,
-      paramsRows: activeTab.paramsRows.map((row) => ({ ...row, id: createLocalId('kv') })),
-      headersRows: activeTab.headersRows.map((row) => ({ ...row, id: createLocalId('kv') })),
+      paramsRows: activeTab.paramsRows.map(row => ({ ...row, id: createLocalId('kv') })),
+      headersRows: activeTab.headersRows.map(row => ({ ...row, id: createLocalId('kv') })),
     };
 
     startTransition(() => {
-      setTabs((current) => [...current, duplicatedTab]);
-      setOpenTabIds((current) => [...current, duplicatedTab.id]);
+      setTabs(current => [...current, duplicatedTab]);
+      setOpenTabIds(current => [...current, duplicatedTab.id]);
 
       if (duplicatedTab.collectionId) {
-        updateCollections((current) =>
-          current.map((collection) =>
+        updateCollections(current =>
+          current.map(collection =>
             collection.id === duplicatedTab.collectionId
               ? {
                   ...collection,
@@ -2491,7 +2507,7 @@ export function ApiRequestWorkbench({
       }
 
       setActiveTabId(duplicatedTab.id);
-      setNextTabIndex((current) => current + 1);
+      setNextTabIndex(current => current + 1);
     });
   };
 
@@ -2506,7 +2522,7 @@ export function ApiRequestWorkbench({
       title: nextName,
     };
 
-    updateTab(activeTab.id, (tab) => ({
+    updateTab(activeTab.id, tab => ({
       ...tab,
       title: nextName,
     }));
@@ -2533,7 +2549,7 @@ export function ApiRequestWorkbench({
     let executableHeaders: Record<string, string> = {};
     let executableBody: string | undefined;
 
-    updateTab(tabId, (tab) => ({
+    updateTab(tabId, tab => ({
       ...tab,
       isSending: true,
       response: {
@@ -2572,7 +2588,7 @@ export function ApiRequestWorkbench({
         strict_tls: tabSnapshot.settings.strictTls,
       });
 
-      updateTab(tabId, (tab) => ({
+      updateTab(tabId, tab => ({
         ...tab,
         isSending: false,
         response: toResponseDraft(response),
@@ -2608,7 +2624,7 @@ export function ApiRequestWorkbench({
       const message =
         error instanceof Error ? error.message : t('collections.workbench.unableToSend');
 
-      updateTab(tabId, (tab) => ({
+      updateTab(tabId, tab => ({
         ...tab,
         isSending: false,
         response: {
@@ -2662,10 +2678,10 @@ export function ApiRequestWorkbench({
 
   const attachRequestTabToCollection = (collectionId: string, tab: RequestPageTab) => {
     startTransition(() => {
-      setTabs((current) => [...current, tab]);
-      setOpenTabIds((current) => [...current, tab.id]);
-      updateCollections((current) =>
-        current.map((collection) =>
+      setTabs(current => [...current, tab]);
+      setOpenTabIds(current => [...current, tab.id]);
+      updateCollections(current =>
+        current.map(collection =>
           collection.id === collectionId
             ? {
                 ...collection,
@@ -2674,12 +2690,12 @@ export function ApiRequestWorkbench({
             : collection
         )
       );
-      setExpandedCollectionIds((current) =>
+      setExpandedCollectionIds(current =>
         current.includes(collectionId) ? current : [...current, collectionId]
       );
       setActiveCollectionId(collectionId);
       setActiveTabId(tab.id);
-      setNextTabIndex((current) => current + 1);
+      setNextTabIndex(current => current + 1);
     });
   };
 
@@ -2690,10 +2706,10 @@ export function ApiRequestWorkbench({
     });
 
     startTransition(() => {
-      setTabs((current) => [...current, nextTab]);
-      setOpenTabIds((current) => [...current, nextTab.id]);
+      setTabs(current => [...current, nextTab]);
+      setOpenTabIds(current => [...current, nextTab.id]);
       setActiveTabId(nextTab.id);
-      setNextTabIndex((current) => current + 1);
+      setNextTabIndex(current => current + 1);
     });
   }, [createDraftTab, nextTabIndex]);
 
@@ -2714,7 +2730,7 @@ export function ApiRequestWorkbench({
   }, [createScratchpadRequest, pathname, searchParams]);
 
   const handleCloseTab = (tabId: string) => {
-    const nextOpenTabIds = openTabIds.filter((id) => id !== tabId);
+    const nextOpenTabIds = openTabIds.filter(id => id !== tabId);
     const nextActiveTabId = resolveNextActiveTabId(openTabIds, nextOpenTabIds, activeTabId);
 
     startTransition(() => {
@@ -2733,7 +2749,7 @@ export function ApiRequestWorkbench({
       return;
     }
 
-    const targetRequest = tabs.find((tab) => tab.id === renameDialogRequestTabId);
+    const targetRequest = tabs.find(tab => tab.id === renameDialogRequestTabId);
     if (!targetRequest) {
       closeRenameRequestDialog(false);
       return;
@@ -2742,10 +2758,10 @@ export function ApiRequestWorkbench({
     setRenamingRequestTabId(targetRequest.id);
 
     try {
-      const persistedCollectionId = targetRequest.collectionId
-        && isPersistedCollectionId(targetRequest.collectionId)
-        ? targetRequest.collectionId
-        : null;
+      const persistedCollectionId =
+        targetRequest.collectionId && isPersistedCollectionId(targetRequest.collectionId)
+          ? targetRequest.collectionId
+          : null;
       const persistedRequestId = getPersistedRequestId(targetRequest.id);
 
       if (persistedCollectionId && persistedRequestId) {
@@ -2853,7 +2869,7 @@ export function ApiRequestWorkbench({
               <RequestTabs
                 tabs={openTabs}
                 activeTabId={activeTabId}
-                onSelectTab={(tabId) => selectRequest(tabId, tabMap.get(tabId)?.collectionId ?? null)}
+                onSelectTab={tabId => selectRequest(tabId, tabMap.get(tabId)?.collectionId ?? null)}
                 onCloseTab={handleCloseTab}
               />
             </div>
@@ -2894,8 +2910,12 @@ export function ApiRequestWorkbench({
             onImportRootMarkdown={() => openRootImportDialog('markdown')}
             onCreateRequest={handleCreateRequest}
             onDeleteCollection={handleDeleteCollection}
-            onImportCollectionPostman={(collection) => openCollectionImportDialog(collection, 'postman')}
-            onImportCollectionMarkdown={(collection) => openCollectionImportDialog(collection, 'markdown')}
+            onImportCollectionPostman={collection =>
+              openCollectionImportDialog(collection, 'postman')
+            }
+            onImportCollectionMarkdown={collection =>
+              openCollectionImportDialog(collection, 'markdown')
+            }
             onDeleteRequest={handleDeleteRequest}
             onRenameCollection={openRenameCollectionDialog}
             onRenameRequest={openRenameRequestDialog}
@@ -2912,13 +2932,17 @@ export function ApiRequestWorkbench({
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+                        <Badge
+                          variant="outline"
+                          className="border-primary/20 bg-primary/10 text-primary"
+                        >
                           {t('collections.workbench.badges.apiRequest')}
                         </Badge>
                         {activeTab.collectionId ? (
                           <Badge variant="secondary">
-                            {collections.find((collection) => collection.id === activeTab.collectionId)?.name ||
-                              t('collections.workbench.badges.collectionFallback')}
+                            {collections.find(
+                              collection => collection.id === activeTab.collectionId
+                            )?.name || t('collections.workbench.badges.collectionFallback')}
                           </Badge>
                         ) : (
                           <Badge variant="secondary">
@@ -2964,8 +2988,8 @@ export function ApiRequestWorkbench({
                 <CardContent className="space-y-5 px-4 py-5 md:px-6">
                   <RequestToolbar
                     tab={activeTab}
-                    onMethodChange={(method) => updateActiveTab((tab) => ({ ...tab, method }))}
-                    onUrlChange={(url) => updateActiveTab((tab) => ({ ...tab, url }))}
+                    onMethodChange={method => updateActiveTab(tab => ({ ...tab, method }))}
+                    onUrlChange={url => updateActiveTab(tab => ({ ...tab, url }))}
                     onSend={handleSend}
                     onSave={handleSaveTab}
                     onDuplicate={handleDuplicateTab}
@@ -2973,8 +2997,8 @@ export function ApiRequestWorkbench({
 
                   <RequestSectionTabs
                     activeSection={activeTab.activeSection}
-                    onSelectSection={(section) =>
-                      updateActiveTab((tab) => ({ ...tab, activeSection: section }))
+                    onSelectSection={section =>
+                      updateActiveTab(tab => ({ ...tab, activeSection: section }))
                     }
                   />
 
@@ -3001,10 +3025,7 @@ export function ApiRequestWorkbench({
                       onDeleteExample={openDeleteExampleDialog}
                     />
                   ) : (
-                    <RequestSectionPanel
-                      tab={activeTab}
-                      onTabChange={updateActiveTab}
-                    />
+                    <RequestSectionPanel tab={activeTab} onTabChange={updateActiveTab} />
                   )}
                 </CardContent>
               </Card>
@@ -3014,7 +3035,9 @@ export function ApiRequestWorkbench({
                 isSending={activeTab.isSending}
                 onSaveAsExample={openCreateExampleDialog}
                 canSaveAsExample={canCreateExamples && activeResponseCanBeCaptured}
-                isSavingExample={createExampleMutation.isPending || saveExampleResponseMutation.isPending}
+                isSavingExample={
+                  createExampleMutation.isPending || saveExampleResponseMutation.isPending
+                }
               />
             </div>
           ) : (
@@ -3180,10 +3203,7 @@ function CollectionsSidebar({
   const [page, setPage] = useState(1);
   const t = useT('project');
   const isSearchMode = query.trim().length > 0;
-  const totalPages = Math.max(
-    1,
-    Math.ceil(collections.length / SIDEBAR_COLLECTIONS_PAGE_SIZE)
-  );
+  const totalPages = Math.max(1, Math.ceil(collections.length / SIDEBAR_COLLECTIONS_PAGE_SIZE));
   const currentPage = isSearchMode ? 1 : Math.min(page, totalPages);
   const canGoPrev = !isSearchMode && currentPage > 1;
   const canGoNext = !isSearchMode && currentPage < totalPages;
@@ -3254,7 +3274,7 @@ function CollectionsSidebar({
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
             <Input
               value={query}
-              onChange={(event) => {
+              onChange={event => {
                 setPage(1);
                 onQueryChange(event.target.value);
               }}
@@ -3322,7 +3342,11 @@ function CollectionsSidebar({
                     className="mt-0.5 h-8 w-8 rounded-xl"
                     onClick={() => onToggleCollection(collection.id)}
                   >
-                    {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
                   </Button>
 
                   <button
@@ -3336,7 +3360,9 @@ function CollectionsSidebar({
                         style={{ backgroundColor: collection.color }}
                         aria-hidden="true"
                       />
-                      <p className="truncate text-sm font-medium text-text-main">{collection.name}</p>
+                      <p className="truncate text-sm font-medium text-text-main">
+                        {collection.name}
+                      </p>
                     </div>
                     <p className="mt-0.5 text-[11px] text-text-muted">
                       {t('collections.workbench.requestCount', {
@@ -3366,7 +3392,7 @@ function CollectionsSidebar({
 
                 {isExpanded ? (
                   <div className="mt-1.5 space-y-1 pl-10">
-                    {requests.map((request) => (
+                    {requests.map(request => (
                       <SidebarRequestRow
                         key={request.id}
                         request={request}
@@ -3390,7 +3416,7 @@ function CollectionsSidebar({
                 {t('collections.workbench.quickRequests')}
               </div>
               <div className="space-y-1.5">
-                {scratchpadTabs.map((tab) => (
+                {scratchpadTabs.map(tab => (
                   <SidebarRequestRow
                     key={tab.id}
                     request={tab}
@@ -3415,7 +3441,7 @@ function CollectionsSidebar({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+            onClick={() => setPage(currentPage => Math.max(1, currentPage - 1))}
             disabled={!canGoPrev}
           >
             {t('common.previous')}
@@ -3430,9 +3456,7 @@ function CollectionsSidebar({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() =>
-              setPage((currentPage) => Math.min(totalPages, currentPage + 1))
-            }
+            onClick={() => setPage(currentPage => Math.min(totalPages, currentPage + 1))}
             disabled={!canGoNext}
           >
             {t('common.next')}
@@ -3675,7 +3699,7 @@ function ImportCollectionDialog({
                 type="file"
                 accept={accept}
                 className="h-auto cursor-pointer py-2"
-                onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+                onChange={event => onFileChange(event.target.files?.[0] ?? null)}
               />
             </div>
             <p className="text-sm text-text-muted">
@@ -3739,7 +3763,7 @@ function RenameCollectionDialog({
             <Input
               id="rename-collection-name"
               value={value}
-              onChange={(event) => onValueChange(event.target.value)}
+              onChange={event => onValueChange(event.target.value)}
               placeholder={t('collections.workbench.renameCollectionDialog.placeholder')}
               className="rounded-2xl"
             />
@@ -3799,7 +3823,7 @@ function RenameRequestDialog({
             <Input
               id="rename-request-name"
               value={value}
-              onChange={(event) => onValueChange(event.target.value)}
+              onChange={event => onValueChange(event.target.value)}
               placeholder={t('collections.workbench.renameRequestDialog.placeholder')}
               className="rounded-2xl"
             />
@@ -3876,7 +3900,7 @@ function ExampleFormDialog({
               <Input
                 id="request-example-name"
                 value={draft.name}
-                onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
+                onChange={event => setDraft(current => ({ ...current, name: event.target.value }))}
                 placeholder={t('collections.workbench.examples.namePlaceholder')}
                 errorText={error ?? undefined}
                 root
@@ -3884,14 +3908,12 @@ function ExampleFormDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="request-example-description">
-                {t('common.description')}
-              </Label>
+              <Label htmlFor="request-example-description">{t('common.description')}</Label>
               <Textarea
                 id="request-example-description"
                 value={draft.description}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, description: event.target.value }))
+                onChange={event =>
+                  setDraft(current => ({ ...current, description: event.target.value }))
                 }
                 rows={5}
                 placeholder={t('collections.workbench.examples.descriptionPlaceholder')}
@@ -3909,8 +3931,8 @@ function ExampleFormDialog({
               </div>
               <Switch
                 checked={draft.isDefault}
-                onCheckedChange={(checked) =>
-                  setDraft((current) => ({ ...current, isDefault: checked }))
+                onCheckedChange={checked =>
+                  setDraft(current => ({ ...current, isDefault: checked }))
                 }
               />
             </div>
@@ -3991,8 +4013,8 @@ function EditExampleDialog({
                 <Input
                   id="request-example-edit-name"
                   value={draft.name}
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, name: event.target.value }))
+                  onChange={event =>
+                    setDraft(current => ({ ...current, name: event.target.value }))
                   }
                   placeholder={t('collections.workbench.examples.namePlaceholder')}
                   errorText={error ?? undefined}
@@ -4001,14 +4023,12 @@ function EditExampleDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="request-example-edit-description">
-                  {t('common.description')}
-                </Label>
+                <Label htmlFor="request-example-edit-description">{t('common.description')}</Label>
                 <Textarea
                   id="request-example-edit-description"
                   value={draft.description}
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, description: event.target.value }))
+                  onChange={event =>
+                    setDraft(current => ({ ...current, description: event.target.value }))
                   }
                   rows={5}
                   placeholder={t('collections.workbench.examples.descriptionPlaceholder')}
@@ -4028,8 +4048,8 @@ function EditExampleDialog({
                   <Switch
                     checked={draft.isDefault}
                     disabled={example.is_default}
-                    onCheckedChange={(checked) =>
-                      setDraft((current) => ({ ...current, isDefault: checked }))
+                    onCheckedChange={checked =>
+                      setDraft(current => ({ ...current, isDefault: checked }))
                     }
                   />
                 </div>
@@ -4096,7 +4116,12 @@ function DeleteExampleDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button type="button" variant="destructive" loading={isSubmitting} onClick={() => void onConfirm()}>
+          <Button
+            type="button"
+            variant="destructive"
+            loading={isSubmitting}
+            onClick={() => void onConfirm()}
+          >
             {t('collections.workbench.examples.deleteExample')}
           </Button>
         </DialogFooter>
@@ -4159,7 +4184,10 @@ function ExampleDetailDialog({
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-lg font-semibold text-text-main">{example.name}</p>
                       {example.is_default ? (
-                        <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+                        <Badge
+                          variant="outline"
+                          className="border-primary/20 bg-primary/10 text-primary"
+                        >
                           {t('collections.workbench.badges.default')}
                         </Badge>
                       ) : null}
@@ -4210,7 +4238,11 @@ function ExampleDetailDialog({
                   />
                   <MetricBadge
                     label={t('common.response')}
-                    value={getExampleResponseValue(t, example.response_status, example.response_time)}
+                    value={getExampleResponseValue(
+                      t,
+                      example.response_status,
+                      example.response_time
+                    )}
                   />
                   <MetricBadge
                     label={t('common.created')}
@@ -4351,7 +4383,12 @@ function ExamplesPanel({
                 <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
                 {t('common.refresh')}
               </Button>
-              <Button type="button" size="sm" onClick={onCreateExample} disabled={!canCreateExamples}>
+              <Button
+                type="button"
+                size="sm"
+                onClick={onCreateExample}
+                disabled={!canCreateExamples}
+              >
                 <Plus className="h-4 w-4" />
                 {t('collections.workbench.examples.newExample')}
               </Button>
@@ -4381,7 +4418,7 @@ function ExamplesPanel({
 
           {isLoading ? (
             <div className="space-y-3">
-              {[0, 1].map((item) => (
+              {[0, 1].map(item => (
                 <div key={item} className="rounded-[24px] border border-border/60 p-4">
                   <div className="h-5 w-48 animate-pulse rounded-full bg-muted" />
                   <div className="mt-3 h-4 w-72 animate-pulse rounded-full bg-muted" />
@@ -4404,7 +4441,7 @@ function ExamplesPanel({
             </div>
           ) : (
             <div className="space-y-3">
-              {examples.map((example) => (
+              {examples.map(example => (
                 <div
                   key={example.id}
                   className="rounded-[24px] border border-border/60 bg-white/90 p-4 shadow-sm"
@@ -4414,12 +4451,16 @@ function ExamplesPanel({
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-semibold text-text-main">{example.name}</p>
                         {example.is_default ? (
-                          <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+                          <Badge
+                            variant="outline"
+                            className="border-primary/20 bg-primary/10 text-primary"
+                          >
                             {t('collections.workbench.badges.default')}
                           </Badge>
                         ) : null}
                         <Badge variant="secondary">
-                          {example.method} {example.url || t('collections.workbench.examples.noUrl')}
+                          {example.method}{' '}
+                          {example.url || t('collections.workbench.examples.noUrl')}
                         </Badge>
                       </div>
 
@@ -4446,16 +4487,30 @@ function ExamplesPanel({
                         />
                         <MetricBadge
                           label={t('common.response')}
-                          value={getExampleResponseValue(t, example.response_status, example.response_time)}
+                          value={getExampleResponseValue(
+                            t,
+                            example.response_status,
+                            example.response_time
+                          )}
                         />
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2 xl:max-w-[460px] xl:justify-end">
-                      <Button type="button" variant="outline" size="sm" onClick={() => onViewExample(example)}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onViewExample(example)}
+                      >
                         {t('common.view')}
                       </Button>
-                      <Button type="button" variant="outline" size="sm" onClick={() => onApplyExample(example)}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onApplyExample(example)}
+                      >
                         <Copy className="h-4 w-4" />
                         {t('collections.workbench.actions.apply')}
                       </Button>
@@ -4575,7 +4630,7 @@ function RequestTabs({
   return (
     <div className="overflow-x-auto">
       <div className="flex min-w-max items-center gap-2 pr-2">
-        {tabs.map((tab) => (
+        {tabs.map(tab => (
           <div
             key={tab.id}
             className={cn(
@@ -4653,7 +4708,7 @@ function EnvironmentSwitcher({
           <SelectItem value="none" className="py-1 text-xs">
             {t('collections.workbench.noEnvironment')}
           </SelectItem>
-          {environments.map((environment) => (
+          {environments.map(environment => (
             <SelectItem
               key={environment.id}
               value={String(environment.id)}
@@ -4688,12 +4743,12 @@ function RequestToolbar({
   return (
     <div className="rounded-[24px] border border-border/60 bg-slate-50/90 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
       <div className="grid gap-3 xl:grid-cols-[140px_minmax(0,1fr)_auto]">
-        <Select value={tab.method} onValueChange={(value) => onMethodChange(value as RequestMethod)}>
+        <Select value={tab.method} onValueChange={value => onMethodChange(value as RequestMethod)}>
           <SelectTrigger className="h-11 w-full rounded-2xl border-border/70 bg-white font-semibold">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {METHOD_OPTIONS.map((method) => (
+            {METHOD_OPTIONS.map(method => (
               <SelectItem key={method} value={method}>
                 {method}
               </SelectItem>
@@ -4703,7 +4758,7 @@ function RequestToolbar({
 
         <Input
           value={tab.url}
-          onChange={(event) => onUrlChange(event.target.value)}
+          onChange={event => onUrlChange(event.target.value)}
           placeholder={t('collections.workbench.urlPlaceholder', {
             template: DEFAULT_REQUEST_TEMPLATE,
           })}
@@ -4733,7 +4788,12 @@ function RequestToolbar({
           >
             <Copy className="h-4 w-4" />
           </Button>
-          <Button type="button" className="h-11 rounded-2xl px-5" onClick={onSend} loading={tab.isSending}>
+          <Button
+            type="button"
+            className="h-11 rounded-2xl px-5"
+            onClick={onSend}
+            loading={tab.isSending}
+          >
             <SendHorizonal className="h-4 w-4" />
             {t('collections.workbench.actions.send')}
           </Button>
@@ -4754,7 +4814,7 @@ function RequestSectionTabs({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {SECTION_ITEMS.map((item) => (
+      {SECTION_ITEMS.map(item => (
         <button
           key={item}
           type="button"
@@ -4791,8 +4851,8 @@ function RequestSectionPanel({
           mode={tab.paramsMode}
           rows={tab.paramsRows}
           bulkValue={tab.paramsBulk}
-          onModeChange={(mode) =>
-            onTabChange((current) =>
+          onModeChange={mode =>
+            onTabChange(current =>
               mode === 'bulk'
                 ? {
                     ...current,
@@ -4806,15 +4866,15 @@ function RequestSectionPanel({
                   }
             )
           }
-          onRowsChange={(rows) =>
-            onTabChange((current) => ({
+          onRowsChange={rows =>
+            onTabChange(current => ({
               ...current,
               paramsRows: rows,
               paramsBulk: rowsToBulkText(rows),
             }))
           }
-          onBulkChange={(bulkValue) =>
-            onTabChange((current) => ({
+          onBulkChange={bulkValue =>
+            onTabChange(current => ({
               ...current,
               paramsBulk: bulkValue,
             }))
@@ -4826,14 +4886,14 @@ function RequestSectionPanel({
         <AuthorizationPanel
           mode={tab.authorizationMode}
           value={tab.authorizationValue}
-          onModeChange={(mode) =>
-            onTabChange((current) => ({
+          onModeChange={mode =>
+            onTabChange(current => ({
               ...current,
               authorizationMode: mode,
             }))
           }
-          onValueChange={(value) =>
-            onTabChange((current) => ({
+          onValueChange={value =>
+            onTabChange(current => ({
               ...current,
               authorizationValue: value,
             }))
@@ -4848,8 +4908,8 @@ function RequestSectionPanel({
           mode={tab.headersMode}
           rows={tab.headersRows}
           bulkValue={tab.headersBulk}
-          onModeChange={(mode) =>
-            onTabChange((current) =>
+          onModeChange={mode =>
+            onTabChange(current =>
               mode === 'bulk'
                 ? {
                     ...current,
@@ -4863,15 +4923,15 @@ function RequestSectionPanel({
                   }
             )
           }
-          onRowsChange={(rows) =>
-            onTabChange((current) => ({
+          onRowsChange={rows =>
+            onTabChange(current => ({
               ...current,
               headersRows: rows,
               headersBulk: rowsToBulkText(rows),
             }))
           }
-          onBulkChange={(bulkValue) =>
-            onTabChange((current) => ({
+          onBulkChange={bulkValue =>
+            onTabChange(current => ({
               ...current,
               headersBulk: bulkValue,
             }))
@@ -4883,14 +4943,14 @@ function RequestSectionPanel({
         <BodyEditor
           mode={tab.bodyMode}
           value={tab.bodyContent}
-          onModeChange={(mode) =>
-            onTabChange((current) => ({
+          onModeChange={mode =>
+            onTabChange(current => ({
               ...current,
               bodyMode: mode,
             }))
           }
-          onValueChange={(value) =>
-            onTabChange((current) => ({
+          onValueChange={value =>
+            onTabChange(current => ({
               ...current,
               bodyContent: value,
             }))
@@ -4901,8 +4961,8 @@ function RequestSectionPanel({
       return (
         <ScriptsPanel
           value={tab.scripts}
-          onValueChange={(value) =>
-            onTabChange((current) => ({
+          onValueChange={value =>
+            onTabChange(current => ({
               ...current,
               scripts: value,
             }))
@@ -4914,7 +4974,7 @@ function RequestSectionPanel({
         <SettingsPanel
           settings={tab.settings}
           onSettingChange={(key, value) =>
-            onTabChange((current) => ({
+            onTabChange(current => ({
               ...current,
               settings: {
                 ...current.settings,
@@ -4950,11 +5010,11 @@ function KeyValueEditor({
 }) {
   const t = useT('project');
   const updateRow = (rowId: string, patch: Partial<KeyValueRow>) => {
-    onRowsChange(rows.map((row) => (row.id === rowId ? { ...row, ...patch } : row)));
+    onRowsChange(rows.map(row => (row.id === rowId ? { ...row, ...patch } : row)));
   };
 
   const removeRow = (rowId: string) => {
-    const nextRows = rows.filter((row) => row.id !== rowId);
+    const nextRows = rows.filter(row => row.id !== rowId);
     onRowsChange(nextRows.length > 0 ? nextRows : [createKeyValueRow()]);
   };
 
@@ -5010,7 +5070,7 @@ function KeyValueEditor({
         <div className="px-5 py-5">
           <Textarea
             value={bulkValue}
-            onChange={(event) => onBulkChange(event.target.value)}
+            onChange={event => onBulkChange(event.target.value)}
             rows={10}
             className="min-h-[220px] rounded-2xl font-mono text-sm"
             placeholder={t('collections.workbench.editors.bulkPlaceholder')}
@@ -5026,23 +5086,23 @@ function KeyValueEditor({
               <span />
             </div>
 
-            {rows.map((row) => (
+            {rows.map(row => (
               <div key={row.id} className="grid grid-cols-[1.05fr_1.25fr_1fr_56px] gap-3">
                 <Input
                   value={row.key}
-                  onChange={(event) => updateRow(row.id, { key: event.target.value })}
+                  onChange={event => updateRow(row.id, { key: event.target.value })}
                   placeholder={t('collections.workbench.editors.keyPlaceholder')}
                   className="rounded-2xl"
                 />
                 <Input
                   value={row.value}
-                  onChange={(event) => updateRow(row.id, { value: event.target.value })}
+                  onChange={event => updateRow(row.id, { value: event.target.value })}
                   placeholder="1"
                   className="rounded-2xl"
                 />
                 <Input
                   value={row.description}
-                  onChange={(event) => updateRow(row.id, { description: event.target.value })}
+                  onChange={event => updateRow(row.id, { description: event.target.value })}
                   placeholder={t('collections.workbench.editors.descriptionPlaceholder')}
                   className="rounded-2xl"
                 />
@@ -5089,12 +5149,15 @@ function AuthorizationPanel({
             <Label htmlFor="request-auth-mode">
               {t('collections.workbench.authorization.typeLabel')}
             </Label>
-            <Select value={mode} onValueChange={(nextValue) => onModeChange(nextValue as AuthorizationMode)}>
+            <Select
+              value={mode}
+              onValueChange={nextValue => onModeChange(nextValue as AuthorizationMode)}
+            >
               <SelectTrigger id="request-auth-mode" className="rounded-2xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {AUTHORIZATION_OPTIONS.map((option) => (
+                {AUTHORIZATION_OPTIONS.map(option => (
                   <SelectItem key={option} value={option}>
                     {getAuthorizationModeLabel(t, option)}
                   </SelectItem>
@@ -5119,13 +5182,11 @@ function AuthorizationPanel({
             </div>
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="request-auth-value">
-                {getAuthCredentialLabel(t, mode)}
-              </Label>
+              <Label htmlFor="request-auth-value">{getAuthCredentialLabel(t, mode)}</Label>
               <Input
                 id="request-auth-value"
                 value={value}
-                onChange={(event) => onValueChange(event.target.value)}
+                onChange={event => onValueChange(event.target.value)}
                 placeholder={getAuthCredentialPlaceholder(t, mode)}
                 className="rounded-2xl"
               />
@@ -5163,7 +5224,7 @@ function BodyEditor({
         </div>
 
         <div className="inline-flex rounded-full border border-border/60 bg-slate-50/80 p-1">
-          {BODY_MODE_OPTIONS.map((option) => (
+          {BODY_MODE_OPTIONS.map(option => (
             <button
               key={option}
               type="button"
@@ -5184,13 +5245,11 @@ function BodyEditor({
       <div className="px-5 py-5">
         <Textarea
           value={value}
-          onChange={(event) => onValueChange(event.target.value)}
+          onChange={event => onValueChange(event.target.value)}
           rows={14}
           className="min-h-[280px] rounded-2xl font-mono text-sm"
           placeholder={
-            mode === 'form-data'
-              ? t('collections.workbench.body.formDataPlaceholder')
-              : '{\n  \n}'
+            mode === 'form-data' ? t('collections.workbench.body.formDataPlaceholder') : '{\n  \n}'
           }
         />
       </div>
@@ -5216,7 +5275,7 @@ function ScriptsPanel({
       <CardContent className="px-5 py-5">
         <Textarea
           value={value}
-          onChange={(event) => onValueChange(event.target.value)}
+          onChange={event => onValueChange(event.target.value)}
           rows={14}
           className="min-h-[280px] rounded-2xl font-mono text-sm"
           placeholder={t('collections.workbench.scripts.placeholder')}
@@ -5258,7 +5317,7 @@ function SettingsPanel({
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">
-      {settingItems.map((item) => (
+      {settingItems.map(item => (
         <Card key={item.key} className="border-border/60 bg-white/85 py-0 shadow-sm">
           <CardHeader className="border-b border-border/60 py-5">
             <div className="flex items-center justify-between gap-3">
@@ -5268,7 +5327,7 @@ function SettingsPanel({
               </div>
               <Switch
                 checked={settings[item.key]}
-                onCheckedChange={(checked) => onSettingChange(item.key, checked)}
+                onCheckedChange={checked => onSettingChange(item.key, checked)}
               />
             </div>
           </CardHeader>
@@ -5321,7 +5380,9 @@ function ResponsePanel({
             </Button>
             <MetricBadge
               label={t('common.status')}
-              value={response.status !== null ? `${response.status} ${response.statusLabel}`.trim() : '-'}
+              value={
+                response.status !== null ? `${response.status} ${response.statusLabel}`.trim() : '-'
+              }
             />
             <MetricBadge
               label={t('common.duration')}
@@ -5369,7 +5430,9 @@ function ResponsePanel({
                 <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                   {t('common.headers')}
                 </p>
-                <pre className="overflow-auto text-xs leading-6 text-slate-700">{responseHeaders}</pre>
+                <pre className="overflow-auto text-xs leading-6 text-slate-700">
+                  {responseHeaders}
+                </pre>
               </div>
             ) : null}
             <pre className="flex-1 overflow-auto rounded-[24px] border border-border/60 bg-slate-950/95 p-5 text-sm leading-6 text-slate-100">
@@ -5382,13 +5445,7 @@ function ResponsePanel({
   );
 }
 
-function MetricBadge({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function MetricBadge({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-full border border-border/60 bg-slate-50/80 px-3 py-1.5 text-sm">
       <span className="text-text-muted">{label}: </span>
@@ -5397,13 +5454,7 @@ function MetricBadge({
   );
 }
 
-function MethodBadge({
-  method,
-  compact = false,
-}: {
-  method: RequestMethod;
-  compact?: boolean;
-}) {
+function MethodBadge({ method, compact = false }: { method: RequestMethod; compact?: boolean }) {
   return (
     <span
       className={cn(

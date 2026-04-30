@@ -13,8 +13,8 @@ type CreateProjectInvitationRequest struct {
 }
 
 type ProjectInvitationResponse struct {
-	ID string       `json:"id"`
-	ProjectID string       `json:"project_id"`
+	ID            string     `json:"id"`
+	ProjectID     string     `json:"project_id"`
 	TokenPrefix   string     `json:"token_prefix"`
 	Slug          string     `json:"slug"`
 	Role          string     `json:"role"`
@@ -25,13 +25,13 @@ type ProjectInvitationResponse struct {
 	RemainingUses *int       `json:"remaining_uses"`
 	ExpiresAt     *time.Time `json:"expires_at,omitempty"`
 	LastUsedAt    *time.Time `json:"last_used_at,omitempty"`
-	CreatedBy     uint       `json:"created_by"`
+	CreatedBy     string     `json:"created_by"`
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
 type PublicProjectInvitationResponse struct {
-	ProjectID string       `json:"project_id"`
+	ProjectID     string     `json:"project_id"`
 	ProjectName   string     `json:"project_name"`
 	ProjectSlug   string     `json:"project_slug"`
 	Role          string     `json:"role"`
@@ -42,12 +42,12 @@ type PublicProjectInvitationResponse struct {
 }
 
 type AcceptedProjectInvitationMember struct {
-	UserID uint   `json:"user_id"`
+	UserID string `json:"user_id"`
 	Role   string `json:"role"`
 }
 
 type AcceptProjectInvitationResponse struct {
-	ProjectID string                            `json:"project_id"`
+	ProjectID  string                          `json:"project_id"`
 	Member     AcceptedProjectInvitationMember `json:"member"`
 	RedirectTo string                          `json:"redirect_to"`
 }

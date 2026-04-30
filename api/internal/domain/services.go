@@ -16,8 +16,8 @@ type PasswordHasher interface {
 
 // TokenGenerator defines the contract for token generation
 type TokenGenerator interface {
-	Generate(userID uint, username string) (string, error)
-	Validate(token string) (userID uint, username string, err error)
+	Generate(userID string, username string) (string, error)
+	Validate(token string) (userID string, username string, err error)
 }
 
 // AuthenticationService handles user authentication logic
@@ -177,7 +177,7 @@ func NewPasswordService(userRepo UserRepository, hasher PasswordHasher) *Passwor
 }
 
 // ChangePassword changes a user's password
-func (s *PasswordService) ChangePassword(ctx context.Context, userID uint, oldPassword, newPassword string) error {
+func (s *PasswordService) ChangePassword(ctx context.Context, userID string, oldPassword, newPassword string) error {
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		return ErrUserNotFound
@@ -204,7 +204,7 @@ func (s *PasswordService) ChangePassword(ctx context.Context, userID uint, oldPa
 }
 
 // ResetPassword resets a user's password (admin operation)
-func (s *PasswordService) ResetPassword(ctx context.Context, userID uint, newPassword string) error {
+func (s *PasswordService) ResetPassword(ctx context.Context, userID string, newPassword string) error {
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		return ErrUserNotFound

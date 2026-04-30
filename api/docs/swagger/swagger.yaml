@@ -1,16 +1,16 @@
 basePath: /v1
 definitions:
-  internal_modules_permission.AssignRoleRequest:
+  permission.AssignRoleRequest:
     properties:
       role_id:
-        type: integer
+        type: string
       user_id:
-        type: integer
+        type: string
     required:
     - role_id
     - user_id
     type: object
-  internal_modules_permission.CreateRoleRequest:
+  permission.CreateRoleRequest:
     properties:
       description:
         type: string
@@ -23,20 +23,20 @@ definitions:
     required:
     - name
     type: object
-  internal_modules_permission.PermissionResponse:
+  permission.PermissionResponse:
     properties:
       description:
         type: string
       display_name:
         type: string
       id:
-        type: integer
+        type: string
       module:
         type: string
       name:
         type: string
     type: object
-  internal_modules_permission.RoleResponse:
+  permission.RoleResponse:
     properties:
       created_at:
         type: string
@@ -45,13 +45,13 @@ definitions:
       display_name:
         type: string
       id:
-        type: integer
+        type: string
       is_default:
         type: boolean
       name:
         type: string
     type: object
-  internal_modules_permission.UpdateRoleRequest:
+  permission.UpdateRoleRequest:
     properties:
       description:
         type: string
@@ -60,16 +60,16 @@ definitions:
       name:
         type: string
     type: object
-  internal_modules_permission.UserRolesResponse:
+  permission.UserRolesResponse:
     properties:
       roles:
         items:
-          $ref: '#/definitions/internal_modules_permission.RoleResponse'
+          $ref: '#/definitions/permission.RoleResponse'
         type: array
       user_id:
-        type: integer
+        type: string
     type: object
-  internal_modules_workspace.AddMemberRequest:
+  workspace.AddMemberRequest:
     properties:
       role:
         enum:
@@ -79,12 +79,12 @@ definitions:
         - viewer
         type: string
       user_id:
-        type: integer
+        type: string
     required:
     - role
     - user_id
     type: object
-  internal_modules_workspace.CreateWorkspaceRequest:
+  workspace.CreateWorkspaceRequest:
     properties:
       description:
         maxLength: 500
@@ -112,7 +112,7 @@ definitions:
     - slug
     - type
     type: object
-  internal_modules_workspace.UpdateMemberRoleRequest:
+  workspace.UpdateMemberRoleRequest:
     properties:
       role:
         enum:
@@ -124,7 +124,7 @@ definitions:
     required:
     - role
     type: object
-  internal_modules_workspace.UpdateWorkspaceRequest:
+  workspace.UpdateWorkspaceRequest:
     properties:
       description:
         maxLength: 500
@@ -139,39 +139,39 @@ definitions:
         - public
         type: string
     type: object
-  internal_modules_workspace.WorkspaceMemberResponse:
+  workspace.WorkspaceMemberResponse:
     properties:
       email:
         description: Joined from users table
         type: string
       id:
-        type: integer
+        type: string
       invited_by:
-        type: integer
+        type: string
       joined_at:
         type: string
       role:
         type: string
       user_id:
-        type: integer
+        type: string
       username:
         description: Joined from users table
         type: string
       workspace_id:
-        type: integer
+        type: string
     type: object
-  internal_modules_workspace.WorkspaceResponse:
+  workspace.WorkspaceResponse:
     properties:
       created_at:
         type: string
       description:
         type: string
       id:
-        type: integer
+        type: string
       name:
         type: string
       owner_id:
-        type: integer
+        type: string
       settings:
         additionalProperties: true
         type: object
@@ -207,7 +207,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_permission.PermissionResponse'
+              $ref: '#/definitions/permission.PermissionResponse'
             type: array
       summary: List all permissions
       tags:
@@ -221,7 +221,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_permission.RoleResponse'
+              $ref: '#/definitions/permission.RoleResponse'
             type: array
       summary: List all roles
       tags:
@@ -235,14 +235,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_permission.CreateRoleRequest'
+          $ref: '#/definitions/permission.CreateRoleRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_modules_permission.RoleResponse'
+            $ref: '#/definitions/permission.RoleResponse'
       summary: Create a new role
       tags:
       - Roles
@@ -253,7 +253,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       responses:
         "204":
           description: No Content
@@ -266,14 +266,14 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_permission.RoleResponse'
+            $ref: '#/definitions/permission.RoleResponse'
       summary: Get a role
       tags:
       - Roles
@@ -285,20 +285,20 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: Role details
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_permission.UpdateRoleRequest'
+          $ref: '#/definitions/permission.UpdateRoleRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_permission.RoleResponse'
+            $ref: '#/definitions/permission.RoleResponse'
       summary: Update a role
       tags:
       - Roles
@@ -312,7 +312,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_permission.AssignRoleRequest'
+          $ref: '#/definitions/permission.AssignRoleRequest'
       responses:
         "204":
           description: No Content
@@ -329,7 +329,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_permission.AssignRoleRequest'
+          $ref: '#/definitions/permission.AssignRoleRequest'
       responses:
         "204":
           description: No Content
@@ -343,14 +343,14 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_permission.UserRolesResponse'
+            $ref: '#/definitions/permission.UserRolesResponse'
       summary: Get user roles
       tags:
       - Roles
@@ -363,7 +363,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_workspace.WorkspaceResponse'
+              $ref: '#/definitions/workspace.WorkspaceResponse'
             type: array
       summary: List workspaces
       tags:
@@ -377,14 +377,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_workspace.CreateWorkspaceRequest'
+          $ref: '#/definitions/workspace.CreateWorkspaceRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_modules_workspace.WorkspaceResponse'
+            $ref: '#/definitions/workspace.WorkspaceResponse'
       summary: Create a new workspace
       tags:
       - Workspace
@@ -395,7 +395,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       responses:
         "204":
           description: No Content
@@ -408,14 +408,14 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_workspace.WorkspaceResponse'
+            $ref: '#/definitions/workspace.WorkspaceResponse'
       summary: Get workspace details
       tags:
       - Workspace
@@ -427,20 +427,20 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: Update details
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_workspace.UpdateWorkspaceRequest'
+          $ref: '#/definitions/workspace.UpdateWorkspaceRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_modules_workspace.WorkspaceResponse'
+            $ref: '#/definitions/workspace.WorkspaceResponse'
       summary: Update workspace
       tags:
       - Workspace
@@ -451,7 +451,7 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -459,7 +459,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/internal_modules_workspace.WorkspaceMemberResponse'
+              $ref: '#/definitions/workspace.WorkspaceMemberResponse'
             type: array
       summary: List workspace members
       tags:
@@ -472,13 +472,13 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: Member details
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_workspace.AddMemberRequest'
+          $ref: '#/definitions/workspace.AddMemberRequest'
       produces:
       - application/json
       responses:
@@ -494,12 +494,12 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: User ID
         in: path
         name: uid
         required: true
-        type: integer
+        type: string
       responses:
         "204":
           description: Member removed
@@ -514,18 +514,18 @@ paths:
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       - description: User ID
         in: path
         name: uid
         required: true
-        type: integer
+        type: string
       - description: Role update
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/internal_modules_workspace.UpdateMemberRoleRequest'
+          $ref: '#/definitions/workspace.UpdateMemberRoleRequest'
       produces:
       - application/json
       responses:

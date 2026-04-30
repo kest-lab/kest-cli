@@ -19,7 +19,7 @@ type Repository interface {
 	GetInvitationBySlug(ctx context.Context, slug string) (*ProjectInvitation, error)
 	UpdateInvitation(ctx context.Context, invitation *ProjectInvitation) error
 	GetProjectSummary(ctx context.Context, projectID string) (*ProjectSummary, error)
-	AcceptInvitation(ctx context.Context, invitation *ProjectInvitation, userID uint, acceptedAt time.Time) error
+	AcceptInvitation(ctx context.Context, invitation *ProjectInvitation, userID string, acceptedAt time.Time) error
 }
 
 type repository struct {
@@ -122,7 +122,7 @@ func (r *repository) GetProjectSummary(ctx context.Context, projectID string) (*
 func (r *repository) AcceptInvitation(
 	ctx context.Context,
 	invitation *ProjectInvitation,
-	userID uint,
+	userID string,
 	acceptedAt time.Time,
 ) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {

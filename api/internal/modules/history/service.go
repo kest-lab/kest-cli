@@ -18,7 +18,7 @@ type Service interface {
 	Record(ctx context.Context, req *RecordHistoryRequest) (*History, error)
 	GetByID(ctx context.Context, id string) (*History, error)
 	List(ctx context.Context, projectID string, entityType string, entityID string, page, perPage int) ([]*History, int64, error)
-	SyncHistoryFromCLI(ctx context.Context, projectID string, createdBy uint, req *CLIHistorySyncInput) (*CLIHistorySyncResult, error)
+	SyncHistoryFromCLI(ctx context.Context, projectID string, createdBy string, req *CLIHistorySyncInput) (*CLIHistorySyncResult, error)
 }
 
 type service struct {
@@ -68,7 +68,7 @@ func (s *service) List(ctx context.Context, projectID string, entityType string,
 	return s.repo.ListByEntity(ctx, projectID, entityType, entityID, page, perPage)
 }
 
-func (s *service) SyncHistoryFromCLI(ctx context.Context, projectID string, createdBy uint, req *CLIHistorySyncInput) (*CLIHistorySyncResult, error) {
+func (s *service) SyncHistoryFromCLI(ctx context.Context, projectID string, createdBy string, req *CLIHistorySyncInput) (*CLIHistorySyncResult, error) {
 	result := &CLIHistorySyncResult{}
 
 	for _, entry := range req.Entries {

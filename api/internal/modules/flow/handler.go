@@ -13,6 +13,7 @@ import (
 	"github.com/kest-labs/kest/api/internal/contracts"
 	"github.com/kest-labs/kest/api/internal/infra/router"
 	"github.com/kest-labs/kest/api/internal/modules/member"
+	"github.com/kest-labs/kest/api/pkg/handler"
 	"github.com/kest-labs/kest/api/pkg/response"
 )
 
@@ -44,61 +45,28 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 // --- helpers ---
 
 func (h *Handler) projectID(c *gin.Context) (string, bool) {
-	id := strings.TrimSpace(c.Param("id"))
-	if id == "" {
-		response.Error(c, http.StatusBadRequest, "Invalid project ID")
-		return "", false
-	}
-	return id, true
+	return handler.ParseID(c, "id")
 }
 
 func (h *Handler) flowID(c *gin.Context) (string, bool) {
-	id := strings.TrimSpace(c.Param("fid"))
-	if id == "" {
-		response.Error(c, http.StatusBadRequest, "Invalid flow ID")
-		return "", false
-	}
-	return id, true
+	return handler.ParseID(c, "fid")
 }
 
 func (h *Handler) stepID(c *gin.Context) (string, bool) {
-	id := strings.TrimSpace(c.Param("sid"))
-	if id == "" {
-		response.Error(c, http.StatusBadRequest, "Invalid step ID")
-		return "", false
-	}
-	return id, true
+	return handler.ParseID(c, "sid")
 }
 
 func (h *Handler) edgeID(c *gin.Context) (string, bool) {
-	id := strings.TrimSpace(c.Param("eid"))
-	if id == "" {
-		response.Error(c, http.StatusBadRequest, "Invalid edge ID")
-		return "", false
-	}
-	return id, true
+	return handler.ParseID(c, "eid")
 }
 
 func (h *Handler) runID(c *gin.Context) (string, bool) {
-	id := strings.TrimSpace(c.Param("rid"))
-	if id == "" {
-		response.Error(c, http.StatusBadRequest, "Invalid run ID")
-		return "", false
-	}
-	return id, true
+	return handler.ParseID(c, "rid")
 }
 
-func (h *Handler) userID(c *gin.Context) uint {
-	uid, _ := c.Get("userID")
-	switch v := uid.(type) {
-	case uint:
-		return v
-	case float64:
-		return uint(v)
-	case int:
-		return uint(v)
-	}
-	return 0
+func (h *Handler) userID(c *gin.Context) string {
+	userID, _ := handler.GetUserID(c)
+	return userID
 }
 
 func resolveRunBaseURL(c *gin.Context) (string, error) {

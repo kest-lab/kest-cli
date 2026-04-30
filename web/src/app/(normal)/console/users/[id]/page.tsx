@@ -9,11 +9,9 @@ interface UserDetailPageProps {
 
 export default async function UserDetailPage({ params }: UserDetailPageProps) {
   const { id } = await params;
-  const userId = Number(id);
-
-  if (!Number.isInteger(userId) || userId <= 0) {
+  if (!id.trim()) {
     notFound();
   }
 
-  return <UserDetail userId={userId} />;
+  return <UserDetail userId={id} />;
 }

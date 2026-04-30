@@ -7,7 +7,7 @@ import (
 
 // CreateTestCaseRequest represents the request to create a test case
 type CreateTestCaseRequest struct {
-	APISpecID string              `json:"api_spec_id" binding:"required"`
+	APISpecID   string            `json:"api_spec_id" binding:"required"`
 	Name        string            `json:"name" binding:"required,max=255"`
 	Description string            `json:"description,omitempty"`
 	Env         string            `json:"env,omitempty" binding:"omitempty,max=50"`
@@ -38,8 +38,8 @@ type UpdateTestCaseRequest struct {
 
 // TestCaseResponse represents the response for a test case
 type TestCaseResponse struct {
-	ID string              `json:"id"`
-	APISpecID string              `json:"api_spec_id"`
+	ID          string            `json:"id"`
+	APISpecID   string            `json:"api_spec_id"`
 	Method      string            `json:"method,omitempty"`
 	Path        string            `json:"path,omitempty"`
 	Name        string            `json:"name"`
@@ -53,18 +53,18 @@ type TestCaseResponse struct {
 	PostScript  string            `json:"post_script,omitempty"`
 	Assertions  []Assertion       `json:"assertions,omitempty"`
 	ExtractVars []ExtractVar      `json:"extract_vars,omitempty"`
-	CreatedBy   uint              `json:"created_by"`
+	CreatedBy   string            `json:"created_by"`
 	CreatedAt   time.Time         `json:"created_at"`
 	UpdatedAt   time.Time         `json:"updated_at"`
 }
 
 // FromSpecRequest represents the request to create a test case from an API spec
 type FromSpecRequest struct {
-	APISpecID string   `json:"api_spec_id" binding:"required"`
-	Name       string `json:"name" binding:"required,max=255"`
-	Env        string `json:"env,omitempty" binding:"omitempty,max=50"`
-	UseExample bool   `json:"use_example,omitempty"`
-	ExampleID *string  `json:"example_id,omitempty"`
+	APISpecID  string  `json:"api_spec_id" binding:"required"`
+	Name       string  `json:"name" binding:"required,max=255"`
+	Env        string  `json:"env,omitempty" binding:"omitempty,max=50"`
+	UseExample bool    `json:"use_example,omitempty"`
+	ExampleID  *string `json:"example_id,omitempty"`
 }
 
 // DuplicateRequest represents the request to duplicate a test case
@@ -226,13 +226,13 @@ type PaginationMeta struct {
 // ========== Run DTOs ==========
 
 type RunTestCaseRequest struct {
-	EnvID *string             `json:"env_id"`        // Optional: override environment
+	EnvID        *string           `json:"env_id"`        // Optional: override environment
 	GlobalVars   map[string]any    `json:"global_vars"`   // Optional: provided by caller (e.g. collection run)
 	VariableKeys map[string]string `json:"variable_keys"` // Optional: override variables
 }
 
 type RunTestCaseResponse struct {
-	TestCaseID string               `json:"test_case_id"`
+	TestCaseID string             `json:"test_case_id"`
 	Status     string             `json:"status"` // pass, fail, error
 	Message    string             `json:"message,omitempty"`
 	DurationMs int64              `json:"duration_ms"`
@@ -267,8 +267,8 @@ type AssertionResult struct {
 
 // TestRunResponse represents a single test run history record
 type TestRunResponse struct {
-	ID string               `json:"id"`
-	TestCaseID string               `json:"test_case_id"`
+	ID         string             `json:"id"`
+	TestCaseID string             `json:"test_case_id"`
 	Status     string             `json:"status"`
 	DurationMs int64              `json:"duration_ms"`
 	Request    *RunRequestInfo    `json:"request,omitempty"`

@@ -9,23 +9,23 @@ import (
 type Service interface {
 	// Role management
 	CreateRole(ctx context.Context, req *CreateRoleRequest) (*RoleResponse, error)
-	UpdateRole(ctx context.Context, id uint, req *UpdateRoleRequest) (*RoleResponse, error)
-	DeleteRole(ctx context.Context, id uint) error
-	GetRole(ctx context.Context, id uint) (*RoleResponse, error)
+	UpdateRole(ctx context.Context, id string, req *UpdateRoleRequest) (*RoleResponse, error)
+	DeleteRole(ctx context.Context, id string) error
+	GetRole(ctx context.Context, id string) (*RoleResponse, error)
 	ListRoles(ctx context.Context) ([]*RoleResponse, error)
 
 	// User role management
-	AssignRoleToUser(ctx context.Context, userID, roleID uint) error
-	RemoveRoleFromUser(ctx context.Context, userID, roleID uint) error
-	GetUserRoles(ctx context.Context, userID uint) ([]*RoleResponse, error)
+	AssignRoleToUser(ctx context.Context, userID, roleID string) error
+	RemoveRoleFromUser(ctx context.Context, userID, roleID string) error
+	GetUserRoles(ctx context.Context, userID string) ([]*RoleResponse, error)
 
 	// Permission checking
-	HasPermission(ctx context.Context, userID uint, permission string) (bool, error)
-	GetRolePermissions(ctx context.Context, roleID uint) ([]*PermissionResponse, error)
+	HasPermission(ctx context.Context, userID string, permission string) (bool, error)
+	GetRolePermissions(ctx context.Context, roleID string) ([]*PermissionResponse, error)
 
 	// Permission management
-	AssignPermissionToRole(ctx context.Context, roleID, permissionID uint) error
-	RemovePermissionFromRole(ctx context.Context, roleID, permissionID uint) error
+	AssignPermissionToRole(ctx context.Context, roleID, permissionID string) error
+	RemovePermissionFromRole(ctx context.Context, roleID, permissionID string) error
 	ListPermissions(ctx context.Context) ([]*PermissionResponse, error)
 }
 
@@ -56,7 +56,7 @@ func (s *service) CreateRole(ctx context.Context, req *CreateRoleRequest) (*Role
 }
 
 // UpdateRole updates an existing role
-func (s *service) UpdateRole(ctx context.Context, id uint, req *UpdateRoleRequest) (*RoleResponse, error) {
+func (s *service) UpdateRole(ctx context.Context, id string, req *UpdateRoleRequest) (*RoleResponse, error) {
 	role, err := s.repo.FindRoleByID(ctx, id)
 	if err != nil {
 		return nil, errors.New("role not found")
@@ -80,12 +80,12 @@ func (s *service) UpdateRole(ctx context.Context, id uint, req *UpdateRoleReques
 }
 
 // DeleteRole deletes a role
-func (s *service) DeleteRole(ctx context.Context, id uint) error {
+func (s *service) DeleteRole(ctx context.Context, id string) error {
 	return s.repo.DeleteRole(ctx, id)
 }
 
 // GetRole gets a role by ID
-func (s *service) GetRole(ctx context.Context, id uint) (*RoleResponse, error) {
+func (s *service) GetRole(ctx context.Context, id string) (*RoleResponse, error) {
 	role, err := s.repo.FindRoleByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -108,17 +108,17 @@ func (s *service) ListRoles(ctx context.Context) ([]*RoleResponse, error) {
 }
 
 // AssignRoleToUser assigns a role to a user
-func (s *service) AssignRoleToUser(ctx context.Context, userID, roleID uint) error {
+func (s *service) AssignRoleToUser(ctx context.Context, userID, roleID string) error {
 	return s.repo.AssignRoleToUser(ctx, userID, roleID)
 }
 
 // RemoveRoleFromUser removes a role from a user
-func (s *service) RemoveRoleFromUser(ctx context.Context, userID, roleID uint) error {
+func (s *service) RemoveRoleFromUser(ctx context.Context, userID, roleID string) error {
 	return s.repo.RemoveRoleFromUser(ctx, userID, roleID)
 }
 
 // GetUserRoles gets all roles for a user
-func (s *service) GetUserRoles(ctx context.Context, userID uint) ([]*RoleResponse, error) {
+func (s *service) GetUserRoles(ctx context.Context, userID string) ([]*RoleResponse, error) {
 	roles, err := s.repo.FindRolesByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -132,12 +132,12 @@ func (s *service) GetUserRoles(ctx context.Context, userID uint) ([]*RoleRespons
 }
 
 // HasPermission checks if a user has a specific permission
-func (s *service) HasPermission(ctx context.Context, userID uint, permission string) (bool, error) {
+func (s *service) HasPermission(ctx context.Context, userID string, permission string) (bool, error) {
 	return s.repo.HasPermission(ctx, userID, permission)
 }
 
 // GetRolePermissions gets all permissions for a role
-func (s *service) GetRolePermissions(ctx context.Context, roleID uint) ([]*PermissionResponse, error) {
+func (s *service) GetRolePermissions(ctx context.Context, roleID string) ([]*PermissionResponse, error) {
 	perms, err := s.repo.FindPermissionsByRoleID(ctx, roleID)
 	if err != nil {
 		return nil, err
@@ -151,12 +151,12 @@ func (s *service) GetRolePermissions(ctx context.Context, roleID uint) ([]*Permi
 }
 
 // AssignPermissionToRole assigns a permission to a role
-func (s *service) AssignPermissionToRole(ctx context.Context, roleID, permissionID uint) error {
+func (s *service) AssignPermissionToRole(ctx context.Context, roleID, permissionID string) error {
 	return s.repo.AssignPermissionToRole(ctx, roleID, permissionID)
 }
 
 // RemovePermissionFromRole removes a permission from a role
-func (s *service) RemovePermissionFromRole(ctx context.Context, roleID, permissionID uint) error {
+func (s *service) RemovePermissionFromRole(ctx context.Context, roleID, permissionID string) error {
 	return s.repo.RemovePermissionFromRole(ctx, roleID, permissionID)
 }
 

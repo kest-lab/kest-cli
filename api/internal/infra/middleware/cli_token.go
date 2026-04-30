@@ -10,7 +10,7 @@ import (
 )
 
 type ProjectCLITokenValidator interface {
-	ValidateCLIToken(ctx context.Context, projectID string, rawToken string, requiredScopes []string) (string, uint, error)
+	ValidateCLIToken(ctx context.Context, projectID string, rawToken string, requiredScopes []string) (string, string, error)
 }
 
 // RequireProjectCLIToken validates a project-scoped CLI token and enforces required scopes.

@@ -17,16 +17,16 @@ const defaultInvitationValidity = 7 * 24 * time.Hour
 
 // ProjectInvitationPO stores shareable project invitation links.
 type ProjectInvitationPO struct {
-	ID string `gorm:"primaryKey"`
+	ID          string `gorm:"primaryKey"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
-	ProjectID string           `gorm:"not null;index"`
+	ProjectID   string         `gorm:"not null;index"`
 	TokenHash   string         `gorm:"size:64;not null;uniqueIndex"`
 	TokenPrefix string         `gorm:"size:32;not null;index"`
 	Slug        string         `gorm:"size:64;not null;uniqueIndex"`
 	Role        string         `gorm:"size:20;not null"`
-	CreatedBy   uint           `gorm:"not null;index"`
+	CreatedBy   string         `gorm:"not null;index"`
 	Status      string         `gorm:"size:20;not null;index"`
 	MaxUses     int            `gorm:"not null;default:1"`
 	UsedCount   int            `gorm:"not null;default:0"`
@@ -40,12 +40,12 @@ func (ProjectInvitationPO) TableName() string {
 
 // ProjectInvitation is the service-layer invitation entity.
 type ProjectInvitation struct {
-	ID string       `json:"id"`
-	ProjectID string       `json:"project_id"`
+	ID          string     `json:"id"`
+	ProjectID   string     `json:"project_id"`
 	TokenPrefix string     `json:"token_prefix"`
 	Slug        string     `json:"slug"`
 	Role        string     `json:"role"`
-	CreatedBy   uint       `json:"created_by"`
+	CreatedBy   string     `json:"created_by"`
 	Status      string     `json:"status"`
 	MaxUses     int        `json:"max_uses"`
 	UsedCount   int        `json:"used_count"`
@@ -57,7 +57,7 @@ type ProjectInvitation struct {
 
 // ProjectSummary is a lightweight project projection used by public invite pages.
 type ProjectSummary struct {
-	ID string
+	ID   string
 	Name string
 	Slug string
 }

@@ -6,7 +6,7 @@ import (
 )
 
 type APISpecAIDraftSpec struct {
-	CategoryID *string                   `json:"category_id,omitempty"`
+	CategoryID  *string                 `json:"category_id,omitempty"`
 	Method      string                  `json:"method"`
 	Path        string                  `json:"path"`
 	Summary     string                  `json:"summary"`
@@ -25,7 +25,7 @@ type APISpecAIDraftFieldInsight struct {
 }
 
 type APISpecAIDraftReference struct {
-	ID string     `json:"id"`
+	ID       string   `json:"id"`
 	Method   string   `json:"method"`
 	Path     string   `json:"path"`
 	Summary  string   `json:"summary"`
@@ -46,13 +46,13 @@ type APISpecAIDraftConventions struct {
 }
 
 type CreateAPISpecAIDraftRequest struct {
-	Intent                string `json:"intent" binding:"required"`
-	Method                string `json:"method" binding:"omitempty,oneof=GET POST PUT DELETE PATCH HEAD OPTIONS"`
-	Path                  string `json:"path" binding:"omitempty,max=500"`
-	CategoryID *string  `json:"category_id"`
-	UseProjectConventions *bool  `json:"use_project_conventions"`
+	Intent                string   `json:"intent" binding:"required"`
+	Method                string   `json:"method" binding:"omitempty,oneof=GET POST PUT DELETE PATCH HEAD OPTIONS"`
+	Path                  string   `json:"path" binding:"omitempty,max=500"`
+	CategoryID            *string  `json:"category_id"`
+	UseProjectConventions *bool    `json:"use_project_conventions"`
 	ReferenceSpecIDs      []string `json:"reference_spec_ids"`
-	Lang                  string `json:"lang" binding:"omitempty,oneof=en zh"`
+	Lang                  string   `json:"lang" binding:"omitempty,oneof=en zh"`
 }
 
 type RefineAPISpecAIDraftRequest struct {
@@ -70,10 +70,10 @@ type AcceptAPISpecAIDraftRequest struct {
 }
 
 type APISpecAIDraftResponse struct {
-	ID string                                  `json:"id"`
-	ProjectID string                                  `json:"project_id"`
-	CreatedBy      uint                                  `json:"created_by"`
-	AcceptedSpecID *string                                 `json:"accepted_spec_id,omitempty"`
+	ID             string                                `json:"id"`
+	ProjectID      string                                `json:"project_id"`
+	CreatedBy      string                                `json:"created_by"`
+	AcceptedSpecID *string                               `json:"accepted_spec_id,omitempty"`
 	Status         string                                `json:"status"`
 	Intent         string                                `json:"intent"`
 	SeedInput      CreateAPISpecAIDraftRequest           `json:"seed_input"`
@@ -88,7 +88,7 @@ type APISpecAIDraftResponse struct {
 }
 
 type AcceptAPISpecAIDraftResponse struct {
-	DraftID string             `json:"draft_id"`
+	DraftID       string           `json:"draft_id"`
 	Spec          *APISpecResponse `json:"spec"`
 	GeneratedTest string           `json:"generated_test,omitempty"`
 	Warnings      []string         `json:"warnings,omitempty"`

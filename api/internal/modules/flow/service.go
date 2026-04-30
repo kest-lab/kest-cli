@@ -9,7 +9,7 @@ import (
 // Service defines the business logic interface for flows
 type Service interface {
 	// Flow CRUD
-	CreateFlow(ctx context.Context, projectID string, userID uint, req *CreateFlowRequest) (*FlowResponse, error)
+	CreateFlow(ctx context.Context, projectID string, userID string, req *CreateFlowRequest) (*FlowResponse, error)
 	GetFlow(ctx context.Context, id string) (*FlowDetailResponse, error)
 	ListFlows(ctx context.Context, projectID string) ([]*FlowResponse, error)
 	UpdateFlow(ctx context.Context, id string, req *UpdateFlowRequest) (*FlowResponse, error)
@@ -27,7 +27,7 @@ type Service interface {
 	DeleteEdge(ctx context.Context, id string) error
 
 	// Run
-	RunFlow(ctx context.Context, flowID string, userID uint) (*RunResponse, error)
+	RunFlow(ctx context.Context, flowID string, userID string) (*RunResponse, error)
 	ExecuteFlow(ctx context.Context, runID string, baseURL string, events chan<- StepEvent) error
 	GetRun(ctx context.Context, runID string) (*RunResponse, error)
 	ListRuns(ctx context.Context, flowID string) ([]*RunResponse, error)
@@ -44,7 +44,7 @@ func NewService(repo Repository) Service {
 
 // --- Flow CRUD ---
 
-func (s *service) CreateFlow(ctx context.Context, projectID string, userID uint, req *CreateFlowRequest) (*FlowResponse, error) {
+func (s *service) CreateFlow(ctx context.Context, projectID string, userID string, req *CreateFlowRequest) (*FlowResponse, error) {
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
 		return nil, newFlowError(422, "flow name is required")
@@ -490,7 +490,7 @@ func (s *service) ExecuteFlow(ctx context.Context, runID string, baseURL string,
 	return runner.Execute(ctx, run, stepValues, edgeValues, events)
 }
 
-func (s *service) RunFlow(ctx context.Context, flowID string, userID uint) (*RunResponse, error) {
+func (s *service) RunFlow(ctx context.Context, flowID string, userID string) (*RunResponse, error) {
 	flowDetail, err := s.GetFlow(ctx, flowID)
 	if err != nil {
 		return nil, err

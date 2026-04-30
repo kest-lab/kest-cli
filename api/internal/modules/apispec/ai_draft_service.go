@@ -24,7 +24,7 @@ var pathParameterPattern = regexp.MustCompile(`[:{]([A-Za-z0-9_]+)[}]?`)
 func (s *service) CreateAIDraft(
 	ctx context.Context,
 	projectID string,
-	userID uint,
+	userID string,
 	req *CreateAPISpecAIDraftRequest,
 ) (*APISpecAIDraftResponse, error) {
 	client, err := newConfiguredLLMClient()

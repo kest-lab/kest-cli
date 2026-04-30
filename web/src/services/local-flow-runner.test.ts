@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
-import { runLocalFlow, type LocalFlowEdgeDefinition, type LocalFlowStepDefinition } from '@/services/local-flow-runner';
+import {
+  runLocalFlow,
+  type LocalFlowEdgeDefinition,
+  type LocalFlowStepDefinition,
+} from '@/services/local-flow-runner';
 
 describe('runLocalFlow', () => {
   it('executes steps through the local bridge in dependency order', async () => {
     const steps: LocalFlowStepDefinition[] = [
       {
-        id: 11,
+        id: '11',
         name: 'Login',
         sort_order: 0,
         method: 'POST',
@@ -16,7 +20,7 @@ describe('runLocalFlow', () => {
         asserts: 'status == 200\nbody.data.token length == 3',
       },
       {
-        id: 22,
+        id: '22',
         name: 'Profile',
         sort_order: 1,
         method: 'GET',
@@ -29,8 +33,8 @@ describe('runLocalFlow', () => {
     ];
     const edges: LocalFlowEdgeDefinition[] = [
       {
-        source_step_id: 11,
-        target_step_id: 22,
+        source_step_id: '11',
+        target_step_id: '22',
         mappings: [{ source: 'token', target: 'authToken' }],
       },
     ];
@@ -45,7 +49,7 @@ describe('runLocalFlow', () => {
         time: 12,
         size: 24,
       })
-      .mockImplementationOnce(async (payload) => {
+      .mockImplementationOnce(async payload => {
         expect(payload.headers?.Authorization).toBe('Bearer abc');
         return {
           status: 200,
@@ -59,8 +63,8 @@ describe('runLocalFlow', () => {
 
     const run = await runLocalFlow(
       {
-        flowId: 7,
-        runId: -1,
+        flowId: '7',
+        runId: 'local-1',
         steps,
         edges,
       },
@@ -81,11 +85,11 @@ describe('runLocalFlow', () => {
 
     const run = await runLocalFlow(
       {
-        flowId: 9,
-        runId: -2,
+        flowId: '9',
+        runId: 'local-2',
         steps: [
           {
-            id: 1,
+            id: '1',
             name: 'Broken step',
             sort_order: 0,
             method: 'GET',
@@ -107,7 +111,7 @@ describe('runLocalFlow', () => {
   });
 
   it('resolves relative URLs against the selected run environment base URL', async () => {
-    const execute = vi.fn().mockImplementation(async (payload) => {
+    const execute = vi.fn().mockImplementation(async payload => {
       expect(payload.url).toBe('https://staging.kest.dev/v1/health');
       return {
         status: 200,
@@ -121,11 +125,11 @@ describe('runLocalFlow', () => {
 
     const run = await runLocalFlow(
       {
-        flowId: 12,
-        runId: -12,
+        flowId: '12',
+        runId: 'local-12',
         steps: [
           {
-            id: 1,
+            id: '1',
             name: 'Health',
             sort_order: 0,
             method: 'GET',
@@ -149,7 +153,7 @@ describe('runLocalFlow', () => {
   it('uses generated capture paths and same-name edge mappings from response handoff', async () => {
     const steps: LocalFlowStepDefinition[] = [
       {
-        id: 1,
+        id: '1',
         name: 'Create token',
         sort_order: 0,
         method: 'POST',
@@ -160,7 +164,7 @@ describe('runLocalFlow', () => {
         asserts: 'status == 200',
       },
       {
-        id: 2,
+        id: '2',
         name: 'Use token',
         sort_order: 1,
         method: 'GET',
@@ -182,7 +186,7 @@ describe('runLocalFlow', () => {
         time: 5,
         size: 36,
       })
-      .mockImplementationOnce(async (payload) => {
+      .mockImplementationOnce(async payload => {
         expect(payload.headers?.Authorization).toBe('Bearer abc');
         return {
           status: 200,
@@ -196,13 +200,13 @@ describe('runLocalFlow', () => {
 
     const run = await runLocalFlow(
       {
-        flowId: 10,
-        runId: -4,
+        flowId: '10',
+        runId: 'local-4',
         steps,
         edges: [
           {
-            source_step_id: 1,
-            target_step_id: 2,
+            source_step_id: '1',
+            target_step_id: '2',
             mappings: [{ source: 'authToken', target: 'authToken' }],
           },
         ],
@@ -219,11 +223,11 @@ describe('runLocalFlow', () => {
 
     const run = await runLocalFlow(
       {
-        flowId: 5,
-        runId: -3,
+        flowId: '5',
+        runId: 'local-3',
         steps: [
           {
-            id: 3,
+            id: '3',
             name: 'Bridge step',
             sort_order: 0,
             method: 'GET',

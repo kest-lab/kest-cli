@@ -109,7 +109,7 @@ type Example struct {
 }
 
 type SyncRequest struct {
-	ProjectID int             `json:"project_id"`
+	ProjectID string          `json:"project_id"`
 	Specs     []APISpecSync   `json:"specs"`
 	Source    string          `json:"source"`
 	Metadata  json.RawMessage `json:"metadata,omitempty"`
@@ -330,12 +330,8 @@ func pushToPlatform(apiURL, token, projectID string, specs []APISpecSync, conf *
 
 	metadataJSON, _ := json.Marshal(metadata)
 
-	// Convert projectID string to int
-	var projID int
-	fmt.Sscanf(projectID, "%d", &projID)
-
 	syncReq := SyncRequest{
-		ProjectID: projID,
+		ProjectID: projectID,
 		Specs:     specs,
 		Source:    "cli",
 		Metadata:  metadataJSON,

@@ -9,8 +9,8 @@ import (
 type Repository interface {
 	AddMember(ctx context.Context, member *ProjectMemberPO) error
 	UpdateMember(ctx context.Context, member *ProjectMemberPO) error
-	DeleteMember(ctx context.Context, projectID string, userID uint) error
-	GetMember(ctx context.Context, projectID string, userID uint) (*ProjectMemberPO, error)
+	DeleteMember(ctx context.Context, projectID string, userID string) error
+	GetMember(ctx context.Context, projectID string, userID string) (*ProjectMemberPO, error)
 	ListMembers(ctx context.Context, projectID string) ([]ProjectMemberPO, error)
 }
 
@@ -30,13 +30,13 @@ func (r *repository) UpdateMember(ctx context.Context, member *ProjectMemberPO) 
 	return r.db.WithContext(ctx).Save(member).Error
 }
 
-func (r *repository) DeleteMember(ctx context.Context, projectID string, userID uint) error {
+func (r *repository) DeleteMember(ctx context.Context, projectID string, userID string) error {
 	return r.db.WithContext(ctx).
 		Where("project_id = ? AND user_id = ?", projectID, userID).
 		Delete(&ProjectMemberPO{}).Error
 }
 
-func (r *repository) GetMember(ctx context.Context, projectID string, userID uint) (*ProjectMemberPO, error) {
+func (r *repository) GetMember(ctx context.Context, projectID string, userID string) (*ProjectMemberPO, error) {
 	var member ProjectMemberPO
 	err := r.db.WithContext(ctx).
 		Where("project_id = ? AND user_id = ?", projectID, userID).

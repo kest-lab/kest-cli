@@ -1,5 +1,7 @@
 package workspace
 
+import idpkg "github.com/kest-labs/kest/api/pkg/id"
+
 // DTO (Data Transfer Objects) for workspace module
 
 // CreateWorkspaceRequest represents the request to create a workspace
@@ -20,8 +22,8 @@ type UpdateWorkspaceRequest struct {
 
 // AddMemberRequest represents the request to add a member
 type AddMemberRequest struct {
-	UserID uint   `json:"user_id" binding:"required"`
-	Role   string `json:"role" binding:"required,oneof=owner admin editor viewer"`
+	UserID idpkg.Compatible `json:"user_id" binding:"required" swaggertype:"string"`
+	Role   string           `json:"role" binding:"required,oneof=owner admin editor viewer"`
 }
 
 // UpdateMemberRoleRequest represents the request to update member role
@@ -31,12 +33,12 @@ type UpdateMemberRoleRequest struct {
 
 // WorkspaceResponse represents the workspace response
 type WorkspaceResponse struct {
-	ID          uint                   `json:"id"`
+	ID          string                 `json:"id"`
 	Name        string                 `json:"name"`
 	Slug        string                 `json:"slug"`
 	Description string                 `json:"description"`
 	Type        string                 `json:"type"`
-	OwnerID     uint                   `json:"owner_id"`
+	OwnerID     string                 `json:"owner_id"`
 	Visibility  string                 `json:"visibility"`
 	Settings    map[string]interface{} `json:"settings,omitempty"`
 	CreatedAt   string                 `json:"created_at"`
@@ -45,13 +47,13 @@ type WorkspaceResponse struct {
 
 // WorkspaceMemberResponse represents the member response
 type WorkspaceMemberResponse struct {
-	ID          uint   `json:"id"`
-	WorkspaceID uint   `json:"workspace_id"`
-	UserID      uint   `json:"user_id"`
+	ID          string `json:"id"`
+	WorkspaceID string `json:"workspace_id"`
+	UserID      string `json:"user_id"`
 	Username    string `json:"username,omitempty"` // Joined from users table
 	Email       string `json:"email,omitempty"`    // Joined from users table
 	Role        string `json:"role"`
-	InvitedBy   uint   `json:"invited_by"`
+	InvitedBy   string `json:"invited_by"`
 	JoinedAt    string `json:"joined_at"`
 }
 

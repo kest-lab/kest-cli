@@ -46,7 +46,7 @@ func AuditLog() gin.HandlerFunc {
 		// Extract authenticated user ID
 		userID, ok := handler.GetUserID(c)
 		if !ok {
-			userID = 0 // Anonymous or failed auth
+			userID = "0" // Anonymous or failed auth
 		}
 
 		// Determine resource from path (simple heuristic)

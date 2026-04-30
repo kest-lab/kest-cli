@@ -10,7 +10,11 @@ import { useUser, useUserInfo } from '@/hooks/use-users';
 import { useT } from '@/i18n/client';
 import { formatDate } from '@/utils';
 
-const resolveStatusLabel = (status: number | string, activeLabel: string, inactiveLabel: string) => {
+const resolveStatusLabel = (
+  status: number | string,
+  activeLabel: string,
+  inactiveLabel: string
+) => {
   if (status === 1 || status === 'active') {
     return activeLabel;
   }
@@ -22,7 +26,7 @@ const resolveStatusLabel = (status: number | string, activeLabel: string, inacti
   return String(status);
 };
 
-export function UserDetail({ userId }: { userId: number }) {
+export function UserDetail({ userId }: { userId: string }) {
   const t = useT();
   const { data: user, isLoading: isUserLoading } = useUser(userId);
   const { data: userInfo, isLoading: isUserInfoLoading } = useUserInfo(userId);
@@ -92,11 +96,15 @@ export function UserDetail({ userId }: { userId: number }) {
               </div>
               <div className="rounded-lg border p-3">
                 <div className="text-muted-foreground">{t.console('users.created')}</div>
-                <div className="mt-1 font-medium">{formatDate(user.created_at, 'YYYY-MM-DD HH:mm')}</div>
+                <div className="mt-1 font-medium">
+                  {formatDate(user.created_at, 'YYYY-MM-DD HH:mm')}
+                </div>
               </div>
               <div className="rounded-lg border p-3">
                 <div className="text-muted-foreground">{t.console('users.updated')}</div>
-                <div className="mt-1 font-medium">{formatDate(user.updated_at, 'YYYY-MM-DD HH:mm')}</div>
+                <div className="mt-1 font-medium">
+                  {formatDate(user.updated_at, 'YYYY-MM-DD HH:mm')}
+                </div>
               </div>
             </div>
             <div className="rounded-lg border p-3">
@@ -134,9 +142,7 @@ export function UserDetail({ userId }: { userId: number }) {
               <div className="text-muted-foreground">{t.console('users.bio')}</div>
               <div className="mt-1 font-medium">{userInfo.bio || '—'}</div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {t.console('users.note')}
-            </p>
+            <p className="text-xs text-muted-foreground">{t.console('users.note')}</p>
           </CardContent>
         </Card>
       </div>

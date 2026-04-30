@@ -187,7 +187,7 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 
 // Get gets user by ID
 func (h *Handler) Get(c *gin.Context) {
-	id, ok := handler.ParseUintID(c, "id")
+	id, ok := handler.ParseID(c, "id")
 	if !ok {
 		return
 	}

@@ -1,5 +1,7 @@
 package permission
 
+import idpkg "github.com/kest-labs/kest/api/pkg/id"
+
 // CreateRoleRequest is the request for creating a role
 type CreateRoleRequest struct {
 	Name        string `json:"name" binding:"required"`
@@ -17,19 +19,19 @@ type UpdateRoleRequest struct {
 
 // AssignRoleRequest is the request for assigning a role to a user
 type AssignRoleRequest struct {
-	UserID uint `json:"user_id" binding:"required"`
-	RoleID uint `json:"role_id" binding:"required"`
+	UserID idpkg.Compatible `json:"user_id" binding:"required" swaggertype:"string"`
+	RoleID idpkg.Compatible `json:"role_id" binding:"required" swaggertype:"string"`
 }
 
 // AssignPermissionRequest is the request for assigning a permission to a role
 type AssignPermissionRequest struct {
-	RoleID       uint `json:"role_id" binding:"required"`
-	PermissionID uint `json:"permission_id" binding:"required"`
+	RoleID       idpkg.Compatible `json:"role_id" binding:"required" swaggertype:"string"`
+	PermissionID idpkg.Compatible `json:"permission_id" binding:"required" swaggertype:"string"`
 }
 
 // RoleResponse is the response for role data
 type RoleResponse struct {
-	ID          uint   `json:"id"`
+	ID          string `json:"id"`
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
@@ -39,7 +41,7 @@ type RoleResponse struct {
 
 // PermissionResponse is the response for permission data
 type PermissionResponse struct {
-	ID          uint   `json:"id"`
+	ID          string `json:"id"`
 	Name        string `json:"name"`
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
@@ -48,6 +50,6 @@ type PermissionResponse struct {
 
 // UserRolesResponse is the response for user roles
 type UserRolesResponse struct {
-	UserID uint            `json:"user_id"`
+	UserID string          `json:"user_id"`
 	Roles  []*RoleResponse `json:"roles"`
 }

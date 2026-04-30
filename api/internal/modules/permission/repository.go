@@ -11,8 +11,8 @@ type Repository interface {
 	// Role operations
 	CreateRole(ctx context.Context, role *Role) error
 	UpdateRole(ctx context.Context, role *Role) error
-	DeleteRole(ctx context.Context, id uint) error
-	FindRoleByID(ctx context.Context, id uint) (*Role, error)
+	DeleteRole(ctx context.Context, id string) error
+	FindRoleByID(ctx context.Context, id string) (*Role, error)
 	FindRoleByName(ctx context.Context, name string) (*Role, error)
 	FindAllRoles(ctx context.Context) ([]*Role, error)
 	FindDefaultRole(ctx context.Context) (*Role, error)
@@ -23,15 +23,15 @@ type Repository interface {
 	FindPermissionsByModule(ctx context.Context, module string) ([]*Permission, error)
 
 	// Role-Permission operations
-	AssignPermissionToRole(ctx context.Context, roleID, permissionID uint) error
-	RemovePermissionFromRole(ctx context.Context, roleID, permissionID uint) error
-	FindPermissionsByRoleID(ctx context.Context, roleID uint) ([]*Permission, error)
+	AssignPermissionToRole(ctx context.Context, roleID, permissionID string) error
+	RemovePermissionFromRole(ctx context.Context, roleID, permissionID string) error
+	FindPermissionsByRoleID(ctx context.Context, roleID string) ([]*Permission, error)
 
 	// User-Role operations
-	AssignRoleToUser(ctx context.Context, userID, roleID uint) error
-	RemoveRoleFromUser(ctx context.Context, userID, roleID uint) error
-	FindRolesByUserID(ctx context.Context, userID uint) ([]*Role, error)
-	HasPermission(ctx context.Context, userID uint, permissionName string) (bool, error)
+	AssignRoleToUser(ctx context.Context, userID, roleID string) error
+	RemoveRoleFromUser(ctx context.Context, userID, roleID string) error
+	FindRolesByUserID(ctx context.Context, userID string) ([]*Role, error)
+	HasPermission(ctx context.Context, userID string, permissionName string) (bool, error)
 }
 
 // RepositoryImpl implements the Repository interface
@@ -55,12 +55,12 @@ func (r *repository) UpdateRole(ctx context.Context, role *Role) error {
 }
 
 // DeleteRole deletes a role by ID
-func (r *repository) DeleteRole(ctx context.Context, id uint) error {
+func (r *repository) DeleteRole(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&Role{}, id).Error
 }
 
 // FindRoleByID finds a role by ID
-func (r *repository) FindRoleByID(ctx context.Context, id uint) (*Role, error) {
+func (r *repository) FindRoleByID(ctx context.Context, id string) (*Role, error) {
 	var role Role
 	if err := r.db.WithContext(ctx).First(&role, id).Error; err != nil {
 		return nil, err
@@ -119,18 +119,18 @@ func (r *repository) FindPermissionsByModule(ctx context.Context, module string)
 }
 
 // AssignPermissionToRole assigns a permission to a role
-func (r *repository) AssignPermissionToRole(ctx context.Context, roleID, permissionID uint) error {
+func (r *repository) AssignPermissionToRole(ctx context.Context, roleID, permissionID string) error {
 	rp := &RolePermission{RoleID: roleID, PermissionID: permissionID}
 	return r.db.WithContext(ctx).FirstOrCreate(rp, rp).Error
 }
 
 // RemovePermissionFromRole removes a permission from a role
-func (r *repository) RemovePermissionFromRole(ctx context.Context, roleID, permissionID uint) error {
+func (r *repository) RemovePermissionFromRole(ctx context.Context, roleID, permissionID string) error {
 	return r.db.WithContext(ctx).Where("role_id = ? AND permission_id = ?", roleID, permissionID).Delete(&RolePermission{}).Error
 }
 
 // FindPermissionsByRoleID returns permissions for a role
-func (r *repository) FindPermissionsByRoleID(ctx context.Context, roleID uint) ([]*Permission, error) {
+func (r *repository) FindPermissionsByRoleID(ctx context.Context, roleID string) ([]*Permission, error) {
 	var perms []*Permission
 	err := r.db.WithContext(ctx).
 		Joins("JOIN role_permissions ON role_permissions.permission_id = permissions.id").
@@ -140,18 +140,18 @@ func (r *repository) FindPermissionsByRoleID(ctx context.Context, roleID uint) (
 }
 
 // AssignRoleToUser assigns a role to a user
-func (r *repository) AssignRoleToUser(ctx context.Context, userID, roleID uint) error {
+func (r *repository) AssignRoleToUser(ctx context.Context, userID, roleID string) error {
 	ur := &UserRole{UserID: userID, RoleID: roleID}
 	return r.db.WithContext(ctx).FirstOrCreate(ur, ur).Error
 }
 
 // RemoveRoleFromUser removes a role from a user
-func (r *repository) RemoveRoleFromUser(ctx context.Context, userID, roleID uint) error {
+func (r *repository) RemoveRoleFromUser(ctx context.Context, userID, roleID string) error {
 	return r.db.WithContext(ctx).Where("user_id = ? AND role_id = ?", userID, roleID).Delete(&UserRole{}).Error
 }
 
 // FindRolesByUserID returns roles for a user
-func (r *repository) FindRolesByUserID(ctx context.Context, userID uint) ([]*Role, error) {
+func (r *repository) FindRolesByUserID(ctx context.Context, userID string) ([]*Role, error) {
 	var roles []*Role
 	err := r.db.WithContext(ctx).
 		Joins("JOIN user_roles ON user_roles.role_id = roles.id").
@@ -161,7 +161,7 @@ func (r *repository) FindRolesByUserID(ctx context.Context, userID uint) ([]*Rol
 }
 
 // HasPermission checks if a user has a specific permission
-func (r *repository) HasPermission(ctx context.Context, userID uint, permissionName string) (bool, error) {
+func (r *repository) HasPermission(ctx context.Context, userID string, permissionName string) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).
 		Table("permissions").

@@ -18,11 +18,11 @@ type UpdateFlowRequest struct {
 
 // FlowResponse represents the API response for a flow
 type FlowResponse struct {
-	ID string      `json:"id"`
-	ProjectID string      `json:"project_id"`
+	ID          string    `json:"id"`
+	ProjectID   string    `json:"project_id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
-	CreatedBy   uint      `json:"created_by"`
+	CreatedBy   string    `json:"created_by"`
 	StepCount   int       `json:"step_count,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
@@ -82,8 +82,8 @@ type UpdateStepRequest struct {
 
 // StepResponse represents the API response for a step
 type StepResponse struct {
-	ID string      `json:"id"`
-	FlowID string      `json:"flow_id"`
+	ID        string    `json:"id"`
+	FlowID    string    `json:"flow_id"`
 	ClientKey string    `json:"client_key"`
 	Name      string    `json:"name"`
 	SortOrder int       `json:"sort_order"`
@@ -124,24 +124,24 @@ func ToStepResponse(po *FlowStepPO) *StepResponse {
 
 // CreateEdgeRequest represents the request to create an edge
 type CreateEdgeRequest struct {
-	SourceStepID string   `json:"source_step_id" binding:"required"`
-	TargetStepID string   `json:"target_step_id" binding:"required"`
+	SourceStepID    string `json:"source_step_id" binding:"required"`
+	TargetStepID    string `json:"target_step_id" binding:"required"`
 	VariableMapping string `json:"variable_mapping"`
 }
 
 // UpdateEdgeRequest represents the request to update an edge
 type UpdateEdgeRequest struct {
-	SourceStepID *string   `json:"source_step_id"`
-	TargetStepID *string   `json:"target_step_id"`
+	SourceStepID    *string `json:"source_step_id"`
+	TargetStepID    *string `json:"target_step_id"`
 	VariableMapping *string `json:"variable_mapping"`
 }
 
 // EdgeResponse represents the API response for an edge
 type EdgeResponse struct {
-	ID string                  `json:"id"`
-	FlowID string                  `json:"flow_id"`
-	SourceStepID string                  `json:"source_step_id"`
-	TargetStepID string                  `json:"target_step_id"`
+	ID                   string                `json:"id"`
+	FlowID               string                `json:"flow_id"`
+	SourceStepID         string                `json:"source_step_id"`
+	TargetStepID         string                `json:"target_step_id"`
 	VariableMapping      string                `json:"variable_mapping"`
 	VariableMappingRules []VariableMappingRule `json:"variable_mapping_rules,omitempty"`
 	CreatedAt            time.Time             `json:"created_at"`
@@ -167,10 +167,10 @@ func ToEdgeResponse(po *FlowEdgePO) *EdgeResponse {
 
 // RunResponse represents the API response for a flow run
 type RunResponse struct {
-	ID string                 `json:"id"`
-	FlowID string                 `json:"flow_id"`
+	ID          string               `json:"id"`
+	FlowID      string               `json:"flow_id"`
 	Status      string               `json:"status"`
-	TriggeredBy uint                 `json:"triggered_by"`
+	TriggeredBy string               `json:"triggered_by"`
 	StartedAt   *time.Time           `json:"started_at"`
 	FinishedAt  *time.Time           `json:"finished_at"`
 	CreatedAt   time.Time            `json:"created_at"`
@@ -194,9 +194,9 @@ func ToRunResponse(po *FlowRunPO) *RunResponse {
 
 // StepResultResponse represents the API response for a step result
 type StepResultResponse struct {
-	ID string      `json:"id"`
-	RunID string      `json:"run_id"`
-	StepID string      `json:"step_id"`
+	ID                string    `json:"id"`
+	RunID             string    `json:"run_id"`
+	StepID            string    `json:"step_id"`
 	Status            string    `json:"status"`
 	Request           string    `json:"request"`
 	Response          string    `json:"response"`

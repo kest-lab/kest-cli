@@ -21,16 +21,16 @@ type Service interface {
 	Login(ctx context.Context, req *UserLoginRequest) (*UserLoginResponse, error)
 
 	// Profile (authenticated user)
-	GetProfile(ctx context.Context, userID uint) (*domain.User, error)
-	UpdateProfile(ctx context.Context, userID uint, req *UserUpdateRequest) (*domain.User, error)
-	ChangePassword(ctx context.Context, userID uint, req *UserChangePasswordRequest) error
-	DeleteAccount(ctx context.Context, userID uint) error
+	GetProfile(ctx context.Context, userID string) (*domain.User, error)
+	UpdateProfile(ctx context.Context, userID string, req *UserUpdateRequest) (*domain.User, error)
+	ChangePassword(ctx context.Context, userID string, req *UserChangePasswordRequest) error
+	DeleteAccount(ctx context.Context, userID string) error
 
 	// Public
 	ResetPassword(ctx context.Context, req *UserPasswordResetRequest) error
 
 	// Admin/Query
-	GetByID(ctx context.Context, id uint) (*domain.User, error)
+	GetByID(ctx context.Context, id string) (*domain.User, error)
 	List(ctx context.Context, page, pageSize int) ([]*domain.User, int64, error)
 	Search(ctx context.Context, query string, limit int) ([]*domain.User, error)
 }
@@ -134,7 +134,7 @@ func (s *service) Login(ctx context.Context, req *UserLoginRequest) (*UserLoginR
 // ============================================================================
 
 // GetProfile retrieves user profile
-func (s *service) GetProfile(ctx context.Context, userID uint) (*domain.User, error) {
+func (s *service) GetProfile(ctx context.Context, userID string) (*domain.User, error) {
 	user, err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, domain.ErrUserNotFound
@@ -143,7 +143,7 @@ func (s *service) GetProfile(ctx context.Context, userID uint) (*domain.User, er
 }
 
 // UpdateProfile updates user profile
-func (s *service) UpdateProfile(ctx context.Context, userID uint, req *UserUpdateRequest) (*domain.User, error) {
+func (s *service) UpdateProfile(ctx context.Context, userID string, req *UserUpdateRequest) (*domain.User, error) {
 	user, err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, domain.ErrUserNotFound
@@ -171,7 +171,7 @@ func (s *service) UpdateProfile(ctx context.Context, userID uint, req *UserUpdat
 }
 
 // ChangePassword changes user password
-func (s *service) ChangePassword(ctx context.Context, userID uint, req *UserChangePasswordRequest) error {
+func (s *service) ChangePassword(ctx context.Context, userID string, req *UserChangePasswordRequest) error {
 	user, err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		return domain.ErrUserNotFound
@@ -191,7 +191,7 @@ func (s *service) ChangePassword(ctx context.Context, userID uint, req *UserChan
 }
 
 // DeleteAccount deletes user account
-func (s *service) DeleteAccount(ctx context.Context, userID uint) error {
+func (s *service) DeleteAccount(ctx context.Context, userID string) error {
 	return s.repo.Delete(ctx, userID)
 }
 
@@ -225,7 +225,7 @@ func (s *service) ResetPassword(ctx context.Context, req *UserPasswordResetReque
 // ============================================================================
 
 // GetByID retrieves a user by ID
-func (s *service) GetByID(ctx context.Context, id uint) (*domain.User, error) {
+func (s *service) GetByID(ctx context.Context, id string) (*domain.User, error) {
 	return s.repo.FindByID(ctx, id)
 }
 

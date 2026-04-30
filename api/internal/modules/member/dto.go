@@ -1,12 +1,16 @@
 package member
 
-import "time"
+import (
+	"time"
+
+	idpkg "github.com/kest-labs/kest/api/pkg/id"
+)
 
 // ========== Request DTOs ==========
 
 type AddMemberRequest struct {
-	UserID uint   `json:"user_id" binding:"required"`
-	Role   string `json:"role" binding:"required,oneof=owner admin write read"`
+	UserID idpkg.Compatible `json:"user_id" binding:"required" swaggertype:"string"`
+	Role   string           `json:"role" binding:"required,oneof=owner admin write read"`
 }
 
 type UpdateMemberRequest struct {
@@ -16,9 +20,9 @@ type UpdateMemberRequest struct {
 // ========== Response DTOs ==========
 
 type MemberResponse struct {
-	ID string      `json:"id"`
-	ProjectID string      `json:"project_id"`
-	UserID uint      `json:"user_id"`
+	ID        string    `json:"id"`
+	ProjectID string    `json:"project_id"`
+	UserID    string    `json:"user_id"`
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
 	Role      string    `json:"role"`

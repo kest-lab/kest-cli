@@ -1,10 +1,9 @@
 package workspace
 
 import (
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 	"github.com/kest-labs/kest/api/internal/domain"
+	"github.com/kest-labs/kest/api/pkg/handler"
 	"github.com/kest-labs/kest/api/pkg/response"
 )
 
@@ -73,20 +72,19 @@ func (h *Handler) ListWorkspaces(c *gin.Context) {
 // @Summary Get workspace details
 // @Tags Workspace
 // @Produce json
-// @Param id path int true "Workspace ID"
+// @Param id path string true "Workspace ID"
 // @Success 200 {object} WorkspaceResponse
 // @Router /workspaces/{id} [get]
 func (h *Handler) GetWorkspace(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid workspace ID")
+	id, ok := handler.ParseID(c, "id")
+	if !ok {
 		return
 	}
 
 	user, _ := c.Get("user")
 	currentUser := user.(*domain.User)
 
-	workspace, err := h.service.GetWorkspace(uint(id), currentUser.ID, currentUser.IsSuperAdmin)
+	workspace, err := h.service.GetWorkspace(id, currentUser.ID, currentUser.IsSuperAdmin)
 	if err != nil {
 		response.NotFound(c, "Workspace not found", err)
 		return
@@ -100,14 +98,13 @@ func (h *Handler) GetWorkspace(c *gin.Context) {
 // @Tags Workspace
 // @Accept json
 // @Produce json
-// @Param id path int true "Workspace ID"
+// @Param id path string true "Workspace ID"
 // @Param body body UpdateWorkspaceRequest true "Update details"
 // @Success 200 {object} WorkspaceResponse
 // @Router /workspaces/{id} [patch]
 func (h *Handler) UpdateWorkspace(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid workspace ID")
+	id, ok := handler.ParseID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -120,7 +117,7 @@ func (h *Handler) UpdateWorkspace(c *gin.Context) {
 	user, _ := c.Get("user")
 	currentUser := user.(*domain.User)
 
-	workspace, err := h.service.UpdateWorkspace(uint(id), &req, currentUser.ID, currentUser.IsSuperAdmin)
+	workspace, err := h.service.UpdateWorkspace(id, &req, currentUser.ID, currentUser.IsSuperAdmin)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return
@@ -132,20 +129,19 @@ func (h *Handler) UpdateWorkspace(c *gin.Context) {
 // DeleteWorkspace deletes a workspace
 // @Summary Delete workspace
 // @Tags Workspace
-// @Param id path int true "Workspace ID"
+// @Param id path string true "Workspace ID"
 // @Success 204 "No Content"
 // @Router /workspaces/{id} [delete]
 func (h *Handler) DeleteWorkspace(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid workspace ID")
+	id, ok := handler.ParseID(c, "id")
+	if !ok {
 		return
 	}
 
 	user, _ := c.Get("user")
 	currentUser := user.(*domain.User)
 
-	if err := h.service.DeleteWorkspace(uint(id), currentUser.ID, currentUser.IsSuperAdmin); err != nil {
+	if err := h.service.DeleteWorkspace(id, currentUser.ID, currentUser.IsSuperAdmin); err != nil {
 		response.Forbidden(c, err.Error())
 		return
 	}
@@ -158,14 +154,13 @@ func (h *Handler) DeleteWorkspace(c *gin.Context) {
 // @Tags Workspace
 // @Accept json
 // @Produce json
-// @Param id path int true "Workspace ID"
+// @Param id path string true "Workspace ID"
 // @Param body body AddMemberRequest true "Member details"
 // @Success 201 "Member added"
 // @Router /workspaces/{id}/members [post]
 func (h *Handler) AddMember(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid workspace ID")
+	id, ok := handler.ParseID(c, "id")
+	if !ok {
 		return
 	}
 
@@ -178,7 +173,7 @@ func (h *Handler) AddMember(c *gin.Context) {
 	user, _ := c.Get("user")
 	currentUser := user.(*domain.User)
 
-	if err := h.service.AddMember(uint(id), &req, currentUser.ID, currentUser.IsSuperAdmin); err != nil {
+	if err := h.service.AddMember(id, &req, currentUser.ID, currentUser.IsSuperAdmin); err != nil {
 		response.BadRequest(c, err.Error())
 		return
 	}
@@ -190,20 +185,19 @@ func (h *Handler) AddMember(c *gin.Context) {
 // @Summary List workspace members
 // @Tags Workspace
 // @Produce json
-// @Param id path int true "Workspace ID"
+// @Param id path string true "Workspace ID"
 // @Success 200 {array} WorkspaceMemberResponse
 // @Router /workspaces/{id}/members [get]
 func (h *Handler) ListMembers(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid workspace ID")
+	id, ok := handler.ParseID(c, "id")
+	if !ok {
 		return
 	}
 
 	user, _ := c.Get("user")
 	currentUser := user.(*domain.User)
 
-	members, err := h.service.ListMembers(uint(id), currentUser.ID, currentUser.IsSuperAdmin)
+	members, err := h.service.ListMembers(id, currentUser.ID, currentUser.IsSuperAdmin)
 	if err != nil {
 		response.NotFound(c, "Workspace not found or access denied", err)
 		return
@@ -217,21 +211,19 @@ func (h *Handler) ListMembers(c *gin.Context) {
 // @Tags Workspace
 // @Accept json
 // @Produce json
-// @Param id path int true "Workspace ID"
-// @Param uid path int true "User ID"
+// @Param id path string true "Workspace ID"
+// @Param uid path string true "User ID"
 // @Param body body UpdateMemberRoleRequest true "Role update"
 // @Success 200 "Role updated"
 // @Router /workspaces/{id}/members/{uid} [patch]
 func (h *Handler) UpdateMemberRole(c *gin.Context) {
-	workspaceID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid workspace ID")
+	workspaceID, ok := handler.ParseID(c, "id")
+	if !ok {
 		return
 	}
 
-	userID, err := strconv.ParseUint(c.Param("uid"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, ok := handler.ParseID(c, "uid")
+	if !ok {
 		return
 	}
 
@@ -244,7 +236,7 @@ func (h *Handler) UpdateMemberRole(c *gin.Context) {
 	user, _ := c.Get("user")
 	currentUser := user.(*domain.User)
 
-	if err := h.service.UpdateMemberRole(uint(workspaceID), uint(userID), req.Role, currentUser.ID, currentUser.IsSuperAdmin); err != nil {
+	if err := h.service.UpdateMemberRole(workspaceID, userID, req.Role, currentUser.ID, currentUser.IsSuperAdmin); err != nil {
 		response.BadRequest(c, err.Error())
 		return
 	}
@@ -255,27 +247,25 @@ func (h *Handler) UpdateMemberRole(c *gin.Context) {
 // RemoveMember removes a member from a workspace
 // @Summary Remove workspace member
 // @Tags Workspace
-// @Param id path int true "Workspace ID"
-// @Param uid path int true "User ID"
+// @Param id path string true "Workspace ID"
+// @Param uid path string true "User ID"
 // @Success 204 "Member removed"
 // @Router /workspaces/{id}/members/{uid} [delete]
 func (h *Handler) RemoveMember(c *gin.Context) {
-	workspaceID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid workspace ID")
+	workspaceID, ok := handler.ParseID(c, "id")
+	if !ok {
 		return
 	}
 
-	userID, err := strconv.ParseUint(c.Param("uid"), 10, 32)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, ok := handler.ParseID(c, "uid")
+	if !ok {
 		return
 	}
 
 	user, _ := c.Get("user")
 	currentUser := user.(*domain.User)
 
-	if err := h.service.RemoveMember(uint(workspaceID), uint(userID), currentUser.ID, currentUser.IsSuperAdmin); err != nil {
+	if err := h.service.RemoveMember(workspaceID, userID, currentUser.ID, currentUser.IsSuperAdmin); err != nil {
 		response.Forbidden(c, err.Error())
 		return
 	}

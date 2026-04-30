@@ -2,12 +2,12 @@ package member
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kest-labs/kest/api/internal/contracts"
 	"github.com/kest-labs/kest/api/internal/infra/middleware"
 	"github.com/kest-labs/kest/api/internal/infra/router"
+	"github.com/kest-labs/kest/api/pkg/handler"
 	"github.com/kest-labs/kest/api/pkg/response"
 )
 
@@ -87,10 +87,8 @@ func (h *Handler) UpdateMember(c *gin.Context) {
 		return
 	}
 
-	userIDStr := c.Param("uid")
-	userID, err := strconv.ParseUint(userIDStr, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid user ID")
+	userID, ok := handler.ParseID(c, "uid")
+	if !ok {
 		return
 	}
 
@@ -100,7 +98,7 @@ func (h *Handler) UpdateMember(c *gin.Context) {
 		return
 	}
 
-	member, err := h.service.UpdateMember(c.Request.Context(), projectID, uint(userID), &req)
+	member, err := h.service.UpdateMember(c.Request.Context(), projectID, userID, &req)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -116,14 +114,12 @@ func (h *Handler) RemoveMember(c *gin.Context) {
 		return
 	}
 
-	userIDStr := c.Param("uid")
-	userID, err := strconv.ParseUint(userIDStr, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid user ID")
+	userID, ok := handler.ParseID(c, "uid")
+	if !ok {
 		return
 	}
 
-	if err := h.service.RemoveMember(c.Request.Context(), projectID, uint(userID)); err != nil {
+	if err := h.service.RemoveMember(c.Request.Context(), projectID, userID); err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -156,19 +152,13 @@ func (h *Handler) GetMyRole(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("userID")
-	if !exists {
+	userID, ok := handler.GetUserID(c)
+	if !ok {
 		response.Error(c, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	uid, ok := userID.(uint)
-	if !ok {
-		response.Error(c, http.StatusInternalServerError, "Invalid user ID in context")
-		return
-	}
-
-	member, err := h.service.GetMember(c.Request.Context(), projectID, uid)
+	member, err := h.service.GetMember(c.Request.Context(), projectID, userID)
 	if err != nil {
 		response.Error(c, http.StatusNotFound, "Not a member of this project")
 		return

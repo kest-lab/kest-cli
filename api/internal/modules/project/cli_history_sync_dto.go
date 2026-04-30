@@ -7,7 +7,7 @@ import (
 )
 
 type CLIHistorySyncer interface {
-	SyncHistoryFromCLI(ctx context.Context, projectID string, createdBy uint, req *CLIHistorySyncRequest) (*CLIHistorySyncResponseBody, error)
+	SyncHistoryFromCLI(ctx context.Context, projectID string, createdBy string, req *CLIHistorySyncRequest) (*CLIHistorySyncResponseBody, error)
 }
 
 type CLIHistorySyncRequest struct {

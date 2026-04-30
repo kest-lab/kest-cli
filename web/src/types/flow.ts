@@ -6,19 +6,19 @@ export interface FlowVariableMappingRule {
 }
 
 export interface ProjectFlow {
-  id: number;
-  project_id: number;
+  id: string;
+  project_id: string;
   name: string;
   description: string;
-  created_by: number;
+  created_by: string;
   step_count?: number;
   created_at: string;
   updated_at: string;
 }
 
 export interface FlowStep {
-  id: number;
-  flow_id: number;
+  id: string;
+  flow_id: string;
   client_key: string;
   name: string;
   sort_order: number;
@@ -35,10 +35,10 @@ export interface FlowStep {
 }
 
 export interface FlowEdge {
-  id: number;
-  flow_id: number;
-  source_step_id: number;
-  target_step_id: number;
+  id: string;
+  flow_id: string;
+  source_step_id: string;
+  target_step_id: string;
   variable_mapping: string;
   variable_mapping_rules?: FlowVariableMappingRule[];
   created_at: string;
@@ -93,9 +93,9 @@ export interface SaveFlowRequest {
 }
 
 export interface FlowStepResult {
-  id: number;
-  run_id: number;
-  step_id: number;
+  id: string;
+  run_id: string;
+  step_id: string;
   status: FlowRunStatus;
   request: string;
   response: string;
@@ -107,10 +107,10 @@ export interface FlowStepResult {
 }
 
 export interface FlowRun {
-  id: number;
-  flow_id: number;
+  id: string;
+  flow_id: string;
   status: FlowRunStatus;
-  triggered_by: number;
+  triggered_by: string;
   execution_mode?: 'server' | 'local';
   started_at?: string | null;
   finished_at?: string | null;
@@ -125,8 +125,8 @@ export interface FlowRunListResponse {
 }
 
 export interface FlowStreamStepEvent {
-  run_id: number;
-  step_id: number;
+  run_id: string;
+  step_id: string;
   step_name: string;
   status: FlowRunStatus;
   data?: FlowStepResult;

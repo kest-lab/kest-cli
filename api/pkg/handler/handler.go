@@ -20,7 +20,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	idpkg "github.com/kest-labs/kest/api/pkg/id"
 	"github.com/kest-labs/kest/api/pkg/response"
 )
 
@@ -35,13 +35,8 @@ import (
 //	    return // Error response already sent
 //	}
 func ParseID(c *gin.Context, param string) (string, bool) {
-	idStr := c.Param(param)
-
-	if _, err := uuid.Parse(idStr); err == nil {
-		return idStr, true
-	}
-
-	if _, err := strconv.ParseUint(idStr, 10, 64); err == nil {
+	idStr, err := idpkg.Parse(c.Param(param))
+	if err == nil {
 		return idStr, true
 	}
 
@@ -73,7 +68,7 @@ func ParseInt64ID(c *gin.Context, param string) (int64, bool) {
 }
 
 // GetUserID extracts the authenticated user ID from context.
-// Returns 0 and false if not authenticated, automatically sends 401.
+// Returns an empty string and false if not authenticated, automatically sends 401.
 //
 // Example:
 //
@@ -81,39 +76,41 @@ func ParseInt64ID(c *gin.Context, param string) (int64, bool) {
 //	if !ok {
 //	    return // 401 already sent
 //	}
-func GetUserID(c *gin.Context) (uint, bool) {
+func GetUserID(c *gin.Context) (string, bool) {
 	userIDVal, exists := c.Get("userID")
 	if !exists {
 		response.Unauthorized(c)
-		return 0, false
+		return "", false
 	}
 
-	switch v := userIDVal.(type) {
-	case uint:
-		return v, true
-	case int:
-		return uint(v), true
-	case int64:
-		return uint(v), true
-	case uint64:
-		return uint(v), true
-	case float64:
-		return uint(v), true
-	default:
-		response.InternalServerError(c, "Invalid user ID type", nil)
-		return 0, false
+	userID, err := idpkg.Normalize(userIDVal)
+	if err == nil {
+		return userID, true
 	}
+
+	response.InternalServerError(c, "Invalid user ID type", err)
+	return "", false
 }
 
 // GetUserIDInt64 extracts the authenticated user ID as int64.
 func GetUserIDInt64(c *gin.Context) (int64, bool) {
 	id, ok := GetUserID(c)
-	return int64(id), ok
+	if !ok {
+		return 0, false
+	}
+
+	value, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Authenticated user ID is not numeric", err)
+		return 0, false
+	}
+
+	return value, true
 }
 
 // MustGetUserID extracts user ID, panics if not found.
 // Use only when you're certain the user is authenticated (e.g., after auth middleware).
-func MustGetUserID(c *gin.Context) uint {
+func MustGetUserID(c *gin.Context) string {
 	id, ok := GetUserID(c)
 	if !ok {
 		panic("user ID not found in context")

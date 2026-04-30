@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/kest-labs/kest/api/internal/modules/member"
+	idpkg "github.com/kest-labs/kest/api/pkg/id"
 )
 
 // Common errors
@@ -28,14 +29,14 @@ var (
 
 // Service defines the interface for project business logic
 type Service interface {
-	Create(ctx context.Context, userID uint, req *CreateProjectRequest) (*Project, error)
+	Create(ctx context.Context, userID string, req *CreateProjectRequest) (*Project, error)
 	GetByID(ctx context.Context, id string) (*Project, error)
 	Update(ctx context.Context, id string, req *UpdateProjectRequest) (*Project, error)
 	Delete(ctx context.Context, id string) error
-	List(ctx context.Context, userID uint, page, perPage int) ([]*Project, int64, error)
+	List(ctx context.Context, userID string, page, perPage int) ([]*Project, int64, error)
 	GetStats(ctx context.Context, projectID string) (*ProjectStats, error)
-	GenerateCLIToken(ctx context.Context, projectID string, createdBy uint, req *GenerateProjectCLITokenRequest) (*GenerateProjectCLITokenResponse, error)
-	ValidateCLIToken(ctx context.Context, projectID string, rawToken string, requiredScopes []string) (string, uint, error)
+	GenerateCLIToken(ctx context.Context, projectID string, createdBy string, req *GenerateProjectCLITokenRequest) (*GenerateProjectCLITokenResponse, error)
+	ValidateCLIToken(ctx context.Context, projectID string, rawToken string, requiredScopes []string) (string, string, error)
 }
 
 // service implements Service interface
@@ -52,7 +53,7 @@ func NewService(repo Repository, memberService member.Service) Service {
 	}
 }
 
-func (s *service) Create(ctx context.Context, userID uint, req *CreateProjectRequest) (*Project, error) {
+func (s *service) Create(ctx context.Context, userID string, req *CreateProjectRequest) (*Project, error) {
 	// Generate slug from name if not provided
 	slug := req.Slug
 	if slug == "" {
@@ -89,7 +90,7 @@ func (s *service) Create(ctx context.Context, userID uint, req *CreateProjectReq
 
 	// Auto-assign creator as Owner
 	_, err = s.memberService.AddMember(ctx, project.ID, &member.AddMemberRequest{
-		UserID: userID,
+		UserID: idpkg.Compatible(userID),
 		Role:   member.RoleOwner,
 	})
 	if err != nil {
@@ -150,7 +151,7 @@ func (s *service) Delete(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *service) List(ctx context.Context, userID uint, page, perPage int) ([]*Project, int64, error) {
+func (s *service) List(ctx context.Context, userID string, page, perPage int) ([]*Project, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -169,7 +170,7 @@ func (s *service) GetStats(ctx context.Context, projectID string) (*ProjectStats
 	return s.repo.GetStats(ctx, projectID)
 }
 
-func (s *service) GenerateCLIToken(ctx context.Context, projectID string, createdBy uint, req *GenerateProjectCLITokenRequest) (*GenerateProjectCLITokenResponse, error) {
+func (s *service) GenerateCLIToken(ctx context.Context, projectID string, createdBy string, req *GenerateProjectCLITokenRequest) (*GenerateProjectCLITokenResponse, error) {
 	if req == nil {
 		req = &GenerateProjectCLITokenRequest{}
 	}
@@ -218,36 +219,36 @@ func (s *service) GenerateCLIToken(ctx context.Context, projectID string, create
 	}, nil
 }
 
-func (s *service) ValidateCLIToken(ctx context.Context, projectID string, rawToken string, requiredScopes []string) (string, uint, error) {
+func (s *service) ValidateCLIToken(ctx context.Context, projectID string, rawToken string, requiredScopes []string) (string, string, error) {
 	tokenHash := hashCLIToken(strings.TrimSpace(rawToken))
 	if tokenHash == "" {
-		return "", 0, ErrInvalidCLIToken
+		return "", "", ErrInvalidCLIToken
 	}
 
 	token, err := s.repo.GetCLITokenByHash(ctx, tokenHash)
 	if err != nil {
-		return "", 0, err
+		return "", "", err
 	}
 	if token == nil {
-		return "", 0, ErrInvalidCLIToken
+		return "", "", ErrInvalidCLIToken
 	}
 	if token.ProjectID != projectID {
-		return "", 0, ErrCLITokenProjectMismatch
+		return "", "", ErrCLITokenProjectMismatch
 	}
 	if token.ExpiresAt != nil && token.ExpiresAt.Before(time.Now()) {
-		return "", 0, ErrCLITokenExpired
+		return "", "", ErrCLITokenExpired
 	}
 
 	scopes, err := normalizeRequiredCLITokenScopes(requiredScopes)
 	if err != nil {
-		return "", 0, err
+		return "", "", err
 	}
 	if !hasRequiredScopes(token.Scopes, scopes) {
-		return "", 0, ErrCLITokenScopeDenied
+		return "", "", ErrCLITokenScopeDenied
 	}
 
 	if err := s.repo.TouchCLIToken(ctx, token.ID, time.Now().UTC()); err != nil {
-		return "", 0, err
+		return "", "", err
 	}
 
 	return token.ID, token.CreatedBy, nil

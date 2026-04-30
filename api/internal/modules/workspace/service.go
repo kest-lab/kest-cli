@@ -11,21 +11,21 @@ import (
 // Service defines the workspace business logic interface
 type Service interface {
 	// Workspace operations
-	CreateWorkspace(req *CreateWorkspaceRequest, ownerID uint) (*Workspace, error)
-	UpdateWorkspace(id uint, req *UpdateWorkspaceRequest, userID uint, isSuperAdmin bool) (*Workspace, error)
-	DeleteWorkspace(id uint, userID uint, isSuperAdmin bool) error
-	GetWorkspace(id uint, userID uint, isSuperAdmin bool) (*Workspace, error)
-	ListWorkspaces(userID uint, isSuperAdmin bool) ([]*Workspace, error)
+	CreateWorkspace(req *CreateWorkspaceRequest, ownerID string) (*Workspace, error)
+	UpdateWorkspace(id string, req *UpdateWorkspaceRequest, userID string, isSuperAdmin bool) (*Workspace, error)
+	DeleteWorkspace(id string, userID string, isSuperAdmin bool) error
+	GetWorkspace(id string, userID string, isSuperAdmin bool) (*Workspace, error)
+	ListWorkspaces(userID string, isSuperAdmin bool) ([]*Workspace, error)
 
 	// Member operations
-	AddMember(workspaceID uint, req *AddMemberRequest, inviterID uint, isSuperAdmin bool) error
-	RemoveMember(workspaceID, targetUserID, requesterID uint, isSuperAdmin bool) error
-	UpdateMemberRole(workspaceID, targetUserID uint, role string, requesterID uint, isSuperAdmin bool) error
-	ListMembers(workspaceID, userID uint, isSuperAdmin bool) ([]*WorkspaceMember, error)
+	AddMember(workspaceID string, req *AddMemberRequest, inviterID string, isSuperAdmin bool) error
+	RemoveMember(workspaceID, targetUserID, requesterID string, isSuperAdmin bool) error
+	UpdateMemberRole(workspaceID, targetUserID string, role string, requesterID string, isSuperAdmin bool) error
+	ListMembers(workspaceID, userID string, isSuperAdmin bool) ([]*WorkspaceMember, error)
 
 	// Permission checks
-	CheckUserRole(workspaceID, userID uint, isSuperAdmin bool) (string, error)
-	HasPermission(workspaceID, userID uint, requiredRole string, isSuperAdmin bool) (bool, error)
+	CheckUserRole(workspaceID, userID string, isSuperAdmin bool) (string, error)
+	HasPermission(workspaceID, userID string, requiredRole string, isSuperAdmin bool) (bool, error)
 }
 
 // service implements Service interface
@@ -39,7 +39,7 @@ func NewService(repo Repository) Service {
 }
 
 // CreateWorkspace creates a new workspace
-func (s *service) CreateWorkspace(req *CreateWorkspaceRequest, ownerID uint) (*Workspace, error) {
+func (s *service) CreateWorkspace(req *CreateWorkspaceRequest, ownerID string) (*Workspace, error) {
 	// Generate slug if not provided or sanitize it
 	workspaceSlug := req.Slug
 	if workspaceSlug == "" {
@@ -97,7 +97,7 @@ func (s *service) CreateWorkspace(req *CreateWorkspaceRequest, ownerID uint) (*W
 }
 
 // UpdateWorkspace updates a workspace
-func (s *service) UpdateWorkspace(id uint, req *UpdateWorkspaceRequest, userID uint, isSuperAdmin bool) (*Workspace, error) {
+func (s *service) UpdateWorkspace(id string, req *UpdateWorkspaceRequest, userID string, isSuperAdmin bool) (*Workspace, error) {
 	// Check permission (only owner and admin can update, or super admin)
 	hasPermission, err := s.repo.HasPermission(id, userID, RoleAdmin, isSuperAdmin)
 	if err != nil {
@@ -132,7 +132,7 @@ func (s *service) UpdateWorkspace(id uint, req *UpdateWorkspaceRequest, userID u
 }
 
 // DeleteWorkspace deletes a workspace (only owner or super admin can delete)
-func (s *service) DeleteWorkspace(id uint, userID uint, isSuperAdmin bool) error {
+func (s *service) DeleteWorkspace(id string, userID string, isSuperAdmin bool) error {
 	workspace, err := s.repo.FindByID(id)
 	if err != nil {
 		return err
@@ -147,7 +147,7 @@ func (s *service) DeleteWorkspace(id uint, userID uint, isSuperAdmin bool) error
 }
 
 // GetWorkspace gets a workspace by ID
-func (s *service) GetWorkspace(id uint, userID uint, isSuperAdmin bool) (*Workspace, error) {
+func (s *service) GetWorkspace(id string, userID string, isSuperAdmin bool) (*Workspace, error) {
 	// Check if user has access
 	hasPermission, err := s.repo.HasPermission(id, userID, RoleViewer, isSuperAdmin)
 	if err != nil {
@@ -166,7 +166,7 @@ func (s *service) GetWorkspace(id uint, userID uint, isSuperAdmin bool) (*Worksp
 }
 
 // ListWorkspaces lists all workspaces accessible to a user
-func (s *service) ListWorkspaces(userID uint, isSuperAdmin bool) ([]*Workspace, error) {
+func (s *service) ListWorkspaces(userID string, isSuperAdmin bool) ([]*Workspace, error) {
 	workspaces, err := s.repo.ListByUserID(userID, isSuperAdmin)
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func (s *service) ListWorkspaces(userID uint, isSuperAdmin bool) ([]*Workspace, 
 }
 
 // AddMember adds a member to a workspace
-func (s *service) AddMember(workspaceID uint, req *AddMemberRequest, inviterID uint, isSuperAdmin bool) error {
+func (s *service) AddMember(workspaceID string, req *AddMemberRequest, inviterID string, isSuperAdmin bool) error {
 	// Only admin and owner can add members (or super admin)
 	hasPermission, err := s.repo.HasPermission(workspaceID, inviterID, RoleAdmin, isSuperAdmin)
 	if err != nil {
@@ -187,14 +187,14 @@ func (s *service) AddMember(workspaceID uint, req *AddMemberRequest, inviterID u
 	}
 
 	// Check if user is already a member
-	existing, _ := s.repo.FindMember(workspaceID, req.UserID)
+	existing, _ := s.repo.FindMember(workspaceID, req.UserID.String())
 	if existing != nil {
 		return errors.New("user is already a member of this workspace")
 	}
 
 	member := &WorkspaceMemberPO{
 		WorkspaceID: workspaceID,
-		UserID:      req.UserID,
+		UserID:      req.UserID.String(),
 		Role:        req.Role,
 		InvitedBy:   inviterID,
 		JoinedAt:    time.Now(),
@@ -204,7 +204,7 @@ func (s *service) AddMember(workspaceID uint, req *AddMemberRequest, inviterID u
 }
 
 // RemoveMember removes a member from a workspace
-func (s *service) RemoveMember(workspaceID, targetUserID, requesterID uint, isSuperAdmin bool) error {
+func (s *service) RemoveMember(workspaceID, targetUserID, requesterID string, isSuperAdmin bool) error {
 	// Get workspace to check owner
 	workspace, err := s.repo.FindByID(workspaceID)
 	if err != nil {
@@ -234,7 +234,7 @@ func (s *service) RemoveMember(workspaceID, targetUserID, requesterID uint, isSu
 }
 
 // UpdateMemberRole updates a member's role
-func (s *service) UpdateMemberRole(workspaceID, targetUserID uint, role string, requesterID uint, isSuperAdmin bool) error {
+func (s *service) UpdateMemberRole(workspaceID, targetUserID string, role string, requesterID string, isSuperAdmin bool) error {
 	// Get workspace
 	workspace, err := s.repo.FindByID(workspaceID)
 	if err != nil {
@@ -264,7 +264,7 @@ func (s *service) UpdateMemberRole(workspaceID, targetUserID uint, role string, 
 }
 
 // ListMembers lists all members of a workspace
-func (s *service) ListMembers(workspaceID, userID uint, isSuperAdmin bool) ([]*WorkspaceMember, error) {
+func (s *service) ListMembers(workspaceID, userID string, isSuperAdmin bool) ([]*WorkspaceMember, error) {
 	// Check if user has access to workspace
 	hasPermission, err := s.repo.HasPermission(workspaceID, userID, RoleViewer, isSuperAdmin)
 	if err != nil {
@@ -283,11 +283,11 @@ func (s *service) ListMembers(workspaceID, userID uint, isSuperAdmin bool) ([]*W
 }
 
 // CheckUserRole returns the user's role in a workspace
-func (s *service) CheckUserRole(workspaceID, userID uint, isSuperAdmin bool) (string, error) {
+func (s *service) CheckUserRole(workspaceID, userID string, isSuperAdmin bool) (string, error) {
 	return s.repo.CheckPermission(workspaceID, userID, isSuperAdmin)
 }
 
 // HasPermission checks if a user has at least the required role level
-func (s *service) HasPermission(workspaceID, userID uint, requiredRole string, isSuperAdmin bool) (bool, error) {
+func (s *service) HasPermission(workspaceID, userID string, requiredRole string, isSuperAdmin bool) (bool, error) {
 	return s.repo.HasPermission(workspaceID, userID, requiredRole, isSuperAdmin)
 }

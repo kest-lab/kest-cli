@@ -32,7 +32,7 @@ func NewBaseEvent() BaseEvent {
 // UserRegisteredEvent is fired when a new user registers
 type UserRegisteredEvent struct {
 	BaseEvent
-	UserID   uint
+	UserID   string
 	Username string
 	Email    string
 }
@@ -43,7 +43,7 @@ func (e UserRegisteredEvent) EventName() string {
 }
 
 // NewUserRegisteredEvent creates a new UserRegisteredEvent
-func NewUserRegisteredEvent(userID uint, username, email string) UserRegisteredEvent {
+func NewUserRegisteredEvent(userID string, username, email string) UserRegisteredEvent {
 	return UserRegisteredEvent{
 		BaseEvent: NewBaseEvent(),
 		UserID:    userID,
@@ -55,7 +55,7 @@ func NewUserRegisteredEvent(userID uint, username, email string) UserRegisteredE
 // UserLoggedInEvent is fired when a user logs in
 type UserLoggedInEvent struct {
 	BaseEvent
-	UserID    uint
+	UserID    string
 	Username  string
 	IPAddress string
 }
@@ -66,7 +66,7 @@ func (e UserLoggedInEvent) EventName() string {
 }
 
 // NewUserLoggedInEvent creates a new UserLoggedInEvent
-func NewUserLoggedInEvent(userID uint, username, ip string) UserLoggedInEvent {
+func NewUserLoggedInEvent(userID string, username, ip string) UserLoggedInEvent {
 	return UserLoggedInEvent{
 		BaseEvent: NewBaseEvent(),
 		UserID:    userID,
@@ -78,7 +78,7 @@ func NewUserLoggedInEvent(userID uint, username, ip string) UserLoggedInEvent {
 // UserPasswordChangedEvent is fired when a user changes their password
 type UserPasswordChangedEvent struct {
 	BaseEvent
-	UserID uint
+	UserID string
 }
 
 // EventName returns the event name
@@ -87,7 +87,7 @@ func (e UserPasswordChangedEvent) EventName() string {
 }
 
 // NewUserPasswordChangedEvent creates a new UserPasswordChangedEvent
-func NewUserPasswordChangedEvent(userID uint) UserPasswordChangedEvent {
+func NewUserPasswordChangedEvent(userID string) UserPasswordChangedEvent {
 	return UserPasswordChangedEvent{
 		BaseEvent: NewBaseEvent(),
 		UserID:    userID,
@@ -97,7 +97,7 @@ func NewUserPasswordChangedEvent(userID uint) UserPasswordChangedEvent {
 // UserDeletedEvent is fired when a user account is deleted
 type UserDeletedEvent struct {
 	BaseEvent
-	UserID uint
+	UserID string
 	Email  string
 }
 
@@ -107,7 +107,7 @@ func (e UserDeletedEvent) EventName() string {
 }
 
 // NewUserDeletedEvent creates a new UserDeletedEvent
-func NewUserDeletedEvent(userID uint, email string) UserDeletedEvent {
+func NewUserDeletedEvent(userID string, email string) UserDeletedEvent {
 	return UserDeletedEvent{
 		BaseEvent: NewBaseEvent(),
 		UserID:    userID,
@@ -120,8 +120,8 @@ func NewUserDeletedEvent(userID uint, email string) UserDeletedEvent {
 // RoleAssignedEvent is fired when a role is assigned to a user
 type RoleAssignedEvent struct {
 	BaseEvent
-	UserID   uint
-	RoleID   uint
+	UserID   string
+	RoleID   string
 	RoleName string
 }
 
@@ -131,7 +131,7 @@ func (e RoleAssignedEvent) EventName() string {
 }
 
 // NewRoleAssignedEvent creates a new RoleAssignedEvent
-func NewRoleAssignedEvent(userID, roleID uint, roleName string) RoleAssignedEvent {
+func NewRoleAssignedEvent(userID, roleID string, roleName string) RoleAssignedEvent {
 	return RoleAssignedEvent{
 		BaseEvent: NewBaseEvent(),
 		UserID:    userID,
@@ -143,8 +143,8 @@ func NewRoleAssignedEvent(userID, roleID uint, roleName string) RoleAssignedEven
 // RoleRevokedEvent is fired when a role is revoked from a user
 type RoleRevokedEvent struct {
 	BaseEvent
-	UserID   uint
-	RoleID   uint
+	UserID   string
+	RoleID   string
 	RoleName string
 }
 
@@ -154,7 +154,7 @@ func (e RoleRevokedEvent) EventName() string {
 }
 
 // NewRoleRevokedEvent creates a new RoleRevokedEvent
-func NewRoleRevokedEvent(userID, roleID uint, roleName string) RoleRevokedEvent {
+func NewRoleRevokedEvent(userID, roleID string, roleName string) RoleRevokedEvent {
 	return RoleRevokedEvent{
 		BaseEvent: NewBaseEvent(),
 		UserID:    userID,

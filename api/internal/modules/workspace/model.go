@@ -23,12 +23,12 @@ const (
 
 // WorkspacePO is the persistent object for database operations
 type WorkspacePO struct {
-	ID          uint   `gorm:"primaryKey"`
+	ID          string `gorm:"primaryKey"`
 	Name        string `gorm:"size:100;not null"`
 	Slug        string `gorm:"size:50;uniqueIndex"`
 	Description string `gorm:"size:500"`
 	Type        string `gorm:"size:20;not null;default:'personal'"` // personal|team|public
-	OwnerID     uint   `gorm:"not null;index"`                      // Creator
+	OwnerID     string `gorm:"not null;index"`                      // Creator
 	Visibility  string `gorm:"size:20;default:'private'"`           // private|team|public
 	Settings    string `gorm:"type:text"`                           // JSON settings as string
 	CreatedAt   time.Time
@@ -43,11 +43,11 @@ func (WorkspacePO) TableName() string {
 
 // WorkspaceMemberPO represents a membership of a user in a workspace
 type WorkspaceMemberPO struct {
-	ID          uint   `gorm:"primaryKey"`
-	WorkspaceID uint   `gorm:"index;uniqueIndex:idx_workspace_user;not null"`
-	UserID      uint   `gorm:"index;uniqueIndex:idx_workspace_user;not null"`
+	ID          string `gorm:"primaryKey"`
+	WorkspaceID string `gorm:"index;uniqueIndex:idx_workspace_user;not null"`
+	UserID      string `gorm:"index;uniqueIndex:idx_workspace_user;not null"`
 	Role        string `gorm:"size:20;not null"` // owner|admin|editor|viewer
-	InvitedBy   uint   `gorm:"index"`            // Inviter user ID
+	InvitedBy   string `gorm:"index"`            // Inviter user ID
 	JoinedAt    time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
@@ -77,12 +77,12 @@ var RoleLevel = map[string]int{
 
 // Workspace is the domain entity
 type Workspace struct {
-	ID          uint                   `json:"id"`
+	ID          string                 `json:"id"`
 	Name        string                 `json:"name"`
 	Slug        string                 `json:"slug"`
 	Description string                 `json:"description"`
 	Type        string                 `json:"type"`
-	OwnerID     uint                   `json:"owner_id"`
+	OwnerID     string                 `json:"owner_id"`
 	Visibility  string                 `json:"visibility"`
 	Settings    map[string]interface{} `json:"settings,omitempty"`
 	CreatedAt   time.Time              `json:"created_at"`
@@ -91,11 +91,11 @@ type Workspace struct {
 
 // WorkspaceMember is the domain entity for membership
 type WorkspaceMember struct {
-	ID          uint      `json:"id"`
-	WorkspaceID uint      `json:"workspace_id"`
-	UserID      uint      `json:"user_id"`
+	ID          string    `json:"id"`
+	WorkspaceID string    `json:"workspace_id"`
+	UserID      string    `json:"user_id"`
 	Role        string    `json:"role"`
-	InvitedBy   uint      `json:"invited_by"`
+	InvitedBy   string    `json:"invited_by"`
 	JoinedAt    time.Time `json:"joined_at"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
