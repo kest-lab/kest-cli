@@ -372,6 +372,9 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 		body = buf.Bytes()
 	}
 
+	result.RequestHeaders = cloneStringMap(headers)
+	result.RequestBody = string(body)
+
 	// Execute request with retry logic
 	var resp *client.Response
 	var err error
@@ -445,6 +448,11 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 		}
 	}
 
+	result.Status = resp.Status
+	result.Duration = resp.Duration
+	result.ResponseHeaders = cloneHeaderMap(resp.Headers)
+	result.ResponseBody = string(resp.Body)
+
 	var recordID int64
 
 	// Handle captures
@@ -508,10 +516,6 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 		}
 
 		result.Success = allPassed
-		result.Status = resp.Status
-		result.Duration = resp.Duration
-		result.ResponseBody = string(resp.Body)
-
 		if !allPassed {
 			result.Error = fmt.Errorf("%s", firstErr)
 			return result, &ExitError{Code: ExitAssertionFailed, Err: result.Error}
@@ -556,13 +560,36 @@ func ExecuteRequest(opts RequestOptions) (summary.TestResult, error) {
 		})
 	}
 
-	result.Status = resp.Status
-	result.Duration = resp.Duration
-	result.ResponseBody = string(resp.Body)
 	result.Success = true
 
 	if !opts.SilentOutput {
 		output.PrintResponse(strings.ToUpper(method), finalURL, resp.Status, resp.Duration.String(), resp.Body, recordID, startTime)
 	}
+	result.RecordID = recordID
 	return result, nil
+}
+
+func cloneStringMap(input map[string]string) map[string]string {
+	if len(input) == 0 {
+		return nil
+	}
+
+	cloned := make(map[string]string, len(input))
+	for key, value := range input {
+		cloned[key] = value
+	}
+	return cloned
+}
+
+func cloneHeaderMap(input map[string][]string) map[string][]string {
+	if len(input) == 0 {
+		return nil
+	}
+
+	cloned := make(map[string][]string, len(input))
+	for key, values := range input {
+		copied := append([]string(nil), values...)
+		cloned[key] = copied
+	}
+	return cloned
 }

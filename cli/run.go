@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/kest-labs/kest/cli/internal/logger"
+	"github.com/kest-labs/kest/cli/internal/report"
 	"github.com/kest-labs/kest/cli/internal/storage"
 	"github.com/kest-labs/kest/cli/internal/summary"
 	"github.com/kest-labs/kest/cli/internal/variable"
@@ -32,6 +33,8 @@ var (
 	runFailFast  bool
 	runStrict    bool
 	runEnv       string
+	runHTML      bool
+	runOpen      bool
 )
 
 var runCmd = &cobra.Command{
@@ -52,6 +55,12 @@ Kest Flow (.flow.md) allows you to use standard Markdown to document and test yo
   # Set exec step timeout and verbose output
   kest run hmac.flow.md --exec-timeout 10 -v --debug-vars
 
+  # Generate an HTML report
+  kest run login.flow.md --html
+
+  # Generate and open the HTML report in your browser
+  kest run login.flow.md --open
+
   # Run a legacy .kest scenario
   kest run auth.kest`,
 	Args:         cobra.ExactArgs(1),
@@ -71,6 +80,8 @@ func init() {
 	runCmd.Flags().BoolVar(&runFailFast, "fail-fast", false, "Stop execution on first failed step")
 	runCmd.Flags().BoolVar(&runStrict, "strict", false, "Enable strict variable validation (error on undefined variables)")
 	runCmd.Flags().StringVarP(&runEnv, "env", "e", "", "Override active environment for this run (e.g. staging, production)")
+	runCmd.Flags().BoolVar(&runHTML, "html", false, "Generate an HTML report after the run")
+	runCmd.Flags().BoolVar(&runOpen, "open", false, "Generate and open an HTML report after the run")
 	rootCmd.AddCommand(runCmd)
 }
 
@@ -174,14 +185,22 @@ func runScenario(filePath string) error {
 
 	summ.Print()
 
-	if logPath := logger.GetSessionPath(); logPath != "" {
+	logPath := logger.GetSessionPath()
+	if logPath != "" {
 		fmt.Printf("\n📄 Full session logs generated at: %s\n", logPath)
 		fmt.Printf("💡 Tip: Use this path for deep-context debugging in AI Editors (Cursor/Windsurf)\n")
 		fmt.Printf("📘 Need help writing flows? Run 'kest guide' for a quick tutorial.\n")
 	}
 
+	reportErr := maybeGenerateRunReport(filePath, summ, logPath)
 	if summ.FailedTests > 0 {
+		if reportErr != nil {
+			return fmt.Errorf("test suite failed (also failed to generate HTML report: %w)", reportErr)
+		}
 		return fmt.Errorf("test suite failed")
+	}
+	if reportErr != nil {
+		return reportErr
 	}
 	return nil
 }
@@ -223,11 +242,8 @@ func executeMultiLineBlock(raw string, lineNum int, showOutput bool, verbose boo
 	}
 
 	res, err := ExecuteRequest(opts)
-
-	result.Status = res.Status
-	result.Duration = res.Duration
-	result.ResponseBody = res.ResponseBody
-	result.StartTime = res.StartTime
+	result = res
+	result.Name = fmt.Sprintf("Block at line %d", lineNum)
 	result.Success = (err == nil)
 	result.Error = err
 
@@ -300,12 +316,8 @@ func executeTestLine(line string, lineNum int, showOutput bool, verbose bool) su
 		Retry:       retry,
 		RetryWait:   retryWait,
 	})
-
-	result.Status = res.Status
-	result.Duration = res.Duration
-	result.ResponseBody = res.ResponseBody
-	result.StartTime = res.StartTime
-
+	result = res
+	result.Name = fmt.Sprintf("Line %d", lineNum)
 	result.Success = (err == nil)
 	result.Error = err
 
@@ -435,17 +447,10 @@ func runFlowDocument(doc FlowDoc, filePath string) error {
 		}
 
 		res, err := executeFlowStepWithPoll(step, opts)
-		result := summary.TestResult{
-			Name:         stepName(step),
-			Method:       strings.ToUpper(opts.Method),
-			URL:          opts.URL,
-			Status:       res.Status,
-			Duration:     res.Duration,
-			ResponseBody: res.ResponseBody,
-			StartTime:    res.StartTime,
-			Success:      err == nil,
-			Error:        err,
-		}
+		result := res
+		result.Name = stepName(step)
+		result.Success = (err == nil)
+		result.Error = err
 		summ.AddResult(result)
 
 		// Process captures after successful request
@@ -515,14 +520,22 @@ func runFlowDocument(doc FlowDoc, filePath string) error {
 
 	summ.Print()
 
-	if logPath := logger.GetSessionPath(); logPath != "" {
+	logPath := logger.GetSessionPath()
+	if logPath != "" {
 		fmt.Printf("\n📄 Full session logs generated at: %s\n", logPath)
 		fmt.Printf("💡 Tip: Use this path for deep-context debugging in AI Editors (Cursor/Windsurf)\n")
 		fmt.Printf("📘 Need help writing flows? Run 'kest guide' for a quick tutorial.\n")
 	}
 
+	reportErr := maybeGenerateRunReport(filePath, summ, logPath)
 	if summ.FailedTests > 0 {
+		if reportErr != nil {
+			return fmt.Errorf("test suite failed (also failed to generate HTML report: %w)", reportErr)
+		}
 		return fmt.Errorf("test suite failed")
+	}
+	if reportErr != nil {
+		return reportErr
 	}
 	return nil
 }
@@ -605,6 +618,7 @@ func executeExecStep(step FlowStep) summary.TestResult {
 		result.Error = fmt.Errorf("exec step has no command at line %d", step.LineNum)
 		return result
 	}
+	result.Command = step.Exec.Command
 
 	// Build the full variable map: config → storage → run context
 	vars := buildVarChain()
@@ -678,6 +692,32 @@ func executeExecStep(step FlowStep) summary.TestResult {
 	result.ResponseBody = output
 	fmt.Printf("  ✅ Exec completed in %s\n", duration.Round(time.Millisecond))
 	return result
+}
+
+func maybeGenerateRunReport(filePath string, summ *summary.Summary, logPath string) error {
+	if !runHTML && !runOpen {
+		return nil
+	}
+
+	reportPath, err := report.WriteRunHTML(summ, report.RunHTMLOptions{
+		SourcePath: filePath,
+		LogPath:    logPath,
+	})
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("\n🌐 HTML report generated at: %s\n", reportPath)
+	if !runOpen {
+		return nil
+	}
+
+	if err := openReportInBrowser(reportPath); err != nil {
+		return fmt.Errorf("report generated at %s, but failed to open it: %w", reportPath, err)
+	}
+
+	fmt.Println("   Opened in your default browser.")
+	return nil
 }
 
 func validateFlowStepVariables(step FlowStep, captureOrigins map[string]string, failedSteps map[string]bool) error {

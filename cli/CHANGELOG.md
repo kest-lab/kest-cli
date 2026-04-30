@@ -1,5 +1,13 @@
 # Kest CLI Changelog
 
+## v0.7.5 (2026-04-30)
+
+### New Features
+
+- **Local HTML reports for long request output** — `kest show --html` now renders a recorded request/response as a local HTML report, and `kest show --open` opens it in your default browser.
+- **Flow run HTML reports** — `kest run --html` generates a browser-friendly report for full scenario and flow runs, including per-step request/response details, exec output, errors, and record IDs.
+- **Automatic local report storage** — Generated reports are saved under `.kest/reports/` inside a detected project, or `~/.kest/reports/` when run outside a project.
+
 ## v0.7.4 (2026-04-22)
 
 ### New Features

@@ -220,6 +220,14 @@ kest snap /api/users --verify     # ❌ 'role' field changed!
 kest snap /api/users --update     # Accept new snapshot
 ```
 
+### Local HTML Reports — read long output in your browser
+
+```bash
+kest show last --open
+kest run login.flow.md --open
+# Reports are saved to .kest/reports/ or ~/.kest/reports/
+```
+
 ### Replay & Diff — instant regression detection
 
 ```bash
@@ -308,6 +316,7 @@ kest history                # Recent records
 kest history -n 50          # Last 50
 kest show last              # Full request/response details
 kest show 42                # Specific record
+kest show last --open       # Open record as local HTML report
 kest diff 100 last          # Compare two records
 kest replay last --diff     # Re-execute and compare
 ```
@@ -320,6 +329,7 @@ kest replay last --diff     # Re-execute and compare
 ```bash
 kest run login.flow.md                  # Run flow file
 kest run login.flow.md --var key=val    # With variables
+kest run login.flow.md --open           # Generate and open HTML report
 kest run tests/ --parallel --jobs 8     # Parallel execution
 kest watch login.flow.md                # Auto-rerun on change
 kest snap /api/users                    # Save snapshot

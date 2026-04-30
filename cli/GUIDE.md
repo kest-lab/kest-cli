@@ -84,6 +84,7 @@ Vibe Coding emphasizes **fluid, high-frequency, low-friction** development. Kest
 - **Pipe to `jq`**: `kest get /users --quiet --output json | jq '.[0].id'`
 - **Shell alias**: Add `alias k='kest'` to `.zshrc` — then `k get /path` is all you need.
 - **One-command error context**: When a request fails, tell AI: "Check the last kest record and fix the backend." AI reads `kest show last` output for full context.
+- **Browser-readable output**: Use `kest show last --open` or `kest run login.flow.md --open` when terminal output is too long to scan.
 
 ---
 
@@ -224,6 +225,8 @@ The recommended way to write tests. See [FLOW_GUIDE.md](FLOW_GUIDE.md) for the f
 ```bash
 kest run login.flow.md
 kest run login.flow.md --var password=secret
+kest run login.flow.md --html
+kest run login.flow.md --open
 ```
 
 ### 6.4 Generate from OpenAPI
@@ -267,7 +270,11 @@ View the full request and response (headers + formatted body) for any record.
 ```bash
 kest show 42          # Specific record
 kest show last        # Most recent record
+kest show last --html # Generate local HTML report
+kest show last --open # Open report in browser
 ```
+
+HTML reports are saved under `.kest/reports/` inside a Kest project, or `~/.kest/reports/` outside a project.
 
 ---
 

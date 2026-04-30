@@ -6,8 +6,14 @@ import (
 	"strconv"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/kest-labs/kest/cli/internal/report"
 	"github.com/kest-labs/kest/cli/internal/storage"
 	"github.com/spf13/cobra"
+)
+
+var (
+	showHTML bool
+	showOpen bool
 )
 
 var showCmd = &cobra.Command{
@@ -18,7 +24,13 @@ var showCmd = &cobra.Command{
   kest show last
 
   # Show a specific record by ID
-  kest show 42`,
+  kest show 42
+
+  # Generate an HTML report for a record
+  kest show 42 --html
+
+  # Generate and open the HTML report
+  kest show last --open`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		store, err := storage.NewStore()
@@ -42,12 +54,30 @@ var showCmd = &cobra.Command{
 			return err
 		}
 
+		if showHTML || showOpen {
+			reportPath, err := report.WriteRecordHTML(record, report.RecordHTMLOptions{})
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("🌐 HTML report generated at: %s\n", reportPath)
+			if showOpen {
+				if err := openReportInBrowser(reportPath); err != nil {
+					return fmt.Errorf("report generated at %s, but failed to open it: %w", reportPath, err)
+				}
+				fmt.Println("   Opened in your default browser.")
+			}
+			return nil
+		}
+
 		printRecord(record)
 		return nil
 	},
 }
 
 func init() {
+	showCmd.Flags().BoolVar(&showHTML, "html", false, "Generate an HTML report for this record")
+	showCmd.Flags().BoolVar(&showOpen, "open", false, "Generate and open an HTML report for this record")
 	rootCmd.AddCommand(showCmd)
 }
 

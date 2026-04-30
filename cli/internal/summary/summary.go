@@ -10,15 +10,20 @@ import (
 )
 
 type TestResult struct {
-	Name         string
-	Method       string
-	URL          string
-	Status       int
-	Duration     time.Duration
-	StartTime    time.Time
-	ResponseBody string
-	Error        error
-	Success      bool
+	Name            string
+	Method          string
+	URL             string
+	RequestHeaders  map[string]string
+	RequestBody     string
+	Status          int
+	ResponseHeaders map[string][]string
+	Duration        time.Duration
+	StartTime       time.Time
+	ResponseBody    string
+	RecordID        int64
+	Command         string
+	Error           error
+	Success         bool
 }
 
 func latencyStats(results []TestResult) (time.Duration, time.Duration) {
