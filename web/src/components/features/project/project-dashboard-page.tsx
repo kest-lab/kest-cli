@@ -13,8 +13,10 @@ import {
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  Pencil,
   Plus,
   Search,
+  Trash2,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +24,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { ActionMenu } from '@/components/features/project/action-menu';
 import {
+  DeleteProjectDialog,
   ProjectFormDialog,
   type ProjectFormMode,
   ProjectStatusBadge,
@@ -38,6 +42,7 @@ import { apiSpecKeys, useApiSpecs } from '@/hooks/use-api-specs';
 import {
   projectKeys,
   useCreateProject,
+  useDeleteProject,
   useProjectStats,
   useProjects,
   useUpdateProject,
@@ -108,6 +113,7 @@ export function ProjectDashboardPage() {
   const [formMode, setFormMode] = useState<ProjectFormMode>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ApiProject | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ApiProject | null>(null);
   const hasAutoSelectedProjectRef = useRef(false);
 
   const deferredSearch = useDeferredValue(searchQuery);
@@ -115,34 +121,35 @@ export function ProjectDashboardPage() {
   const projectsQuery = useProjects({ page: 1, perPage: PROJECTS_PAGE_SIZE });
   const createProjectMutation = useCreateProject();
   const updateProjectMutation = useUpdateProject();
+  const deleteProjectMutation = useDeleteProject();
 
   const projects = projectsQuery.data?.items ?? EMPTY_PROJECTS;
   const previewProjectId = normalizeProjectId(searchParams.get('preview'));
+  const sortedProjects = useMemo(
+    () => [...projects].sort(sortProjectsByCreatedAtDesc),
+    [projects]
+  );
 
   const filteredProjects = useMemo(() => {
     const normalizedQuery = deferredSearch.trim().toLowerCase();
 
     if (!normalizedQuery) {
-      return [...projects].sort(sortProjectsByCreatedAtDesc);
+      return sortedProjects;
     }
 
-    return projects
+    return sortedProjects
       .filter((project) =>
         [project.name, project.slug, project.platform]
           .filter(Boolean)
           .some((value) => value.toLowerCase().includes(normalizedQuery))
-      )
-      .sort(sortProjectsByCreatedAtDesc);
-  }, [deferredSearch, projects]);
+      );
+  }, [deferredSearch, sortedProjects]);
 
   const selectedProject =
     previewProjectId !== null
       ? projects.find((project) => normalizeProjectId(project.id) === previewProjectId) ?? null
       : null;
-  const fallbackProject = useMemo(
-    () => [...projects].sort(sortProjectsByCreatedAtDesc)[0] ?? null,
-    [projects]
-  );
+  const fallbackProject = sortedProjects[0] ?? null;
 
   const prefetchProjectPreview = useCallback((projectId: number | string) => {
     void queryClient.prefetchQuery({
@@ -193,6 +200,14 @@ export function ProjectDashboardPage() {
     navigateToPreview(fallbackProject.id);
   }, [fallbackProject, navigateToPreview, previewProjectId, projectsQuery.isLoading]);
 
+  useEffect(() => {
+    if (projectsQuery.isLoading || previewProjectId === null || selectedProject) {
+      return;
+    }
+
+    navigateToPreview(fallbackProject?.id ?? null);
+  }, [fallbackProject, navigateToPreview, previewProjectId, projectsQuery.isLoading, selectedProject]);
+
   const openCreateDialog = () => {
     setFormMode('create');
     setEditingProject(null);
@@ -220,6 +235,19 @@ export function ProjectDashboardPage() {
 
       setIsFormOpen(false);
       setEditingProject(null);
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    try {
+      await deleteProjectMutation.mutateAsync(deleteTarget.id);
+      setDeleteTarget(null);
     } catch {
       // Global HTTP error handling already surfaces failure feedback.
     }
@@ -286,49 +314,79 @@ export function ProjectDashboardPage() {
               <div className="space-y-2">
                 {filteredProjects.map((project) => {
                   const isActive = project.id === selectedProject?.id;
+                  const menuItems = [
+                    {
+                      key: `project-edit-${project.id}`,
+                      label: t('projectForm.editTitle'),
+                      icon: Pencil,
+                      onSelect: () => openEditDialog(project),
+                    },
+                    {
+                      key: `project-delete-${project.id}`,
+                      label: t('projectForm.deleteButton'),
+                      icon: Trash2,
+                      destructive: true,
+                      separatorBefore: true,
+                      disabled: deleteProjectMutation.isPending,
+                      onSelect: () => setDeleteTarget(project),
+                    },
+                  ];
 
                   return (
-                    <button
+                    <div
                       key={project.id}
-                      type="button"
-                      onClick={() => navigateToPreview(project.id)}
                       onMouseEnter={() => prefetchProjectPreview(project.id)}
-                      onFocus={() => prefetchProjectPreview(project.id)}
                       onTouchStart={() => prefetchProjectPreview(project.id)}
-                      aria-pressed={isActive}
                       className={`group w-full rounded-2xl border p-3 text-left transition-colors ${
                         isActive
                           ? 'border-primary/30 bg-primary/10 shadow-sm'
                           : 'border-transparent bg-background/60 hover:border-border/60 hover:bg-background'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-text-main">{project.name}</p>
-                          <p className="truncate text-xs text-text-muted">{project.slug}</p>
-                        </div>
-                        <ProjectStatusBadge status={project.status} />
+                      <div className="flex items-start gap-2">
+                        <button
+                          type="button"
+                          onClick={() => navigateToPreview(project.id)}
+                          onFocus={() => prefetchProjectPreview(project.id)}
+                          aria-pressed={isActive}
+                          className="min-w-0 flex-1 text-left"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-text-main">{project.name}</p>
+                            <p className="truncate text-xs text-text-muted">{project.slug}</p>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
+                            {isActive ? (
+                              <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+                                {t('dashboardPage.selected')}
+                              </Badge>
+                            ) : null}
+                            {project.created_at ? (
+                              <span>
+                                {t('dashboardPage.createdAt', {
+                                  value: formatDate(project.created_at, 'YYYY-MM-DD'),
+                                })}
+                              </span>
+                            ) : null}
+                            {!isActive ? (
+                              <span className="transition-opacity group-hover:opacity-100 lg:opacity-0">
+                                {t('dashboardPage.preview')}
+                              </span>
+                            ) : null}
+                          </div>
+                        </button>
+                        <ActionMenu
+                          items={menuItems}
+                          ariaLabel={t('common.openActions')}
+                          stopPropagation
+                          triggerClassName={
+                            isActive
+                              ? 'h-8 w-8 shrink-0 rounded-full text-primary hover:bg-primary/10'
+                              : 'h-8 w-8 shrink-0 rounded-full text-text-muted hover:bg-muted'
+                          }
+                        />
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
-                        {isActive ? (
-                          <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                            {t('dashboardPage.selected')}
-                          </Badge>
-                        ) : null}
-                        {project.created_at ? (
-                          <span>
-                            {t('dashboardPage.createdAt', {
-                              value: formatDate(project.created_at, 'YYYY-MM-DD'),
-                            })}
-                          </span>
-                        ) : null}
-                        {!isActive ? (
-                          <span className="transition-opacity group-hover:opacity-100 lg:opacity-0">
-                            {t('dashboardPage.preview')}
-                          </span>
-                        ) : null}
-                      </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -358,9 +416,24 @@ export function ProjectDashboardPage() {
         open={isFormOpen}
         mode={formMode}
         project={editingProject}
-        isSubmitting={createProjectMutation.isPending || updateProjectMutation.isPending}
+        isSubmitting={
+          createProjectMutation.isPending ||
+          updateProjectMutation.isPending ||
+          deleteProjectMutation.isPending
+        }
         onOpenChange={setIsFormOpen}
         onSubmit={handleProjectSubmit}
+      />
+      <DeleteProjectDialog
+        open={Boolean(deleteTarget)}
+        project={deleteTarget}
+        isDeleting={deleteProjectMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleDeleteProject}
       />
     </div>
   );
