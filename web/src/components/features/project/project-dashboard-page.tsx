@@ -18,6 +18,7 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
+import { ActionMenu } from '@/components/features/project/action-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -103,7 +104,8 @@ const buildQuickRequestHref = (projectId: number | string) =>
   `${buildProjectCollectionsRoute(projectId)}?quickRequest=1`;
 
 export function ProjectDashboardPage() {
-  const t = useT('project');
+  const i18n = useT();
+  const t = i18n.project;
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -120,6 +122,7 @@ export function ProjectDashboardPage() {
 
   const projectsQuery = useProjects({ page: 1, perPage: PROJECTS_PAGE_SIZE });
   const createProjectMutation = useCreateProject();
+  const deleteProjectMutation = useDeleteProject();
   const updateProjectMutation = useUpdateProject();
   const deleteProjectMutation = useDeleteProject();
 
