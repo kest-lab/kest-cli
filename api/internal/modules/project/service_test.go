@@ -25,7 +25,7 @@ func (r *testProjectRepo) GetBySlug(ctx context.Context, slug string) (*Project,
 }
 func (r *testProjectRepo) Update(ctx context.Context, project *Project) error { return nil }
 func (r *testProjectRepo) Delete(ctx context.Context, id string) error        { return nil }
-func (r *testProjectRepo) List(ctx context.Context, userID uint, offset, limit int) ([]*Project, int64, error) {
+func (r *testProjectRepo) List(ctx context.Context, userID string, offset, limit int) ([]*Project, int64, error) {
 	return nil, 0, nil
 }
 func (r *testProjectRepo) GetStats(ctx context.Context, projectID string) (*ProjectStats, error) {
@@ -56,7 +56,7 @@ func TestGenerateCLITokenDefaults(t *testing.T) {
 	}
 	svc := NewService(repo, nil)
 
-	resp, err := svc.GenerateCLIToken(context.Background(), "12", 7, &GenerateProjectCLITokenRequest{})
+	resp, err := svc.GenerateCLIToken(context.Background(), "12", "7", &GenerateProjectCLITokenRequest{})
 	if err != nil {
 		t.Fatalf("GenerateCLIToken returned error: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestValidateCLITokenSuccessTouchesToken(t *testing.T) {
 		token: &ProjectCLIToken{
 			ID:        "5",
 			ProjectID: "12",
-			CreatedBy: 7,
+			CreatedBy: "7",
 			Name:      "sync token",
 			Scopes:    []string{CLITokenScopeSpecWrite},
 		},
@@ -100,8 +100,8 @@ func TestValidateCLITokenSuccessTouchesToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ValidateCLIToken returned error: %v", err)
 	}
-	if tokenID != "5" || createdBy != 7 {
-		t.Fatalf("expected token metadata (5,7), got (%s,%d)", tokenID, createdBy)
+	if tokenID != "5" || createdBy != "7" {
+		t.Fatalf("expected token metadata (5,7), got (%s,%s)", tokenID, createdBy)
 	}
 	if repo.lastTouchedAt == nil {
 		t.Fatal("expected token last_used_at to be updated")
@@ -115,7 +115,7 @@ func TestValidateCLITokenRejectsScopeMismatchAndExpiry(t *testing.T) {
 		token: &ProjectCLIToken{
 			ID:        "5",
 			ProjectID: "12",
-			CreatedBy: 7,
+			CreatedBy: "7",
 			Name:      "expired token",
 			Scopes:    []string{CLITokenScopeRunWrite},
 			ExpiresAt: &expiredAt,

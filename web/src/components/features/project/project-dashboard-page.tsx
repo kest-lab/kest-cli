@@ -15,7 +15,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   Search,
+  Trash2,
 } from 'lucide-react';
+import { ActionMenu } from '@/components/features/project/action-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import {
+  DeleteProjectDialog,
   ProjectFormDialog,
   type ProjectFormMode,
   ProjectStatusBadge,
@@ -38,6 +41,7 @@ import { apiSpecKeys, useApiSpecs } from '@/hooks/use-api-specs';
 import {
   projectKeys,
   useCreateProject,
+  useDeleteProject,
   useProjectStats,
   useProjects,
   useUpdateProject,
@@ -98,7 +102,8 @@ const buildQuickRequestHref = (projectId: number | string) =>
   `${buildProjectCollectionsRoute(projectId)}?quickRequest=1`;
 
 export function ProjectDashboardPage() {
-  const t = useT('project');
+  const i18n = useT();
+  const t = i18n.project;
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -108,12 +113,14 @@ export function ProjectDashboardPage() {
   const [formMode, setFormMode] = useState<ProjectFormMode>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ApiProject | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ApiProject | null>(null);
   const hasAutoSelectedProjectRef = useRef(false);
 
   const deferredSearch = useDeferredValue(searchQuery);
 
   const projectsQuery = useProjects({ page: 1, perPage: PROJECTS_PAGE_SIZE });
   const createProjectMutation = useCreateProject();
+  const deleteProjectMutation = useDeleteProject();
   const updateProjectMutation = useUpdateProject();
 
   const projects = projectsQuery.data?.items ?? EMPTY_PROJECTS;
@@ -225,6 +232,37 @@ export function ProjectDashboardPage() {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    const deletedProjectId = normalizeProjectId(deleteTarget.id);
+    const isDeletingSelectedProject =
+      deletedProjectId !== null && deletedProjectId === previewProjectId;
+    const nextPreviewProject =
+      isDeletingSelectedProject
+        ? filteredProjects.find(
+            (project) => normalizeProjectId(project.id) !== deletedProjectId
+          ) ??
+          [...projects]
+            .sort(sortProjectsByCreatedAtDesc)
+            .find((project) => normalizeProjectId(project.id) !== deletedProjectId) ??
+          null
+        : null;
+
+    try {
+      await deleteProjectMutation.mutateAsync(deleteTarget.id);
+      setDeleteTarget(null);
+
+      if (isDeletingSelectedProject) {
+        navigateToPreview(nextPreviewProject?.id ?? null);
+      }
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden lg:flex-row">
       <aside className="w-full shrink-0 border-b border-border/60 bg-bg-surface/70 lg:w-[296px] lg:border-b-0 lg:border-r">
@@ -288,47 +326,67 @@ export function ProjectDashboardPage() {
                   const isActive = project.id === selectedProject?.id;
 
                   return (
-                    <button
+                    <div
                       key={project.id}
-                      type="button"
-                      onClick={() => navigateToPreview(project.id)}
-                      onMouseEnter={() => prefetchProjectPreview(project.id)}
-                      onFocus={() => prefetchProjectPreview(project.id)}
-                      onTouchStart={() => prefetchProjectPreview(project.id)}
-                      aria-pressed={isActive}
                       className={`group w-full rounded-2xl border p-3 text-left transition-colors ${
                         isActive
                           ? 'border-primary/30 bg-primary/10 shadow-sm'
                           : 'border-transparent bg-background/60 hover:border-border/60 hover:bg-background'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-text-main">{project.name}</p>
-                          <p className="truncate text-xs text-text-muted">{project.slug}</p>
-                        </div>
-                        <ProjectStatusBadge status={project.status} />
+                      <div className="flex items-start gap-2">
+                        <button
+                          type="button"
+                          onClick={() => navigateToPreview(project.id)}
+                          onMouseEnter={() => prefetchProjectPreview(project.id)}
+                          onFocus={() => prefetchProjectPreview(project.id)}
+                          onTouchStart={() => prefetchProjectPreview(project.id)}
+                          aria-pressed={isActive}
+                          className="min-w-0 flex-1 rounded-xl text-left outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-text-main">{project.name}</p>
+                              <p className="truncate text-xs text-text-muted">{project.slug}</p>
+                            </div>
+                            <ProjectStatusBadge status={project.status} />
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
+                            {isActive ? (
+                              <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+                                {t('dashboardPage.selected')}
+                              </Badge>
+                            ) : null}
+                            {project.created_at ? (
+                              <span>
+                                {t('dashboardPage.createdAt', {
+                                  value: formatDate(project.created_at, 'YYYY-MM-DD'),
+                                })}
+                              </span>
+                            ) : null}
+                            {!isActive ? (
+                              <span className="transition-opacity group-hover:opacity-100 lg:opacity-0">
+                                {t('dashboardPage.preview')}
+                              </span>
+                            ) : null}
+                          </div>
+                        </button>
+                        <ActionMenu
+                          ariaLabel={t('dashboardPage.openProjectActions', { name: project.name })}
+                          stopPropagation
+                          triggerClassName="mt-0.5 shrink-0"
+                          items={[
+                            {
+                              key: 'delete',
+                              label: t('projectForm.deleteButton'),
+                              icon: Trash2,
+                              destructive: true,
+                              onSelect: () => setDeleteTarget(project),
+                            },
+                          ]}
+                        />
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
-                        {isActive ? (
-                          <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                            {t('dashboardPage.selected')}
-                          </Badge>
-                        ) : null}
-                        {project.created_at ? (
-                          <span>
-                            {t('dashboardPage.createdAt', {
-                              value: formatDate(project.created_at, 'YYYY-MM-DD'),
-                            })}
-                          </span>
-                        ) : null}
-                        {!isActive ? (
-                          <span className="transition-opacity group-hover:opacity-100 lg:opacity-0">
-                            {t('dashboardPage.preview')}
-                          </span>
-                        ) : null}
-                      </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -361,6 +419,17 @@ export function ProjectDashboardPage() {
         isSubmitting={createProjectMutation.isPending || updateProjectMutation.isPending}
         onOpenChange={setIsFormOpen}
         onSubmit={handleProjectSubmit}
+      />
+      <DeleteProjectDialog
+        open={Boolean(deleteTarget)}
+        project={deleteTarget}
+        isDeleting={deleteProjectMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleDeleteProject}
       />
     </div>
   );

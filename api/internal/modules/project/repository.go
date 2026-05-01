@@ -81,7 +81,19 @@ func (r *repository) Update(ctx context.Context, project *Project) error {
 }
 
 func (r *repository) Delete(ctx context.Context, id string) error {
-	return r.db.WithContext(ctx).Delete(&ProjectPO{}, id).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for _, statement := range projectDeleteStatements(id) {
+			if !tx.Migrator().HasTable(statement.table) {
+				continue
+			}
+
+			if err := tx.Exec(statement.sql, statement.args...).Error; err != nil {
+				return err
+			}
+		}
+
+		return tx.Exec("DELETE FROM projects WHERE id = ?", id).Error
+	})
 }
 
 func (r *repository) List(ctx context.Context, userID string, offset, limit int) ([]*Project, int64, error) {
@@ -122,4 +134,132 @@ func (r *repository) GetStats(ctx context.Context, projectID string) (*ProjectSt
 	db.Table("api_categories").Where("project_id = ?", projectID).Count(&stats.CategoryCount)
 
 	return stats, nil
+}
+
+type projectDeleteStatement struct {
+	table string
+	sql   string
+	args  []any
+}
+
+func projectDeleteStatements(projectID string) []projectDeleteStatement {
+	specIDsSubquery := "SELECT id FROM api_specs WHERE project_id = ?"
+	collectionIDsSubquery := "SELECT id FROM collections WHERE project_id = ?"
+	requestIDsSubquery := "SELECT id FROM requests WHERE collection_id IN (" + collectionIDsSubquery + ")"
+	flowIDsSubquery := "SELECT id FROM api_flows WHERE project_id = ?"
+	flowRunIDsSubquery := "SELECT id FROM api_flow_runs WHERE flow_id IN (" + flowIDsSubquery + ")"
+	testCaseIDsSubquery := "SELECT id FROM test_cases WHERE api_spec_id IN (" + specIDsSubquery + ")"
+
+	return []projectDeleteStatement{
+		{
+			table: "test_runs",
+			sql:   "DELETE FROM test_runs WHERE test_case_id IN (" + testCaseIDsSubquery + ")",
+			args:  []any{projectID},
+		},
+		{
+			table: "test_cases",
+			sql:   "DELETE FROM test_cases WHERE api_spec_id IN (" + specIDsSubquery + ")",
+			args:  []any{projectID},
+		},
+		{
+			table: "api_examples",
+			sql:   "DELETE FROM api_examples WHERE api_spec_id IN (" + specIDsSubquery + ")",
+			args:  []any{projectID},
+		},
+		{
+			table: "api_spec_shares",
+			sql:   "DELETE FROM api_spec_shares WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+		{
+			table: "api_spec_ai_drafts",
+			sql:   "DELETE FROM api_spec_ai_drafts WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+		{
+			table: "api_specs",
+			sql:   "DELETE FROM api_specs WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+		{
+			table: "examples",
+			sql:   "DELETE FROM examples WHERE request_id IN (" + requestIDsSubquery + ")",
+			args:  []any{projectID},
+		},
+		{
+			table: "requests",
+			sql:   "DELETE FROM requests WHERE collection_id IN (" + collectionIDsSubquery + ")",
+			args:  []any{projectID},
+		},
+		{
+			table: "collections",
+			sql:   "DELETE FROM collections WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+		{
+			table: "api_flow_step_results",
+			sql:   "DELETE FROM api_flow_step_results WHERE run_id IN (" + flowRunIDsSubquery + ")",
+			args:  []any{projectID},
+		},
+		{
+			table: "api_flow_runs",
+			sql:   "DELETE FROM api_flow_runs WHERE flow_id IN (" + flowIDsSubquery + ")",
+			args:  []any{projectID},
+		},
+		{
+			table: "api_flow_edges",
+			sql:   "DELETE FROM api_flow_edges WHERE flow_id IN (" + flowIDsSubquery + ")",
+			args:  []any{projectID},
+		},
+		{
+			table: "api_flow_steps",
+			sql:   "DELETE FROM api_flow_steps WHERE flow_id IN (" + flowIDsSubquery + ")",
+			args:  []any{projectID},
+		},
+		{
+			table: "api_flows",
+			sql:   "DELETE FROM api_flows WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+		{
+			table: "api_categories",
+			sql:   "DELETE FROM api_categories WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+		{
+			table: "environments",
+			sql:   "DELETE FROM environments WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+		{
+			table: "api_environments",
+			sql:   "DELETE FROM api_environments WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+		{
+			table: "history",
+			sql:   "DELETE FROM history WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+		{
+			table: "audit_logs",
+			sql:   "DELETE FROM audit_logs WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+		{
+			table: "project_cli_tokens",
+			sql:   "DELETE FROM project_cli_tokens WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+		{
+			table: "project_invitations",
+			sql:   "DELETE FROM project_invitations WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+		{
+			table: "project_members",
+			sql:   "DELETE FROM project_members WHERE project_id = ?",
+			args:  []any{projectID},
+		},
+	}
 }
