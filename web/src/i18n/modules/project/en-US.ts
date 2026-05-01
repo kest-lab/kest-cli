@@ -960,6 +960,7 @@ const messages: ProjectMessages = {
   dashboardPage: {
     searchPlaceholder: 'Search projects',
     projectsLabel: 'Projects',
+    openProjectActions: 'Open project actions for {name}',
     loadFailedTitle: 'Unable to load projects',
     loadFailedDescription: 'The dashboard could not load the project list from the current API.',
     noProjectsYet:

@@ -893,6 +893,7 @@ const messages = {
   dashboardPage: {
     searchPlaceholder: '搜索项目',
     projectsLabel: '项目',
+    openProjectActions: '打开 {name} 的项目操作',
     loadFailedTitle: '无法加载项目',
     loadFailedDescription: '仪表盘无法从当前 API 加载项目列表。',
     noProjectsYet: '当前还没有项目。先创建第一个项目，仪表盘才会有内容。',
