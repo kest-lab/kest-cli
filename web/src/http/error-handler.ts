@@ -53,6 +53,18 @@ function getDebugErrorPayload(error: unknown) {
   return error;
 }
 
+function isCanceledRequestError(error: unknown) {
+  if (error instanceof Error) {
+    return error.name === 'CanceledError' || error.message === 'canceled';
+  }
+
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    return (error as { code?: unknown }).code === 'ERR_CANCELED';
+  }
+
+  return false;
+}
+
 /**
  * Centralized error handler for API and application errors.
  */
@@ -60,6 +72,7 @@ export function handleError(error: unknown, config: ErrorHandlerConfig = {}): vo
   const mergedConfig = { ...DEFAULT_CONFIG, ...config };
   
   if (mergedConfig.silent) return;
+  if (isCanceledRequestError(error)) return;
 
   // 避免同一个错误被 axios 拦截器和 React Query 全局 onError 重复处理。
   if (error instanceof ApiError && error.isHandled) {

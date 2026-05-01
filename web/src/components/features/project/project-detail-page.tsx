@@ -342,11 +342,12 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
   const [formMode, setFormMode] = useState<ProjectFormMode>('edit');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ApiProject | null>(null);
+  const [isDeletingCurrentProject, setIsDeletingCurrentProject] = useState(false);
   const [generatedCliToken, setGeneratedCliToken] =
     useState<GenerateProjectCliTokenResponse | null>(null);
 
-  const projectQuery = useProject(projectId);
-  const projectStatsQuery = useProjectStats(projectId);
+  const projectQuery = useProject(projectId, { enabled: !isDeletingCurrentProject });
+  const projectStatsQuery = useProjectStats(projectId, { enabled: !isDeletingCurrentProject });
   const updateProjectMutation = useUpdateProject();
   const deleteProjectMutation = useDeleteProject();
   const generateCliTokenMutation = useGenerateProjectCliToken();
@@ -401,10 +402,12 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
     }
 
     try {
+      setIsDeletingCurrentProject(true);
       await deleteProjectMutation.mutateAsync(deleteTarget.id);
       setDeleteTarget(null);
       router.replace(ROUTES.CONSOLE.PROJECTS);
     } catch {
+      setIsDeletingCurrentProject(false);
       // Global HTTP error handling already surfaces failure feedback.
     }
   };

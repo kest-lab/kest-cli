@@ -1,4 +1,5 @@
 import request from '@/http';
+import type { RequestConfig } from '@/http/request';
 import type {
   ApiProject,
   CreateProjectRequest,
@@ -31,9 +32,11 @@ export const projectService = {
       },
     }),
 
-  getById: (id: number | string) => request.get<ApiProject>(`/projects/${id}`),
+  getById: (id: number | string, config?: RequestConfig) =>
+    request.get<ApiProject>(`/projects/${id}`, config),
 
-  getStats: (id: number | string) => request.get<ProjectStats>(`/projects/${id}/stats`),
+  getStats: (id: number | string, config?: RequestConfig) =>
+    request.get<ProjectStats>(`/projects/${id}/stats`, config),
 
   create: (data: CreateProjectRequest) =>
     request.post<ApiProject>('/projects', normalizeProjectPayload(data)),

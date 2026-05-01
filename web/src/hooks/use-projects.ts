@@ -12,6 +12,10 @@ import type {
   UpdateProjectRequest,
 } from '@/types/project';
 
+interface ProjectQueryOptions {
+  enabled?: boolean;
+}
+
 // 项目域的 React Query key。
 // 作用：统一项目列表、详情、统计的缓存命名，方便后续失效与刷新。
 export const projectKeys = {
@@ -36,21 +40,25 @@ export function useProjects(params: ProjectListParams = {}) {
 
 // 项目详情查询。
 // 作用：按项目 ID 获取详情数据，供右侧详情面板或其他页面复用。
-export function useProject(id?: number | string) {
+export function useProject(id?: number | string, options: ProjectQueryOptions = {}) {
+  const isEnabled = options.enabled ?? true;
   return useQuery({
     queryKey: projectKeys.detail(id ?? 'unknown'),
-    queryFn: () => projectService.getById(id as number | string),
-    enabled: id !== undefined && id !== null && id !== '',
+    queryFn: ({ signal }) =>
+      projectService.getById(id as number | string, { signal }),
+    enabled: isEnabled && id !== undefined && id !== null && id !== '',
   });
 }
 
 // 项目统计查询。
 // 作用：读取 `/projects/:id/stats`，展示 API specs、flows、members 等聚合信息。
-export function useProjectStats(id?: number | string) {
+export function useProjectStats(id?: number | string, options: ProjectQueryOptions = {}) {
+  const isEnabled = options.enabled ?? true;
   return useQuery<ProjectStats>({
     queryKey: projectKeys.projectStats(id ?? 'unknown'),
-    queryFn: () => projectService.getStats(id as number | string),
-    enabled: id !== undefined && id !== null && id !== '',
+    queryFn: ({ signal }) =>
+      projectService.getStats(id as number | string, { signal }),
+    enabled: isEnabled && id !== undefined && id !== null && id !== '',
   });
 }
 
@@ -95,6 +103,12 @@ export function useDeleteProject() {
   const t = useT();
 
   return useMutation({
+    onMutate: async (id) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: projectKeys.detail(id) }),
+        queryClient.cancelQueries({ queryKey: projectKeys.projectStats(id) }),
+      ]);
+    },
     mutationFn: (id: number | string) => projectService.delete(id),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
