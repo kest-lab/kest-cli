@@ -1592,7 +1592,6 @@ const messages = {
   },
   flowPage: {
     create: '创建流程',
-    newFlow: '新建流程',
     createDialogTitle: '创建流程',
     createDialogDescription: '新增一个 HTTP 测试流程，然后在画布中设计执行图。',
     nameRequired: '流程名称是必填项。',

@@ -3381,7 +3381,7 @@ export function ProjectFlowManagementPage({
                 ) : null}
                 <Button type="button" onClick={() => setIsCreateOpen(true)} disabled={!canEdit}>
                   <Plus className="h-4 w-4" />
-                  {t('flowPage.newFlow')}
+                  {t('flowPage.create')}
                 </Button>
               </div>
             </div>

@@ -1723,7 +1723,6 @@ const messages: ProjectMessages = {
   },
   flowPage: {
     create: 'Create Flow',
-    newFlow: 'New Flow',
     createDialogTitle: 'Create Flow',
     createDialogDescription:
       'Add a new HTTP test flow, then design the execution graph in the canvas.',
