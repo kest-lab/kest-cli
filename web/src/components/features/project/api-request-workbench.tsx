@@ -266,6 +266,7 @@ const AUTHORIZATION_OPTIONS: AuthorizationMode[] = ['none', 'bearer', 'basic', '
 const COLLECTION_COLORS = ['#2563eb', '#0f766e', '#ea580c', '#7c3aed', '#dc2626'];
 const REQUEST_TEMPLATE_PATTERN = /\{\{([^}]+)\}\}/g;
 const DEFAULT_JSON_BODY = '{\n  "ping": "hello"\n}';
+const DEFAULT_JSON_PLACEHOLDER = '{\n  \n}';
 const DEFAULT_GRAPHQL_QUERY = 'query Example {\n  \n}';
 const DEFAULT_GRAPHQL_VARIABLES = '{\n  \n}';
 const METHOD_BADGE_STYLES: Record<RequestMethod, string> = {
@@ -5931,7 +5932,7 @@ function BodyEditor({
             className="min-h-[280px] rounded-2xl font-mono text-sm"
             placeholder={
               mode === 'json'
-                ? t('collections.workbench.body.jsonPlaceholder')
+                ? DEFAULT_JSON_PLACEHOLDER
                 : t('collections.workbench.body.rawPlaceholder')
             }
           />
@@ -6205,7 +6206,7 @@ function BodyEditor({
                   onChange={event => updateGraphqlValue({ query: event.target.value })}
                   rows={14}
                   className="min-h-[280px] rounded-2xl font-mono text-sm"
-                  placeholder={t('collections.workbench.body.graphqlQueryPlaceholder')}
+                  placeholder={DEFAULT_GRAPHQL_QUERY}
                 />
               </div>
 
@@ -6221,7 +6222,7 @@ function BodyEditor({
                   }
                   rows={14}
                   className="min-h-[280px] rounded-2xl font-mono text-sm"
-                  placeholder={t('collections.workbench.body.graphqlVariablesPlaceholder')}
+                  placeholder={DEFAULT_GRAPHQL_VARIABLES}
                 />
               </div>
             </div>
