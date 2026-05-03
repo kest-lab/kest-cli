@@ -593,6 +593,7 @@ const messages = {
       actions: {
         newCollection: '新建集合',
         quickRequest: '快速请求',
+        newQuickRequest: '新建快速请求',
         openRequestActions: '打开请求操作',
         openCollectionActions: '打开集合操作',
         renaming: '重命名中...',
@@ -618,6 +619,9 @@ const messages = {
         captureLatestResponse: '捕获最新响应',
         setDefault: '设为默认',
         moreActions: '更多操作',
+        closeOthers: '关闭其他',
+        closeAll: '关闭全部',
+        moreSections: '更多',
         edit: '编辑',
         applyToRequest: '应用到请求',
       },

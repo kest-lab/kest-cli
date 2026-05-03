@@ -640,6 +640,7 @@ const messages: ProjectMessages = {
       actions: {
         newCollection: 'New Collection',
         quickRequest: 'Quick Request',
+        newQuickRequest: 'New Quick Request',
         openRequestActions: 'Open request actions',
         openCollectionActions: 'Open collection actions',
         renaming: 'Renaming...',
@@ -665,6 +666,9 @@ const messages: ProjectMessages = {
         captureLatestResponse: 'Capture Latest Response',
         setDefault: 'Set Default',
         moreActions: 'More actions',
+        closeOthers: 'Close Others',
+        closeAll: 'Close All',
+        moreSections: 'More',
         edit: 'Edit',
         applyToRequest: 'Apply to Request',
       },
