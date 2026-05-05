@@ -290,7 +290,10 @@ export function ProjectOnboardingShell() {
   return (
     <>
       <Dialog open={isCommandOpen} onOpenChange={setIsCommandOpen}>
-        <DialogContent size="lg" hideCloseButton>
+        <DialogContent
+          hideCloseButton
+          className="!w-[min(40rem,calc(100vw-4rem))] !max-w-[40rem]"
+        >
           <DialogHeader>
             <DialogTitle>{t('commandPalette.title')}</DialogTitle>
             <DialogDescription>{t('commandPalette.description')}</DialogDescription>
@@ -334,7 +337,7 @@ export function ProjectOnboardingShell() {
       </Dialog>
 
       <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
-        <DialogContent size="lg">
+        <DialogContent className="!w-[min(44rem,calc(100vw-4rem))] !max-w-[44rem]">
           <DialogHeader>
             <DialogTitle>{t('helpCenter.title')}</DialogTitle>
             <DialogDescription>{t('helpCenter.description')}</DialogDescription>
