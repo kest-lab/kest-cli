@@ -1,0 +1,30 @@
+---
+title: CLI Sync
+description: 把本地 Kest CLI 活动同步回平台 API。
+---
+
+# CLI Sync
+
+Kest 支持把本地 CLI 的产出同步回平台项目。
+
+## 流程
+
+1. 在平台中创建项目
+2. 通过 `POST /projects/{id}/cli-tokens` 生成项目级 CLI Token
+3. 在本地 CLI 中配置平台地址、token 和目标项目 ID
+4. 把本地 API specs 推送到 `POST /projects/{id}/cli/spec-sync`
+5. 如有需要，把请求历史推送到 `POST /projects/{id}/cli/history-sync`
+
+## 关键约束
+
+- CLI Token 是项目级的
+- 如果请求体里提供了 `project_id`，它必须与 URL 中的项目 ID 一致
+- 这些同步接口用于自动化流程，不应复用浏览器 JWT
+
+## 配置示例
+
+```yaml
+platform_url: https://api.kest.dev/v1
+platform_token: kest_pat_...
+platform_project_id: "12"
+```

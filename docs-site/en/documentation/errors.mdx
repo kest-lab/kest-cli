@@ -1,0 +1,44 @@
+---
+title: Errors
+description: Response envelope and common error patterns across Kest endpoints.
+---
+
+# Errors
+
+Most Kest responses use a consistent JSON envelope.
+
+## Success shape
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {}
+}
+```
+
+## Error shape
+
+```json
+{
+  "code": 400,
+  "message": "Invalid request data",
+  "error": "validation details"
+}
+```
+
+## Common status codes
+
+- `200` for normal reads and updates
+- `201` for creates
+- `204` for successful deletes without a body
+- `400` for invalid parameters or malformed bodies
+- `401` for missing or invalid authentication
+- `403` for project or workspace permission failures
+- `404` for missing resources
+- `409` for resource conflicts such as duplicate slugs
+- `503` for temporarily unavailable subsystems such as an unconfigured CLI syncer
+
+## Notes on list responses
+
+Some list endpoints return `data.items` and custom `meta` objects, while others use the pagination envelope produced by the shared response package. Always trust the schema shown in `API Reference` for a specific endpoint.

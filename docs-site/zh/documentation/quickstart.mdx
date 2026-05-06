@@ -1,0 +1,84 @@
+---
+title: 快速开始
+description: 用最少步骤发出第一批 Kest API 请求。
+---
+
+# 快速开始
+
+## 基础地址
+
+```bash
+生产环境: https://api.kest.dev/v1
+本地环境: http://localhost:8025/v1
+```
+
+根路径级别的健康检查接口请看 `API 参考` 中的 `/health`、`/health/live` 和 `/health/ready`。
+
+## 1. 注册账号
+
+```bash
+curl -X POST "http://localhost:8025/v1/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "demo",
+    "email": "demo@example.com",
+    "password": "secret123"
+  }'
+```
+
+## 2. 登录
+
+```bash
+curl -X POST "http://localhost:8025/v1/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "demo",
+    "password": "secret123"
+  }'
+```
+
+## 3. 创建项目
+
+```bash
+curl -X POST "http://localhost:8025/v1/projects" \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Demo Project",
+    "slug": "demo-project",
+    "platform": "javascript"
+  }'
+```
+
+## 4. 生成 CLI Token
+
+```bash
+curl -X POST "http://localhost:8025/v1/projects/<project-id>/cli-tokens" \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "local-dev",
+    "scopes": ["spec:write"]
+  }'
+```
+
+## 5. 从 CLI 上传 Specs
+
+```bash
+curl -X POST "http://localhost:8025/v1/projects/<project-id>/cli/spec-sync" \
+  -H "Authorization: Bearer <project-cli-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "kest-cli",
+    "specs": [
+      {
+        "method": "GET",
+        "path": "/users",
+        "title": "List users",
+        "version": "1.0.0"
+      }
+    ]
+  }'
+```
+
+更完整的字段定义和示例，请直接查看对应的 `API 参考` 页面。
