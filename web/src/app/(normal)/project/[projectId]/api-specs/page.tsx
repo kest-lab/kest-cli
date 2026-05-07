@@ -1,4 +1,3 @@
-import { ApiSpecManagementPage } from '@/components/features/project/api-spec-management-page';
 import { ProjectWorkspacePage } from '@/components/features/project/project-workspace-page';
 
 interface ProjectApiSpecsPageProps {
@@ -12,24 +11,15 @@ interface ProjectApiSpecsPageProps {
   }>;
 }
 
-// 项目 API 规格管理页面入口。
-// 作用：默认挂载新的工作区二层列表 + 内容区，并通过 `?mode=manage` 保留旧管理页。
+// 项目 API 规格页面入口。
+// 作用：统一挂载工作区二层列表 + 内容区，并兼容旧的 `?mode=manage` 链接。
 export default async function ProjectApiSpecsPage({
   params,
   searchParams,
 }: ProjectApiSpecsPageProps) {
   const { projectId } = await params;
-  const { item, mode, ai } = await searchParams;
+  const { item, ai } = await searchParams;
   const selectedItemId = item?.trim() ? item : null;
-
-  if (mode === 'manage') {
-    return (
-      <ApiSpecManagementPage
-        projectId={projectId}
-        initialSpecId={selectedItemId}
-      />
-    );
-  }
 
   return (
     <ProjectWorkspacePage

@@ -387,7 +387,7 @@ const getAiActionDraft = (): AiActionDraft => ({
 
 // 导出下载器。
 // 作用：把 export 接口返回的 JSON 或 Markdown 结果转换成浏览器下载文件。
-const downloadExportPayload = ({
+export const downloadExportPayload = ({
   payload,
   format,
   projectSlug,
@@ -477,7 +477,7 @@ function JsonPreview({
  * 1. 统一承载 POST 和 PATCH 所需的大部分字段
  * 2. 在提交前完成 JSON 文本到结构化对象的校验与转换
  */
-function SpecFormDialog({
+export function SpecFormDialog({
   open,
   mode,
   spec,
@@ -899,7 +899,7 @@ function SpecFormDialog({
  * 规格删除确认弹窗。
  * 作用：在真正调用 DELETE 前展示不可逆提醒，避免误删。
  */
-function DeleteSpecDialog({
+export function DeleteSpecDialog({
   open,
   spec,
   isDeleting,
@@ -949,7 +949,7 @@ function DeleteSpecDialog({
  * 批量导入弹窗。
  * 作用：允许用户直接粘贴 `{ specs: [...] }` JSON 并触发批量 upsert。
  */
-function ImportSpecsDialog({
+export function ImportSpecsDialog({
   open,
   isSubmitting,
   onOpenChange,
@@ -1025,7 +1025,7 @@ function ImportSpecsDialog({
  * 导出弹窗。
  * 作用：选择导出格式并把服务返回结果转换成浏览器下载文件。
  */
-function ExportSpecsDialog({
+export function ExportSpecsDialog({
   open,
   isSubmitting,
   onOpenChange,
@@ -1084,7 +1084,7 @@ function ExportSpecsDialog({
  * 批量生成文档弹窗。
  * 作用：收集语言、分类范围和 force 选项，触发后台并发生成任务。
  */
-function BatchGenDocDialog({
+export function BatchGenDocDialog({
   open,
   categories,
   isSubmitting,
@@ -1195,7 +1195,7 @@ function BatchGenDocDialog({
  * AI 单条动作弹窗。
  * 作用：为 `gen-doc` 和 `gen-test` 统一收集语言参数。
  */
-function AiActionDialog({
+export function AiActionDialog({
   open,
   mode,
   spec,
@@ -1266,7 +1266,7 @@ function AiActionDialog({
  * Example 创建弹窗。
  * 作用：通过 JSON 文本输入创建 request/response 示例，刷新详情页 examples 区域。
  */
-function ExampleFormDialog({
+export function ExampleFormDialog({
   open,
   isSubmitting,
   onOpenChange,
