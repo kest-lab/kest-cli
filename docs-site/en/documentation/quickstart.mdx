@@ -1,0 +1,92 @@
+---
+title: Quickstart
+description: Make your first authenticated Kest API requests.
+---
+
+# Quickstart
+
+## Base URLs
+
+Use these base URLs when working against the Kest platform API:
+
+```bash
+Production: https://api.kest.dev/v1
+Local:      http://localhost:8025/v1
+```
+
+For health probes exposed at the root level, see the `API Reference` entries for `/health`, `/health/live`, and `/health/ready`.
+
+## 1. Create an account
+
+Use `POST /register` to create a user.
+
+```bash
+curl -X POST "http://localhost:8025/v1/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "demo",
+    "email": "demo@example.com",
+    "password": "secret123"
+  }'
+```
+
+## 2. Log in
+
+Use `POST /login` to get a bearer token.
+
+```bash
+curl -X POST "http://localhost:8025/v1/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "demo",
+    "password": "secret123"
+  }'
+```
+
+## 3. Create a project
+
+```bash
+curl -X POST "http://localhost:8025/v1/projects" \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Demo Project",
+    "slug": "demo-project",
+    "platform": "javascript"
+  }'
+```
+
+## 4. Generate a CLI token
+
+Generate a project-scoped token for syncing local specs.
+
+```bash
+curl -X POST "http://localhost:8025/v1/projects/<project-id>/cli-tokens" \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "local-dev",
+    "scopes": ["spec:write"]
+  }'
+```
+
+## 5. Upload specs from the CLI
+
+```bash
+curl -X POST "http://localhost:8025/v1/projects/<project-id>/cli/spec-sync" \
+  -H "Authorization: Bearer <project-cli-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "kest-cli",
+    "specs": [
+      {
+        "method": "GET",
+        "path": "/users",
+        "title": "List users",
+        "version": "1.0.0"
+      }
+    ]
+  }'
+```
+
+For detailed field definitions and examples, use the corresponding `API Reference` pages.

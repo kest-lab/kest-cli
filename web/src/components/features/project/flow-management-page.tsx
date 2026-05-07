@@ -2588,14 +2588,32 @@ export function ProjectFlowManagementPage({
       return;
     }
 
+    const isDeletingSelectedFlow = selectedFlowId === flowId;
+    const fallbackFlowId =
+      normalizeOpaqueId(filteredFlows.find(flow => flow.id !== flowId)?.id) ??
+      normalizeOpaqueId(flows?.find(flow => flow.id !== flowId)?.id);
+
     try {
+      if (isDeletingSelectedFlow) {
+        setSelectedFlowId(fallbackFlowId);
+        setSelectedRunId(null);
+        setLocalRuns([]);
+        setSelectedNodeId(null);
+        setSelectedEdgeId(null);
+        setLiveStepResults({});
+        setValidationState(createEmptyValidationState());
+      }
+
       await deleteFlowMutation.mutateAsync(flowId);
-      if (selectedFlowId === flowId) {
-        navigateToFlow(null);
+      if (isDeletingSelectedFlow) {
+        navigateToFlow(fallbackFlowId);
       } else {
         void flowListQuery.refetch();
       }
     } catch {
+      if (isDeletingSelectedFlow) {
+        setSelectedFlowId(flowId);
+      }
       // Global error handler surfaces API failure details.
     }
   };

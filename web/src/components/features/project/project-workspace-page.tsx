@@ -7,7 +7,11 @@ import {
   Bot,
   Boxes,
   Clock3,
+  Copy,
+  Download,
+  ExternalLink,
   FileClock,
+  FileCode2,
   FileJson2,
   FlaskConical,
   Globe,
@@ -16,10 +20,12 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Share2,
   ShieldCheck,
   Sparkles,
   Tags,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import { StatCard, StatCardSkeleton } from '@/components/features/console/dashboard-stats';
 import { ActionMenu, type ActionMenuItem } from '@/components/features/project/action-menu';
@@ -59,6 +65,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { ApiRequestWorkbench } from '@/components/features/project/api-request-workbench';
 import { ApiSpecAICreateDialog } from '@/components/features/project/api-spec-ai-create-dialog';
 import {
+  AiActionDialog,
+  BatchGenDocDialog,
+  DeleteSpecDialog,
+  downloadExportPayload,
+  ExampleFormDialog,
+  ExportSpecsDialog,
+  ImportSpecsDialog,
+  SpecFormDialog,
+} from '@/components/features/project/api-spec-management-page';
+import {
   buildCategoryOptions,
   findProjectCategory,
   flattenProjectCategories,
@@ -71,6 +87,7 @@ import {
   type ProjectWorkspaceModule,
 } from '@/components/features/project/project-navigation';
 import {
+  buildApiSpecShareRoute,
   buildProjectApiSpecsRoute,
   buildProjectCategoriesRoute,
   buildProjectDetailRoute,
@@ -80,12 +97,25 @@ import {
 } from '@/constants/routes';
 import {
   useAcceptApiSpecAIDraft,
+  useApiSpec,
   useApiSpecFull,
+  useApiSpecShare,
   useApiSpecs,
+  useBatchGenApiDocs,
+  useCreateApiExample,
   useCreateApiSpecAIDraftStream,
   useCreateApiSpec,
+  useDeleteApiSpec,
+  useDeleteApiSpecShare,
+  useExportApiSpecs,
+  useGenApiDoc,
+  useGenApiTest,
+  useGeneratedApiTest,
+  useImportApiSpecs,
+  usePublishApiSpecShare,
   useProjectApiCategories,
   useRefineApiSpecAIDraft,
+  useUpdateApiSpec,
 } from '@/hooks/use-api-specs';
 import { useProjectCategories, useProjectCategory } from '@/hooks/use-categories';
 import { useProjectMemberRole } from '@/hooks/use-members';
@@ -99,7 +129,16 @@ import {
 } from '@/hooks/use-environments';
 import { useProjectHistories, useProjectHistory } from '@/hooks/use-histories';
 import { useProject, useProjectStats } from '@/hooks/use-projects';
-import type { ApiSpec, CreateApiSpecRequest, HttpMethod } from '@/types/api-spec';
+import type {
+  ApiSpec,
+  ApiSpecExportFormat,
+  ApiSpecLanguage,
+  BatchGenDocRequest,
+  CreateApiExampleRequest,
+  CreateApiSpecRequest,
+  HttpMethod,
+  UpdateApiSpecRequest,
+} from '@/types/api-spec';
 import type {
   CreateEnvironmentRequest,
   DuplicateEnvironmentRequest,
@@ -461,7 +500,13 @@ function EnvironmentFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="lg">
+      <DialogContent
+        size="lg"
+        style={{
+          width: 'min(42rem, calc(100vw - 3rem))',
+          maxWidth: '42rem',
+        }}
+      >
         <DialogHeader>
           <DialogTitle>
             {mode === 'create'
@@ -823,6 +868,19 @@ function ApiSpecsWorkspaceSection({
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isAICreateOpen, setIsAICreateOpen] = useState(autoOpenAICreate ?? false);
+  const [editingSpecId, setEditingSpecId] = useState<string | number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ApiSpec | null>(null);
+  const [suppressedSelectedSpecId, setSuppressedSelectedSpecId] = useState<
+    number | string | null
+  >(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isBatchGenOpen, setIsBatchGenOpen] = useState(false);
+  const [isExampleOpen, setIsExampleOpen] = useState(false);
+  const [generatedTestLanguage, setGeneratedTestLanguage] = useState<ApiSpecLanguage>('en');
+  const [aiAction, setAiAction] = useState<{ mode: 'doc' | 'test'; spec: ApiSpec | null } | null>(
+    null
+  );
   const deferredSearch = useDeferredValue(searchQuery);
 
   const specsQuery = useApiSpecs({
@@ -830,12 +888,27 @@ function ApiSpecsWorkspaceSection({
     page: 1,
     pageSize: MAX_MODULE_ITEMS,
   });
-  const selectedSpecQuery = useApiSpecFull(projectId, selectedItemId ?? undefined);
+  const effectiveSelectedItemId =
+    selectedItemId && String(selectedItemId) === String(suppressedSelectedSpecId)
+      ? null
+      : selectedItemId;
+
+  const selectedSpecQuery = useApiSpecFull(projectId, effectiveSelectedItemId ?? undefined);
+  const editingSpecQuery = useApiSpec(projectId, editingSpecId ?? undefined);
+  const memberRoleQuery = useProjectMemberRole(projectId);
   const categoriesQuery = useProjectApiCategories(projectId);
   const createSpecMutation = useCreateApiSpec(projectId);
+  const updateSpecMutation = useUpdateApiSpec(projectId);
   const createAIDraftStream = useCreateApiSpecAIDraftStream(projectId);
   const refineAIDraftMutation = useRefineApiSpecAIDraft(projectId);
   const acceptAIDraftMutation = useAcceptApiSpecAIDraft(projectId);
+  const deleteSpecMutation = useDeleteApiSpec(projectId);
+  const importSpecsMutation = useImportApiSpecs(projectId);
+  const exportSpecsMutation = useExportApiSpecs(projectId);
+  const batchGenMutation = useBatchGenApiDocs(projectId);
+  const genDocMutation = useGenApiDoc(projectId);
+  const genTestMutation = useGenApiTest(projectId);
+  const createExampleMutation = useCreateApiExample(projectId);
 
   const specs = specsQuery.data?.items ?? EMPTY_SPECS;
   const categoryOptions = useMemo(
@@ -856,22 +929,56 @@ function ApiSpecsWorkspaceSection({
     );
   }, [deferredSearch, specs]);
 
-  const selectedSpecFromList = specs.find(spec => spec.id === selectedItemId) ?? null;
+  const selectedSpecFromList =
+    effectiveSelectedItemId === undefined || effectiveSelectedItemId === null
+      ? null
+      : (specs.find(spec => String(spec.id) === String(effectiveSelectedItemId)) ?? null);
   const selectedSpec = selectedSpecQuery.data ?? selectedSpecFromList;
+  const activeSpecId = selectedSpec?.id ?? effectiveSelectedItemId ?? null;
+  const specShareQuery = useApiSpecShare(projectId, activeSpecId ?? undefined);
+  const publishShareMutation = usePublishApiSpecShare(projectId);
+  const deleteShareMutation = useDeleteApiSpecShare(projectId);
+  const generatedTestQuery = useGeneratedApiTest(
+    projectId,
+    activeSpecId ?? undefined,
+    generatedTestLanguage
+  );
+  const currentRole = memberRoleQuery.data?.role;
+  const canWrite = currentRole ? WRITE_ROLES.includes(currentRole) : false;
   const docPreview =
     selectedSpec?.doc_markdown_en ||
     selectedSpec?.doc_markdown_zh ||
     selectedSpec?.doc_markdown ||
     null;
-  const fullManagerHref = `${buildProjectApiSpecsRoute(projectId)}?mode=manage`;
-  const isRefreshing = specsQuery.isFetching || selectedSpecQuery.isFetching;
+  const generatedTestPreview = generatedTestQuery.data || selectedSpec?.test_content || null;
+  const shareRoute = specShareQuery.data?.slug
+    ? buildApiSpecShareRoute(specShareQuery.data.slug)
+    : null;
+  const exportFileKey =
+    projectName
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || `project-${projectId}`;
+  const isRefreshing =
+    specsQuery.isFetching ||
+    selectedSpecQuery.isFetching ||
+    categoriesQuery.isFetching ||
+    memberRoleQuery.isFetching ||
+    specShareQuery.isFetching;
 
-  const handleRefresh = () => {
-    void specsQuery.refetch();
+  const handleRefresh = async () => {
+    const tasks: Array<Promise<unknown>> = [
+      specsQuery.refetch(),
+      categoriesQuery.refetch(),
+      memberRoleQuery.refetch(),
+    ];
 
-    if (selectedItemId) {
-      void selectedSpecQuery.refetch();
+    if (activeSpecId) {
+      tasks.push(selectedSpecQuery.refetch(), specShareQuery.refetch());
     }
+
+    await Promise.all(tasks);
   };
 
   const handleCreateSpec = async (payload: CreateApiSpecRequest) => {
@@ -886,6 +993,192 @@ function ApiSpecsWorkspaceSection({
     }
   };
 
+  const openEditDialog = (specId: string | number) => {
+    setEditingSpecId(specId);
+
+    if (String(selectedItemId ?? '') !== String(specId)) {
+      router.replace(buildModuleHref(projectId, 'api-specs', specId));
+    }
+  };
+
+  const handleUpdateSpec = async (payload: UpdateApiSpecRequest) => {
+    if (!editingSpecId) {
+      return;
+    }
+
+    try {
+      await updateSpecMutation.mutateAsync({
+        specId: editingSpecId,
+        data: payload,
+      });
+      setEditingSpecId(null);
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  const handleDeleteSpec = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    const deletedId = deleteTarget.id;
+    const deletingActiveSpec = activeSpecId !== null && String(activeSpecId) === String(deletedId);
+    const fallbackSpec =
+      specs.find(spec => String(spec.id) !== String(deletedId)) ??
+      filteredSpecs.find(spec => String(spec.id) !== String(deletedId)) ??
+      null;
+
+    try {
+      if (deletingActiveSpec) {
+        setSuppressedSelectedSpecId(deletedId);
+      }
+
+      await deleteSpecMutation.mutateAsync(deletedId);
+      setDeleteTarget(null);
+      setEditingSpecId(current =>
+        current !== null && String(current) === String(deletedId) ? null : current
+      );
+
+      if (deletingActiveSpec) {
+        router.replace(
+          fallbackSpec
+            ? buildModuleHref(projectId, 'api-specs', fallbackSpec.id)
+            : buildProjectApiSpecsRoute(projectId)
+        );
+      }
+    } catch {
+      if (deletingActiveSpec) {
+        setSuppressedSelectedSpecId(null);
+      }
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  const handleImport = async (payload: { specs: CreateApiSpecRequest[] }) => {
+    try {
+      await importSpecsMutation.mutateAsync(payload);
+      setIsImportOpen(false);
+      setSearchQuery('');
+      await specsQuery.refetch();
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  const handleExport = async (format: ApiSpecExportFormat) => {
+    try {
+      const payload = await exportSpecsMutation.mutateAsync({ format });
+      downloadExportPayload({
+        payload,
+        format,
+        projectSlug: exportFileKey,
+      });
+      setIsExportOpen(false);
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  const handleBatchGenDoc = async (payload: BatchGenDocRequest) => {
+    try {
+      await batchGenMutation.mutateAsync(payload);
+      setIsBatchGenOpen(false);
+      await specsQuery.refetch();
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  const queueSpecAiAction = (spec: ApiSpec, mode: 'doc' | 'test') => {
+    if (String(selectedItemId ?? '') !== String(spec.id)) {
+      router.replace(buildModuleHref(projectId, 'api-specs', spec.id));
+    }
+
+    setAiAction({ mode, spec });
+  };
+
+  const handleAiAction = async (lang: ApiSpecLanguage) => {
+    if (!aiAction?.spec) {
+      return;
+    }
+
+    try {
+      if (aiAction.mode === 'doc') {
+        await genDocMutation.mutateAsync({ specId: aiAction.spec.id, lang });
+        if (String(activeSpecId ?? '') === String(aiAction.spec.id)) {
+          await selectedSpecQuery.refetch();
+        }
+      } else {
+        await genTestMutation.mutateAsync({ specId: aiAction.spec.id, lang });
+        setGeneratedTestLanguage(lang);
+      }
+
+      setAiAction(null);
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  const handleCreateExample = async (payload: CreateApiExampleRequest) => {
+    if (!activeSpecId) {
+      return;
+    }
+
+    try {
+      await createExampleMutation.mutateAsync({
+        specId: activeSpecId,
+        data: payload,
+      });
+      setIsExampleOpen(false);
+      await selectedSpecQuery.refetch();
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  const handleCopyShareLink = async (route = shareRoute) => {
+    if (!route || typeof window === 'undefined') {
+      return;
+    }
+
+    const absoluteUrl = new URL(route, window.location.origin).toString();
+    await navigator.clipboard.writeText(absoluteUrl);
+  };
+
+  const handlePublishShare = async () => {
+    if (!activeSpecId) {
+      return;
+    }
+
+    try {
+      const share = await publishShareMutation.mutateAsync(activeSpecId);
+      await handleCopyShareLink(buildApiSpecShareRoute(share.slug));
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  const handleDeleteShare = async () => {
+    if (!activeSpecId) {
+      return;
+    }
+
+    try {
+      await deleteShareMutation.mutateAsync(activeSpecId);
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  const handleCopyGeneratedTest = async () => {
+    if (!generatedTestPreview) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(generatedTestPreview);
+  };
+
   const handleAICreateOpenChange = (open: boolean) => {
     setIsAICreateOpen(open);
 
@@ -898,31 +1191,148 @@ function ApiSpecsWorkspaceSection({
     }
   };
 
+  const selectedSpecActionItems: ActionMenuItem[] = selectedSpec
+    ? [
+        {
+          key: 'api-spec-selected-edit',
+          label: t('common.edit'),
+          icon: Pencil,
+          disabled: !canWrite,
+          onSelect: () => openEditDialog(selectedSpec.id),
+        },
+        specShareQuery.data
+          ? {
+              key: 'api-spec-selected-copy-link',
+              label: t('apiSpecsPage.copyLink'),
+              icon: Copy,
+              onSelect: () => {
+                void handleCopyShareLink();
+              },
+            }
+          : {
+              key: 'api-spec-selected-publish-share',
+              label: t('apiSpecsPage.publishShare'),
+              icon: Share2,
+              disabled: !canWrite || publishShareMutation.isPending,
+              onSelect: () => {
+                void handlePublishShare();
+              },
+            },
+        {
+          key: 'api-spec-selected-preview-share',
+          label: t('apiSpecsPage.previewShare'),
+          icon: ExternalLink,
+          href: shareRoute || '#',
+          external: true,
+          hidden: !Boolean(specShareQuery.data && shareRoute),
+        },
+        {
+          key: 'api-spec-selected-disable-share',
+          label: t('apiSpecsPage.disableShare'),
+          icon: Trash2,
+          destructive: true,
+          hidden: !Boolean(specShareQuery.data),
+          disabled: !canWrite || deleteShareMutation.isPending,
+          onSelect: () => {
+            void handleDeleteShare();
+          },
+        },
+        {
+          key: 'api-spec-selected-generate-doc',
+          label: t('apiSpecsPage.genDoc'),
+          icon: Bot,
+          separatorBefore: true,
+          disabled: !canWrite,
+          onSelect: () => queueSpecAiAction(selectedSpec, 'doc'),
+        },
+        {
+          key: 'api-spec-selected-generate-test',
+          label: t('apiSpecsPage.genTest'),
+          icon: FileCode2,
+          disabled: !canWrite,
+          onSelect: () => queueSpecAiAction(selectedSpec, 'test'),
+        },
+        {
+          key: 'api-spec-selected-create-example',
+          label: t('apiSpecsPage.createExample'),
+          icon: Plus,
+          disabled: !canWrite,
+          onSelect: () => setIsExampleOpen(true),
+        },
+        {
+          key: 'api-spec-selected-delete',
+          label: t('common.delete'),
+          icon: Trash2,
+          destructive: true,
+          separatorBefore: true,
+          disabled: !canWrite,
+          onSelect: () => setDeleteTarget(selectedSpec),
+        },
+      ]
+    : [];
+
   const moduleActionItems: ActionMenuItem[] = [
-    {
-      key: 'api-specs-manager',
-      label: t('apiSpecs.openFullManager'),
-      icon: FileJson2,
-      href: fullManagerHref,
-    },
     {
       key: 'api-specs-refresh',
       label: isRefreshing ? t('common.refreshing') : t('common.refresh'),
       icon: RefreshCw,
       disabled: isRefreshing,
-      onSelect: handleRefresh,
+      onSelect: () => {
+        void handleRefresh();
+      },
+    },
+    {
+      key: 'api-specs-import',
+      label: t('apiSpecsPage.import'),
+      icon: Upload,
+      disabled: !canWrite,
+      onSelect: () => setIsImportOpen(true),
+    },
+    {
+      key: 'api-specs-export',
+      label: t('apiSpecsPage.export'),
+      icon: Download,
+      onSelect: () => setIsExportOpen(true),
+    },
+    {
+      key: 'api-specs-batch-doc',
+      label: t('apiSpecsPage.batchGenDoc'),
+      icon: Sparkles,
+      disabled: !canWrite,
+      onSelect: () => setIsBatchGenOpen(true),
     },
     {
       key: 'api-specs-ai-draft',
       label: t('apiSpecs.aiDraft'),
       icon: Sparkles,
+      disabled: !canWrite,
       onSelect: () => setIsAICreateOpen(true),
     },
     {
       key: 'api-specs-create',
       label: t('apiSpecs.addSpec'),
       icon: Plus,
+      disabled: !canWrite,
       onSelect: () => setIsCreateOpen(true),
+    },
+    {
+      key: 'api-specs-categories',
+      label: t('categories.title'),
+      icon: Tags,
+      href: buildProjectCategoriesRoute(projectId),
+      separatorBefore: true,
+    },
+    {
+      key: 'api-specs-environments',
+      label: t('environments.title'),
+      icon: Globe,
+      href: buildProjectEnvironmentsRoute(projectId),
+    },
+    {
+      key: 'api-specs-test-cases',
+      label: t('apiSpecs.openTestCases'),
+      icon: FlaskConical,
+      href: buildProjectTestCasesRoute(projectId),
     },
   ];
 
@@ -972,10 +1382,33 @@ function ApiSpecsWorkspaceSection({
                         href: buildModuleHref(projectId, 'api-specs', spec.id),
                       },
                       {
-                        key: `spec-manager-${spec.id}`,
-                        label: t('apiSpecs.openInFullManager'),
-                        icon: FileJson2,
-                        href: `${fullManagerHref}&item=${spec.id}`,
+                        key: `spec-edit-${spec.id}`,
+                        label: t('common.edit'),
+                        icon: Pencil,
+                        disabled: !canWrite,
+                        onSelect: () => openEditDialog(spec.id),
+                      },
+                      {
+                        key: `spec-gen-doc-${spec.id}`,
+                        label: t('apiSpecsPage.genDoc'),
+                        icon: Bot,
+                        disabled: !canWrite,
+                        onSelect: () => queueSpecAiAction(spec, 'doc'),
+                      },
+                      {
+                        key: `spec-gen-test-${spec.id}`,
+                        label: t('apiSpecsPage.genTest'),
+                        icon: FileCode2,
+                        disabled: !canWrite,
+                        onSelect: () => queueSpecAiAction(spec, 'test'),
+                      },
+                      {
+                        key: `spec-delete-${spec.id}`,
+                        label: t('common.delete'),
+                        icon: Trash2,
+                        destructive: true,
+                        disabled: !canWrite,
+                        onSelect: () => setDeleteTarget(spec),
                       },
                     ]}
                     ariaLabel={t('common.openActions')}
@@ -1002,12 +1435,23 @@ function ApiSpecsWorkspaceSection({
             }
             actions={
               <>
-                <Button type="button" onClick={() => setIsCreateOpen(true)}>
+                {selectedSpec ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => openEditDialog(selectedSpec.id)}
+                    disabled={!canWrite}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    {t('common.edit')}
+                  </Button>
+                ) : null}
+                <Button type="button" onClick={() => setIsCreateOpen(true)} disabled={!canWrite}>
                   <Plus className="h-4 w-4" />
                   {t('apiSpecs.addSpec')}
                 </Button>
                 <ActionMenu
-                  items={moduleActionItems}
+                  items={[...selectedSpecActionItems, ...moduleActionItems]}
                   ariaLabel={t('common.openActions')}
                   triggerVariant="outline"
                 />
@@ -1025,11 +1469,22 @@ function ApiSpecsWorkspaceSection({
               <ApiSpecsGuideState
                 onOpenAICreate={() => setIsAICreateOpen(true)}
                 onOpenManualCreate={() => setIsCreateOpen(true)}
-                managerHref={`${buildProjectApiSpecsRoute(projectId)}?mode=manage`}
                 testCasesHref={buildProjectTestCasesRoute(projectId)}
               />
             ) : (
               <div className="space-y-6">
+                {!canWrite && memberRoleQuery.isSuccess ? (
+                  <Alert>
+                    <ShieldCheck className="h-4 w-4" />
+                    <AlertTitle>{t('apiSpecsPage.readOnlyTitle')}</AlertTitle>
+                    <AlertDescription>
+                      {t('apiSpecsPage.readOnlyDescription', {
+                        role: getRoleLabel(currentRole),
+                      })}
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+
                 <Card className="border-border/60">
                   <CardHeader>
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -1047,6 +1502,9 @@ function ApiSpecsWorkspaceSection({
                           ) : (
                             <Badge variant="secondary">{t('common.private')}</Badge>
                           )}
+                          {specShareQuery.data ? (
+                            <Badge variant="outline">{t('share.shared')}</Badge>
+                          ) : null}
                         </div>
                         <div>
                           <CardTitle className="text-2xl tracking-tight">
@@ -1076,6 +1534,12 @@ function ApiSpecsWorkspaceSection({
                         <InfoBadge
                           label={t('common.responses')}
                           value={Object.keys(selectedSpec.responses || {}).length}
+                        />
+                        <InfoBadge
+                          label={t('apiSpecsPage.tabsGeneratedTest')}
+                          value={
+                            generatedTestPreview ? t('common.available') : t('common.notDefined')
+                          }
                         />
                       </div>
                     </div>
@@ -1135,6 +1599,55 @@ function ApiSpecsWorkspaceSection({
                   </Card>
                 </div>
 
+                <Card className="min-w-0 border-border/60">
+                  <CardHeader>
+                    <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                      <div className="space-y-1">
+                        <CardTitle>{t('apiSpecsPage.tabsGeneratedTest')}</CardTitle>
+                        <CardDescription>
+                          {t('apiSpecsPage.generatedLanguage', {
+                            lang: generatedTestLanguage.toUpperCase(),
+                          })}
+                        </CardDescription>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={!generatedTestPreview}
+                          onClick={() => void handleCopyGeneratedTest()}
+                        >
+                          <Copy className="h-4 w-4" />
+                          {t('apiSpecsPage.copy')}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => queueSpecAiAction(selectedSpec, 'test')}
+                          disabled={!canWrite}
+                        >
+                          <FileCode2 className="h-4 w-4" />
+                          {t('apiSpecsPage.aiGenerateTestButton')}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="min-w-0">
+                    {generatedTestPreview ? (
+                      <pre className="min-w-0 max-h-[420px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+                        {generatedTestPreview}
+                      </pre>
+                    ) : (
+                      <GuideState
+                        icon={FileCode2}
+                        title={t('apiSpecsPage.tabsGeneratedTest')}
+                        description={t('apiSpecsPage.generatedTestEmpty')}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+
                 <div className="grid gap-6 xl:grid-cols-2">
                   <JsonCard
                     title={t('common.requestBodySchema')}
@@ -1188,6 +1701,77 @@ function ApiSpecsWorkspaceSection({
           router.replace(buildModuleHref(projectId, 'api-specs', specId));
         }}
       />
+
+      <SpecFormDialog
+        key={`${editingSpecId ?? 'none'}-${editingSpecQuery.data?.updated_at ?? 'idle'}-${editingSpecId ? 'open' : 'closed'}`}
+        open={editingSpecId !== null}
+        mode="edit"
+        spec={editingSpecQuery.data ?? null}
+        categories={categoryOptions}
+        isLoadingSpec={editingSpecQuery.isLoading}
+        isSubmitting={updateSpecMutation.isPending}
+        onOpenChange={open => {
+          if (!open) {
+            setEditingSpecId(null);
+          }
+        }}
+        onSubmit={payload => handleUpdateSpec(payload as UpdateApiSpecRequest)}
+      />
+
+      <DeleteSpecDialog
+        open={Boolean(deleteTarget)}
+        spec={deleteTarget}
+        isDeleting={deleteSpecMutation.isPending}
+        onOpenChange={open => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleDeleteSpec}
+      />
+
+      <ImportSpecsDialog
+        open={isImportOpen}
+        isSubmitting={importSpecsMutation.isPending}
+        onOpenChange={setIsImportOpen}
+        onSubmit={handleImport}
+      />
+
+      <ExportSpecsDialog
+        open={isExportOpen}
+        isSubmitting={exportSpecsMutation.isPending}
+        onOpenChange={setIsExportOpen}
+        onSubmit={handleExport}
+      />
+
+      <BatchGenDocDialog
+        open={isBatchGenOpen}
+        categories={categoryOptions}
+        isSubmitting={batchGenMutation.isPending}
+        onOpenChange={setIsBatchGenOpen}
+        onSubmit={handleBatchGenDoc}
+      />
+
+      <ExampleFormDialog
+        open={isExampleOpen}
+        isSubmitting={createExampleMutation.isPending}
+        onOpenChange={setIsExampleOpen}
+        onSubmit={handleCreateExample}
+      />
+
+      <AiActionDialog
+        key={`${aiAction?.mode ?? 'none'}-${aiAction?.spec?.id ?? 'none'}-${aiAction ? 'open' : 'closed'}`}
+        open={Boolean(aiAction)}
+        mode={aiAction?.mode ?? 'doc'}
+        spec={aiAction?.spec}
+        isSubmitting={genDocMutation.isPending || genTestMutation.isPending}
+        onOpenChange={open => {
+          if (!open) {
+            setAiAction(null);
+          }
+        }}
+        onSubmit={handleAiAction}
+      />
     </>
   );
 }
@@ -1219,7 +1803,9 @@ function EnvironmentsWorkspaceSection({
   const deferredSearch = useDeferredValue(searchQuery);
   const normalizedSearch = deferredSearch.trim().toLowerCase();
   const effectiveSelectedItemId =
-    selectedItemId && selectedItemId === suppressedSelectedEnvironmentId ? null : selectedItemId;
+    selectedItemId && String(selectedItemId) === String(suppressedSelectedEnvironmentId)
+      ? null
+      : selectedItemId;
 
   const projectStatsQuery = useProjectStats(projectId);
   const memberRoleQuery = useProjectMemberRole(projectId);
@@ -1245,7 +1831,8 @@ function EnvironmentsWorkspaceSection({
   }, [normalizedSearch, environments]);
 
   const selectedEnvironmentFromList =
-    environments.find(environment => environment.id === effectiveSelectedItemId) ?? null;
+    environments.find(environment => String(environment.id) === String(effectiveSelectedItemId)) ??
+    null;
   const selectedEnvironment = selectedEnvironmentQuery.data ?? selectedEnvironmentFromList;
   const currentRole = memberRoleQuery.data?.role;
   const canWrite = currentRole ? WRITE_ROLES.includes(currentRole) : false;
@@ -1318,7 +1905,10 @@ function EnvironmentsWorkspaceSection({
     }
 
     const deletedId = deleteTarget.id;
-    const isDeletingSelectedEnvironment = selectedItemId === deletedId;
+    const isDeletingSelectedEnvironment =
+      selectedItemId !== null &&
+      selectedItemId !== undefined &&
+      String(selectedItemId) === String(deletedId);
 
     try {
       if (isDeletingSelectedEnvironment) {
@@ -2919,12 +3509,10 @@ function GuideState({
 function ApiSpecsGuideState({
   onOpenAICreate,
   onOpenManualCreate,
-  managerHref,
   testCasesHref,
 }: {
   onOpenAICreate: () => void;
   onOpenManualCreate: () => void;
-  managerHref: string;
   testCasesHref: string;
 }) {
   const t = useT('project');
@@ -2952,9 +3540,6 @@ function ApiSpecsGuideState({
             <Button type="button" variant="outline" onClick={onOpenManualCreate}>
               <Plus className="h-4 w-4" />
               {t('apiSpecs.addSpecManually')}
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href={managerHref}>{t('common.fullManager')}</Link>
             </Button>
           </div>
         </div>

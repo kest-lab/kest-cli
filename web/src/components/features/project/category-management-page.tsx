@@ -150,6 +150,9 @@ export function CategoryManagementPage({
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | string | null>(null);
+  const [suppressedSelectedCategoryId, setSuppressedSelectedCategoryId] = useState<
+    number | string | null
+  >(null);
   const [formMode, setFormMode] = useState<CategoryFormMode>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<number | string | null>(null);
@@ -214,10 +217,23 @@ export function CategoryManagementPage({
   // 作用：统一计算当前有效页码、当前选中分类、统计卡片所需数字和权限信息。
   const totalPages = Math.max(1, Math.ceil(filteredCategories.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
+  const selectableCategories =
+    suppressedSelectedCategoryId === null
+      ? flatCategories
+      : flatCategories.filter(
+          (category) => String(category.id) !== String(suppressedSelectedCategoryId)
+        );
+  const effectiveSelectedCategoryId =
+    selectedCategoryId !== null &&
+    suppressedSelectedCategoryId !== null &&
+    String(selectedCategoryId) === String(suppressedSelectedCategoryId)
+      ? null
+      : selectedCategoryId;
   const activeCategoryId =
-    selectedCategoryId !== null && flatCategories.some((category) => category.id === selectedCategoryId)
-      ? selectedCategoryId
-      : flatCategories[0]?.id ?? null;
+    effectiveSelectedCategoryId !== null &&
+    selectableCategories.some((category) => category.id === effectiveSelectedCategoryId)
+      ? effectiveSelectedCategoryId
+      : selectableCategories[0]?.id ?? null;
   const visibleCategories = filteredCategories.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const selectedCategoryQuery = useProjectCategory(projectId, activeCategoryId ?? undefined);
   const selectedCategoryFromTree = findProjectCategory(categoryTree, activeCategoryId);
@@ -307,16 +323,27 @@ export function CategoryManagementPage({
       return;
     }
 
-    const nextCandidates = flatCategories.filter((category) => category.id !== deleteTarget.id);
-    const fallbackCategoryId = nextCandidates.find((category) => category.parent_id === deleteTarget.parent_id)?.id
-      ?? nextCandidates[0]?.id
-      ?? null;
+    const deletedId = deleteTarget.id;
+    const isDeletingActiveCategory =
+      activeCategoryId !== null && String(activeCategoryId) === String(deletedId);
+    const nextCandidates = flatCategories.filter((category) => category.id !== deletedId);
+    const fallbackCategoryId =
+      nextCandidates.find((category) => category.parent_id === deleteTarget.parent_id)?.id ??
+      nextCandidates[0]?.id ??
+      null;
 
     try {
-      await deleteCategoryMutation.mutateAsync(deleteTarget.id);
+      if (isDeletingActiveCategory) {
+        setSuppressedSelectedCategoryId(deletedId);
+      }
+
+      await deleteCategoryMutation.mutateAsync(deletedId);
       setDeleteTargetId(null);
       setSelectedCategoryId(fallbackCategoryId);
     } catch {
+      if (isDeletingActiveCategory) {
+        setSuppressedSelectedCategoryId(null);
+      }
       // Global HTTP error handling already surfaces failure feedback.
     }
   };
