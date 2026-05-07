@@ -864,6 +864,9 @@ function ApiSpecsWorkspaceSection({
   const [isAICreateOpen, setIsAICreateOpen] = useState(autoOpenAICreate ?? false);
   const [editingSpecId, setEditingSpecId] = useState<string | number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ApiSpec | null>(null);
+  const [suppressedSelectedSpecId, setSuppressedSelectedSpecId] = useState<
+    number | string | null
+  >(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isBatchGenOpen, setIsBatchGenOpen] = useState(false);
@@ -879,7 +882,12 @@ function ApiSpecsWorkspaceSection({
     page: 1,
     pageSize: MAX_MODULE_ITEMS,
   });
-  const selectedSpecQuery = useApiSpecFull(projectId, selectedItemId ?? undefined);
+  const effectiveSelectedItemId =
+    selectedItemId && String(selectedItemId) === String(suppressedSelectedSpecId)
+      ? null
+      : selectedItemId;
+
+  const selectedSpecQuery = useApiSpecFull(projectId, effectiveSelectedItemId ?? undefined);
   const editingSpecQuery = useApiSpec(projectId, editingSpecId ?? undefined);
   const memberRoleQuery = useProjectMemberRole(projectId);
   const categoriesQuery = useProjectApiCategories(projectId);
@@ -916,11 +924,11 @@ function ApiSpecsWorkspaceSection({
   }, [deferredSearch, specs]);
 
   const selectedSpecFromList =
-    selectedItemId === undefined || selectedItemId === null
+    effectiveSelectedItemId === undefined || effectiveSelectedItemId === null
       ? null
-      : (specs.find(spec => String(spec.id) === String(selectedItemId)) ?? null);
+      : (specs.find(spec => String(spec.id) === String(effectiveSelectedItemId)) ?? null);
   const selectedSpec = selectedSpecQuery.data ?? selectedSpecFromList;
-  const activeSpecId = selectedSpec?.id ?? selectedItemId ?? null;
+  const activeSpecId = selectedSpec?.id ?? effectiveSelectedItemId ?? null;
   const specShareQuery = useApiSpecShare(projectId, activeSpecId ?? undefined);
   const publishShareMutation = usePublishApiSpecShare(projectId);
   const deleteShareMutation = useDeleteApiSpecShare(projectId);
@@ -1008,18 +1016,22 @@ function ApiSpecsWorkspaceSection({
       return;
     }
 
-    const deletingActiveSpec =
-      activeSpecId !== null && String(activeSpecId) === String(deleteTarget.id);
+    const deletedId = deleteTarget.id;
+    const deletingActiveSpec = activeSpecId !== null && String(activeSpecId) === String(deletedId);
     const fallbackSpec =
-      specs.find(spec => String(spec.id) !== String(deleteTarget.id)) ??
-      filteredSpecs.find(spec => String(spec.id) !== String(deleteTarget.id)) ??
+      specs.find(spec => String(spec.id) !== String(deletedId)) ??
+      filteredSpecs.find(spec => String(spec.id) !== String(deletedId)) ??
       null;
 
     try {
-      await deleteSpecMutation.mutateAsync(deleteTarget.id);
+      if (deletingActiveSpec) {
+        setSuppressedSelectedSpecId(deletedId);
+      }
+
+      await deleteSpecMutation.mutateAsync(deletedId);
       setDeleteTarget(null);
       setEditingSpecId(current =>
-        current !== null && String(current) === String(deleteTarget.id) ? null : current
+        current !== null && String(current) === String(deletedId) ? null : current
       );
 
       if (deletingActiveSpec) {
@@ -1030,6 +1042,9 @@ function ApiSpecsWorkspaceSection({
         );
       }
     } catch {
+      if (deletingActiveSpec) {
+        setSuppressedSelectedSpecId(null);
+      }
       // Global HTTP error handling already surfaces failure feedback.
     }
   };
@@ -1782,7 +1797,9 @@ function EnvironmentsWorkspaceSection({
   const deferredSearch = useDeferredValue(searchQuery);
   const normalizedSearch = deferredSearch.trim().toLowerCase();
   const effectiveSelectedItemId =
-    selectedItemId && selectedItemId === suppressedSelectedEnvironmentId ? null : selectedItemId;
+    selectedItemId && String(selectedItemId) === String(suppressedSelectedEnvironmentId)
+      ? null
+      : selectedItemId;
 
   const projectStatsQuery = useProjectStats(projectId);
   const memberRoleQuery = useProjectMemberRole(projectId);
@@ -1808,7 +1825,8 @@ function EnvironmentsWorkspaceSection({
   }, [normalizedSearch, environments]);
 
   const selectedEnvironmentFromList =
-    environments.find(environment => environment.id === effectiveSelectedItemId) ?? null;
+    environments.find(environment => String(environment.id) === String(effectiveSelectedItemId)) ??
+    null;
   const selectedEnvironment = selectedEnvironmentQuery.data ?? selectedEnvironmentFromList;
   const currentRole = memberRoleQuery.data?.role;
   const canWrite = currentRole ? WRITE_ROLES.includes(currentRole) : false;
@@ -1881,7 +1899,10 @@ function EnvironmentsWorkspaceSection({
     }
 
     const deletedId = deleteTarget.id;
-    const isDeletingSelectedEnvironment = selectedItemId === deletedId;
+    const isDeletingSelectedEnvironment =
+      selectedItemId !== null &&
+      selectedItemId !== undefined &&
+      String(selectedItemId) === String(deletedId);
 
     try {
       if (isDeletingSelectedEnvironment) {

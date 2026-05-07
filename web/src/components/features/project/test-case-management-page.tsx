@@ -1590,6 +1590,9 @@ export function TestCaseManagementPage({
   const [apiSpecFilter, setApiSpecFilter] = useState('all');
   const [envFilter, setEnvFilter] = useState('all');
   const [selectedTestCaseId, setSelectedTestCaseId] = useState<number | string | null>(null);
+  const [suppressedSelectedTestCaseId, setSuppressedSelectedTestCaseId] = useState<
+    number | string | null
+  >(null);
   const [detailTab, setDetailTab] = useState<DetailTab>('overview');
   const [historyStatus, setHistoryStatus] = useState<HistoryFilterStatus>('all');
   const [historyPage, setHistoryPage] = useState(1);
@@ -1629,10 +1632,23 @@ export function TestCaseManagementPage({
   const projectRole = memberRoleQuery.data?.role;
   const canWrite = projectRole ? WRITE_ROLES.includes(projectRole) : false;
   const canCreate = canWrite && apiSpecs.length > 0;
+  const selectableTestCases =
+    suppressedSelectedTestCaseId === null
+      ? testCases
+      : testCases.filter(
+          (testCase) => String(testCase.id) !== String(suppressedSelectedTestCaseId)
+        );
+  const effectiveSelectedTestCaseId =
+    selectedTestCaseId !== null &&
+    suppressedSelectedTestCaseId !== null &&
+    String(selectedTestCaseId) === String(suppressedSelectedTestCaseId)
+      ? null
+      : selectedTestCaseId;
   const resolvedSelectedTestCaseId =
-    selectedTestCaseId !== null && testCases.some((testCase) => testCase.id === selectedTestCaseId)
-      ? selectedTestCaseId
-      : testCases[0]?.id ?? null;
+    effectiveSelectedTestCaseId !== null &&
+    selectableTestCases.some((testCase) => testCase.id === effectiveSelectedTestCaseId)
+      ? effectiveSelectedTestCaseId
+      : selectableTestCases[0]?.id ?? null;
   const isImplicitSelection = resolvedSelectedTestCaseId !== selectedTestCaseId;
   const effectiveDetailTab: DetailTab = isImplicitSelection ? 'overview' : detailTab;
   const effectiveHistoryStatus: HistoryFilterStatus = isImplicitSelection ? 'all' : historyStatus;
@@ -1665,7 +1681,7 @@ export function TestCaseManagementPage({
   const runHistory = runHistoryQuery.data?.items ?? EMPTY_RUNS;
   const activeTestCase =
     activeTestCaseQuery.data ??
-    testCases.find((testCase) => testCase.id === resolvedSelectedTestCaseId) ??
+    selectableTestCases.find((testCase) => testCase.id === resolvedSelectedTestCaseId) ??
     null;
   const formTarget = formTargetQuery.data ?? null;
 
@@ -1817,20 +1833,31 @@ export function TestCaseManagementPage({
       return;
     }
 
+    const deletedId = deleteTarget.id;
+    const isDeletingSelectedTestCase =
+      resolvedSelectedTestCaseId !== null &&
+      String(resolvedSelectedTestCaseId) === String(deletedId);
+    const fallbackTestCaseId =
+      selectableTestCases.find((testCase) => String(testCase.id) !== String(deletedId))?.id ??
+      null;
     const shouldStepBackPage = testCases.length === 1 && page > 1;
 
     try {
-      await deleteTestCaseMutation.mutateAsync(deleteTarget.id);
-      setDeleteTarget(null);
-
-      if (resolvedSelectedTestCaseId === deleteTarget.id) {
-        setSelectedTestCaseId(null);
+      if (isDeletingSelectedTestCase) {
+        setSuppressedSelectedTestCaseId(deletedId);
       }
+
+      await deleteTestCaseMutation.mutateAsync(deletedId);
+      setDeleteTarget(null);
+      setSelectedTestCaseId(fallbackTestCaseId);
 
       if (shouldStepBackPage) {
         setPage((currentPage) => currentPage - 1);
       }
     } catch {
+      if (isDeletingSelectedTestCase) {
+        setSuppressedSelectedTestCaseId(null);
+      }
       // Global HTTP error handling already surfaces failure feedback.
     }
   };

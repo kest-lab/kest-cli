@@ -1508,6 +1508,9 @@ export function ApiSpecManagementPage({
   const [version, setVersion] = useState('');
   const [tag, setTag] = useState('');
   const [selectedSpecId, setSelectedSpecId] = useState<string | number | null>(initialSpecId);
+  const [suppressedSelectedSpecId, setSuppressedSelectedSpecId] = useState<
+    number | string | null
+  >(null);
   const [detailTab, setDetailTab] = useState<DetailTab>('overview');
   const [generatedTestLanguage, setGeneratedTestLanguage] = useState<ApiSpecLanguage>('en');
   const [formMode, setFormMode] = useState<SpecFormMode>('create');
@@ -1549,7 +1552,17 @@ export function ApiSpecManagementPage({
 
   const specs = specsQuery.data?.items ?? EMPTY_SPECS;
 
-  const activeSpecId = selectedSpecId ?? specs[0]?.id ?? null;
+  const selectableSpecs =
+    suppressedSelectedSpecId === null
+      ? specs
+      : specs.filter((spec) => String(spec.id) !== String(suppressedSelectedSpecId));
+  const effectiveSelectedSpecId =
+    selectedSpecId !== null &&
+    suppressedSelectedSpecId !== null &&
+    String(selectedSpecId) === String(suppressedSelectedSpecId)
+      ? null
+      : selectedSpecId;
+  const activeSpecId = effectiveSelectedSpecId ?? selectableSpecs[0]?.id ?? null;
   const selectedSpecSummary = specs.find(spec => spec.id === activeSpecId) ?? null;
   const specDetailQuery = useApiSpec(projectId, activeSpecId ?? undefined);
   const specFullQuery = useApiSpecFull(projectId, activeSpecId ?? undefined);
@@ -1671,16 +1684,24 @@ export function ApiSpecManagementPage({
       return;
     }
 
-    const fallbackSpecId = specs.find(spec => spec.id !== deleteTarget.id)?.id ?? null;
+    const deletedId = deleteTarget.id;
+    const isDeletingActiveSpec =
+      activeSpecId !== null && String(activeSpecId) === String(deletedId);
+    const fallbackSpecId =
+      selectableSpecs.find(spec => String(spec.id) !== String(deletedId))?.id ?? null;
 
     try {
-      await deleteSpecMutation.mutateAsync(deleteTarget.id);
-      setDeleteTarget(null);
-
-      if (activeSpecId === deleteTarget.id) {
-        setSelectedSpecId(fallbackSpecId);
+      if (isDeletingActiveSpec) {
+        setSuppressedSelectedSpecId(deletedId);
       }
+
+      await deleteSpecMutation.mutateAsync(deletedId);
+      setDeleteTarget(null);
+      setSelectedSpecId(fallbackSpecId);
     } catch {
+      if (isDeletingActiveSpec) {
+        setSuppressedSelectedSpecId(null);
+      }
       // HTTP 错误由全局错误处理和 toast 负责提示。
     }
   };

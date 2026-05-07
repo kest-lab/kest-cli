@@ -1264,6 +1264,9 @@ export function EnvironmentManagementPage({
   const t = i18n.project;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<number | string | null>(null);
+  const [suppressedSelectedEnvironmentId, setSuppressedSelectedEnvironmentId] = useState<
+    number | string | null
+  >(null);
   const [detailTab, setDetailTab] = useState<DetailTab>('overview');
   const [formMode, setFormMode] = useState<EnvironmentFormMode>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -1277,7 +1280,6 @@ export function EnvironmentManagementPage({
   const projectStatsQuery = useProjectStats(projectId);
   const memberRoleQuery = useProjectMemberRole(projectId);
   const environmentsQuery = useEnvironments(projectId);
-  const environmentDetailQuery = useEnvironment(projectId, selectedEnvironmentId ?? undefined);
   const editingEnvironmentQuery = useEnvironment(projectId, editingEnvironmentId ?? undefined);
 
   const createEnvironmentMutation = useCreateEnvironment(projectId);
@@ -1306,18 +1308,33 @@ export function EnvironmentManagementPage({
 
   // 当前激活环境的确定逻辑：
   // 如果用户选中的环境还在过滤结果里，继续保留；否则回落到过滤结果中的第一条。
+  const selectableEnvironments =
+    suppressedSelectedEnvironmentId === null
+      ? filteredEnvironments
+      : filteredEnvironments.filter(
+          (environment) =>
+            String(environment.id) !== String(suppressedSelectedEnvironmentId)
+        );
+  const effectiveSelectedEnvironmentId =
+    selectedEnvironmentId !== null &&
+    suppressedSelectedEnvironmentId !== null &&
+    String(selectedEnvironmentId) === String(suppressedSelectedEnvironmentId)
+      ? null
+      : selectedEnvironmentId;
   const activeEnvironmentId =
-    selectedEnvironmentId &&
-    filteredEnvironments.some((environment) => environment.id === selectedEnvironmentId)
-      ? selectedEnvironmentId
-      : filteredEnvironments[0]?.id ?? null;
+    effectiveSelectedEnvironmentId &&
+    selectableEnvironments.some(
+      (environment) => environment.id === effectiveSelectedEnvironmentId
+    )
+      ? effectiveSelectedEnvironmentId
+      : selectableEnvironments[0]?.id ?? null;
+  const environmentDetailQuery = useEnvironment(projectId, activeEnvironmentId ?? undefined);
 
   // 详情优先使用单条详情接口返回的数据；
   // 若详情尚未加载完成，则回退到列表中的摘要数据，避免右侧面板闪空。
   const selectedEnvironmentSummary =
-    filteredEnvironments.find((environment) => environment.id === activeEnvironmentId) || null;
-  const selectedEnvironment =
-    environmentDetailQuery.data || selectedEnvironmentSummary;
+    selectableEnvironments.find((environment) => environment.id === activeEnvironmentId) || null;
+  const selectedEnvironment = environmentDetailQuery.data || selectedEnvironmentSummary;
   const currentRole = memberRoleQuery.data?.role;
   const canWrite = currentRole ? WRITE_ROLES.includes(currentRole) : false;
 
@@ -1381,14 +1398,25 @@ export function EnvironmentManagementPage({
       return;
     }
 
-    try {
-      await deleteEnvironmentMutation.mutateAsync(deleteTarget.id);
-      setDeleteTarget(null);
+    const deletedId = deleteTarget.id;
+    const isDeletingActiveEnvironment =
+      activeEnvironmentId !== null && String(activeEnvironmentId) === String(deletedId);
+    const fallbackEnvironmentId =
+      selectableEnvironments.find((environment) => String(environment.id) !== String(deletedId))
+        ?.id ?? null;
 
-      if (selectedEnvironmentId === deleteTarget.id) {
-        setSelectedEnvironmentId(null);
+    try {
+      if (isDeletingActiveEnvironment) {
+        setSuppressedSelectedEnvironmentId(deletedId);
       }
+
+      await deleteEnvironmentMutation.mutateAsync(deletedId);
+      setDeleteTarget(null);
+      setSelectedEnvironmentId(fallbackEnvironmentId);
     } catch {
+      if (isDeletingActiveEnvironment) {
+        setSuppressedSelectedEnvironmentId(null);
+      }
       // Global HTTP error handling already surfaces failure feedback.
     }
   };
