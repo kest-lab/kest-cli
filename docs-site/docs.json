@@ -1,0 +1,127 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Kest Docs",
+  "description": "Developer documentation for Kest, the AI-native API testing platform.",
+  "theme": "mint",
+  "colors": {
+    "primary": "#0f766e",
+    "light": "#14b8a6",
+    "dark": "#115e59"
+  },
+  "favicon": "/images/favicon.svg",
+  "navigation": {
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/kest-labs/kest"
+        }
+      ]
+    },
+    "languages": [
+      {
+        "language": "en",
+        "default": true,
+        "navbar": {
+          "links": [
+            {
+              "label": "GitHub",
+              "href": "https://github.com/kest-labs/kest"
+            }
+          ],
+          "primary": {
+            "type": "button",
+            "label": "Open Kest",
+            "href": "https://kest.dev"
+          }
+        },
+        "footer": {
+          "socials": {
+            "github": "https://github.com/kest-labs/kest"
+          }
+        },
+        "tabs": [
+          {
+            "tab": "Documentation",
+            "groups": [
+              {
+                "group": "Getting Started",
+                "pages": [
+                  "en/introduction",
+                  "en/documentation/quickstart",
+                  "en/documentation/authentication",
+                  "en/documentation/errors",
+                  "en/documentation/rate-limits",
+                  "en/documentation/cli-sync"
+                ]
+              },
+              {
+                "group": "Workflows",
+                "pages": [
+                  "en/workflows/api-spec-lifecycle",
+                  "en/workflows/project-collaboration",
+                  "en/workflows/testing-requests"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API Reference",
+            "openapi": "openapi/kest-v1-en.yaml"
+          }
+        ]
+      },
+      {
+        "language": "zh",
+        "navbar": {
+          "links": [
+            {
+              "label": "GitHub",
+              "href": "https://github.com/kest-labs/kest"
+            }
+          ],
+          "primary": {
+            "type": "button",
+            "label": "打开 Kest",
+            "href": "https://kest.dev"
+          }
+        },
+        "footer": {
+          "socials": {
+            "github": "https://github.com/kest-labs/kest"
+          }
+        },
+        "tabs": [
+          {
+            "tab": "文档",
+            "groups": [
+              {
+                "group": "开始使用",
+                "pages": [
+                  "zh/introduction",
+                  "zh/documentation/quickstart",
+                  "zh/documentation/authentication",
+                  "zh/documentation/errors",
+                  "zh/documentation/rate-limits",
+                  "zh/documentation/cli-sync"
+                ]
+              },
+              {
+                "group": "工作流",
+                "pages": [
+                  "zh/workflows/api-spec-lifecycle",
+                  "zh/workflows/project-collaboration",
+                  "zh/workflows/testing-requests"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API 参考",
+            "openapi": "openapi/kest-v1-zh.yaml"
+          }
+        ]
+      }
+    ]
+  }
+}

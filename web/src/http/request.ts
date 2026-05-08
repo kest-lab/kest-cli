@@ -83,6 +83,10 @@ class HttpClient {
         return data && typeof data === 'object' && 'data' in data ? data.data : data;
       },
       async (error: AxiosError) => {
+        if (axios.isCancel(error) || error.code === 'ERR_CANCELED') {
+          return Promise.reject(error);
+        }
+
         const originalRequest = error.config as RequestConfig;
         const body = error.response?.data as ErrorResponseBody | undefined;
 

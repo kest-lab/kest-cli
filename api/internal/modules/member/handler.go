@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/kest-labs/kest/api/internal/contracts"
 	"github.com/kest-labs/kest/api/internal/infra/middleware"
 	"github.com/kest-labs/kest/api/internal/infra/router"
@@ -33,8 +34,6 @@ func (h *Handler) RegisterRoutes(r *router.Router) {
 			Middleware(middleware.RequireProjectRole(h.service, RoleRead))
 		members.GET("/me", h.GetMyRole).
 			Middleware(middleware.RequireProjectRole(h.service, RoleRead))
-		members.POST("", h.Create).
-			Middleware(middleware.RequireProjectRole(h.service, RoleAdmin))
 		members.PATCH("/:uid", h.Update).
 			Middleware(middleware.RequireProjectRole(h.service, RoleAdmin))
 		members.DELETE("/:uid", h.Delete).
@@ -56,28 +55,6 @@ func (h *Handler) ListMembers(c *gin.Context) {
 	}
 
 	response.Success(c, members)
-}
-
-func (h *Handler) AddMember(c *gin.Context) {
-	projectID := c.Param("id")
-	if projectID == "" {
-		response.Error(c, http.StatusBadRequest, "Invalid project ID")
-		return
-	}
-
-	var req AddMemberRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	member, err := h.service.AddMember(c.Request.Context(), projectID, &req)
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	response.Created(c, member)
 }
 
 func (h *Handler) UpdateMember(c *gin.Context) {
@@ -130,10 +107,6 @@ func (h *Handler) RemoveMember(c *gin.Context) {
 // Convenience methods for router registration
 func (h *Handler) List(c *gin.Context) {
 	h.ListMembers(c)
-}
-
-func (h *Handler) Create(c *gin.Context) {
-	h.AddMember(c)
 }
 
 func (h *Handler) Update(c *gin.Context) {

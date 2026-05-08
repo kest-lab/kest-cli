@@ -10,8 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kest-labs/kest/api/internal/infra/config"
 	"gorm.io/gorm"
+
+	"github.com/kest-labs/kest/api/internal/infra/config"
 )
 
 var (
@@ -41,6 +42,13 @@ type Service interface {
 
 	// AI draft operations
 	CreateAIDraft(ctx context.Context, projectID string, userID string, req *CreateAPISpecAIDraftRequest) (*APISpecAIDraftResponse, error)
+	CreateAIDraftStream(
+		ctx context.Context,
+		projectID string,
+		userID string,
+		req *CreateAPISpecAIDraftRequest,
+		callbacks AIDraftStreamCallbacks,
+	) (*APISpecAIDraftResponse, error)
 	GetAIDraft(ctx context.Context, projectID, draftID string) (*APISpecAIDraftResponse, error)
 	RefineAIDraft(ctx context.Context, projectID, draftID string, req *RefineAPISpecAIDraftRequest) (*APISpecAIDraftResponse, error)
 	AcceptAIDraft(ctx context.Context, projectID, draftID string, req *AcceptAPISpecAIDraftRequest) (*AcceptAPISpecAIDraftResponse, error)

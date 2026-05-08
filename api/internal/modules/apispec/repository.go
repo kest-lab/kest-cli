@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"gorm.io/gorm"
+
+	"github.com/kest-labs/kest/api/pkg/dbutil"
 )
 
 // SpecListFilter holds filter parameters for listing API specs
@@ -68,7 +70,7 @@ func (r *repository) CreateSpec(ctx context.Context, spec *APISpecPO) error {
 
 func (r *repository) GetSpecByID(ctx context.Context, id string) (*APISpecPO, error) {
 	var spec APISpecPO
-	if err := r.db.WithContext(ctx).First(&spec, id).Error; err != nil {
+	if err := dbutil.ByID(r.db.WithContext(ctx), id).First(&spec).Error; err != nil {
 		return nil, err
 	}
 	return &spec, nil
@@ -102,7 +104,7 @@ func (r *repository) UpdateSpec(ctx context.Context, spec *APISpecPO) error {
 }
 
 func (r *repository) DeleteSpec(ctx context.Context, id string) error {
-	return r.db.WithContext(ctx).Delete(&APISpecPO{}, id).Error
+	return dbutil.DeleteByID(r.db.WithContext(ctx), &APISpecPO{}, id).Error
 }
 
 func (r *repository) ListSpecs(ctx context.Context, filter *SpecListFilter) ([]*APISpecPO, int64, error) {
@@ -191,14 +193,14 @@ func (r *repository) GetExamplesBySpecID(ctx context.Context, specID string) ([]
 
 func (r *repository) GetExampleByID(ctx context.Context, id string) (*APIExamplePO, error) {
 	var example APIExamplePO
-	if err := r.db.WithContext(ctx).First(&example, id).Error; err != nil {
+	if err := dbutil.ByID(r.db.WithContext(ctx), id).First(&example).Error; err != nil {
 		return nil, err
 	}
 	return &example, nil
 }
 
 func (r *repository) DeleteExample(ctx context.Context, id string) error {
-	return r.db.WithContext(ctx).Delete(&APIExamplePO{}, id).Error
+	return dbutil.DeleteByID(r.db.WithContext(ctx), &APIExamplePO{}, id).Error
 }
 
 // ========== AI Draft Operations ==========

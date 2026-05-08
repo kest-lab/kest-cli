@@ -12,10 +12,12 @@ import {
 } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
+import { ArrowRight, Boxes, Pencil, Plus, Search, Sparkles, Trash2 } from 'lucide-react';
+import { ActionMenu } from '@/components/features/project/action-menu';
 import {
-  Plus,
-  Search,
-} from 'lucide-react';
+  ProjectHomeStatusBadge,
+  type ProjectHomeStatusTone,
+} from '@/components/features/project/project-home-status';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,21 +25,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import {
+  DeleteProjectDialog,
   ProjectFormDialog,
   type ProjectFormMode,
-  ProjectStatusBadge,
 } from '@/components/features/project/project-shared';
 import {
   buildProjectApiSpecsRoute,
   buildProjectCollectionsRoute,
   buildProjectDetailRoute,
   buildProjectEnvironmentsRoute,
+  buildProjectInviteRoute,
   buildProjectTestCasesRoute,
 } from '@/constants/routes';
+import { useCreateDemoProject } from '@/hooks/use-create-demo-project';
 import { apiSpecKeys, useApiSpecs } from '@/hooks/use-api-specs';
+import {
+  useAcceptProjectInvitation,
+  useMyProjectInvitations,
+  useRejectProjectInvitation,
+} from '@/hooks/use-project-invitations';
 import {
   projectKeys,
   useCreateProject,
+  useDeleteProject,
   useProjectStats,
   useProjects,
   useUpdateProject,
@@ -46,13 +56,36 @@ import { useT } from '@/i18n/client';
 import type { ScopedTranslations } from '@/i18n/shared';
 import { apiSpecService } from '@/services/api-spec';
 import { projectService } from '@/services/project';
+import { useOnboardingStore } from '@/store/onboarding-store';
 import type { ApiProject, CreateProjectRequest, UpdateProjectRequest } from '@/types/project';
+import type { ReceivedProjectInvitation } from '@/types/project-invitation';
 import { formatDate } from '@/utils';
 
 const PROJECTS_PAGE_SIZE = 1000;
 const MAX_PREVIEW_SPECS = 5;
 const EMPTY_PROJECTS: ApiProject[] = [];
 type ProjectT = ScopedTranslations<'project'>;
+
+const navigationLinkClassName =
+  'inline-flex items-center gap-2 font-medium text-primary underline-offset-4 transition-colors hover:text-primary-deep hover:underline focus-ring rounded-md';
+
+interface DashboardStatusItem {
+  label: string;
+  detail: string;
+  tone: ProjectHomeStatusTone;
+}
+
+interface DashboardNextStep {
+  summary: string;
+  title: string;
+  description: string;
+  reason: string;
+  primaryHref: string;
+  primaryLabel: string;
+  secondaryHref: string;
+  secondaryLabel: string;
+  blockers: DashboardStatusItem[];
+}
 
 const getProjectCreatedAt = (project: ApiProject) => project.created_at || '';
 
@@ -97,8 +130,25 @@ const buildDashboardHref = (
 const buildQuickRequestHref = (projectId: number | string) =>
   `${buildProjectCollectionsRoute(projectId)}?quickRequest=1`;
 
+const getReceivedInvitationRoleLabel = (
+  t: ScopedTranslations<'project'>,
+  role: ReceivedProjectInvitation['role']
+) => {
+  switch (role) {
+    case 'admin':
+      return t('roles.admin');
+    case 'write':
+      return t('roles.write');
+    case 'read':
+      return t('roles.read');
+    default:
+      return t('roles.unknown');
+  }
+};
+
 export function ProjectDashboardPage() {
-  const t = useT('project');
+  const i18n = useT();
+  const t = i18n.project;
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -108,73 +158,80 @@ export function ProjectDashboardPage() {
   const [formMode, setFormMode] = useState<ProjectFormMode>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ApiProject | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ApiProject | null>(null);
   const hasAutoSelectedProjectRef = useRef(false);
 
   const deferredSearch = useDeferredValue(searchQuery);
 
   const projectsQuery = useProjects({ page: 1, perPage: PROJECTS_PAGE_SIZE });
   const createProjectMutation = useCreateProject();
+  const createDemoProjectMutation = useCreateDemoProject();
+  const deleteProjectMutation = useDeleteProject();
+  const receivedInvitationsQuery = useMyProjectInvitations();
   const updateProjectMutation = useUpdateProject();
+  const markFirstProjectCreated = useOnboardingStore.use.markFirstProjectCreated();
 
   const projects = projectsQuery.data?.items ?? EMPTY_PROJECTS;
   const previewProjectId = normalizeProjectId(searchParams.get('preview'));
+  const sortedProjects = useMemo(() => [...projects].sort(sortProjectsByCreatedAtDesc), [projects]);
 
   const filteredProjects = useMemo(() => {
     const normalizedQuery = deferredSearch.trim().toLowerCase();
 
     if (!normalizedQuery) {
-      return [...projects].sort(sortProjectsByCreatedAtDesc);
+      return sortedProjects;
     }
 
-    return projects
-      .filter((project) =>
-        [project.name, project.slug, project.platform]
-          .filter(Boolean)
-          .some((value) => value.toLowerCase().includes(normalizedQuery))
-      )
-      .sort(sortProjectsByCreatedAtDesc);
-  }, [deferredSearch, projects]);
+    return sortedProjects.filter(project =>
+      [project.name, project.slug, project.platform]
+        .filter(Boolean)
+        .some(value => value.toLowerCase().includes(normalizedQuery))
+    );
+  }, [deferredSearch, sortedProjects]);
 
   const selectedProject =
     previewProjectId !== null
-      ? projects.find((project) => normalizeProjectId(project.id) === previewProjectId) ?? null
+      ? (projects.find(project => normalizeProjectId(project.id) === previewProjectId) ?? null)
       : null;
-  const fallbackProject = useMemo(
-    () => [...projects].sort(sortProjectsByCreatedAtDesc)[0] ?? null,
-    [projects]
+  const fallbackProject = sortedProjects[0] ?? null;
+
+  const prefetchProjectPreview = useCallback(
+    (projectId: number | string) => {
+      void queryClient.prefetchQuery({
+        queryKey: projectKeys.projectStats(projectId),
+        queryFn: () => projectService.getStats(projectId),
+      });
+
+      void queryClient.prefetchQuery({
+        queryKey: apiSpecKeys.list({ projectId, page: 1, pageSize: MAX_PREVIEW_SPECS }),
+        queryFn: () =>
+          apiSpecService.list({
+            projectId,
+            page: 1,
+            pageSize: MAX_PREVIEW_SPECS,
+          }),
+      });
+    },
+    [queryClient]
   );
 
-  const prefetchProjectPreview = useCallback((projectId: number | string) => {
-    void queryClient.prefetchQuery({
-      queryKey: projectKeys.projectStats(projectId),
-      queryFn: () => projectService.getStats(projectId),
-    });
+  const navigateToPreview = useCallback(
+    (projectId?: string | number | null) => {
+      if (projectId) {
+        prefetchProjectPreview(projectId);
+      }
 
-    void queryClient.prefetchQuery({
-      queryKey: apiSpecKeys.list({ projectId, page: 1, pageSize: MAX_PREVIEW_SPECS }),
-      queryFn: () =>
-        apiSpecService.list({
-          projectId,
-          page: 1,
-          pageSize: MAX_PREVIEW_SPECS,
-        }),
-    });
-  }, [queryClient]);
-
-  const navigateToPreview = useCallback((projectId?: string | number | null) => {
-    if (projectId) {
-      prefetchProjectPreview(projectId);
-    }
-
-    startTransition(() => {
-      router.replace(
-        buildDashboardHref(pathname, new URLSearchParams(searchParams.toString()), projectId)
-      );
-    });
-  }, [pathname, prefetchProjectPreview, router, searchParams]);
+      startTransition(() => {
+        router.replace(
+          buildDashboardHref(pathname, new URLSearchParams(searchParams.toString()), projectId)
+        );
+      });
+    },
+    [pathname, prefetchProjectPreview, router, searchParams]
+  );
 
   useEffect(() => {
-    filteredProjects.slice(0, 3).forEach((project) => {
+    filteredProjects.slice(0, 3).forEach(project => {
       prefetchProjectPreview(project.id);
     });
   }, [filteredProjects, prefetchProjectPreview]);
@@ -193,6 +250,20 @@ export function ProjectDashboardPage() {
     navigateToPreview(fallbackProject.id);
   }, [fallbackProject, navigateToPreview, previewProjectId, projectsQuery.isLoading]);
 
+  useEffect(() => {
+    if (projectsQuery.isLoading || previewProjectId === null || selectedProject) {
+      return;
+    }
+
+    navigateToPreview(fallbackProject?.id ?? null);
+  }, [
+    fallbackProject,
+    navigateToPreview,
+    previewProjectId,
+    projectsQuery.isLoading,
+    selectedProject,
+  ]);
+
   const openCreateDialog = () => {
     setFormMode('create');
     setEditingProject(null);
@@ -209,6 +280,7 @@ export function ProjectDashboardPage() {
     try {
       if (formMode === 'create') {
         const project = await createProjectMutation.mutateAsync(payload as CreateProjectRequest);
+        markFirstProjectCreated();
         navigateToPreview(project.id);
       } else if (editingProject) {
         await updateProjectMutation.mutateAsync({
@@ -225,6 +297,19 @@ export function ProjectDashboardPage() {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    try {
+      await deleteProjectMutation.mutateAsync(deleteTarget.id);
+      setDeleteTarget(null);
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden lg:flex-row">
       <aside className="w-full shrink-0 border-b border-border/60 bg-bg-surface/70 lg:w-[296px] lg:border-b-0 lg:border-r">
@@ -234,13 +319,18 @@ export function ProjectDashboardPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <Input
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={event => setSearchQuery(event.target.value)}
                 placeholder={t('dashboardPage.searchPlaceholder')}
                 className="pl-9"
               />
             </div>
 
-            <Button type="button" onClick={openCreateDialog} className="w-full">
+            <Button
+              type="button"
+              onClick={openCreateDialog}
+              className="w-full"
+              data-onboarding="create-project"
+            >
               <Plus className="h-4 w-4" />
               {t('projectForm.createButton')}
             </Button>
@@ -248,7 +338,7 @@ export function ProjectDashboardPage() {
 
           <Separator />
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          <div className="min-h-0 flex-1 overflow-y-auto p-3" data-onboarding="project-list">
             <div className="mb-3 flex items-center justify-between px-2 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
               <span>{t('dashboardPage.projectsLabel')}</span>
               <span>{filteredProjects.length}</span>
@@ -270,9 +360,7 @@ export function ProjectDashboardPage() {
             ) : projectsQuery.error ? (
               <Alert>
                 <AlertTitle>{t('dashboardPage.loadFailedTitle')}</AlertTitle>
-                <AlertDescription>
-                  {t('dashboardPage.loadFailedDescription')}
-                </AlertDescription>
+                <AlertDescription>{t('dashboardPage.loadFailedDescription')}</AlertDescription>
               </Alert>
             ) : filteredProjects.length === 0 ? (
               <Card className="border-dashed">
@@ -284,51 +372,86 @@ export function ProjectDashboardPage() {
               </Card>
             ) : (
               <div className="space-y-2">
-                {filteredProjects.map((project) => {
+                {filteredProjects.map(project => {
                   const isActive = project.id === selectedProject?.id;
+                  const menuItems = [
+                    {
+                      key: `project-edit-${project.id}`,
+                      label: t('projectForm.editTitle'),
+                      icon: Pencil,
+                      onSelect: () => openEditDialog(project),
+                    },
+                    {
+                      key: `project-delete-${project.id}`,
+                      label: t('projectForm.deleteButton'),
+                      icon: Trash2,
+                      destructive: true,
+                      separatorBefore: true,
+                      disabled: deleteProjectMutation.isPending,
+                      onSelect: () => setDeleteTarget(project),
+                    },
+                  ];
 
                   return (
-                    <button
+                    <div
                       key={project.id}
-                      type="button"
-                      onClick={() => navigateToPreview(project.id)}
                       onMouseEnter={() => prefetchProjectPreview(project.id)}
-                      onFocus={() => prefetchProjectPreview(project.id)}
                       onTouchStart={() => prefetchProjectPreview(project.id)}
-                      aria-pressed={isActive}
                       className={`group w-full rounded-2xl border p-3 text-left transition-colors ${
                         isActive
                           ? 'border-primary/30 bg-primary/10 shadow-sm'
                           : 'border-transparent bg-background/60 hover:border-border/60 hover:bg-background'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-text-main">{project.name}</p>
-                          <p className="truncate text-xs text-text-muted">{project.slug}</p>
-                        </div>
-                        <ProjectStatusBadge status={project.status} />
+                      <div className="flex items-start gap-2">
+                        <button
+                          type="button"
+                          onClick={() => navigateToPreview(project.id)}
+                          onFocus={() => prefetchProjectPreview(project.id)}
+                          aria-pressed={isActive}
+                          className="min-w-0 flex-1 text-left"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-text-main">
+                              {project.name}
+                            </p>
+                            <p className="truncate text-xs text-text-muted">{project.slug}</p>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
+                            {isActive ? (
+                              <Badge
+                                variant="outline"
+                                className="border-primary/20 bg-primary/10 text-primary"
+                              >
+                                {t('dashboardPage.selected')}
+                              </Badge>
+                            ) : null}
+                            {project.created_at ? (
+                              <span>
+                                {t('dashboardPage.createdAt', {
+                                  value: formatDate(project.created_at, 'YYYY-MM-DD'),
+                                })}
+                              </span>
+                            ) : null}
+                            {!isActive ? (
+                              <span className="transition-opacity group-hover:opacity-100 lg:opacity-0">
+                                {t('dashboardPage.preview')}
+                              </span>
+                            ) : null}
+                          </div>
+                        </button>
+                        <ActionMenu
+                          items={menuItems}
+                          ariaLabel={t('common.openActions')}
+                          stopPropagation
+                          triggerClassName={
+                            isActive
+                              ? 'h-8 w-8 shrink-0 rounded-full text-primary hover:bg-primary/10'
+                              : 'h-8 w-8 shrink-0 rounded-full text-text-muted hover:bg-muted'
+                          }
+                        />
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
-                        {isActive ? (
-                          <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
-                            {t('dashboardPage.selected')}
-                          </Badge>
-                        ) : null}
-                        {project.created_at ? (
-                          <span>
-                            {t('dashboardPage.createdAt', {
-                              value: formatDate(project.created_at, 'YYYY-MM-DD'),
-                            })}
-                          </span>
-                        ) : null}
-                        {!isActive ? (
-                          <span className="transition-opacity group-hover:opacity-100 lg:opacity-0">
-                            {t('dashboardPage.preview')}
-                          </span>
-                        ) : null}
-                      </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -339,6 +462,11 @@ export function ProjectDashboardPage() {
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
         <div className="space-y-6 p-4 md:p-6">
+          <PendingInvitationsPanel
+            invitations={receivedInvitationsQuery.data ?? []}
+            isLoading={receivedInvitationsQuery.isLoading}
+            isError={Boolean(receivedInvitationsQuery.error)}
+          />
           {selectedProject ? (
             <ProjectPreviewPanel
               project={selectedProject}
@@ -349,6 +477,12 @@ export function ProjectDashboardPage() {
               projects={projects}
               onOpenProject={navigateToPreview}
               onCreateProject={openCreateDialog}
+              onCreateDemoProject={async () => {
+                const result = await createDemoProjectMutation.mutateAsync();
+                markFirstProjectCreated();
+                navigateToPreview(result.project.id);
+              }}
+              isCreatingDemoProject={createDemoProjectMutation.isPending}
             />
           )}
         </div>
@@ -358,11 +492,173 @@ export function ProjectDashboardPage() {
         open={isFormOpen}
         mode={formMode}
         project={editingProject}
-        isSubmitting={createProjectMutation.isPending || updateProjectMutation.isPending}
+        isSubmitting={
+          createProjectMutation.isPending ||
+          createDemoProjectMutation.isPending ||
+          updateProjectMutation.isPending ||
+          deleteProjectMutation.isPending
+        }
         onOpenChange={setIsFormOpen}
         onSubmit={handleProjectSubmit}
       />
+      <DeleteProjectDialog
+        open={Boolean(deleteTarget)}
+        project={deleteTarget}
+        isDeleting={deleteProjectMutation.isPending}
+        onOpenChange={open => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleDeleteProject}
+      />
     </div>
+  );
+}
+
+function PendingInvitationsPanel({
+  invitations,
+  isLoading,
+  isError,
+}: {
+  invitations: ReceivedProjectInvitation[];
+  isLoading: boolean;
+  isError: boolean;
+}) {
+  const t = useT('project');
+  const router = useRouter();
+  const acceptInvitationMutation = useAcceptProjectInvitation();
+  const rejectInvitationMutation = useRejectProjectInvitation();
+  const [actingOn, setActingOn] = useState<{
+    action: 'accept' | 'reject';
+    slug: string;
+  } | null>(null);
+
+  if (!isLoading && !isError && invitations.length === 0) {
+    return null;
+  }
+
+  const handleAccept = async (invitation: ReceivedProjectInvitation) => {
+    setActingOn({ action: 'accept', slug: invitation.slug });
+    try {
+      const result = await acceptInvitationMutation.mutateAsync(invitation.slug);
+      router.push(result.redirect_to || buildProjectDetailRoute(result.project_id));
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    } finally {
+      setActingOn(null);
+    }
+  };
+
+  const handleReject = async (invitation: ReceivedProjectInvitation) => {
+    setActingOn({ action: 'reject', slug: invitation.slug });
+    try {
+      await rejectInvitationMutation.mutateAsync(invitation.slug);
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    } finally {
+      setActingOn(null);
+    }
+  };
+
+  return (
+    <Card className="border-primary/15 bg-linear-to-r from-primary/8 via-background to-background">
+      <CardHeader>
+        <CardTitle>{t('dashboardPage.pendingInvitationsTitle')}</CardTitle>
+        <CardDescription>{t('dashboardPage.pendingInvitationsDescription')}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-28 animate-pulse rounded-2xl border border-border/60 bg-muted/40"
+              />
+            ))}
+          </div>
+        ) : isError ? (
+          <Alert>
+            <AlertTitle>{t('dashboardPage.pendingInvitationsLoadFailedTitle')}</AlertTitle>
+            <AlertDescription>
+              {t('dashboardPage.pendingInvitationsLoadFailedDescription')}
+            </AlertDescription>
+          </Alert>
+        ) : (
+          invitations.map(invitation => {
+            const isAccepting = actingOn?.action === 'accept' && actingOn.slug === invitation.slug;
+            const isRejecting = actingOn?.action === 'reject' && actingOn.slug === invitation.slug;
+
+            return (
+              <div
+                key={invitation.id}
+                className="rounded-2xl border border-border/60 bg-background/80 p-4"
+              >
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className="border-primary/20 bg-primary/10 text-primary"
+                      >
+                        {t('roles.badge', {
+                          role: getReceivedInvitationRoleLabel(t, invitation.role),
+                        })}
+                      </Badge>
+                      <Badge variant="outline">{invitation.project_slug}</Badge>
+                    </div>
+                    <div>
+                      <p className="text-lg font-semibold tracking-tight">
+                        {invitation.project_name}
+                      </p>
+                      <p className="mt-1 text-sm text-text-muted">
+                        {t('invitation.expiresLabel')}:{' '}
+                        {invitation.expires_at
+                          ? formatDate(invitation.expires_at, 'YYYY-MM-DD HH:mm')
+                          : t('invitation.never')}
+                      </p>
+                      <p className="text-sm text-text-muted">
+                        {t('membersPage.inviteCreated')}:{' '}
+                        {formatDate(invitation.created_at, 'YYYY-MM-DD HH:mm')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" asChild>
+                      <Link href={buildProjectInviteRoute(invitation.slug)}>
+                        {t('dashboardPage.reviewInvitation')}
+                      </Link>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      loading={isRejecting}
+                      disabled={Boolean(actingOn) && !isRejecting}
+                      onClick={() => {
+                        void handleReject(invitation);
+                      }}
+                    >
+                      {t('invitation.reject')}
+                    </Button>
+                    <Button
+                      type="button"
+                      loading={isAccepting}
+                      disabled={Boolean(actingOn) && !isAccepting}
+                      onClick={() => {
+                        void handleAccept(invitation);
+                      }}
+                    >
+                      {t('invitation.accept')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -370,15 +666,17 @@ function ProjectDashboardWelcome({
   projects,
   onOpenProject,
   onCreateProject,
+  onCreateDemoProject,
+  isCreatingDemoProject,
 }: {
   projects: ApiProject[];
   onOpenProject: (projectId?: string | number | null) => void;
   onCreateProject: () => void;
+  onCreateDemoProject: () => Promise<void>;
+  isCreatingDemoProject: boolean;
 }) {
   const t = useT('project');
-  const recentProjects = [...projects]
-    .sort(sortProjectsByCreatedAtDesc)
-    .slice(0, 5);
+  const recentProjects = [...projects].sort(sortProjectsByCreatedAtDesc).slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -397,7 +695,7 @@ function ProjectDashboardWelcome({
               </CardDescription>
             </div>
 
-            <Button type="button" onClick={onCreateProject}>
+            <Button type="button" onClick={onCreateProject} data-onboarding="create-project">
               <Plus className="h-4 w-4" />
               {t('projectForm.createButton')}
             </Button>
@@ -418,7 +716,7 @@ function ProjectDashboardWelcome({
                 <AlertDescription>{t('dashboardPage.noProjectsYetDescription')}</AlertDescription>
               </Alert>
             ) : (
-              recentProjects.map((project) => (
+              recentProjects.map(project => (
                 <button
                   key={project.id}
                   type="button"
@@ -427,9 +725,7 @@ function ProjectDashboardWelcome({
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{project.name}</p>
-                    <p className="truncate text-xs text-text-muted">
-                      {project.slug}
-                    </p>
+                    <p className="truncate text-xs text-text-muted">{project.slug}</p>
                   </div>
                 </button>
               ))
@@ -437,19 +733,58 @@ function ProjectDashboardWelcome({
           </CardContent>
         </Card>
 
-        <Card className="border-dashed border-border/70">
+        <Card
+          className="border-border/70 bg-linear-to-br from-amber-50 via-background to-cyan-50"
+          data-onboarding="demo-project-card"
+        >
           <CardHeader>
-            <CardTitle>{t('dashboardPage.twoWaysTitle')}</CardTitle>
-            <CardDescription>{t('dashboardPage.twoWaysDescription')}</CardDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Boxes className="h-5 w-5 text-primary" />
+                  {t('dashboardPage.demoCardTitle')}
+                </CardTitle>
+                <CardDescription className="mt-2">
+                  {t('dashboardPage.demoCardDescription')}
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+                {t('dashboardPage.demoCardBadge')}
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-text-muted">
             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-              <p className="font-medium text-text-main">{t('dashboardPage.aiStartTitle')}</p>
-              <p className="mt-1">{t('dashboardPage.aiStartDescription')}</p>
+              <p className="font-medium text-text-main">
+                {t('dashboardPage.demoCardApiSpecsTitle')}
+              </p>
+              <p className="mt-1">{t('dashboardPage.demoCardApiSpecsDescription')}</p>
             </div>
             <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-              <p className="font-medium text-text-main">{t('dashboardPage.quickRequestTitle')}</p>
-              <p className="mt-1">{t('dashboardPage.quickRequestDescription')}</p>
+              <p className="font-medium text-text-main">
+                {t('dashboardPage.demoCardRequestsTitle')}
+              </p>
+              <p className="mt-1">{t('dashboardPage.demoCardRequestsDescription')}</p>
+            </div>
+            <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+              <p className="font-medium text-text-main">
+                {t('dashboardPage.demoCardRuntimeTitle')}
+              </p>
+              <p className="mt-1">{t('dashboardPage.demoCardRuntimeDescription')}</p>
+            </div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button
+                type="button"
+                onClick={() => void onCreateDemoProject()}
+                loading={isCreatingDemoProject}
+              >
+                <Sparkles className="h-4 w-4" />
+                {t('dashboardPage.demoCardAction')}
+              </Button>
+              <Button type="button" variant="ghost" onClick={onCreateProject}>
+                {t('dashboardPage.demoCardSecondaryAction')}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -458,13 +793,7 @@ function ProjectDashboardWelcome({
   );
 }
 
-function ProjectPreviewPanel({
-  project,
-  onEdit,
-}: {
-  project: ApiProject;
-  onEdit: () => void;
-}) {
+function ProjectPreviewPanel({ project, onEdit }: { project: ApiProject; onEdit: () => void }) {
   const t = useT('project');
   const [slowPreviewKey, setSlowPreviewKey] = useState('');
   const statsQuery = useProjectStats(project.id);
@@ -482,14 +811,10 @@ function ProjectPreviewPanel({
   const memberCount = stats?.member_count ?? 0;
   const createdAtLabel = formatProjectTimestamp(projectDetail.created_at);
   const hasResolvedReadiness = Boolean(stats);
-  const hasReadinessError =
-    !hasResolvedReadiness &&
-    Boolean(statsQuery.error);
+  const hasReadinessError = !hasResolvedReadiness && Boolean(statsQuery.error);
   const slowPreviewLoadKey = `${project.id}:${statsQuery.fetchStatus}:${statsQuery.dataUpdatedAt}`;
   const isSlowPreview =
-    !hasResolvedReadiness &&
-    !hasReadinessError &&
-    slowPreviewKey === slowPreviewLoadKey;
+    !hasResolvedReadiness && !hasReadinessError && slowPreviewKey === slowPreviewLoadKey;
   const nextStep = hasResolvedReadiness
     ? resolveDashboardNextStep({
         t,
@@ -502,11 +827,7 @@ function ProjectPreviewPanel({
     ? ([
         {
           label: t('dashboardPage.sourceOfTruthLabel'),
-          value:
-            apiSpecCount > 0
-              ? t('dashboardPage.sourceOfTruthReadyValue', { count: apiSpecCount })
-              : t('projectDetail.missing'),
-          tone: apiSpecCount > 0 ? 'ready' : 'pending',
+          tone: apiSpecCount > 0 ? 'ready' : 'setup',
           detail:
             apiSpecCount > 0
               ? t('dashboardPage.sourceOfTruthReadyDetail')
@@ -514,11 +835,7 @@ function ProjectPreviewPanel({
         },
         {
           label: t('dashboardPage.runtimeContextLabel'),
-          value:
-            environmentCount > 0
-              ? t('dashboardPage.runtimeContextReadyValue', { count: environmentCount })
-              : t('projectDetail.missing'),
-          tone: environmentCount > 0 ? 'ready' : 'pending',
+          tone: environmentCount > 0 ? 'ready' : 'setup',
           detail:
             environmentCount > 0
               ? t('dashboardPage.runtimeContextReadyDetail')
@@ -526,17 +843,13 @@ function ProjectPreviewPanel({
         },
         {
           label: t('dashboardPage.validationLabel'),
-          value:
-            apiSpecCount > 0 && environmentCount > 0
-              ? t('dashboardPage.validationReadyValue')
-              : t('dashboardPage.validationPendingValue'),
-          tone: apiSpecCount > 0 && environmentCount > 0 ? 'ready' : 'pending',
+          tone: apiSpecCount > 0 && environmentCount > 0 ? 'available' : 'setup',
           detail:
             apiSpecCount > 0 && environmentCount > 0
               ? t('dashboardPage.validationReadyDetail')
               : t('dashboardPage.validationPendingDetail'),
         },
-      ] as const)
+      ] as const satisfies readonly DashboardStatusItem[])
     : [];
 
   const handleRetryPreview = () => {
@@ -565,7 +878,9 @@ function ProjectPreviewPanel({
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <ProjectStatusBadge status={projectDetail.status} />
+                {projectDetail.status !== 1 ? (
+                  <Badge variant="outline">{t('projectForm.inactive')}</Badge>
+                ) : null}
               </div>
               <div>
                 <CardTitle className="text-2xl tracking-tight">{projectDetail.name}</CardTitle>
@@ -574,8 +889,7 @@ function ProjectPreviewPanel({
                     ? t('dashboardPage.previewSummaryFailed')
                     : isSlowPreview
                       ? t('dashboardPage.previewSummarySlow')
-                    : nextStep?.summary ??
-                        t('dashboardPage.previewSummaryLoading')}
+                      : (nextStep?.summary ?? t('dashboardPage.previewSummaryLoading'))}
                 </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-5 text-sm text-text-muted">
@@ -584,9 +898,7 @@ function ProjectPreviewPanel({
                   <span>{t('dashboardPage.createdAt', { value: createdAtLabel })}</span>
                 ) : null}
                 {typeof stats?.member_count === 'number' ? (
-                  <span>
-                    {t('dashboardPage.teamMembers', { count: memberCount })}
-                  </span>
+                  <span>{t('dashboardPage.teamMembers', { count: memberCount })}</span>
                 ) : null}
                 <Button
                   type="button"
@@ -602,17 +914,16 @@ function ProjectPreviewPanel({
 
             <div className="flex flex-wrap gap-2">
               {isSlowPreview && !nextStep && !hasReadinessError ? (
-                <Button asChild>
-                  <Link href={buildProjectCollectionsRoute(project.id)}>
-                    {t('projectDetail.quickRequest')}
-                  </Link>
-                </Button>
-              ) : null}
-              <Button asChild variant="outline">
-                <Link href={buildProjectDetailRoute(project.id)}>
-                  {t('projectDetail.openWorkspace')}
+                <Link
+                  href={buildProjectCollectionsRoute(project.id)}
+                  className={navigationLinkClassName}
+                >
+                  {t('projectDetail.quickRequest')}
                 </Link>
-              </Button>
+              ) : null}
+              <Link href={buildProjectDetailRoute(project.id)} className={navigationLinkClassName}>
+                {t('projectDetail.openWorkspace')}
+              </Link>
             </div>
           </div>
         </CardHeader>
@@ -631,7 +942,13 @@ function ProjectPreviewPanel({
                 <AlertDescription className="mt-2">
                   {t('dashboardPage.readinessLoadFailedDescription')}
                 </AlertDescription>
-                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={handleRetryPreview}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={handleRetryPreview}
+                >
                   {t('dashboardPage.retryPreview')}
                 </Button>
               </Alert>
@@ -655,7 +972,7 @@ function ProjectPreviewPanel({
                 ) : null}
               </>
             ) : (
-              readinessItems.map((item) => (
+              readinessItems.map(item => (
                 <div
                   key={item.label}
                   className="rounded-2xl border border-border/60 bg-background/70 p-4"
@@ -665,16 +982,7 @@ function ProjectPreviewPanel({
                       <p className="text-sm font-medium text-text-main">{item.label}</p>
                       <p className="mt-1 text-sm text-text-muted">{item.detail}</p>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className={
-                        item.tone === 'ready'
-                          ? 'border-emerald-200 bg-emerald-500/10 text-emerald-700'
-                          : 'border-amber-200 bg-amber-500/10 text-amber-700'
-                      }
-                    >
-                      {item.value}
-                    </Badge>
+                    <ProjectHomeStatusBadge tone={item.tone} />
                   </div>
                 </div>
               ))
@@ -690,20 +998,23 @@ function ProjectPreviewPanel({
               <div className="space-y-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium text-text-main">{t('dashboardPage.recentApiSpecsTitle')}</p>
+                    <p className="text-sm font-medium text-text-main">
+                      {t('dashboardPage.recentApiSpecsTitle')}
+                    </p>
                     <p className="mt-1 text-sm text-text-muted">
                       {t('dashboardPage.recentApiSpecsDescription')}
                     </p>
                   </div>
-                  <Button asChild variant="ghost" className="px-0">
-                    <Link href={buildProjectApiSpecsRoute(project.id)}>
-                      {t('projectDetail.reviewApiSpecs')}
-                    </Link>
-                  </Button>
+                  <Link
+                    href={buildProjectApiSpecsRoute(project.id)}
+                    className={navigationLinkClassName}
+                  >
+                    {t('projectDetail.reviewApiSpecs')}
+                  </Link>
                 </div>
 
                 <div className="space-y-2">
-                  {apiSpecs.slice(0, 3).map((spec) => (
+                  {apiSpecs.slice(0, 3).map(spec => (
                     <div
                       key={spec.id}
                       className="flex items-start justify-between gap-3 rounded-2xl border border-border/60 bg-background/80 px-4 py-3"
@@ -732,15 +1043,14 @@ function ProjectPreviewPanel({
                 ? t('dashboardPage.previewNeedsAttention')
                 : isSlowPreview && !nextStep
                   ? t('dashboardPage.moveNowRefineLater')
-                  : nextStep?.title ?? t('dashboardPage.loadingNextStep')}
+                  : (nextStep?.title ?? t('dashboardPage.loadingNextStep'))}
             </CardTitle>
             <CardDescription>
               {hasReadinessError
                 ? t('dashboardPage.previewNeedsAttentionDescription')
                 : isSlowPreview && !nextStep
                   ? t('dashboardPage.moveNowRefineLaterDescription')
-                : nextStep?.description ??
-                    t('dashboardPage.recommendationLoadingDescription')}
+                  : (nextStep?.description ?? t('dashboardPage.recommendationLoadingDescription'))}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -754,11 +1064,12 @@ function ProjectPreviewPanel({
                   <Button type="button" variant="outline" size="sm" onClick={handleRetryPreview}>
                     {t('dashboardPage.retryPreview')}
                   </Button>
-                  <Button asChild size="sm">
-                    <Link href={buildProjectDetailRoute(project.id)}>
-                      {t('projectDetail.openWorkspace')}
-                    </Link>
-                  </Button>
+                  <Link
+                    href={buildProjectDetailRoute(project.id)}
+                    className={navigationLinkClassName}
+                  >
+                    {t('projectDetail.openWorkspace')}
+                  </Link>
                 </div>
               </Alert>
             ) : !nextStep ? (
@@ -773,17 +1084,24 @@ function ProjectPreviewPanel({
                       {t('dashboardPage.recommendationSlowDescription')}
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <Button asChild size="sm">
-                        <Link href={buildProjectCollectionsRoute(project.id)}>
-                          {t('projectDetail.quickRequest')}
-                        </Link>
-                      </Button>
-                      <Button asChild size="sm" variant="outline">
-                        <Link href={buildProjectDetailRoute(project.id)}>
-                          {t('projectDetail.openWorkspace')}
-                        </Link>
-                      </Button>
-                      <Button type="button" variant="outline" size="sm" onClick={handleRetryPreview}>
+                      <Link
+                        href={buildProjectCollectionsRoute(project.id)}
+                        className={navigationLinkClassName}
+                      >
+                        {t('projectDetail.quickRequest')}
+                      </Link>
+                      <Link
+                        href={buildProjectDetailRoute(project.id)}
+                        className={navigationLinkClassName}
+                      >
+                        {t('projectDetail.openWorkspace')}
+                      </Link>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRetryPreview}
+                      >
                         {t('common.refresh')}
                       </Button>
                     </div>
@@ -804,39 +1122,26 @@ function ProjectPreviewPanel({
                     {t('dashboardPage.unlockTitle')}
                   </p>
                   <div className="mt-3 space-y-3">
-                    {nextStep.blockers.map((blocker) => (
+                    {nextStep.blockers.map(blocker => (
                       <div key={blocker.label} className="flex items-start justify-between gap-4">
                         <div>
                           <p className="text-sm font-medium text-text-main">{blocker.label}</p>
                           <p className="mt-1 text-sm text-text-muted">{blocker.detail}</p>
                         </div>
-                        <Badge
-                          variant="outline"
-                          className={
-                            blocker.tone === 'ready'
-                              ? 'border-emerald-200 bg-emerald-500/10 text-emerald-700'
-                              : 'border-amber-200 bg-amber-500/10 text-amber-700'
-                          }
-                        >
-                          {blocker.state}
-                        </Badge>
+                        <ProjectHomeStatusBadge tone={blocker.tone} />
                       </div>
                     ))}
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Button asChild>
-                    <Link href={nextStep.primaryHref}>
-                      {nextStep.primaryLabel}
-                    </Link>
-                  </Button>
+                  <Link href={nextStep.primaryHref} className={navigationLinkClassName}>
+                    {nextStep.primaryLabel}
+                  </Link>
                   {nextStep.secondaryHref && nextStep.secondaryLabel ? (
-                    <Button asChild variant="outline">
-                      <Link href={nextStep.secondaryHref}>
-                        {nextStep.secondaryLabel}
-                      </Link>
-                    </Button>
+                    <Link href={nextStep.secondaryHref} className={navigationLinkClassName}>
+                      {nextStep.secondaryLabel}
+                    </Link>
                   ) : null}
                 </div>
               </>
@@ -858,7 +1163,7 @@ function resolveDashboardNextStep({
   projectId: number | string;
   apiSpecCount: number;
   environmentCount: number;
-}) {
+}): DashboardNextStep {
   if (apiSpecCount === 0) {
     return {
       summary: t('dashboardPage.noApiSpecSummary'),
@@ -873,17 +1178,15 @@ function resolveDashboardNextStep({
         {
           label: t('dashboardPage.apiSourceLabel'),
           detail: t('dashboardPage.apiSourceMissingDetail'),
-          state: t('projectDetail.missing'),
-          tone: 'pending' as const,
+          tone: 'setup' as const,
         },
         {
           label: t('dashboardPage.runtimeSetupLabel'),
           detail: t('dashboardPage.runtimeSetupCanWait'),
-          state: t('dashboardPage.notStarted'),
-          tone: 'pending' as const,
+          tone: 'available' as const,
         },
       ],
-    };
+    } satisfies DashboardNextStep;
   }
 
   if (environmentCount === 0) {
@@ -900,17 +1203,15 @@ function resolveDashboardNextStep({
         {
           label: t('dashboardPage.executionTargetLabel'),
           detail: t('dashboardPage.executionTargetMissingDetail'),
-          state: t('projectDetail.missing'),
-          tone: 'pending' as const,
+          tone: 'setup' as const,
         },
         {
           label: t('dashboardPage.apiSourceLabel'),
           detail: t('dashboardPage.specBaselineReadyDetail', { count: apiSpecCount }),
-          state: t('projectDetail.ready'),
           tone: 'ready' as const,
         },
       ],
-    };
+    } satisfies DashboardNextStep;
   }
 
   return {
@@ -929,15 +1230,13 @@ function resolveDashboardNextStep({
       {
         label: t('dashboardPage.apiSourceLabel'),
         detail: t('dashboardPage.apiSourceReadyDetail'),
-        state: t('projectDetail.ready'),
         tone: 'ready' as const,
       },
       {
         label: t('dashboardPage.runtimeSetupLabel'),
         detail: t('dashboardPage.runtimeSetupReadyDetail', { count: environmentCount }),
-        state: t('projectDetail.ready'),
         tone: 'ready' as const,
       },
     ],
-  };
+  } satisfies DashboardNextStep;
 }

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   ArrowLeft,
   Boxes,
@@ -372,6 +374,94 @@ function CodeBlock({
     <pre className="overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs leading-6 text-slate-100">
       <code>{value}</code>
     </pre>
+  );
+}
+
+function MarkdownPreview({
+  value,
+  emptyLabel,
+}: {
+  value?: string;
+  emptyLabel: string;
+}) {
+  if (!value?.trim()) {
+    return (
+      <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+        {emptyLabel}
+      </div>
+    );
+  }
+
+  return (
+    <div className="markdown-content rounded-2xl border border-border/60 bg-background/80 p-5">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          a: ({ className, ...props }) => (
+            <a
+              className={cn(
+                'font-medium text-primary underline-offset-4 hover:text-primary-deep hover:underline',
+                className
+              )}
+              {...props}
+            />
+          ),
+          code: ({ className, children, ...props }) => {
+            const isInlineCode = !className;
+
+            if (isInlineCode) {
+              return (
+                <code
+                  className="rounded bg-slate-950/8 px-1.5 py-0.5 font-mono text-[0.925em] text-text-main"
+                  {...props}
+                >
+                  {children}
+                </code>
+              );
+            }
+
+            return (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children, ...props }) => (
+            <pre
+              className="overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs leading-6 text-slate-100"
+              {...props}
+            >
+              {children}
+            </pre>
+          ),
+          table: ({ className, ...props }) => (
+            <div className="overflow-x-auto">
+              <table
+                className={cn('min-w-full border-collapse text-sm text-text-main', className)}
+                {...props}
+              />
+            </div>
+          ),
+          th: ({ className, ...props }) => (
+            <th
+              className={cn(
+                'border border-border/60 bg-muted/40 px-3 py-2 text-left font-semibold',
+                className
+              )}
+              {...props}
+            />
+          ),
+          td: ({ className, ...props }) => (
+            <td
+              className={cn('border border-border/60 px-3 py-2 align-top', className)}
+              {...props}
+            />
+          ),
+        }}
+      >
+        {value}
+      </ReactMarkdown>
+    </div>
   );
 }
 
@@ -1500,6 +1590,9 @@ export function TestCaseManagementPage({
   const [apiSpecFilter, setApiSpecFilter] = useState('all');
   const [envFilter, setEnvFilter] = useState('all');
   const [selectedTestCaseId, setSelectedTestCaseId] = useState<number | string | null>(null);
+  const [suppressedSelectedTestCaseId, setSuppressedSelectedTestCaseId] = useState<
+    number | string | null
+  >(null);
   const [detailTab, setDetailTab] = useState<DetailTab>('overview');
   const [historyStatus, setHistoryStatus] = useState<HistoryFilterStatus>('all');
   const [historyPage, setHistoryPage] = useState(1);
@@ -1539,10 +1632,23 @@ export function TestCaseManagementPage({
   const projectRole = memberRoleQuery.data?.role;
   const canWrite = projectRole ? WRITE_ROLES.includes(projectRole) : false;
   const canCreate = canWrite && apiSpecs.length > 0;
+  const selectableTestCases =
+    suppressedSelectedTestCaseId === null
+      ? testCases
+      : testCases.filter(
+          (testCase) => String(testCase.id) !== String(suppressedSelectedTestCaseId)
+        );
+  const effectiveSelectedTestCaseId =
+    selectedTestCaseId !== null &&
+    suppressedSelectedTestCaseId !== null &&
+    String(selectedTestCaseId) === String(suppressedSelectedTestCaseId)
+      ? null
+      : selectedTestCaseId;
   const resolvedSelectedTestCaseId =
-    selectedTestCaseId !== null && testCases.some((testCase) => testCase.id === selectedTestCaseId)
-      ? selectedTestCaseId
-      : testCases[0]?.id ?? null;
+    effectiveSelectedTestCaseId !== null &&
+    selectableTestCases.some((testCase) => testCase.id === effectiveSelectedTestCaseId)
+      ? effectiveSelectedTestCaseId
+      : selectableTestCases[0]?.id ?? null;
   const isImplicitSelection = resolvedSelectedTestCaseId !== selectedTestCaseId;
   const effectiveDetailTab: DetailTab = isImplicitSelection ? 'overview' : detailTab;
   const effectiveHistoryStatus: HistoryFilterStatus = isImplicitSelection ? 'all' : historyStatus;
@@ -1575,7 +1681,7 @@ export function TestCaseManagementPage({
   const runHistory = runHistoryQuery.data?.items ?? EMPTY_RUNS;
   const activeTestCase =
     activeTestCaseQuery.data ??
-    testCases.find((testCase) => testCase.id === resolvedSelectedTestCaseId) ??
+    selectableTestCases.find((testCase) => testCase.id === resolvedSelectedTestCaseId) ??
     null;
   const formTarget = formTargetQuery.data ?? null;
 
@@ -1727,20 +1833,31 @@ export function TestCaseManagementPage({
       return;
     }
 
+    const deletedId = deleteTarget.id;
+    const isDeletingSelectedTestCase =
+      resolvedSelectedTestCaseId !== null &&
+      String(resolvedSelectedTestCaseId) === String(deletedId);
+    const fallbackTestCaseId =
+      selectableTestCases.find((testCase) => String(testCase.id) !== String(deletedId))?.id ??
+      null;
     const shouldStepBackPage = testCases.length === 1 && page > 1;
 
     try {
-      await deleteTestCaseMutation.mutateAsync(deleteTarget.id);
-      setDeleteTarget(null);
-
-      if (resolvedSelectedTestCaseId === deleteTarget.id) {
-        setSelectedTestCaseId(null);
+      if (isDeletingSelectedTestCase) {
+        setSuppressedSelectedTestCaseId(deletedId);
       }
+
+      await deleteTestCaseMutation.mutateAsync(deletedId);
+      setDeleteTarget(null);
+      setSelectedTestCaseId(fallbackTestCaseId);
 
       if (shouldStepBackPage) {
         setPage((currentPage) => currentPage - 1);
       }
     } catch {
+      if (isDeletingSelectedTestCase) {
+        setSuppressedSelectedTestCaseId(null);
+      }
       // Global HTTP error handling already surfaces failure feedback.
     }
   };
@@ -2278,10 +2395,13 @@ export function TestCaseManagementPage({
                   </div>
 
                   {activeTestCase.description ? (
-                    <Alert>
-                      <AlertTitle>{t('common.description')}</AlertTitle>
-                      <AlertDescription>{activeTestCase.description}</AlertDescription>
-                    </Alert>
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium">{t('common.description')}</div>
+                      <MarkdownPreview
+                        value={activeTestCase.description}
+                        emptyLabel={t('common.noDescriptionProvided')}
+                      />
+                    </div>
                   ) : null}
 
                     <Tabs

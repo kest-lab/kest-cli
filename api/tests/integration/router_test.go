@@ -5,8 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/kest-labs/kest/api/internal/infra/router"
 	"github.com/gin-gonic/gin"
+
+	"github.com/kest-labs/kest/api/internal/infra/router"
 )
 
 func init() {
@@ -495,6 +496,36 @@ func TestRoute_WhereUUID(t *testing.T) {
 	engine.ServeHTTP(w, req)
 	if w.Code != http.StatusNotFound {
 		t.Errorf("Expected 404 for invalid UUID, got %d", w.Code)
+	}
+}
+
+func TestRoute_WhereUUIDOrNumber(t *testing.T) {
+	engine := gin.New()
+	r := router.New(engine)
+
+	r.GET("/history/:hid", func(c *gin.Context) {
+		c.String(200, "history:"+c.Param("hid"))
+	}).WhereUUIDOrNumber("hid")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/history/123", nil)
+	engine.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected 200 for numeric legacy ID, got %d", w.Code)
+	}
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/history/550e8400-e29b-41d4-a716-446655440000", nil)
+	engine.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected 200 for UUID ID, got %d", w.Code)
+	}
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/history/not-a-valid-id", nil)
+	engine.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Errorf("Expected 404 for invalid compatible ID, got %d", w.Code)
 	}
 }
 

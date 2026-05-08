@@ -3,12 +3,12 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Bell,
-  LayoutPanelTop,
-  LogOut,
-} from 'lucide-react';
+import { Bell, Command, HelpCircle, LayoutPanelTop, LogOut, Settings } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/common';
+import {
+  OPEN_COMMAND_PALETTE_EVENT,
+  OPEN_HELP_CENTER_EVENT,
+} from '@/components/features/project/project-onboarding-shell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,12 +20,17 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ROUTES, buildProjectInviteRoute } from '@/constants/routes';
+import { useMyProjectInvitations } from '@/hooks/use-project-invitations';
 import { useLogout } from '@/hooks/use-auth';
 import { usePendingProjectInvitations } from '@/hooks/use-project-invitations';
 import { useT } from '@/i18n/client';
+import type { ScopedTranslations } from '@/i18n/shared';
 import { useAuthStore } from '@/store/auth-store';
 import { formatDate } from '@/utils';
 
@@ -34,49 +39,37 @@ const buildInitials = (name: string) =>
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || '')
+    .map(part => part[0]?.toUpperCase() || '')
     .join('') || 'U';
+
+const getInvitationRoleLabel = (
+  t: ScopedTranslations<'project'>,
+  role: 'admin' | 'read' | 'write'
+) => {
+  switch (role) {
+    case 'admin':
+      return t('roles.admin');
+    case 'write':
+      return t('roles.write');
+    case 'read':
+      return t('roles.read');
+    default:
+      return t('roles.unknown');
+  }
+};
 
 export function ProjectTopbar() {
   const t = useT('project');
   const router = useRouter();
   const logout = useLogout();
   const user = useAuthStore.use.user();
-  const isAuthenticated = useAuthStore.use.isAuthenticated();
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const closeNotificationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const receivedInvitationsQuery = useMyProjectInvitations();
 
   const displayName = user?.nickname || user?.username || user?.email || 'User';
   const initials = useMemo(() => buildInitials(displayName), [displayName]);
-  const pendingInvitationsQuery = usePendingProjectInvitations(isAuthenticated);
-  const pendingInvitations = pendingInvitationsQuery.data ?? [];
-  const hasPendingInvitations = pendingInvitations.length > 0;
-
-  useEffect(() => {
-    return () => {
-      if (closeNotificationTimerRef.current) {
-        clearTimeout(closeNotificationTimerRef.current);
-      }
-    };
-  }, []);
-
-  const openNotifications = () => {
-    if (closeNotificationTimerRef.current) {
-      clearTimeout(closeNotificationTimerRef.current);
-      closeNotificationTimerRef.current = null;
-    }
-    setIsNotificationOpen(true);
-  };
-
-  const scheduleCloseNotifications = () => {
-    if (closeNotificationTimerRef.current) {
-      clearTimeout(closeNotificationTimerRef.current);
-    }
-    closeNotificationTimerRef.current = setTimeout(() => {
-      setIsNotificationOpen(false);
-      closeNotificationTimerRef.current = null;
-    }, 120);
-  };
+  const pendingInvitations = receivedInvitationsQuery.data ?? [];
+  const pendingInvitationCount = pendingInvitations.length;
+  const invitationPreview = pendingInvitations.slice(0, 3);
 
   const handleLogout = () => {
     logout();
@@ -97,114 +90,161 @@ export function ProjectTopbar() {
       </div>
 
       <div className="flex items-center gap-2">
-        <LanguageSwitcher />
-
-        <Popover open={isNotificationOpen} onOpenChange={setIsNotificationOpen}>
-          <PopoverTrigger asChild>
+        <Tooltip delayDuration={300}>
+          <TooltipTrigger asChild>
             <Button
-              variant="ghost"
-              isIcon
-              className="relative h-9 w-9 rounded-full"
-              onMouseEnter={openNotifications}
-              onMouseLeave={scheduleCloseNotifications}
-              onFocus={openNotifications}
-              onBlur={scheduleCloseNotifications}
+              type="button"
+              variant="outline"
+              size="sm"
+              noScale
+              className="hidden rounded-full border-border/60 px-3 text-text-muted md:inline-flex"
+              data-onboarding="command-palette"
+              onClick={() => {
+                window.dispatchEvent(new Event(OPEN_COMMAND_PALETTE_EVENT));
+              }}
             >
-              <Bell className="h-4 w-4 text-text-muted" />
-              {hasPendingInvitations ? (
-                <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-bg-surface bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground">
-                  {pendingInvitations.length > 9 ? '9+' : pendingInvitations.length}
-                </span>
-              ) : null}
-              <span className="sr-only">{t('topbar.notifications')}</span>
+              <Command className="h-3.5 w-3.5" />
+              <span>{t('topbar.commandMenu')}</span>
+              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-[0.18em]">
+                Cmd+K
+              </span>
             </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="end"
-            className="w-[min(calc(100vw-2rem),22rem)] rounded-xl border bg-bg-surface p-0 shadow-premium"
-            onMouseEnter={openNotifications}
-            onMouseLeave={scheduleCloseNotifications}
-            onOpenAutoFocus={event => event.preventDefault()}
-          >
-            <div className="border-b border-border/60 px-4 py-3">
-              <div className="text-sm font-semibold text-text-main">
-                {t('topbar.notifications')}
-              </div>
-              <div className="mt-0.5 text-xs text-text-muted">
-                {hasPendingInvitations
-                  ? t('topbar.pendingInvitationsCount', { count: pendingInvitations.length })
-                  : t('topbar.noPendingInvitations')}
-              </div>
-            </div>
-            <div className="max-h-96 overflow-y-auto p-2">
-              {pendingInvitationsQuery.isLoading ? (
-                <div className="space-y-2 p-2">
-                  {Array.from({ length: 2 }).map((_, index) => (
-                    <div key={index} className="h-16 animate-pulse rounded-lg bg-muted/50" />
-                  ))}
-                </div>
-              ) : hasPendingInvitations ? (
-                <div className="space-y-1">
-                  {pendingInvitations.map(invitation => (
-                    <Link
-                      key={invitation.id}
-                      href={buildProjectInviteRoute(invitation.slug)}
-                      className="block rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-primary/5"
-                    >
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-8 w-8 border border-border/60">
-                          <AvatarImage src={invitation.inviter_avatar} />
-                          <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                            {buildInitials(invitation.inviter_name || invitation.inviter_email)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium text-text-main">
-                            {t('topbar.invitedByToProject', {
-                              inviter: invitation.inviter_name,
-                              project: invitation.project_name,
-                            })}
-                          </div>
-                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-muted">
-                            <span>{t(`roles.${invitation.role}`)}</span>
-                            <span>{formatDate(invitation.created_at, 'YYYY-MM-DD HH:mm')}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="px-3 py-8 text-center text-sm text-text-muted">
-                  {t('topbar.noPendingInvitations')}
-                </div>
-              )}
-            </div>
-          </PopoverContent>
-        </Popover>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{t('topbar.commandMenuHint')}</p>
+          </TooltipContent>
+        </Tooltip>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <Tooltip delayDuration={300}>
+          <TooltipTrigger asChild>
             <Button
+              type="button"
               variant="ghost"
               isIcon
               noScale
-              className="h-9 w-9 overflow-hidden rounded-full border border-border/60"
+              className="h-9 w-9 rounded-full"
+              data-onboarding="help-button"
+              aria-label={t('topbar.help')}
+              onClick={() => {
+                window.dispatchEvent(new Event(OPEN_HELP_CENTER_EVENT));
+              }}
             >
-              <Avatar className="h-full w-full">
-                <AvatarImage src={user?.avatar} />
-              <AvatarFallback className="bg-primary/10 text-primary">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <span className="sr-only">{t('topbar.profile')}</span>
+              <HelpCircle className="h-4 w-4 text-text-muted" />
+              <span className="sr-only">{t('topbar.help')}</span>
             </Button>
-          </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{t('topbar.helpHint')}</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <LanguageSwitcher showTooltip />
+
+        <DropdownMenu>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  isIcon
+                  noScale
+                  className="relative h-9 w-9 rounded-full"
+                  aria-label={t('topbar.notifications')}
+                >
+                  <Bell className="h-4 w-4 text-text-muted" />
+                  {pendingInvitationCount > 0 ? (
+                    <span className="absolute right-1.5 top-1.5 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                      {pendingInvitationCount > 9 ? '9+' : pendingInvitationCount}
+                    </span>
+                  ) : null}
+                  <span className="sr-only">{t('topbar.notifications')}</span>
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{t('topbar.notifications')}</p>
+            </TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent align="end" className="w-72 rounded-xl p-1 shadow-premium">
+            <DropdownMenuLabel>{t('topbar.notifications')}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {receivedInvitationsQuery.isError ? (
+              <div className="px-2 py-3 text-sm text-text-muted">
+                {t('topbar.notificationsLoadFailed')}
+              </div>
+            ) : invitationPreview.length === 0 ? (
+              <div className="px-2 py-3 text-sm text-text-muted">
+                {t('topbar.notificationsEmpty')}
+              </div>
+            ) : (
+              <>
+                <div className="px-2 py-2 text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+                  {t('topbar.pendingInvitations', { count: pendingInvitationCount })}
+                </div>
+                {invitationPreview.map(invitation => (
+                  <DropdownMenuItem
+                    key={invitation.id}
+                    asChild
+                    className="cursor-pointer rounded-lg"
+                  >
+                    <Link href={buildProjectInviteRoute(invitation.slug)}>
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">{invitation.project_name}</div>
+                        <div className="truncate text-xs text-text-muted">
+                          {invitation.project_slug} · {getInvitationRoleLabel(t, invitation.role)}
+                        </div>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  asChild
+                  className="cursor-pointer rounded-lg text-primary focus:text-primary"
+                >
+                  <Link href={ROUTES.CONSOLE.PROJECTS}>{t('topbar.reviewInvitations')}</Link>
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  isIcon
+                  noScale
+                  className="h-9 w-9 overflow-hidden rounded-full border border-border/60"
+                  aria-label={t('topbar.profile')}
+                >
+                  <Avatar className="h-full w-full">
+                    <AvatarImage src={user?.avatar} />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="sr-only">{t('topbar.profile')}</span>
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{t('topbar.profile')}</p>
+            </TooltipContent>
+          </Tooltip>
           <DropdownMenuContent align="end" className="w-56 rounded-xl p-1 shadow-premium">
-            <div className="px-2 py-1.5 text-xs font-medium uppercase tracking-wider text-text-muted">
+            <DropdownMenuLabel className="px-2 py-1.5 text-xs font-medium uppercase tracking-wider text-text-muted">
               {displayName}
-            </div>
-            <div className="my-1 h-px bg-border/60" />
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
+              <Link href={ROUTES.CONSOLE.SETTINGS}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>{t('topbar.accountSettings')}</span>
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="cursor-pointer rounded-lg text-destructive focus:bg-destructive/10"
               onClick={handleLogout}

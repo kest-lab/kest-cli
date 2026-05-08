@@ -1,0 +1,30 @@
+---
+title: CLI Sync
+description: Connect local Kest CLI activity to the platform API.
+---
+
+# CLI Sync
+
+Kest supports syncing local CLI output back into a platform project.
+
+## Flow
+
+1. Create a project in the platform.
+2. Generate a project CLI token with `POST /projects/{id}/cli-tokens`.
+3. Configure the CLI with the platform URL, token, and target project ID.
+4. Push local API specs to `POST /projects/{id}/cli/spec-sync`.
+5. Optionally push request history to `POST /projects/{id}/cli/history-sync`.
+
+## Important constraints
+
+- CLI tokens are project-scoped.
+- The URL project ID and request body `project_id` must match when `project_id` is present.
+- Sync endpoints are designed for automation and should not reuse a browser JWT.
+
+## Config example
+
+```yaml
+platform_url: https://api.kest.dev/v1
+platform_token: kest_pat_...
+platform_project_id: "12"
+```

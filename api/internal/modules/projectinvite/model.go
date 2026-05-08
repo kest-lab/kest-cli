@@ -7,32 +7,34 @@ import (
 )
 
 const (
-	InvitationStatusActive  = "active"
-	InvitationStatusRevoked = "revoked"
-	InvitationStatusExpired = "expired"
-	InvitationStatusUsedUp  = "used_up"
+	InvitationStatusActive   = "active"
+	InvitationStatusRejected = "rejected"
+	InvitationStatusRevoked  = "revoked"
+	InvitationStatusExpired  = "expired"
+	InvitationStatusUsedUp   = "used_up"
 )
 
 const defaultInvitationValidity = 7 * 24 * time.Hour
 
 // ProjectInvitationPO stores shareable project invitation links.
 type ProjectInvitationPO struct {
-	ID           string `gorm:"primaryKey"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
-	ProjectID    string         `gorm:"not null;index"`
-	TokenHash    string         `gorm:"size:64;not null;uniqueIndex"`
-	TokenPrefix  string         `gorm:"size:32;not null;index"`
-	Slug         string         `gorm:"size:64;not null;uniqueIndex"`
-	Role         string         `gorm:"size:20;not null"`
-	CreatedBy    string         `gorm:"not null;index"`
-	TargetUserID string         `gorm:"index"`
-	Status       string         `gorm:"size:20;not null;index"`
-	MaxUses      int            `gorm:"not null;default:1"`
-	UsedCount    int            `gorm:"not null;default:0"`
-	ExpiresAt    *time.Time
-	LastUsedAt   *time.Time
+	ID            string `gorm:"primaryKey"`
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	DeletedAt     gorm.DeletedAt           `gorm:"index"`
+	ProjectID     string                   `gorm:"not null;index"`
+	TokenHash     string                   `gorm:"size:64;not null;uniqueIndex"`
+	TokenPrefix   string                   `gorm:"size:32;not null;index"`
+	Slug          string                   `gorm:"size:64;not null;uniqueIndex"`
+	Role          string                   `gorm:"size:20;not null"`
+	CreatedBy     string                   `gorm:"not null;index"`
+	InvitedUserID *string                  `gorm:"index"`
+	InvitedUser   *ProjectInvitationUserPO `gorm:"foreignKey:InvitedUserID;references:ID"`
+	Status        string                   `gorm:"size:20;not null;index"`
+	MaxUses       int                      `gorm:"not null;default:1"`
+	UsedCount     int                      `gorm:"not null;default:0"`
+	ExpiresAt     *time.Time
+	LastUsedAt    *time.Time
 }
 
 func (ProjectInvitationPO) TableName() string {
@@ -41,20 +43,21 @@ func (ProjectInvitationPO) TableName() string {
 
 // ProjectInvitation is the service-layer invitation entity.
 type ProjectInvitation struct {
-	ID           string     `json:"id"`
-	ProjectID    string     `json:"project_id"`
-	TokenPrefix  string     `json:"token_prefix"`
-	Slug         string     `json:"slug"`
-	Role         string     `json:"role"`
-	CreatedBy    string     `json:"created_by"`
-	TargetUserID string     `json:"target_user_id,omitempty"`
-	Status       string     `json:"status"`
-	MaxUses      int        `json:"max_uses"`
-	UsedCount    int        `json:"used_count"`
-	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
-	LastUsedAt   *time.Time `json:"last_used_at,omitempty"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
+	ID            string                 `json:"id"`
+	ProjectID     string                 `json:"project_id"`
+	TokenPrefix   string                 `json:"token_prefix"`
+	Slug          string                 `json:"slug"`
+	Role          string                 `json:"role"`
+	CreatedBy     string                 `json:"created_by"`
+	InvitedUserID *string                `json:"invited_user_id,omitempty"`
+	InvitedUser   *ProjectInvitationUser `json:"invited_user,omitempty"`
+	Status        string                 `json:"status"`
+	MaxUses       int                    `json:"max_uses"`
+	UsedCount     int                    `json:"used_count"`
+	ExpiresAt     *time.Time             `json:"expires_at,omitempty"`
+	LastUsedAt    *time.Time             `json:"last_used_at,omitempty"`
+	CreatedAt     time.Time              `json:"created_at"`
+	UpdatedAt     time.Time              `json:"updated_at"`
 }
 
 // ProjectSummary is a lightweight project projection used by public invite pages.
@@ -64,21 +67,20 @@ type ProjectSummary struct {
 	Slug string
 }
 
-// InvitationUserSummary is a lightweight user projection for invite notifications.
-type InvitationUserSummary struct {
-	ID       string
-	Name     string
-	Email    string
-	Avatar   string
-	Username string
-	Nickname string
+type ProjectInvitationUserPO struct {
+	ID       string `gorm:"primaryKey"`
+	Username string `gorm:"column:username"`
+	Email    string `gorm:"column:email"`
 }
 
-// PendingProjectInvitation is a notification-ready invitation projection.
-type PendingProjectInvitation struct {
-	Invitation *ProjectInvitation
-	Project    *ProjectSummary
-	Inviter    *InvitationUserSummary
+func (ProjectInvitationUserPO) TableName() string {
+	return "users"
+}
+
+type ProjectInvitationUser struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
 }
 
 func (po *ProjectInvitationPO) toDomain() *ProjectInvitation {
@@ -87,20 +89,21 @@ func (po *ProjectInvitationPO) toDomain() *ProjectInvitation {
 	}
 
 	return &ProjectInvitation{
-		ID:           po.ID,
-		ProjectID:    po.ProjectID,
-		TokenPrefix:  po.TokenPrefix,
-		Slug:         po.Slug,
-		Role:         po.Role,
-		CreatedBy:    po.CreatedBy,
-		TargetUserID: po.TargetUserID,
-		Status:       po.Status,
-		MaxUses:      po.MaxUses,
-		UsedCount:    po.UsedCount,
-		ExpiresAt:    po.ExpiresAt,
-		LastUsedAt:   po.LastUsedAt,
-		CreatedAt:    po.CreatedAt,
-		UpdatedAt:    po.UpdatedAt,
+		ID:            po.ID,
+		ProjectID:     po.ProjectID,
+		TokenPrefix:   po.TokenPrefix,
+		Slug:          po.Slug,
+		Role:          po.Role,
+		CreatedBy:     po.CreatedBy,
+		InvitedUserID: po.InvitedUserID,
+		InvitedUser:   po.InvitedUser.toDomain(),
+		Status:        po.Status,
+		MaxUses:       po.MaxUses,
+		UsedCount:     po.UsedCount,
+		ExpiresAt:     po.ExpiresAt,
+		LastUsedAt:    po.LastUsedAt,
+		CreatedAt:     po.CreatedAt,
+		UpdatedAt:     po.UpdatedAt,
 	}
 }
 
@@ -110,19 +113,31 @@ func newProjectInvitationPO(invitation *ProjectInvitation, tokenHash string) *Pr
 	}
 
 	return &ProjectInvitationPO{
-		ID:           invitation.ID,
-		ProjectID:    invitation.ProjectID,
-		TokenHash:    tokenHash,
-		TokenPrefix:  invitation.TokenPrefix,
-		Slug:         invitation.Slug,
-		Role:         invitation.Role,
-		CreatedBy:    invitation.CreatedBy,
-		TargetUserID: invitation.TargetUserID,
-		Status:       invitation.Status,
-		MaxUses:      invitation.MaxUses,
-		UsedCount:    invitation.UsedCount,
-		ExpiresAt:    invitation.ExpiresAt,
-		LastUsedAt:   invitation.LastUsedAt,
+		ID:            invitation.ID,
+		ProjectID:     invitation.ProjectID,
+		TokenHash:     tokenHash,
+		TokenPrefix:   invitation.TokenPrefix,
+		Slug:          invitation.Slug,
+		Role:          invitation.Role,
+		CreatedBy:     invitation.CreatedBy,
+		InvitedUserID: invitation.InvitedUserID,
+		Status:        invitation.Status,
+		MaxUses:       invitation.MaxUses,
+		UsedCount:     invitation.UsedCount,
+		ExpiresAt:     invitation.ExpiresAt,
+		LastUsedAt:    invitation.LastUsedAt,
+	}
+}
+
+func (po *ProjectInvitationUserPO) toDomain() *ProjectInvitationUser {
+	if po == nil {
+		return nil
+	}
+
+	return &ProjectInvitationUser{
+		ID:       po.ID,
+		Username: po.Username,
+		Email:    po.Email,
 	}
 }
 
@@ -131,6 +146,9 @@ func resolveInvitationStatus(invitation *ProjectInvitation, now time.Time) strin
 		return InvitationStatusExpired
 	}
 
+	if invitation.Status == InvitationStatusRejected {
+		return InvitationStatusRejected
+	}
 	if invitation.Status == InvitationStatusRevoked {
 		return InvitationStatusRevoked
 	}
