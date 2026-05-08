@@ -10,6 +10,7 @@ import type { CreateProjectInvitationRequest } from '@/types/project-invitation'
 
 export const projectInvitationKeys = {
   all: ['project-invitations'] as const,
+  pending: () => [...projectInvitationKeys.all, 'pending'] as const,
   project: (projectId: number | string) =>
     [...projectInvitationKeys.all, 'project', projectId] as const,
   list: (projectId: number | string) =>
@@ -23,6 +24,15 @@ export function useProjectInvitations(projectId?: number | string, enabled = tru
     queryKey: projectInvitationKeys.list(projectId ?? 'unknown'),
     queryFn: () => projectInvitationService.list(projectId as number | string),
     enabled: enabled && projectId !== undefined && projectId !== null && projectId !== '',
+  });
+}
+
+export function usePendingProjectInvitations(enabled = true) {
+  return useQuery({
+    queryKey: projectInvitationKeys.pending(),
+    queryFn: () => projectInvitationService.listPending(),
+    enabled,
+    staleTime: 30_000,
   });
 }
 
@@ -72,6 +82,7 @@ export function useAcceptProjectInvitation(slug: string) {
     mutationFn: () => projectInvitationService.accept(slug),
     onSuccess: result => {
       queryClient.invalidateQueries({ queryKey: projectInvitationKeys.detail(slug) });
+      queryClient.invalidateQueries({ queryKey: projectInvitationKeys.pending() });
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
       queryClient.invalidateQueries({ queryKey: projectKeys.projectStats(result.project_id) });
       queryClient.invalidateQueries({ queryKey: memberKeys.project(result.project_id) });
@@ -88,6 +99,7 @@ export function useRejectProjectInvitation(slug: string) {
     mutationFn: () => projectInvitationService.reject(slug),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectInvitationKeys.detail(slug) });
+      queryClient.invalidateQueries({ queryKey: projectInvitationKeys.pending() });
       toast.success(t.project('toasts.invitationRejected'));
     },
   });

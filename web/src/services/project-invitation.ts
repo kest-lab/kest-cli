@@ -2,6 +2,7 @@ import request from '@/http';
 import type {
   AcceptProjectInvitationResponse,
   CreateProjectInvitationRequest,
+  PendingProjectInvitation,
   ProjectInvitation,
   PublicProjectInvitation,
   RejectProjectInvitationResponse,
@@ -15,6 +16,9 @@ const normalizePayload = <T extends object>(payload: T) =>
 export const projectInvitationService = {
   list: (projectId: number | string) =>
     request.get<ProjectInvitation[]>(`/projects/${projectId}/invitations`),
+
+  listPending: () =>
+    request.get<PendingProjectInvitation[]>('/notifications/project-invitations'),
 
   create: (projectId: number | string, data: CreateProjectInvitationRequest) =>
     request.post<ProjectInvitation>(`/projects/${projectId}/invitations`, normalizePayload(data)),

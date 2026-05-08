@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/kest-labs/kest/api/internal/modules/member"
+	idpkg "github.com/kest-labs/kest/api/pkg/id"
 )
 
 var (
@@ -18,6 +19,7 @@ var (
 	ErrProjectInvitationInvalidRole   = errors.New("invalid project invitation role")
 	ErrProjectInvitationInvalidUses   = errors.New("max_uses must be greater than or equal to 0")
 	ErrProjectInvitationInvalidExpiry = errors.New("expires_at must be in the future")
+	ErrProjectInvitationInvalidTarget = errors.New("invalid project invitation target user")
 	ErrProjectInvitationExpired       = errors.New("project invitation has expired")
 	ErrProjectInvitationRevoked       = errors.New("project invitation has been revoked")
 	ErrProjectInvitationUsedUp        = errors.New("project invitation has no remaining uses")
@@ -32,6 +34,10 @@ type Service interface {
 		req *CreateProjectInvitationRequest,
 	) (*ProjectInvitationResponse, error)
 	ListInvitations(ctx context.Context, projectID string) ([]*ProjectInvitationResponse, error)
+	ListPendingInvitations(
+		ctx context.Context,
+		userID string,
+	) ([]*PendingProjectInvitationResponse, error)
 	RevokeInvitation(ctx context.Context, projectID, invitationID string) error
 	GetInvitationDetail(
 		ctx context.Context,
@@ -81,6 +87,15 @@ func (s *service) CreateInvitation(
 		return nil, ErrProjectInvitationInvalidUses
 	}
 
+	targetUserID := strings.TrimSpace(req.TargetUserID)
+	if targetUserID != "" {
+		normalizedTargetUserID, err := idpkg.Parse(targetUserID)
+		if err != nil {
+			return nil, ErrProjectInvitationInvalidTarget
+		}
+		targetUserID = normalizedTargetUserID
+	}
+
 	expiresAt, err := normalizeInvitationExpiry(req.ExpiresAt, now)
 	if err != nil {
 		return nil, err
@@ -92,14 +107,15 @@ func (s *service) CreateInvitation(
 	}
 
 	invitation := &ProjectInvitation{
-		ProjectID:   projectID,
-		TokenPrefix: tokenPrefix,
-		Slug:        rawToken,
-		Role:        role,
-		CreatedBy:   createdBy,
-		Status:      InvitationStatusActive,
-		MaxUses:     maxUses,
-		ExpiresAt:   expiresAt,
+		ProjectID:    projectID,
+		TokenPrefix:  tokenPrefix,
+		Slug:         rawToken,
+		Role:         role,
+		CreatedBy:    createdBy,
+		TargetUserID: targetUserID,
+		Status:       InvitationStatusActive,
+		MaxUses:      maxUses,
+		ExpiresAt:    expiresAt,
 	}
 
 	if err := s.repo.CreateInvitation(ctx, invitation, tokenHash); err != nil {
@@ -122,6 +138,31 @@ func (s *service) ListInvitations(
 	result := make([]*ProjectInvitationResponse, 0, len(invitations))
 	for _, invitation := range invitations {
 		result = append(result, toProjectInvitationResponse(invitation, now))
+	}
+	return result, nil
+}
+
+func (s *service) ListPendingInvitations(
+	ctx context.Context,
+	userID string,
+) ([]*PendingProjectInvitationResponse, error) {
+	userID = strings.TrimSpace(userID)
+	if userID == "" {
+		return []*PendingProjectInvitationResponse{}, nil
+	}
+
+	now := time.Now().UTC()
+	pendingInvitations, err := s.repo.ListPendingInvitationsForUser(ctx, userID, now)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*PendingProjectInvitationResponse, 0, len(pendingInvitations))
+	for _, pending := range pendingInvitations {
+		response := toPendingProjectInvitationResponse(pending, now)
+		if response != nil {
+			result = append(result, response)
+		}
 	}
 	return result, nil
 }
@@ -187,6 +228,9 @@ func (s *service) AcceptInvitation(
 	if err := validateInvitationCanBeAccepted(invitation, now); err != nil {
 		return nil, err
 	}
+	if invitation.TargetUserID != "" && invitation.TargetUserID != userID {
+		return nil, ErrProjectInvitationNotFound
+	}
 
 	if err := s.repo.AcceptInvitation(ctx, invitation, userID, now); err != nil {
 		return nil, err
@@ -205,7 +249,7 @@ func (s *service) AcceptInvitation(
 func (s *service) RejectInvitation(
 	ctx context.Context,
 	slug string,
-	_ string,
+	userID string,
 ) (*RejectProjectInvitationResponse, error) {
 	invitation, err := s.repo.GetInvitationBySlug(ctx, strings.TrimSpace(slug))
 	if err != nil {
@@ -213,6 +257,15 @@ func (s *service) RejectInvitation(
 	}
 	if invitation == nil {
 		return nil, ErrProjectInvitationNotFound
+	}
+	if invitation.TargetUserID != "" {
+		if invitation.TargetUserID != userID {
+			return nil, ErrProjectInvitationNotFound
+		}
+		invitation.Status = InvitationStatusRevoked
+		if err := s.repo.UpdateInvitation(ctx, invitation); err != nil {
+			return nil, err
+		}
 	}
 
 	return &RejectProjectInvitationResponse{Status: "rejected"}, nil

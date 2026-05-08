@@ -718,6 +718,9 @@ const messages: ProjectMessages = {
   },
   topbar: {
     notifications: 'Notifications',
+    pendingInvitationsCount: '{count} pending project invitation(s)',
+    noPendingInvitations: 'No pending project invitations',
+    invitedByToProject: '{inviter} invited you to {project}',
     profile: 'Profile',
     logout: 'Logout',
   },
@@ -880,6 +883,11 @@ const messages: ProjectMessages = {
     inviteDialogDescription:
       'Create a shareable project invite that grants a predefined role after the invited user logs in.',
     inviteDialogErrorTitle: 'Cannot generate invite link',
+    inviteRecipient: 'Recipient',
+    inviteRecipientPlaceholder: 'Search user to notify in the navbar',
+    inviteRecipientHelp:
+      'Optional. Pick a user to show this invitation under their navbar bell; leave empty for a share-only link.',
+    selectedInviteRecipient: 'Selected recipient',
     selectRole: 'Select role',
     maxUses: 'Max uses',
     maxUsesPlaceholder: '1',

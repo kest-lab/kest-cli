@@ -17,6 +17,7 @@ export interface ProjectInvitation {
   expires_at: string | null;
   last_used_at: string | null;
   created_by: string;
+  target_user_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -25,6 +26,7 @@ export interface CreateProjectInvitationRequest {
   role: ProjectInvitationRole;
   expires_at?: string;
   max_uses?: number;
+  target_user_id?: string;
 }
 
 export interface PublicProjectInvitation {
@@ -49,6 +51,24 @@ export interface AcceptProjectInvitationResponse {
 
 export interface RejectProjectInvitationResponse {
   status: 'rejected';
+}
+
+export interface PendingProjectInvitation {
+  id: string;
+  slug: string;
+  role: ProjectInvitationRole;
+  status: ProjectInvitationStatus;
+  invite_url: string;
+  project_id: string;
+  project_name: string;
+  project_slug: string;
+  inviter_id: string;
+  inviter_name: string;
+  inviter_email: string;
+  inviter_avatar?: string;
+  expires_at: string | null;
+  created_at: string;
+  remaining_uses: number | null;
 }
 
 export const PROJECT_INVITATION_ASSIGNABLE_ROLES: ProjectInvitationRole[] = [
