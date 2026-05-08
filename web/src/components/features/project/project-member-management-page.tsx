@@ -290,6 +290,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number |
   const membersQuery = useProjectMembers(projectId);
   const memberRoleQuery = useProjectMemberRole(projectId);
   const userSearchQuery = useUserSearch(deferredCandidateQuery, 20);
+  const inviteUserSearchQuery = useUserSearch(deferredInviteCandidateQuery, 20);
   const updateMemberMutation = useUpdateProjectMember(projectId);
   const deleteMemberMutation = useDeleteProjectMember(projectId);
   const invitationsQuery = useProjectInvitations(
@@ -478,7 +479,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number |
         role: inviteRole,
         max_uses: parsedMaxUses,
         expires_at: expiresAt,
-        target_user_id: selectedInviteCandidate?.id,
+        invited_user_id: selectedInviteCandidate?.id,
       });
       setGeneratedInvitation(invitation);
       setInviteDialogError(null);

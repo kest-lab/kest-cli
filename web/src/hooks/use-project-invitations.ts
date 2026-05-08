@@ -10,7 +10,6 @@ import type { CreateProjectInvitationRequest } from '@/types/project-invitation'
 
 export const projectInvitationKeys = {
   all: ['project-invitations'] as const,
-  pending: () => [...projectInvitationKeys.all, 'pending'] as const,
   project: (projectId: number | string) =>
     [...projectInvitationKeys.all, 'project', projectId] as const,
   list: (projectId: number | string) =>
@@ -25,15 +24,6 @@ export function useProjectInvitations(projectId?: number | string, enabled = tru
     queryKey: projectInvitationKeys.list(projectId ?? 'unknown'),
     queryFn: () => projectInvitationService.list(projectId as number | string),
     enabled: enabled && projectId !== undefined && projectId !== null && projectId !== '',
-  });
-}
-
-export function usePendingProjectInvitations(enabled = true) {
-  return useQuery({
-    queryKey: projectInvitationKeys.pending(),
-    queryFn: () => projectInvitationService.listPending(),
-    enabled,
-    staleTime: 30_000,
   });
 }
 

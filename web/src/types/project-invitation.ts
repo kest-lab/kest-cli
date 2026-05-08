@@ -24,7 +24,6 @@ export interface ProjectInvitation {
   expires_at: string | null;
   last_used_at: string | null;
   created_by: string;
-  target_user_id?: string;
   created_at: string;
   updated_at: string;
 }

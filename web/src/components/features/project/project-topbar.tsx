@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, Command, HelpCircle, LayoutPanelTop, LogOut, Settings } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/common';
@@ -28,7 +28,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ROUTES, buildProjectInviteRoute } from '@/constants/routes';
 import { useMyProjectInvitations } from '@/hooks/use-project-invitations';
 import { useLogout } from '@/hooks/use-auth';
-import { usePendingProjectInvitations } from '@/hooks/use-project-invitations';
 import { useT } from '@/i18n/client';
 import type { ScopedTranslations } from '@/i18n/shared';
 import { useAuthStore } from '@/store/auth-store';
