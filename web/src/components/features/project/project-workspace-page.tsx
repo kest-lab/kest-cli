@@ -1485,14 +1485,14 @@ function ApiSpecsWorkspaceSection({
                   </Alert>
                 ) : null}
 
-                <Card className="border-border/60">
+                <Card className="border-border-main">
                   <CardHeader>
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge
                             variant="outline"
-                            className="border-primary/20 bg-primary/10 text-primary"
+                            className="border-border-main bg-bg-subtle text-text-main"
                           >
                             {selectedSpec.method}
                           </Badge>
@@ -1547,7 +1547,7 @@ function ApiSpecsWorkspaceSection({
                 </Card>
 
                 <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-                  <Card className="min-w-0 border-border/60">
+                  <Card className="min-w-0 border-border-main">
                     <CardHeader>
                       <CardTitle>{t('apiSpecs.specSummary')}</CardTitle>
                       <CardDescription>{t('apiSpecs.specSummaryDescription')}</CardDescription>
@@ -1576,7 +1576,7 @@ function ApiSpecsWorkspaceSection({
                     </CardContent>
                   </Card>
 
-                  <Card className="min-w-0 border-border/60">
+                  <Card className="min-w-0 border-border-main">
                     <CardHeader>
                       <CardTitle>{t('apiSpecs.documentationSnapshot')}</CardTitle>
                       <CardDescription>
@@ -1585,7 +1585,7 @@ function ApiSpecsWorkspaceSection({
                     </CardHeader>
                     <CardContent className="min-w-0">
                       {docPreview ? (
-                        <pre className="min-w-0 max-h-[420px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+                        <pre className="min-w-0 max-h-[420px] overflow-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
                           {docPreview}
                         </pre>
                       ) : (
@@ -1599,7 +1599,7 @@ function ApiSpecsWorkspaceSection({
                   </Card>
                 </div>
 
-                <Card className="min-w-0 border-border/60">
+                <Card className="min-w-0 border-border-main">
                   <CardHeader>
                     <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                       <div className="space-y-1">
@@ -1635,7 +1635,7 @@ function ApiSpecsWorkspaceSection({
                   </CardHeader>
                   <CardContent className="min-w-0">
                     {generatedTestPreview ? (
-                      <pre className="min-w-0 max-h-[420px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+                      <pre className="min-w-0 max-h-[420px] overflow-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
                         {generatedTestPreview}
                       </pre>
                     ) : (
@@ -2203,7 +2203,7 @@ function EnvironmentsWorkspaceSection({
                 ) : environments.length === 0 ? (
                   <Card className="border-dashed border-border/70">
                     <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
                         <Globe className="h-6 w-6" />
                       </div>
                       <div className="space-y-2">
@@ -2269,7 +2269,7 @@ function EnvironmentsWorkspaceSection({
                               <Link
                                 key={environment.id}
                                 href={buildModuleHref(projectId, 'environments', environment.id)}
-                                className="block rounded-2xl border border-border/60 bg-background/70 p-4 transition-colors hover:border-primary/30 hover:bg-primary/5"
+                                className="block rounded-md border border-border-main bg-bg-canvas p-4 transition-colors hover:bg-bg-subtle"
                               >
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                   <div>
@@ -2312,7 +2312,7 @@ function EnvironmentsWorkspaceSection({
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
-                          <pre className="overflow-x-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+                          <pre className="overflow-x-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
                             <code>{`GET ${environmentsPath}
 POST ${environmentsPath}
 GET ${activeEnvironmentPath}
@@ -2327,14 +2327,14 @@ POST ${activeEnvironmentPath}/duplicate`}</code>
                 )
               ) : (
                 <div className="space-y-6">
-                  <Card className="border-border/60">
+                  <Card className="border-border-main">
                     <CardHeader>
                       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                         <div className="space-y-3">
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge
                               variant="outline"
-                              className="border-primary/20 bg-primary/10 text-primary"
+                              className="border-border-main bg-bg-subtle text-text-main"
                             >
                               {t('modules.environments.label')}
                             </Badge>
@@ -2591,14 +2591,14 @@ function CategoriesWorkspaceSection({
             />
           ) : (
             <div className="space-y-6">
-              <Card className="border-border/60">
+              <Card className="border-border-main">
                 <CardHeader>
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge
                           variant="outline"
-                          className="border-primary/20 bg-primary/10 text-primary"
+                          className="border-border-main bg-bg-subtle text-text-main"
                         >
                           {t('common.category')}
                         </Badge>
@@ -2636,7 +2636,7 @@ function CategoriesWorkspaceSection({
               </Card>
 
               <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
-                <Card className="border-border/60">
+                <Card className="border-border-main">
                   <CardHeader>
                     <CardTitle>{t('categories.categoryMetadata')}</CardTitle>
                     <CardDescription>{t('categories.categoryMetadataDescription')}</CardDescription>
@@ -2660,7 +2660,7 @@ function CategoriesWorkspaceSection({
                   </CardContent>
                 </Card>
 
-                <Card className="border-border/60">
+                <Card className="border-border-main">
                   <CardHeader>
                     <CardTitle>{t('categories.childCategories')}</CardTitle>
                     <CardDescription>{t('categories.childCategoriesDescription')}</CardDescription>
@@ -2676,7 +2676,7 @@ function CategoriesWorkspaceSection({
                       childCategories.map(child => (
                         <div
                           key={child.id}
-                          className="rounded-2xl border border-border/60 bg-background/70 p-4"
+                          className="rounded-md border border-border-main bg-bg-canvas p-4"
                         >
                           <p className="text-sm font-medium">{child.name}</p>
                           <p className="mt-1 text-xs text-text-muted">
@@ -2905,14 +2905,14 @@ function HistoryWorkspaceSection({
             />
           ) : (
             <div className="space-y-6">
-              <Card className="border-border/60">
+              <Card className="border-border-main">
                 <CardHeader>
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge
                           variant="outline"
-                          className="border-primary/20 bg-primary/10 text-primary"
+                          className="border-border-main bg-bg-subtle text-text-main"
                         >
                           {selectedHistory.entity_type}
                         </Badge>
@@ -2956,7 +2956,7 @@ function HistoryWorkspaceSection({
               </Card>
 
               <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-                <Card className="border-border/60">
+                <Card className="border-border-main">
                   <CardHeader>
                     <CardTitle>{t('history.metadata')}</CardTitle>
                     <CardDescription>{t('history.metadataDescription')}</CardDescription>
@@ -2983,13 +2983,13 @@ function HistoryWorkspaceSection({
                   </CardContent>
                 </Card>
 
-                <Card className="border-border/60">
+                <Card className="border-border-main">
                   <CardHeader>
                     <CardTitle>{t('history.recordedNote')}</CardTitle>
                     <CardDescription>{t('history.recordedNoteDescription')}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="rounded-2xl border border-border/60 bg-background/70 p-4 text-sm leading-6 text-text-muted">
+                    <div className="rounded-md border border-border-main bg-bg-canvas p-4 text-sm leading-6 text-text-muted">
                       {selectedHistory.message || t('history.noMessageRecorded')}
                     </div>
                   </CardContent>
@@ -2998,7 +2998,7 @@ function HistoryWorkspaceSection({
 
               {selectedCLIRequest && selectedCLIRequestResponse ? (
                 <div className="grid gap-6 xl:grid-cols-2">
-                  <Card className="border-border/60">
+                  <Card className="border-border-main">
                     <CardHeader>
                       <CardTitle>{t('common.request')}</CardTitle>
                       <CardDescription>{t('history.cliRequestDescription')}</CardDescription>
@@ -3018,10 +3018,10 @@ function HistoryWorkspaceSection({
                           {getHistoryString(selectedCLIRequest.transport) || t('common.unknown')}
                         </DetailField>
                       </div>
-                      <pre className="max-h-[280px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+                      <pre className="max-h-[280px] overflow-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
                         {formatJson(selectedCLIRequest.headers)}
                       </pre>
-                      <pre className="max-h-[280px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+                      <pre className="max-h-[280px] overflow-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
                         {typeof selectedCLIRequest.body === 'string'
                           ? selectedCLIRequest.body
                           : formatJson(selectedCLIRequest.body)}
@@ -3029,7 +3029,7 @@ function HistoryWorkspaceSection({
                     </CardContent>
                   </Card>
 
-                  <Card className="border-border/60">
+                  <Card className="border-border-main">
                     <CardHeader>
                       <CardTitle>{t('common.response')}</CardTitle>
                       <CardDescription>{t('history.cliResponseDescription')}</CardDescription>
@@ -3045,10 +3045,10 @@ function HistoryWorkspaceSection({
                             t('common.unknown')}
                         </DetailField>
                       </div>
-                      <pre className="max-h-[280px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+                      <pre className="max-h-[280px] overflow-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
                         {formatJson(selectedCLIRequestResponse.headers)}
                       </pre>
-                      <pre className="max-h-[280px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+                      <pre className="max-h-[280px] overflow-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
                         {typeof selectedCLIRequestResponse.body === 'string'
                           ? selectedCLIRequestResponse.body
                           : formatJson(selectedCLIRequestResponse.body)}
@@ -3061,7 +3061,7 @@ function HistoryWorkspaceSection({
               {selectedCLIRun ? (
                 <>
                   <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-                    <Card className="border-border/60">
+                    <Card className="border-border-main">
                       <CardHeader>
                         <CardTitle>{t('history.cliRunSummary')}</CardTitle>
                         <CardDescription>{t('history.cliRunSummaryDescription')}</CardDescription>
@@ -3089,13 +3089,13 @@ function HistoryWorkspaceSection({
                       </CardContent>
                     </Card>
 
-                    <Card className="border-border/60">
+                    <Card className="border-border-main">
                       <CardHeader>
                         <CardTitle>{t('history.logExcerpt')}</CardTitle>
                         <CardDescription>{t('history.logExcerptDescription')}</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <pre className="max-h-[340px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+                        <pre className="max-h-[340px] overflow-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
                           {getHistoryString(selectedCLIRunLog?.excerpt) ||
                             t('history.noLogExcerpt')}
                         </pre>
@@ -3103,21 +3103,21 @@ function HistoryWorkspaceSection({
                     </Card>
                   </div>
 
-                  <Card className="border-border/60">
+                  <Card className="border-border-main">
                     <CardHeader>
                       <CardTitle>{t('history.stepResults')}</CardTitle>
                       <CardDescription>{t('history.stepResultsDescription')}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {selectedCLIRunResults.length === 0 ? (
-                        <div className="rounded-2xl border border-border/60 bg-background/70 p-4 text-sm text-text-muted">
+                        <div className="rounded-md border border-border-main bg-bg-canvas p-4 text-sm text-text-muted">
                           {t('history.noStepResults')}
                         </div>
                       ) : (
                         selectedCLIRunResults.map((result, index) => (
                           <div
                             key={`${selectedHistory.id}-${index}`}
-                            className="rounded-2xl border border-border/60 bg-background/70 p-4"
+                            className="rounded-md border border-border-main bg-bg-canvas p-4"
                           >
                             <div className="flex flex-wrap items-center gap-2">
                               <Badge variant="outline">
@@ -3250,8 +3250,8 @@ function WorkspaceFrame({
   content: React.ReactNode;
 }) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden xl:flex-row">
-      <aside className="w-full shrink-0 border-b border-border/60 bg-background/70 xl:w-[336px] xl:border-b-0 xl:border-r">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-bg-canvas xl:flex-row">
+      <aside className="w-full shrink-0 border-b border-border-main bg-bg-canvas xl:w-[336px] xl:border-b-0 xl:border-r">
         {sidebar}
       </aside>
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden">{content}</div>
@@ -3293,10 +3293,10 @@ function ResourceSidebar({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="space-y-4 p-4">
-        <div className="rounded-2xl border border-border/60 bg-bg-surface/70 p-4">
+        <div className="rounded-md border border-border-main bg-bg-surface p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+              <p className="figma-caption text-text-muted">
                 {moduleShortLabel}
               </p>
               <h2 className="mt-2 text-lg font-semibold tracking-tight">{title}</h2>
@@ -3320,13 +3320,13 @@ function ResourceSidebar({
         ) : null}
       </div>
 
-      <Separator />
+      <Separator className="bg-border-main" />
 
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 7 }).map((_, index) => (
-              <div key={index} className="rounded-2xl border border-border/60 bg-background/70 p-4">
+              <div key={index} className="rounded-md border border-border-main bg-bg-canvas p-4">
                 <div className="h-4 w-24 animate-pulse rounded bg-muted" />
                 <div className="mt-2 h-3 w-full animate-pulse rounded bg-muted" />
                 <div className="mt-3 h-3 w-20 animate-pulse rounded bg-muted" />
@@ -3368,19 +3368,40 @@ function ResourceListItem({
   return (
     <div
       className={cn(
-        'group/resource rounded-2xl border px-4 py-3 transition-colors',
+        'group/resource rounded-md border px-4 py-3 transition-colors',
         active
-          ? 'border-primary/30 bg-primary/10 shadow-sm'
-          : 'border-transparent bg-background/70 hover:border-border/60 hover:bg-background'
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'border-border-main bg-bg-canvas hover:bg-bg-subtle'
       )}
       style={{ marginLeft: indentLevel > 0 ? `${indentLevel * 12}px` : undefined }}
     >
       <div className="flex items-start justify-between gap-3">
         <Link href={href} className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-text-main">{title}</p>
-          <p className="mt-1 line-clamp-2 text-xs leading-5 text-text-muted">{description}</p>
+          <p
+            className={cn(
+              'truncate text-sm font-medium',
+              active ? 'text-primary-foreground' : 'text-text-main'
+            )}
+          >
+            {title}
+          </p>
+          <p
+            className={cn(
+              'mt-1 line-clamp-2 text-xs leading-5',
+              active ? 'text-primary-foreground/72' : 'text-text-muted'
+            )}
+          >
+            {description}
+          </p>
           {meta ? (
-            <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">{meta}</div>
+            <div
+              className={cn(
+                'mt-3 flex flex-wrap gap-2 text-xs',
+                active ? 'text-primary-foreground/72' : 'text-text-muted'
+              )}
+            >
+              {meta}
+            </div>
           ) : null}
         </Link>
         {actionsMenu ? <div className="shrink-0">{actionsMenu}</div> : null}
@@ -3412,7 +3433,7 @@ function ResourceContent({
 
   return (
     <main className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="space-y-4 border-b border-border/60 bg-bg-surface/70 px-4 py-4 md:px-6">
+      <div className="space-y-4 border-b border-border-main bg-bg-canvas px-4 py-4 md:px-6">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -3435,7 +3456,7 @@ function ResourceContent({
 
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="space-y-2">
-            <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+            <Badge variant="outline" className="border-border-main bg-bg-subtle text-text-main">
               {moduleLabel}
             </Badge>
             <div>
@@ -3463,8 +3484,8 @@ function SidebarEmptyState({
   description: string;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border/70 bg-background/60 p-5 text-center">
-      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-muted text-text-muted">
+    <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-5 text-center">
+      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-bg-canvas text-text-muted">
         <Icon className="h-5 w-5" />
       </div>
       <p className="mt-4 text-sm font-medium text-text-main">{title}</p>
@@ -3489,7 +3510,7 @@ function GuideState({
   return (
     <Card className="border-dashed border-border/70">
       <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
           <Icon className="h-6 w-6" />
         </div>
         <div className="space-y-2">
@@ -3518,10 +3539,10 @@ function ApiSpecsGuideState({
   const t = useT('project');
 
   return (
-    <Card className="min-w-0 border-border/60">
+    <Card className="min-w-0 border-border-main">
       <CardContent className="space-y-6 py-8">
-        <div className="flex flex-col items-start gap-4 rounded-[28px] border border-primary/15 bg-gradient-to-br from-primary/10 via-background to-background p-6">
-          <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+        <div className="flex flex-col items-start gap-4 rounded-lg border border-border-main bg-block-cream p-6">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Bot className="h-6 w-6" />
           </div>
           <div className="space-y-2">
@@ -3545,7 +3566,7 @@ function ApiSpecsGuideState({
         </div>
 
         <div className="grid gap-4 xl:grid-cols-3">
-          <div className="rounded-2xl border border-border/60 bg-background/70 p-5">
+          <div className="rounded-md border border-border-main bg-bg-canvas p-5">
             <p className="text-sm font-semibold text-text-main">
               {t('apiSpecs.captureIntentTitle')}
             </p>
@@ -3553,13 +3574,13 @@ function ApiSpecsGuideState({
               {t('apiSpecs.captureIntentDescription')}
             </p>
           </div>
-          <div className="rounded-2xl border border-border/60 bg-background/70 p-5">
+          <div className="rounded-md border border-border-main bg-bg-canvas p-5">
             <p className="text-sm font-semibold text-text-main">{t('apiSpecs.reviewDraftTitle')}</p>
             <p className="mt-2 text-sm leading-6 text-text-muted">
               {t('apiSpecs.reviewDraftDescription')}
             </p>
           </div>
-          <div className="rounded-2xl border border-border/60 bg-background/70 p-5">
+          <div className="rounded-md border border-border-main bg-bg-canvas p-5">
             <p className="text-sm font-semibold text-text-main">
               {t('apiSpecs.moveToTestingTitle')}
             </p>
@@ -3601,8 +3622,8 @@ function MissingDetailState({
 
 function DetailField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-      <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">{label}</p>
+    <div className="rounded-md border border-border-main bg-bg-canvas p-4">
+      <p className="figma-caption text-text-muted">{label}</p>
       <p className="mt-2 text-sm font-medium text-text-main">{children}</p>
     </div>
   );
@@ -3610,7 +3631,7 @@ function DetailField({ label, children }: { label: string; children: React.React
 
 function InfoBadge({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 text-sm">
+    <div className="rounded-full border border-border-main bg-bg-canvas px-3 py-2 text-sm">
       <span className="text-text-muted">{label}: </span>
       <span className="font-medium text-text-main">{value}</span>
     </div>
@@ -3619,12 +3640,12 @@ function InfoBadge({ label, value }: { label: string; value: React.ReactNode }) 
 
 function JsonCard({ title, value }: { title: string; value: unknown }) {
   return (
-    <Card className="min-w-0 border-border/60">
+    <Card className="min-w-0 border-border-main">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="min-w-0">
-        <pre className="min-w-0 max-h-[420px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+        <pre className="min-w-0 max-h-[420px] overflow-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
           {formatJson(value)}
         </pre>
       </CardContent>
@@ -3635,14 +3656,14 @@ function JsonCard({ title, value }: { title: string; value: unknown }) {
 function DetailSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="h-36 animate-pulse rounded-3xl bg-muted" />
+      <div className="h-36 animate-pulse rounded-md bg-muted" />
       <div className="grid gap-6 xl:grid-cols-2">
-        <div className="h-80 animate-pulse rounded-3xl bg-muted" />
-        <div className="h-80 animate-pulse rounded-3xl bg-muted" />
+        <div className="h-80 animate-pulse rounded-md bg-muted" />
+        <div className="h-80 animate-pulse rounded-md bg-muted" />
       </div>
       <div className="grid gap-6 xl:grid-cols-2">
-        <div className="h-64 animate-pulse rounded-3xl bg-muted" />
-        <div className="h-64 animate-pulse rounded-3xl bg-muted" />
+        <div className="h-64 animate-pulse rounded-md bg-muted" />
+        <div className="h-64 animate-pulse rounded-md bg-muted" />
       </div>
     </div>
   );
@@ -3871,7 +3892,7 @@ function CreateApiSpecDialogBody({
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+          <div className="flex items-center justify-between rounded-md border border-border-main bg-bg-canvas px-4 py-3">
             <div className="space-y-1">
               <Label htmlFor="workspace-spec-public">{t('apiSpecs.publicSpec')}</Label>
               <p className="text-xs text-text-muted">{t('apiSpecs.publicSpecDescription')}</p>
