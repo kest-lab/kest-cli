@@ -1109,8 +1109,8 @@ const HttpStepNode = ({ data, selected }: NodeProps) => {
   return (
     <div
       className={cn(
-        'w-[240px] rounded-3xl border bg-background/95 p-4 shadow-lg transition-colors',
-        selected ? 'border-primary/40 ring-2 ring-primary/20' : 'border-border/60'
+        'w-[240px] rounded-md border bg-bg-canvas p-4 shadow-none transition-colors',
+        selected ? 'border-border-main bg-block-lilac ring-2 ring-black/10' : 'border-border-main'
       )}
     >
       <Handle
@@ -3981,7 +3981,7 @@ export function ProjectFlowManagementPage({
         {showFlowSidebar ? (
           flowSidebar
         ) : !isMobile ? (
-          <aside className="hidden w-[72px] shrink-0 border-r border-border/60 bg-bg-surface/70 lg:flex lg:flex-col lg:items-center lg:justify-start lg:py-4">
+          <aside className="hidden w-[72px] shrink-0 border-r border-border-main bg-bg-surface lg:flex lg:flex-col lg:items-center lg:justify-start lg:py-4">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -4003,7 +4003,7 @@ export function ProjectFlowManagementPage({
         ) : null}
 
         <main className="flex min-w-0 flex-1 flex-col">
-          <div className="space-y-4 border-b border-border/60 bg-bg-surface/70 px-4 py-4 md:px-6">
+          <div className="space-y-4 border-b border-border-main bg-bg-surface px-4 py-4 md:px-6">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -4026,7 +4026,7 @@ export function ProjectFlowManagementPage({
 
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="space-y-2">
-                <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+                <Badge variant="outline" className="border-border-main bg-bg-canvas text-text-main">
                   {t('modules.flows.label')}
                 </Badge>
                 <div>
