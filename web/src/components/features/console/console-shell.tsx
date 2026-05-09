@@ -88,7 +88,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-bg-canvas text-text-main">
-      <header className="z-50 flex h-16 shrink-0 items-center justify-between border-b bg-bg-surface px-4 shadow-sm md:px-6">
+      <header className="z-50 flex h-14 shrink-0 items-center justify-between border-b border-border-main bg-bg-canvas px-4 md:px-6">
         <div className="flex items-center gap-4">
           <Link href={ROUTES.SITE.HOME} className="group flex items-center" aria-label={t.console('shell.title')}>
             <Logo className="h-8 w-[99px] shrink-0 text-black transition-transform group-hover:scale-[1.03]" aria-hidden="true" />
@@ -106,10 +106,10 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                     variant="ghost"
                     isIcon
                     noScale
-                    className="h-9 w-9 rounded-full"
+                    className="h-9 w-9 rounded-full border border-border-main bg-bg-surface hover:bg-bg-subtle"
                     aria-label={t.console('shell.notifications')}
                   >
-                    <Bell className="h-4 w-4 text-text-muted" />
+                    <Bell className="h-4 w-4 text-text-main" />
                     <span className="sr-only">{t.console('shell.notifications')}</span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -118,7 +118,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                 <p>{t.console('shell.notifications')}</p>
               </TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="end" className="w-72 rounded-xl p-1 shadow-premium">
+            <DropdownMenuContent align="end" className="w-72 rounded-lg border-border-main bg-bg-canvas p-1 shadow-soft">
               <DropdownMenuLabel>{t.console('shell.notifications')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <div className="px-2 py-3 text-sm text-text-muted">
@@ -135,12 +135,12 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                     variant="ghost"
                     isIcon
                     noScale
-                    className="h-9 w-9 overflow-hidden rounded-full border border-border/50 transition-colors hover:border-primary/50"
+                    className="h-9 w-9 overflow-hidden rounded-full border border-border-main bg-bg-surface transition-colors hover:bg-bg-subtle"
                     aria-label={t.console('shell.profile')}
                   >
                     <Avatar className="h-full w-full">
                       <AvatarImage src={user?.avatar} />
-                      <AvatarFallback className="bg-primary/10 text-primary">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
@@ -152,17 +152,17 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                 <p>{t.console('shell.profile')}</p>
               </TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="end" className="w-56 rounded-xl p-1 shadow-premium">
+            <DropdownMenuContent align="end" className="w-56 rounded-lg border-border-main bg-bg-canvas p-1 shadow-soft">
               <DropdownMenuLabel className="px-2 py-1.5 text-xs font-medium uppercase tracking-wider text-text-muted">
                 {displayName}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
+              <DropdownMenuItem asChild className="cursor-pointer rounded-md">
                 <Link href={ROUTES.CONSOLE.PROFILE}>{t('nav.profile')}</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                className="cursor-pointer rounded-lg text-destructive focus:bg-destructive/10"
+                className="cursor-pointer rounded-md text-destructive focus:bg-destructive/10"
                 onClick={handleLogout}
               >
                 <LogOut className="mr-2 h-4 w-4" />
@@ -174,9 +174,9 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
       </header>
 
       <div className="flex h-0 grow overflow-hidden">
-        <aside className="hidden w-[220px] shrink-0 border-r bg-background md:flex md:flex-col">
-          <div className="flex flex-1 flex-col overflow-y-auto py-2">
-            <nav className="grid items-start px-2 text-sm font-medium">
+        <aside className="hidden w-[232px] shrink-0 border-r border-border-main bg-bg-canvas md:flex md:flex-col">
+          <div className="flex flex-1 flex-col overflow-y-auto py-4">
+            <nav className="grid items-start gap-1 px-3 text-sm font-medium">
               {mainNavItems.map(item => {
                 const IconComponent = item.icon;
                 const isActive = isRouteActive(item.href);
@@ -186,8 +186,10 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary',
-                      isActive ? 'bg-muted text-primary' : 'text-text-subtle hover:bg-muted/50'
+                      'flex items-center gap-3 rounded-full px-3 py-2 transition-colors',
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-text-subtle hover:bg-bg-subtle hover:text-text-main'
                     )}
                   >
                     <IconComponent className="h-4.5 w-4.5" />
@@ -197,7 +199,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
               })}
             </nav>
           </div>
-          <div className="mt-auto p-4">
+          <div className="mt-auto border-t border-border-main p-4">
             <nav className="grid items-start gap-1 text-sm font-medium">
               {secondaryNavItems.map(item => {
                 const IconComponent = item.icon;
@@ -208,8 +210,10 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary',
-                      isActive ? 'bg-muted text-primary' : 'text-text-subtle hover:bg-muted/50'
+                      'flex items-center gap-3 rounded-full px-3 py-2 transition-colors',
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-text-subtle hover:bg-bg-subtle hover:text-text-main'
                     )}
                   >
                     <IconComponent className="h-4.5 w-4.5" />
@@ -220,7 +224,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
             </nav>
             <Link
               href={ROUTES.SITE.HOME}
-              className="mt-4 flex h-8 items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+              className="mt-4 flex h-8 items-center rounded-full px-3 text-sm text-muted-foreground transition-colors hover:bg-bg-subtle hover:text-foreground"
             >
               <span>{t.console('shell.returnToSite')}</span>
             </Link>

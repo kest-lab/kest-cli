@@ -41,13 +41,13 @@ export function LanguageSwitcher({ showTooltip = false }: { showTooltip?: boolea
               variant="ghost"
               isIcon
               noScale
-              className="h-9 w-9 rounded-full transition-colors hover:bg-muted/50"
+              className="h-9 w-9 rounded-full border border-border-main bg-bg-surface transition-colors hover:bg-bg-subtle"
               disabled={isPending}
               aria-label={t('common.selectLanguage')}
             >
               <Globe
                 className={cn(
-                  'size-4.5 text-text-muted transition-transform duration-300',
+                  'size-4.5 text-text-main transition-transform duration-300',
                   isPending && 'animate-spin'
                 )}
               />
@@ -63,9 +63,9 @@ export function LanguageSwitcher({ showTooltip = false }: { showTooltip?: boolea
       </Tooltip>
       <DropdownMenuContent
         align="end"
-        className="w-[160px] rounded-xl border-border/50 p-1 shadow-premium animate-in fade-in zoom-in-95 duration-200"
+        className="w-[160px] rounded-lg border-border-main bg-bg-canvas p-1 shadow-soft animate-in fade-in zoom-in-95 duration-200"
       >
-        <div className="px-2 py-1.5 text-xs font-semibold text-text-muted uppercase tracking-wider">
+        <div className="figma-caption px-2 py-1.5 text-text-muted">
           {t('common.selectLanguage')}
         </div>
         {locales.map(loc => (
@@ -73,10 +73,10 @@ export function LanguageSwitcher({ showTooltip = false }: { showTooltip?: boolea
             key={loc}
             onClick={() => setLocale(loc)}
             className={cn(
-              'flex cursor-pointer items-center justify-between rounded-lg px-2 py-2 transition-colors',
+              'flex cursor-pointer items-center justify-between rounded-md px-2 py-2 transition-colors',
               locale === loc
-                ? 'bg-primary/10 font-medium text-primary'
-                : 'text-text-subtle hover:bg-muted/50'
+                ? 'bg-primary font-medium text-primary-foreground'
+                : 'text-text-subtle hover:bg-bg-subtle hover:text-text-main'
             )}
           >
             <span>{localeNames[loc]}</span>
