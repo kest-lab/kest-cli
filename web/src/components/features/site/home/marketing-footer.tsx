@@ -39,7 +39,7 @@ function FooterLink({ label, href, placeholder = false }: { label: string; href?
         href={href}
         target={external ? '_blank' : undefined}
         rel={external ? 'noreferrer' : undefined}
-        className="text-sm text-text-subtle transition-colors duration-200 hover:text-text-main"
+        className="text-sm text-text-main transition-colors duration-200 hover:text-text-subtle"
       >
         {label}
       </Link>
@@ -56,16 +56,16 @@ function FooterLink({ label, href, placeholder = false }: { label: string; href?
 
 export function MarketingFooter({ brandName, content }: MarketingFooterProps) {
   return (
-    <footer className="border-t border-border/70 bg-white/80">
-      <div className="container py-14">
+    <footer className="border-t border-border-main bg-bg-canvas">
+      <div className="container py-16 sm:py-20">
         <div className="grid gap-10 lg:grid-cols-[1.05fr_1.95fr]">
           <div className="max-w-sm">
             <div>
               <Logo className="h-9 w-[111px] text-black" role="img" aria-label={brandName} />
-              <p className="mt-1 text-sm text-text-subtle">{content.tagline}</p>
+              <p className="mt-4 text-base leading-7 text-text-subtle">{content.tagline}</p>
             </div>
             <div className="mt-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">{content.socialsTitle}</p>
+              <p className="figma-caption text-text-muted">{content.socialsTitle}</p>
               <div className="mt-3 flex flex-wrap gap-3">
                 {content.socials.map((social) => {
                   const Icon = socialIcons[social.label as keyof typeof socialIcons];
@@ -73,7 +73,7 @@ export function MarketingFooter({ brandName, content }: MarketingFooterProps) {
                   return (
                     <span
                       key={social.label}
-                      className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-bg-canvas px-3 py-1.5 text-sm text-text-subtle"
+                      className="inline-flex items-center gap-2 rounded-pill border border-border-main bg-bg-canvas px-3 py-1.5 text-sm text-text-main"
                     >
                       {Icon ? <Icon className="size-4 shrink-0" /> : null}
                       <span>{social.label}</span>
@@ -87,7 +87,7 @@ export function MarketingFooter({ brandName, content }: MarketingFooterProps) {
           <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-5">
             {content.columns.map((column) => (
               <div key={column.title}>
-                <p className="text-sm font-semibold text-text-main">{column.title}</p>
+                <p className="figma-caption text-text-muted">{column.title}</p>
                 <div className="mt-4 space-y-3">
                   {column.links.map((link) => (
                     <FooterLink
@@ -103,7 +103,7 @@ export function MarketingFooter({ brandName, content }: MarketingFooterProps) {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-border/70 pt-6 text-sm text-text-muted sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-12 flex flex-col gap-3 border-t border-border-main pt-6 text-sm text-text-muted sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} {brandName}.</p>
           <p>{content.tagline}</p>
         </div>

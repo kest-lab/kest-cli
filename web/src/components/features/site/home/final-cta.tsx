@@ -17,22 +17,19 @@ export interface FinalCtaProps {
 
 export function FinalCta({ content }: FinalCtaProps) {
   return (
-    <section id="pricing" className="py-20 sm:py-24">
+    <section id="pricing" className="bg-bg-canvas py-20 sm:py-24">
       <div className="container">
-        <div className="relative overflow-hidden rounded-[2rem] border border-[color:var(--marketing-accent-border)] bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,247,237,0.98))] px-6 py-12 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.35)] sm:px-10 sm:py-14 lg:px-14">
-          <div className="pointer-events-none absolute -left-16 top-0 size-44 rounded-full bg-[color:var(--marketing-accent-glow)] blur-3xl" />
-          <div className="pointer-events-none absolute right-0 top-10 size-52 rounded-full bg-[color:var(--marketing-accent-soft)] blur-3xl" />
-
-          <div className="relative max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--marketing-accent-strong)]">
+        <div className="figma-color-block figma-color-block-lime">
+          <div className="max-w-4xl">
+            <p className="figma-eyebrow text-text-main">
               {content.eyebrow}
             </p>
-            <h2 className="mt-4 text-4xl font-semibold tracking-tight text-text-main sm:text-5xl [font-family:var(--font-space-grotesk)]">
+            <h2 className="figma-display-lg mt-4 text-text-main">
               {content.title}
             </h2>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-text-subtle">{content.description}</p>
+            <p className="figma-body-lg mt-5 max-w-3xl text-neutral-950/75">{content.description}</p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button asChild size="2xl" className="rounded-2xl border border-[color:var(--marketing-accent-strong)] bg-[color:var(--marketing-accent)] text-slate-950 hover:bg-[color:var(--marketing-accent-strong)]">
+              <Button asChild size="2xl">
                 <Link href="/register" className="inline-flex items-center gap-2 whitespace-nowrap">
                   <span>{content.primaryCta}</span>
                 </Link>
@@ -41,12 +38,12 @@ export function FinalCta({ content }: FinalCtaProps) {
                 type="button"
                 variant="outline"
                 size="2xl"
-                className="rounded-2xl border-[color:var(--marketing-accent-border)] bg-white/85"
+                className="border-black/20 bg-white/55"
               >
                 {content.secondaryCta}
               </Button>
             </div>
-            <p className="mt-6 text-sm leading-7 text-text-muted">{content.pricingHint}</p>
+            <p className="mt-6 text-sm leading-7 text-neutral-950/70">{content.pricingHint}</p>
           </div>
         </div>
       </div>

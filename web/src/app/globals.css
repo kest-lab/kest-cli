@@ -362,18 +362,42 @@
 
   .figma-display-xl {
     font-family: var(--font-figma-sans);
-    font-size: clamp(3.75rem, 9vw, var(--font-size-display-xl));
+    font-size: 3.75rem;
     font-weight: 340;
     line-height: 1;
-    letter-spacing: var(--tracking-display-xl);
+    letter-spacing: -0.075rem;
   }
 
   .figma-display-lg {
     font-family: var(--font-figma-sans);
-    font-size: clamp(2.75rem, 6vw, var(--font-size-display-lg));
+    font-size: 2.75rem;
     font-weight: 340;
     line-height: 1.1;
-    letter-spacing: var(--tracking-display-lg);
+    letter-spacing: -0.04125rem;
+  }
+
+  @media (min-width: 768px) {
+    .figma-display-xl {
+      font-size: 4.75rem;
+      letter-spacing: -0.095rem;
+    }
+
+    .figma-display-lg {
+      font-size: 3.5rem;
+      letter-spacing: -0.0525rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .figma-display-xl {
+      font-size: var(--font-size-display-xl);
+      letter-spacing: var(--tracking-display-xl);
+    }
+
+    .figma-display-lg {
+      font-size: var(--font-size-display-lg);
+      letter-spacing: var(--tracking-display-lg);
+    }
   }
 
   .figma-headline {

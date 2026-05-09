@@ -69,6 +69,7 @@ const mockContent: MarketingPageContent = {
       cta: 'Explore visual flows',
       ctaHref: '#features',
       variant: 'flow',
+      blockTone: 'lime',
       mockup: { title: 'Flow canvas', lines: ['1', '2', '3', '4', '5', '6', '7', '8'] },
     },
     {
@@ -80,6 +81,7 @@ const mockContent: MarketingPageContent = {
       cta: 'Open shared workspaces',
       ctaHref: '/register',
       variant: 'history',
+      blockTone: 'navy',
       mockup: { title: 'Team timeline', lines: ['1', '2', '3', '4'] },
     },
     {
@@ -91,6 +93,7 @@ const mockContent: MarketingPageContent = {
       cta: 'Review workflow examples',
       ctaHref: '/register',
       variant: 'ai',
+      blockTone: 'coral',
       mockup: { title: '.flow.md snapshot', lines: ['1', '2', '3', '4'] },
     },
   ],
