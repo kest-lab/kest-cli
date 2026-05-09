@@ -16,12 +16,12 @@ import { DatePicker } from "./date-picker"
 import { cn } from "@/utils"
 
 const inputVariants = cva(
-  "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground flex h-9 w-full min-w-0 rounded-lg px-3 py-1 text-base shadow-xs transition-all file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:cursor-not-allowed disabled:opacity-50 md:text-sm input-depth focus-border",
+  "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground flex h-9 w-full min-w-0 rounded-md px-3.5 py-1 text-base shadow-none transition-all file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:cursor-not-allowed disabled:opacity-50 md:text-sm input-depth focus-border",
   {
     variants: {
       variant: {
-        outline: "border border-border bg-background hover:border-border-strong focus-visible:border-primary dark:bg-input/10",
-        filled: "border border-transparent bg-muted/30 hover:bg-muted/50 focus-visible:bg-background focus-visible:border-primary focus-visible:shadow-sm",
+        outline: "border border-border-main bg-background hover:border-border-strong focus-visible:border-primary",
+        filled: "border border-transparent bg-bg-subtle hover:bg-secondary focus-visible:bg-background focus-visible:border-primary",
       },
       error: {
         true: "border-destructive focus-visible:border-destructive text-destructive placeholder:text-destructive/50",
@@ -166,7 +166,7 @@ function SearchInput({ className, ...props }: InputProps) {
     <Input
       type="search"
       leftIcon={<SearchIcon className="size-4" />}
-      className={cn("rounded-full", className)}
+      className={cn("rounded-pill", className)}
       {...props}
     />
   )
@@ -182,7 +182,7 @@ function PasswordInput({ className, ...props }: InputProps) {
         <button
           type="button"
           onClick={() => setShow(!show)}
-          className="hover:text-foreground cursor-pointer transition-colors outline-hidden focus-visible:ring-1 focus-visible:ring-ring rounded-sm pointer-events-auto"
+          className="hover:text-foreground cursor-pointer transition-colors outline-hidden focus-visible:ring-1 focus-visible:ring-ring rounded-full pointer-events-auto"
         >
           {show ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
         </button>
@@ -211,7 +211,7 @@ function ColorPicker({ className, value, onChange, disabled, error, errorText, .
       <div 
         onClick={handleTrigger}
         className={cn(
-          "flex h-9 w-full items-center gap-3 rounded-lg border border-border bg-background px-3 py-1 shadow-xs transition-all hover:border-border-strong cursor-pointer input-depth focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20",
+          "flex h-9 w-full items-center gap-3 rounded-md border border-border-main bg-background px-3.5 py-1 shadow-none transition-all hover:border-border-strong cursor-pointer input-depth focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/12",
           disabled && "opacity-50 cursor-not-allowed",
           isError && "border-destructive focus-within:border-destructive",
           className
