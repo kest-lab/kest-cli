@@ -1285,7 +1285,7 @@ function FlowInspector({
     const captureDefinitions = parseCaptureDefinitions(selectedNode.data.captures);
     return (
       <div className="space-y-6">
-        <Card className="border-border/60">
+        <Card className="border-border-main bg-bg-canvas shadow-none">
           <CardHeader>
             <CardTitle>{t('flowPage.inspector.stepTitle')}</CardTitle>
             <CardDescription>{t('flowPage.inspector.stepDescription')}</CardDescription>
@@ -1371,7 +1371,7 @@ function FlowInspector({
                     root
                   />
                 </div>
-                <details className="rounded-2xl border border-border/60 bg-background/70 p-4">
+                <details className="rounded-md border border-border-main bg-bg-surface p-4">
                   <summary className="cursor-pointer text-sm font-medium text-text-main">
                     {t('flowPage.inspector.advancedTitle')}
                   </summary>
@@ -1427,7 +1427,7 @@ function FlowInspector({
                       {captureDefinitions.map(capture => (
                         <div
                           key={`${capture.variableName}-${capture.path}`}
-                          className="rounded-2xl border border-border/60 bg-background/70 p-3"
+                          className="rounded-md border border-border-main bg-bg-surface p-3"
                         >
                           <div className="flex items-center justify-between gap-3">
                             <Badge variant="outline">{capture.variableName}</Badge>
@@ -1439,7 +1439,7 @@ function FlowInspector({
                   )}
                 </div>
 
-                <details className="rounded-2xl border border-border/60 bg-background/70 p-4">
+                <details className="rounded-md border border-border-main bg-bg-surface p-4">
                   <summary className="cursor-pointer text-sm font-medium text-text-main">
                     {t('flowPage.inspector.advancedCapturesTitle')}
                   </summary>
@@ -1500,7 +1500,7 @@ function FlowInspector({
     const selectedEdgeError = edgeErrors[selectedEdge.id];
     return (
       <div className="space-y-6">
-        <Card className="border-border/60">
+        <Card className="border-border-main bg-bg-canvas shadow-none">
           <CardHeader>
             <CardTitle>{t('flowPage.inspector.edgeMappingsTitle')}</CardTitle>
             <CardDescription>{t('flowPage.inspector.edgeMappingsDescription')}</CardDescription>
@@ -1613,7 +1613,7 @@ function FlowInspector({
 
   return (
     <div className="space-y-6">
-      <Card className="border-border/60">
+      <Card className="border-border-main bg-bg-canvas shadow-none">
         <CardHeader>
           <CardTitle>{t('flowPage.inspector.flowSettingsTitle')}</CardTitle>
           <CardDescription>{t('flowPage.inspector.flowSettingsDescription')}</CardDescription>
@@ -1727,7 +1727,7 @@ function RunHistoryPanel({
 
   return (
     <div className="space-y-6">
-      <Card className="border-border/60">
+      <Card className="border-border-main bg-bg-canvas shadow-none">
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
@@ -1753,10 +1753,10 @@ function RunHistoryPanel({
                   type="button"
                   onClick={() => onSelectRun(run.id)}
                   className={cn(
-                    'w-full rounded-2xl border px-4 py-3 text-left transition-colors',
+                    'w-full rounded-md border px-4 py-3 text-left transition-colors',
                     selectedRunId === run.id
-                      ? 'border-primary/30 bg-primary/10'
-                      : 'border-border/60 bg-background/60 hover:bg-background'
+                      ? 'border-border-main bg-block-lilac'
+                      : 'border-border-main bg-bg-canvas hover:bg-bg-subtle'
                   )}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -1780,7 +1780,7 @@ function RunHistoryPanel({
       </Card>
 
       {selectedRun ? (
-        <Card className="border-border/60">
+        <Card className="border-border-main bg-bg-canvas shadow-none">
           <CardHeader>
             <CardTitle>{t('flowPage.runHistory.runLogTitle')}</CardTitle>
             <CardDescription>
@@ -1841,10 +1841,10 @@ function RunHistoryPanel({
                         onSelectRunStep(result.step_id);
                       }}
                       className={cn(
-                        'w-full rounded-2xl border px-4 py-3 text-left transition-colors',
+                        'w-full rounded-md border px-4 py-3 text-left transition-colors',
                         isActive
-                          ? 'border-primary/30 bg-primary/10'
-                          : 'border-border/60 bg-background/60 hover:bg-background'
+                          ? 'border-border-main bg-block-lilac'
+                          : 'border-border-main bg-bg-canvas hover:bg-bg-subtle'
                       )}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -2070,7 +2070,7 @@ function FlowParameterHandoffDialog({
             </Alert>
           ) : null}
 
-          <div className="overflow-hidden rounded-2xl border border-border/60">
+          <div className="overflow-hidden rounded-md border border-border-main">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -2156,7 +2156,7 @@ function FlowParameterHandoffDialog({
 
 function ResultField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+    <div className="rounded-md border border-border-main bg-bg-surface p-4">
       <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">{label}</p>
       <div className="mt-2 text-sm text-text-main">{children}</div>
     </div>
@@ -2173,7 +2173,7 @@ function ResultJsonCard({
   action?: React.ReactNode;
 }) {
   return (
-    <Card className="border-border/60">
+    <Card className="border-border-main bg-bg-canvas shadow-none">
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
           <CardTitle>{title}</CardTitle>
@@ -2181,7 +2181,7 @@ function ResultJsonCard({
         </div>
       </CardHeader>
       <CardContent>
-        <pre className="max-h-[280px] overflow-auto rounded-2xl border border-border/60 bg-background/80 p-4 text-xs leading-6 text-text-muted">
+        <pre className="max-h-[280px] overflow-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
           {JSON.stringify(value, null, 2)}
         </pre>
       </CardContent>
@@ -3903,7 +3903,7 @@ export function ProjectFlowManagementPage({
         </div>
 
         {isDesktopInspectorCollapsed ? (
-          <aside className="hidden w-[72px] shrink-0 border-l border-border/60 bg-bg-surface/70 xl:flex xl:flex-col xl:items-center xl:justify-start xl:py-4">
+          <aside className="hidden w-[72px] shrink-0 border-l border-border-main bg-bg-surface xl:flex xl:flex-col xl:items-center xl:justify-start xl:py-4">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -3923,8 +3923,8 @@ export function ProjectFlowManagementPage({
             </Tooltip>
           </aside>
         ) : (
-          <aside className="hidden w-[380px] shrink-0 border-l border-border/60 bg-bg-surface/70 xl:block">
-            <div className="flex items-center justify-end border-b border-border/60 px-4 py-3">
+          <aside className="hidden w-[380px] shrink-0 border-l border-border-main bg-bg-surface xl:block">
+            <div className="flex items-center justify-end border-b border-border-main px-4 py-3">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -4072,7 +4072,7 @@ export function ProjectFlowManagementPage({
           </DialogHeader>
           <DialogBody className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+              <div className="rounded-md border border-border-main bg-bg-surface p-4">
                 <p className="text-sm font-semibold text-text-main">
                   {t('flowPage.deleteSelection')}
                 </p>
@@ -4080,13 +4080,13 @@ export function ProjectFlowManagementPage({
                   {t('flowPage.shortcutDelete')}
                 </p>
               </div>
-              <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+              <div className="rounded-md border border-border-main bg-bg-surface p-4">
                 <p className="text-sm font-semibold text-text-main">{t('flowPage.undo')}</p>
                 <p className="mt-2 font-mono text-xs text-text-muted">
                   {t('flowPage.shortcutUndo')}
                 </p>
               </div>
-              <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+              <div className="rounded-md border border-border-main bg-bg-surface p-4">
                 <p className="text-sm font-semibold text-text-main">
                   {t('flowPage.duplicateSelection')}
                 </p>
@@ -4094,7 +4094,7 @@ export function ProjectFlowManagementPage({
                   {t('flowPage.shortcutDuplicate')}
                 </p>
               </div>
-              <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+              <div className="rounded-md border border-border-main bg-bg-surface p-4">
                 <p className="text-sm font-semibold text-text-main">
                   {t('flowPage.openShortcuts')}
                 </p>
