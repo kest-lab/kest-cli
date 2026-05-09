@@ -429,7 +429,7 @@ function RoleBadge({ role }: { role?: ProjectMemberRole }) {
   const t = useT('project');
 
   return (
-    <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+    <Badge variant="outline" className="border-border-main bg-bg-subtle text-text-main">
       {t('roles.badge', { role: getRoleLabel(t, role) })}
     </Badge>
   );
@@ -448,16 +448,16 @@ function EnvironmentFieldPreview({
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+      <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-4 text-sm text-muted-foreground">
         {emptyLabel}
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border">
+    <div className="overflow-hidden rounded-md border border-border-main">
       <Table>
-        <TableHeader className="bg-muted/15">
+        <TableHeader className="bg-bg-surface">
           <TableRow className="hover:bg-transparent">
             <TableHead>{t('environments.fieldTableKey')}</TableHead>
             <TableHead>{t('environments.fieldTableType')}</TableHead>
@@ -1519,55 +1519,54 @@ export function EnvironmentManagementPage({
     <>
       <main className="h-full min-h-0 overflow-y-auto">
         <div className="space-y-8 p-6 pt-6">
-          <div className="relative overflow-hidden rounded-xl border border-primary/10 bg-linear-to-r from-primary/10 via-cyan-500/5 to-transparent p-6 transition-colors duration-500">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0xOCAxOGgyNHYyNEgxOHoiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utb3BhY2l0eT0iLjA1Ii8+PC9nPjwvc3ZnPg==')] opacity-50" />
-        <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div className="space-y-3">
-            <Button asChild variant="link" className="h-auto px-0 text-sm text-muted-foreground">
-              <Link href={buildProjectDetailRoute(projectId)}>
-                <ArrowLeft className="h-4 w-4" />
-                {t('common.backToProjectOverview')}
-              </Link>
-            </Button>
+          <div className="rounded-lg border border-border-main bg-block-cream p-6">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="space-y-3">
+                <Button asChild variant="link" className="h-auto px-0 text-sm text-muted-foreground">
+                  <Link href={buildProjectDetailRoute(projectId)}>
+                    <ArrowLeft className="h-4 w-4" />
+                    {t('common.backToProjectOverview')}
+                  </Link>
+                </Button>
 
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">{t('environments.title')}</h1>
-                <Globe className="h-6 w-6 text-primary" />
-                <RoleBadge role={currentRole} />
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="text-3xl font-bold tracking-tight">{t('environments.title')}</h1>
+                    <Globe className="h-6 w-6 text-text-main" />
+                    <RoleBadge role={currentRole} />
+                  </div>
+
+                  <p className="max-w-4xl text-sm text-text-muted">
+                    {t('environments.currentDescriptionEmpty')}
+                  </p>
+                </div>
+
+                {projectQuery.data ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" className="font-mono">
+                      {projectQuery.data.slug}
+                    </Badge>
+                    <Badge variant="outline">
+                      {projectQuery.data.platform || t('common.notSet')}
+                    </Badge>
+                    <Badge variant="outline">{t('environments.countBadge', { count: totalEnvironments })}</Badge>
+                  </div>
+                ) : null}
               </div>
 
-              <p className="max-w-4xl text-sm text-text-muted">
-                {t('environments.currentDescriptionEmpty')}
-              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button type="button" onClick={openCreateDialog} disabled={!canWrite}>
+                  <Plus className="h-4 w-4" />
+                  {t('environments.createButton')}
+                </Button>
+                <ActionMenu
+                  items={headerActionItems}
+                  ariaLabel={t('environments.openManagementActions')}
+                  triggerVariant="outline"
+                />
+              </div>
             </div>
-
-            {projectQuery.data ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className="font-mono">
-                  {projectQuery.data.slug}
-                </Badge>
-                <Badge variant="outline">
-                  {projectQuery.data.platform || t('common.notSet')}
-                </Badge>
-                <Badge variant="outline">{t('environments.countBadge', { count: totalEnvironments })}</Badge>
-              </div>
-            ) : null}
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" onClick={openCreateDialog} disabled={!canWrite}>
-              <Plus className="h-4 w-4" />
-              {t('environments.createButton')}
-            </Button>
-            <ActionMenu
-              items={headerActionItems}
-              ariaLabel={t('environments.openManagementActions')}
-              triggerVariant="outline"
-            />
-          </div>
-        </div>
-      </div>
 
       {!canWrite && memberRoleQuery.isSuccess ? (
         <Alert>
@@ -1629,8 +1628,8 @@ export function EnvironmentManagementPage({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.95fr]">
-        <Card className="overflow-hidden border-border/50 shadow-premium">
-          <CardHeader className="gap-4 border-b bg-muted/20">
+        <Card className="overflow-hidden border-border-main bg-bg-canvas">
+          <CardHeader className="gap-4 border-b border-border-main bg-bg-canvas">
             <div>
               <CardTitle>{t('environments.listTitle')}</CardTitle>
               <CardDescription>
@@ -1750,8 +1749,8 @@ export function EnvironmentManagementPage({
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 shadow-premium">
-          <CardHeader className="border-b bg-muted/20">
+        <Card className="border-border-main bg-bg-canvas">
+          <CardHeader className="border-b border-border-main bg-bg-canvas">
             <CardTitle>{t('environments.selectedTitle')}</CardTitle>
             <CardDescription>
               {t('environments.currentDescriptionWithSelection')}
@@ -1768,7 +1767,7 @@ export function EnvironmentManagementPage({
               </Alert>
             ) : (
               <>
-                <div className="rounded-2xl border border-primary/10 bg-linear-to-br from-primary/10 via-transparent to-white p-4">
+                <div className="rounded-md border border-border-main bg-bg-surface p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
