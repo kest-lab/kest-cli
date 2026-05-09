@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Command, HelpCircle, LayoutPanelTop, LogOut, Settings } from 'lucide-react';
+import { Bell, Command, HelpCircle, LogOut, Settings } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/common';
 import {
   OPEN_COMMAND_PALETTE_EVENT,
@@ -11,11 +11,7 @@ import {
 } from '@/components/features/project/project-onboarding-shell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Logo } from '@/components/ui/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +27,6 @@ import { useLogout } from '@/hooks/use-auth';
 import { useT } from '@/i18n/client';
 import type { ScopedTranslations } from '@/i18n/shared';
 import { useAuthStore } from '@/store/auth-store';
-import { formatDate } from '@/utils';
 
 const buildInitials = (name: string) =>
   name
@@ -78,13 +73,8 @@ export function ProjectTopbar() {
   return (
     <header className="z-40 flex h-16 shrink-0 items-center justify-between border-b border-border/60 bg-bg-surface/95 px-4 backdrop-blur md:px-6">
       <div className="flex min-w-0 items-center gap-4">
-        <Link href={ROUTES.CONSOLE.PROJECTS} className="group flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-button-primary transition-transform group-hover:scale-105">
-            <LayoutPanelTop className="h-4.5 w-4.5" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold tracking-tight text-text-main">KEST</p>
-          </div>
+        <Link href={ROUTES.CONSOLE.PROJECTS} className="group flex items-center" aria-label="KEST">
+          <Logo className="h-8 w-[99px] shrink-0 text-black transition-transform group-hover:scale-[1.03]" aria-hidden="true" />
         </Link>
       </div>
 

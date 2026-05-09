@@ -40,9 +40,8 @@ func RegisterWelcome(r *gin.Engine) {
 		
 		.header { text-align: center; margin-bottom: 40px; }
 		.logo { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-		.logo svg { width: 48px; height: 48px; }
-		.logo-text { font-size: 32px; font-weight: 600; color: #1e293b; letter-spacing: -0.5px; }
-		.version { background: #f43f5e; color: white; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+		.logo svg { width: 148px; height: auto; }
+		.version { background: #050505; color: #f6ff3a; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
 		.subtitle { color: #64748b; font-size: 15px; }
 		
 		.section { margin-bottom: 32px; }
@@ -55,7 +54,7 @@ func RegisterWelcome(r *gin.Engine) {
 		.card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: box-shadow 0.15s; }
 		.card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 		.card-header { display: flex; align-items: flex-start; gap: 14px; }
-		.card-icon { flex-shrink: 0; width: 36px; height: 36px; background: linear-gradient(135deg, #f43f5e 0%%, #fb7185 100%%); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+		.card-icon { flex-shrink: 0; width: 36px; height: 36px; background: #050505; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 		.card-icon svg { width: 18px; height: 18px; color: white; }
 		.card-icon.blue { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
 		.card-icon.green { background: linear-gradient(135deg, #10b981, #34d399); }
@@ -64,7 +63,7 @@ func RegisterWelcome(r *gin.Engine) {
 		.card-icon.cyan { background: linear-gradient(135deg, #06b6d4, #22d3ee); }
 		.card-content { flex: 1; }
 		.card-title { font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
-		.card-title:hover { color: #f43f5e; }
+		.card-title:hover { color: #050505; }
 		.card-desc { font-size: 13px; color: #64748b; line-height: 1.5; }
 		
 		.features { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -75,15 +74,14 @@ func RegisterWelcome(r *gin.Engine) {
 		.footer-info span { color: #1e293b; font-weight: 500; }
 		.footer-links { margin-top: 12px; display: flex; justify-content: center; gap: 16px; font-size: 13px; }
 		.footer-links a { color: #64748b; }
-		.footer-links a:hover { color: #f43f5e; }
+		.footer-links a:hover { color: #050505; }
 	</style>
 </head>
 <body>
 	<div class="container">
 		<div class="header">
 			<div class="logo">
-				<svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="url(#g)"/><path d="M14 16h20v4H18v4h12v4H18v4h16v4H14V16z" fill="white"/><defs><linearGradient id="g" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#f43f5e"/><stop offset="1" stop-color="#fb7185"/></linearGradient></defs></svg>
-				<span class="logo-text">%s</span>
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 52" aria-label="%s"><path fill="#F6FF3A" d="m37.5 1h-25.8c-5.5 0-10.5 4.9-10.5 11.1v26.7c0 6.5 5 11.1 10.5 11.6h25.8c5.3 0 11.1-4.4 11.1-11.3v-26.5c0-6-5-11.2-11.1-11.6z"/><path fill="#040404" d="m19.6 9.9-7.4 5.5v25.3h7.4v-30.8z"/><path fill="#040404" d="m19.8 30.2 8.3-8.8 0.8-0.2h8.3l-8.6 8.7c-0.6 0.6-1.2 0.6-3.1 0.6-0.9 0-5 0.1-5.7 0v-0.3z"/><path fill="#040404" d="m19.8 31.2h8.4l1 0.2 9.9 9.3h-9.2l-0.7-0.3-9.4-9.2z"/><path fill="#050505" d="m60.6 7.9h6.2v21.6l11-12.6h7.2l-10.1 11.4 10.6 15.4h-6.7l-7.8-11.4-4.2 4.7v6.7h-6.2v-35.8z"/><path fill="#050505" d="m85.4 30.5c0-7.6 5-14.1 14-14.1 8.2 0 13.6 5.9 13.6 13.7l-0.1 2.1h-21c0.2 3.7 3.1 6.9 7.6 6.9 3.7 0 6-1.8 6.9-4h6.1c-1.1 4.6-5.2 9-12.5 9-8.9 0.2-14.6-5.6-14.6-13.6zm6.5-2.9h14.7c-0.3-3.1-3-6-7.4-6-3.8 0.1-6.7 2.6-7.3 6z"/><path fill="#050505" d="m116.1 35.1h6c0.2 2.4 2.3 4.2 6.4 4.2 3.4 0 5.9-1.1 5.9-2.9 0-2.3-2.9-2.8-7.5-3.5-5.8-0.8-10.2-2.7-10.2-7.9 0-5.1 4.4-8.6 11.2-8.6 6.2 0 11.9 3 12.2 9h-5.8c-0.3-2.3-2.7-3.8-6.4-3.8-2.7 0-5.1 1.1-5.1 3 0 2 2.3 2.5 7.2 3.2 5.9 0.8 10.6 2.4 10.6 8.2 0 4.7-4.4 8.1-12.2 8.1s-12.3-3.4-12.3-9z"/><path fill="#050505" d="m147.1 40.5c-1-1.6 0 0 0 0-0.7-1.2 0 0 0 0 0.7 1.3 2.5 3.1 7.2 3.1h4.5v-5.2h-2.8c-2.5 0-3.1-1.2-3.1-3.3v-12.7h5.8v-5.5h-5.8v-7.1h-5.9v7.1h-4.3v5.4h4.4v13.4c0 1.8 0.2 3.7 0 4.8z"/></svg>
 				<span class="version">v1.0</span>
 			</div>
 			<p class="subtitle">The Go framework for building modern APIs (Hot Reload Verified)</p>

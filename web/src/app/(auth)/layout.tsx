@@ -54,14 +54,11 @@ export default function AuthLayout({ children }: PropsWithChildren) {
         {/* Content Container - Vertically centered */}
         <div className="relative z-10 flex flex-col justify-center h-full px-10 xl:px-16 text-white">
           {/* Logo with glow effect */}
-          <div className="flex items-center gap-3 mb-10">
+          <div className="flex items-center mb-10">
             <div className="relative">
-              <div className="absolute inset-0 bg-white/30 rounded-xl blur-xl scale-150" />
-              <div className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm border border-white/20 shadow-lg">
-                <Logo className="h-8 w-8 text-white" />
-              </div>
+              <div className="absolute inset-0 bg-white/25 rounded-xl blur-xl scale-125" />
+              <Logo className="relative h-[42px] w-[129px] text-white drop-shadow-lg" role="img" aria-label={t('auth.brandName')} />
             </div>
-            <span className="text-2xl font-bold tracking-tight drop-shadow-lg">{t('auth.brandName')}</span>
           </div>
           
           {/* Hero Text */}
@@ -121,12 +118,7 @@ export default function AuthLayout({ children }: PropsWithChildren) {
         <div className="relative flex-1 flex flex-col items-center justify-center p-6 md:p-8">
           {/* Mobile Logo */}
           <div className="lg:hidden mb-6 flex flex-col items-center space-y-3">
-            <div className="flex items-center space-x-3">
-              <Logo className="h-9 w-9 text-primary" />
-              <span className="text-2xl font-bold bg-linear-to-r from-primary to-primary-deeper bg-clip-text text-transparent">
-                {t('auth.brandName')}
-              </span>
-            </div>
+            <Logo className="h-10 w-[123px] text-black" role="img" aria-label={t('auth.brandName')} />
             <p className="text-center text-sm text-muted-foreground max-w-xs">
               {t('auth.heroSubtitle')}
             </p>

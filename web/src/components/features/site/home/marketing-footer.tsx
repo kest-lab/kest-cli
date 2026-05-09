@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { FaDiscord, FaGithub, FaXTwitter } from 'react-icons/fa6';
+import { Logo } from '@/components/ui/icons';
 import type { MarketingFooterContent } from './types';
 
 /**
@@ -60,9 +61,7 @@ export function MarketingFooter({ brandName, content }: MarketingFooterProps) {
         <div className="grid gap-10 lg:grid-cols-[1.05fr_1.95fr]">
           <div className="max-w-sm">
             <div>
-              <p className="text-2xl font-semibold tracking-tight text-text-main [font-family:var(--font-space-grotesk)]">
-                {brandName}
-              </p>
+              <Logo className="h-9 w-[111px] text-black" role="img" aria-label={brandName} />
               <p className="mt-1 text-sm text-text-subtle">{content.tagline}</p>
             </div>
             <div className="mt-6">

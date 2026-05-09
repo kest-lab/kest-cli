@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/ui/icons';
 import { LanguageSwitcher } from '@/components/common/locale-switcher';
 import { cn } from '@/utils';
 import type { MarketingNavItem } from './types';
@@ -113,10 +114,8 @@ export function MarketingNavbar({
     >
       <div className="container">
         <div className="flex h-[4.5rem] items-center justify-between gap-6">
-          <Link href="/" className="flex items-center gap-3">
-            <p className="text-2xl font-semibold tracking-tight text-text-main [font-family:var(--font-space-grotesk)]">
-              {brandName}
-            </p>
+          <Link href="/" className="flex items-center" aria-label={brandName}>
+            <Logo className="h-9 w-[111px] shrink-0 text-black" aria-hidden="true" />
           </Link>
 
           <nav className="hidden items-center gap-6 lg:flex">

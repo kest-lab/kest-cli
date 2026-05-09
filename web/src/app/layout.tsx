@@ -21,6 +21,12 @@ export const metadata: Metadata = {
   },
   description: "Open-source API testing and collaboration with context-aware flows and AI-powered diagnosis.",
   metadataBase: new URL("http://localhost:3000"), // Purified: Use hardcoded base
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+  },
 };
 
 export default async function RootLayout({

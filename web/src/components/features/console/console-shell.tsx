@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import {
-  BarChart3,
   Bell,
   FolderKanban,
   LogOut,
@@ -12,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/ui/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -90,11 +90,8 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen flex-col overflow-hidden bg-bg-canvas text-text-main">
       <header className="z-50 flex h-16 shrink-0 items-center justify-between border-b bg-bg-surface px-4 shadow-sm md:px-6">
         <div className="flex items-center gap-4">
-          <Link href={ROUTES.SITE.HOME} className="group flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform group-hover:scale-110">
-              <BarChart3 className="h-5 w-5" />
-            </div>
-            <span className="text-xl font-bold tracking-tight">{t.console('shell.title')}</span>
+          <Link href={ROUTES.SITE.HOME} className="group flex items-center" aria-label={t.console('shell.title')}>
+            <Logo className="h-8 w-[99px] shrink-0 text-black transition-transform group-hover:scale-[1.03]" aria-hidden="true" />
           </Link>
         </div>
 
