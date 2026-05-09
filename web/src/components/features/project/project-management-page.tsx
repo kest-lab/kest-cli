@@ -182,13 +182,12 @@ export function ProjectManagementPage() {
 
   return (
     <div className="flex-1 space-y-8 p-6 pt-6">
-      <div className="relative overflow-hidden rounded-xl border border-primary/10 bg-linear-to-r from-primary/10 via-cyan-500/5 to-transparent p-6 transition-colors duration-500">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0xOCAxOGgyNHYyNEgxOHoiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utb3BhY2l0eT0iLjA1Ii8+PC9nPjwvc3ZnPg==')] opacity-50" />
-        <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <div className="rounded-lg border border-border-main bg-block-cream p-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <h1 className="text-3xl font-bold tracking-tight">{t('projectsPage.title')}</h1>
-              <FolderKanban className="h-6 w-6 text-primary" />
+              <FolderKanban className="h-6 w-6 text-text-main" />
             </div>
             <p className="max-w-3xl text-sm text-text-muted">
               {t('projectsPage.description', { projectsPath })}
@@ -260,8 +259,8 @@ export function ProjectManagementPage() {
         )}
       </div>
 
-      <Card className="overflow-hidden border-border/50 shadow-premium">
-        <CardHeader className="flex flex-col gap-3 border-b bg-muted/20 md:flex-row md:items-center md:justify-between">
+      <Card className="overflow-hidden border-border-main bg-bg-canvas shadow-none">
+        <CardHeader className="flex flex-col gap-3 border-b border-border-main bg-bg-surface md:flex-row md:items-center md:justify-between">
           <div>
             <CardTitle>{t('projectsPage.cardTitle')}</CardTitle>
             <CardDescription>
@@ -296,15 +295,15 @@ export function ProjectManagementPage() {
 
           {projectsQuery.isLoading ? (
             <div className="space-y-3">
-              <div className="h-14 animate-pulse rounded-xl bg-muted" />
-              <div className="h-14 animate-pulse rounded-xl bg-muted" />
-              <div className="h-14 animate-pulse rounded-xl bg-muted" />
+              <div className="h-14 animate-pulse rounded-md bg-muted" />
+              <div className="h-14 animate-pulse rounded-md bg-muted" />
+              <div className="h-14 animate-pulse rounded-md bg-muted" />
             </div>
           ) : (
             <>
-              <div className="overflow-hidden rounded-xl border">
+              <div className="overflow-hidden rounded-md border border-border-main">
                 <Table>
-                  <TableHeader className="bg-muted/10">
+                  <TableHeader className="bg-bg-surface">
                     <TableRow className="hover:bg-transparent">
                       <TableHead>{t('projectsPage.tableName')}</TableHead>
                       <TableHead>{t('projectsPage.tableSlug')}</TableHead>
@@ -316,11 +315,11 @@ export function ProjectManagementPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredProjects.map((project) => (
-                      <TableRow key={project.id} className="transition-colors hover:bg-muted/20">
+                      <TableRow key={project.id} className="transition-colors hover:bg-bg-subtle">
                         <TableCell className="min-w-[220px]">
                           <Link
                             href={buildProjectDetailRoute(project.id)}
-                            className="block rounded-lg px-1 py-1 transition-colors hover:bg-muted/30"
+                            className="block rounded-md px-1 py-1 transition-colors hover:bg-bg-subtle"
                           >
                             <div className="space-y-1">
                               <div className="font-medium">{project.name}</div>
@@ -412,7 +411,7 @@ export function ProjectManagementPage() {
                 </Table>
               </div>
 
-              <div className="rounded-xl border bg-muted/20 p-4">
+              <div className="rounded-md border border-border-main bg-bg-surface p-4">
                 <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                   <BarChart3 className="h-4 w-4" />
                   {t('projectsPage.connectedEndpoints')}
