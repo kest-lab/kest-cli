@@ -3480,13 +3480,13 @@ export function ProjectFlowManagementPage({
 
   const editorContent = selectedFlowQuery.isLoading ? (
     <div className="space-y-6">
-      <div className="h-36 animate-pulse rounded-3xl bg-muted" />
-      <div className="h-[420px] animate-pulse rounded-3xl bg-muted" />
+      <div className="h-36 animate-pulse rounded-md bg-muted" />
+      <div className="h-[420px] animate-pulse rounded-md bg-muted" />
     </div>
   ) : selectedFlowId && !selectedFlowQuery.data ? (
-    <Card className="border-dashed border-border/60">
+    <Card className="border-dashed border-border-main bg-bg-canvas">
       <CardContent className="space-y-4 py-14 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md border border-border-main bg-bg-surface text-text-main">
           <FileClock className="h-6 w-6" />
         </div>
         <div className="space-y-2">
@@ -3499,9 +3499,9 @@ export function ProjectFlowManagementPage({
       </CardContent>
     </Card>
   ) : !selectedFlowId ? (
-    <Card className="border-dashed border-border/60">
+    <Card className="border-dashed border-border-main bg-bg-canvas">
       <CardContent className="space-y-4 py-14 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md border border-border-main bg-bg-surface text-text-main">
           <Workflow className="h-6 w-6" />
         </div>
         <div className="space-y-2">
@@ -3516,7 +3516,7 @@ export function ProjectFlowManagementPage({
     </Card>
   ) : (
     <div className="flex flex-col">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border/60 bg-bg-surface/70 px-4 py-4 md:px-6">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border-main bg-bg-surface px-4 py-4 md:px-6">
         <Select
           value={
             selectedRunEnvironmentId === null
@@ -3608,7 +3608,7 @@ export function ProjectFlowManagementPage({
           </Button>
         ) : null}
         {dirty ? (
-          <Badge variant="outline" className="border-amber-200 bg-amber-500/10 text-amber-700">
+          <Badge variant="outline" className="border-border-main bg-block-cream text-text-main">
             {t('flowPage.unsaved')}
           </Badge>
         ) : (
@@ -3617,7 +3617,7 @@ export function ProjectFlowManagementPage({
       </div>
 
       {validationState.message ? (
-        <div className="border-b border-border/60 px-4 py-4 md:px-6">
+        <div className="border-b border-border-main px-4 py-4 md:px-6">
           <Alert variant="destructive">
             <AlertTitle>{t('flowPage.validationTitle')}</AlertTitle>
             <AlertDescription>{validationState.message}</AlertDescription>
@@ -3626,9 +3626,9 @@ export function ProjectFlowManagementPage({
       ) : null}
 
       <div className="flex flex-col xl:min-h-0 xl:flex-1 xl:flex-row">
-        <div className="min-w-0 flex-1 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.08),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.85),rgba(248,250,252,0.98))]">
+        <div className="min-w-0 flex-1 bg-bg-surface">
           <div className="min-h-[720px] p-4 md:p-6">
-            <div className="h-[min(72vh,960px)] min-h-[720px] overflow-hidden rounded-[32px] border border-border/60 bg-background/85 shadow-premium">
+            <div className="h-[min(72vh,960px)] min-h-[720px] overflow-hidden rounded-lg border border-border-main bg-bg-canvas shadow-none">
               <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -3663,18 +3663,18 @@ export function ProjectFlowManagementPage({
                   variant={BackgroundVariant.Lines}
                   gap={24}
                   lineWidth={1}
-                  color="rgba(148, 163, 184, 0.12)"
+                  color="rgba(0, 0, 0, 0.08)"
                 />
                 <Background
                   id="flow-grid-major"
                   variant={BackgroundVariant.Lines}
                   gap={120}
                   lineWidth={1.2}
-                  color="rgba(100, 116, 139, 0.22)"
+                  color="rgba(0, 0, 0, 0.14)"
                 />
                 <Panel position="top-right" className="!m-4 flex max-w-[min(90vw,360px)] flex-col items-end gap-3">
                   {isCanvasToolsOpen ? (
-                    <div className="w-[min(90vw,320px)] rounded-[28px] border border-border/60 bg-background/92 p-3 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.4)] backdrop-blur-xl">
+                    <div className="w-[min(90vw,320px)] rounded-lg border border-border-main bg-bg-canvas p-3 shadow-none">
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
@@ -3885,7 +3885,7 @@ export function ProjectFlowManagementPage({
                           size="lg"
                           isIcon
                           aria-label={t('flowPage.openCanvasTools')}
-                          className="h-14 w-14 rounded-full border border-primary/20 bg-primary text-primary-foreground shadow-[0_20px_45px_-22px_rgba(14,165,233,0.75)]"
+                          className="h-14 w-14 rounded-full border border-border-main bg-primary text-primary-foreground shadow-none"
                           onClick={() => setIsCanvasToolsOpen(true)}
                         >
                           <CircleHelp className="h-5 w-5" />
