@@ -4357,7 +4357,7 @@ function RenameCollectionDialog({
               value={value}
               onChange={event => onValueChange(event.target.value)}
               placeholder={t('collections.workbench.renameCollectionDialog.placeholder')}
-              className="rounded-2xl"
+              className="rounded-md"
             />
           </div>
         </DialogBody>
@@ -4417,7 +4417,7 @@ function RenameRequestDialog({
               value={value}
               onChange={event => onValueChange(event.target.value)}
               placeholder={t('collections.workbench.renameRequestDialog.placeholder')}
-              className="rounded-2xl"
+              className="rounded-md"
             />
           </div>
         </DialogBody>
@@ -4512,7 +4512,7 @@ function ExampleFormDialog({
               />
             </div>
 
-            <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-slate-50/80 px-4 py-3">
+            <div className="flex items-center justify-between rounded-md border border-border-main bg-bg-surface px-4 py-3">
               <div>
                 <p className="text-sm font-medium text-text-main">
                   {t('collections.workbench.examples.setDefaultTitle')}
@@ -4588,12 +4588,12 @@ function EditExampleDialog({
         <DialogBody>
           {isLoading && !example ? (
             <div className="space-y-3 py-1">
-              <div className="h-10 animate-pulse rounded-2xl bg-muted" />
-              <div className="h-28 animate-pulse rounded-2xl bg-muted" />
-              <div className="h-20 animate-pulse rounded-[24px] bg-muted" />
+              <div className="h-10 animate-pulse rounded-md bg-muted" />
+              <div className="h-28 animate-pulse rounded-md bg-muted" />
+              <div className="h-20 animate-pulse rounded-md bg-muted" />
             </div>
           ) : !example ? (
-            <div className="rounded-[24px] border border-rose-200 bg-rose-50/70 p-4 text-sm text-rose-700">
+            <div className="rounded-md border border-border-main bg-block-pink p-4 text-sm text-text-main">
               {t('collections.workbench.examples.loadFailed')}
             </div>
           ) : (
@@ -4627,7 +4627,7 @@ function EditExampleDialog({
                 />
               </div>
 
-              <div className="rounded-[24px] border border-border/60 bg-slate-50/80 p-4">
+              <div className="rounded-md border border-border-main bg-bg-surface p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-text-main">
@@ -4697,8 +4697,8 @@ function DeleteExampleDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
-          <div className="rounded-[24px] border border-rose-200 bg-rose-50/70 p-4 text-sm leading-6 text-rose-700">
-            <span className="font-medium text-rose-800">
+          <div className="rounded-md border border-border-main bg-block-pink p-4 text-sm leading-6 text-text-main">
+            <span className="font-medium text-text-main">
               {exampleName || t('collections.workbench.examples.thisExample')}
             </span>{' '}
             {t('collections.workbench.examples.deleteDialogWarning')}
@@ -4757,20 +4757,20 @@ function ExampleDetailDialog({
         <DialogBody className="space-y-4 overflow-y-auto">
           {isLoading && !example ? (
             <div className="space-y-4 py-1">
-              <div className="h-28 animate-pulse rounded-[24px] bg-muted" />
+              <div className="h-28 animate-pulse rounded-md bg-muted" />
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="h-44 animate-pulse rounded-[24px] bg-muted" />
-                <div className="h-44 animate-pulse rounded-[24px] bg-muted" />
+                <div className="h-44 animate-pulse rounded-md bg-muted" />
+                <div className="h-44 animate-pulse rounded-md bg-muted" />
               </div>
-              <div className="h-56 animate-pulse rounded-[24px] bg-muted" />
+              <div className="h-56 animate-pulse rounded-md bg-muted" />
             </div>
           ) : isError && !example ? (
-            <div className="rounded-[24px] border border-rose-200 bg-rose-50/70 p-4 text-sm text-rose-700">
+            <div className="rounded-md border border-border-main bg-block-pink p-4 text-sm text-text-main">
               {t('collections.workbench.examples.detailLoadFailed')}
             </div>
           ) : example ? (
             <>
-              <div className="rounded-[24px] border border-border/60 bg-white/90 p-5 shadow-sm">
+              <div className="rounded-md border border-border-main bg-bg-canvas p-5 shadow-none">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
@@ -4778,7 +4778,7 @@ function ExampleDetailDialog({
                       {example.is_default ? (
                         <Badge
                           variant="outline"
-                          className="border-primary/20 bg-primary/10 text-primary"
+                          className="border-border-main bg-block-lilac text-text-main"
                         >
                           {t('collections.workbench.badges.default')}
                         </Badge>
@@ -4954,8 +4954,8 @@ function ExamplesPanel({
 
   return (
     <div className="space-y-4">
-      <Card className="border-border/60 bg-white/85 py-0 shadow-sm">
-        <CardHeader className="border-b border-border/60 py-5">
+      <Card className="border-border-main bg-bg-canvas py-0 shadow-none">
+        <CardHeader className="border-b border-border-main py-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <CardTitle>{t('common.examples')}</CardTitle>
@@ -4989,7 +4989,7 @@ function ExamplesPanel({
         </CardHeader>
         <CardContent className="space-y-4 px-5 py-5">
           {!canCreateExamples ? (
-            <div className="rounded-[24px] border border-dashed border-border/70 bg-slate-50/80 p-5">
+            <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-5">
               <p className="text-sm font-semibold text-text-main">
                 {t('collections.workbench.examples.requiresSavedRequestTitle')}
               </p>
@@ -4998,7 +4998,7 @@ function ExamplesPanel({
               </p>
             </div>
           ) : !requestPersisted ? (
-            <div className="rounded-[24px] border border-dashed border-border/70 bg-slate-50/80 p-5">
+            <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-5">
               <p className="text-sm font-semibold text-text-main">
                 {t('collections.workbench.examples.requestNotPersistedTitle')}
               </p>
@@ -5011,19 +5011,19 @@ function ExamplesPanel({
           {isLoading ? (
             <div className="space-y-3">
               {[0, 1].map(item => (
-                <div key={item} className="rounded-[24px] border border-border/60 p-4">
+                <div key={item} className="rounded-md border border-border-main p-4">
                   <div className="h-5 w-48 animate-pulse rounded-full bg-muted" />
                   <div className="mt-3 h-4 w-72 animate-pulse rounded-full bg-muted" />
-                  <div className="mt-5 h-10 animate-pulse rounded-2xl bg-muted" />
+                  <div className="mt-5 h-10 animate-pulse rounded-md bg-muted" />
                 </div>
               ))}
             </div>
           ) : isError ? (
-            <div className="rounded-[24px] border border-rose-200 bg-rose-50/70 p-5 text-sm text-rose-700">
+            <div className="rounded-md border border-border-main bg-block-pink p-5 text-sm text-text-main">
               {t('collections.workbench.examples.panelLoadFailed')}
             </div>
           ) : examples.length === 0 ? (
-            <div className="rounded-[24px] border border-dashed border-border/70 bg-slate-50/80 p-5">
+            <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-5">
               <p className="text-sm font-semibold text-text-main">
                 {t('collections.workbench.examples.emptyTitle')}
               </p>
@@ -5036,7 +5036,7 @@ function ExamplesPanel({
               {examples.map(example => (
                 <div
                   key={example.id}
-                  className="rounded-[24px] border border-border/60 bg-white/90 p-4 shadow-sm"
+                  className="rounded-md border border-border-main bg-bg-canvas p-4 shadow-none"
                 >
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                     <div className="space-y-3">
@@ -5045,7 +5045,7 @@ function ExamplesPanel({
                         {example.is_default ? (
                           <Badge
                             variant="outline"
-                            className="border-primary/20 bg-primary/10 text-primary"
+                            className="border-border-main bg-block-lilac text-text-main"
                           >
                             {t('collections.workbench.badges.default')}
                           </Badge>
@@ -5147,7 +5147,7 @@ function ExamplesPanel({
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                        <DropdownMenuContent align="end" className="w-40 rounded-lg">
                           <DropdownMenuItem onSelect={() => onEditExample(example)}>
                             {t('collections.workbench.actions.edit')}
                           </DropdownMenuItem>
@@ -5182,14 +5182,14 @@ function ExampleSnapshotBlock({
   tone?: 'light' | 'dark';
 }) {
   return (
-    <div className="rounded-[24px] border border-border/60 bg-white/90 p-4 shadow-sm">
+    <div className="rounded-md border border-border-main bg-bg-canvas p-4 shadow-none">
       <p className="text-sm font-medium text-text-main">{title}</p>
       <pre
         className={cn(
-          'mt-3 max-h-64 overflow-auto rounded-[20px] border p-4 text-xs leading-6 whitespace-pre-wrap',
+          'mt-3 max-h-64 overflow-auto rounded-md border p-4 text-xs leading-6 whitespace-pre-wrap',
           tone === 'dark'
-            ? 'border-slate-900/70 bg-slate-950/95 text-slate-100'
-            : 'border-border/60 bg-slate-50/80 text-slate-700'
+            ? 'border-border-main bg-primary text-primary-foreground'
+            : 'border-border-main bg-bg-surface text-text-main'
         )}
       >
         {value}
