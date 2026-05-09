@@ -6562,8 +6562,8 @@ function ResponsePanel({
     .join('\n');
 
   return (
-    <Card className="min-h-[320px] gap-0 rounded-[28px] border-border/60 bg-white/90 py-0 shadow-[0_12px_44px_rgba(15,23,42,0.06)]">
-      <CardHeader className="gap-4 border-b border-border/60 py-5">
+    <Card className="min-h-[320px] gap-0 rounded-lg border-border-main bg-bg-canvas py-0 shadow-none">
+      <CardHeader className="gap-4 border-b border-border-main py-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <CardTitle className="text-xl tracking-tight">{t('common.response')}</CardTitle>
@@ -6604,8 +6604,8 @@ function ResponsePanel({
 
       <CardContent className="flex min-h-[260px] flex-1 flex-col px-5 py-5">
         {isSending ? (
-          <div className="flex flex-1 flex-col items-center justify-center rounded-[24px] border border-dashed border-border/70 bg-slate-50/80 text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+          <div className="flex flex-1 flex-col items-center justify-center rounded-md border border-dashed border-border-main bg-bg-surface text-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-border-main border-t-primary" />
             <p className="mt-4 text-sm font-medium text-text-main">
               {t('collections.workbench.response.sendingTitle')}
             </p>
@@ -6614,14 +6614,14 @@ function ResponsePanel({
             </p>
           </div>
         ) : response.error ? (
-          <div className="flex flex-1 flex-col justify-center rounded-[24px] border border-rose-200 bg-rose-50/70 p-6">
-            <p className="text-sm font-semibold text-rose-700">
+          <div className="flex flex-1 flex-col justify-center rounded-md border border-border-main bg-block-pink p-6">
+            <p className="text-sm font-semibold text-text-main">
               {t('collections.workbench.response.errorTitle')}
             </p>
-            <p className="mt-2 text-sm leading-6 text-rose-600">{response.error}</p>
+            <p className="mt-2 text-sm leading-6 text-text-main">{response.error}</p>
           </div>
         ) : response.status === null ? (
-          <div className="flex flex-1 flex-col items-center justify-center rounded-[24px] border border-dashed border-border/70 bg-slate-50/80 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center rounded-md border border-dashed border-border-main bg-bg-surface text-center">
             <p className="text-base font-semibold text-text-main">
               {t('collections.workbench.response.emptyTitle')}
             </p>
@@ -6632,16 +6632,16 @@ function ResponsePanel({
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-4">
             {responseHeaders ? (
-              <div className="rounded-[24px] border border-border/60 bg-slate-100/90 p-4">
+              <div className="rounded-md border border-border-main bg-bg-surface p-4">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                   {t('common.headers')}
                 </p>
-                <pre className="overflow-auto text-xs leading-6 text-slate-700">
+                <pre className="overflow-auto text-xs leading-6 text-text-main">
                   {responseHeaders}
                 </pre>
               </div>
             ) : null}
-            <pre className="flex-1 overflow-auto rounded-[24px] border border-border/60 bg-slate-950/95 p-5 text-sm leading-6 text-slate-100">
+            <pre className="flex-1 overflow-auto rounded-md border border-border-main bg-bg-surface p-5 text-sm leading-6 text-text-main">
               {response.body || t('collections.workbench.response.emptyBody')}
             </pre>
           </div>
@@ -6653,7 +6653,7 @@ function ResponsePanel({
 
 function MetricBadge({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-full border border-border/60 bg-slate-50/80 px-3 py-1.5 text-sm">
+    <div className="rounded-full border border-border-main bg-bg-surface px-3 py-1.5 text-sm">
       <span className="text-text-muted">{label}: </span>
       <span className="font-medium text-text-main">{value}</span>
     </div>
