@@ -6,7 +6,7 @@
  * @usage Use for social login buttons (Google, Apple, etc.) or app branding (Logo).
  * @example
  * <Google className="size-5" />
- * <Logo className="size-10" />
+ * <Logo className="h-10 w-[123px]" />
  */
 import React from 'react';
 
@@ -59,15 +59,16 @@ export const Meta = (props: React.SVGProps<SVGSVGElement>) => (
 export const Logo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+    viewBox="0 0 160 52"
     {...props}
   >
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+    <path fill="#F6FF3A" d="m37.5 1h-25.8c-5.5 0-10.5 4.9-10.5 11.1v26.7c0 6.5 5 11.1 10.5 11.6h25.8c5.3 0 11.1-4.4 11.1-11.3v-26.5c0-6-5-11.2-11.1-11.6z" />
+    <path fill="#040404" d="m19.6 9.9-7.4 5.5v25.3h7.4v-30.8z" />
+    <path fill="#040404" d="m19.8 30.2 8.3-8.8 0.8-0.2h8.3l-8.6 8.7c-0.6 0.6-1.2 0.6-3.1 0.6-0.9 0-5 0.1-5.7 0v-0.3z" />
+    <path fill="#040404" d="m19.8 31.2h8.4l1 0.2 9.9 9.3h-9.2l-0.7-0.3-9.4-9.2z" />
+    <path fill="currentColor" d="m60.6 7.9h6.2v21.6l11-12.6h7.2l-10.1 11.4 10.6 15.4h-6.7l-7.8-11.4-4.2 4.7v6.7h-6.2v-35.8z" />
+    <path fill="currentColor" d="m85.4 30.5c0-7.6 5-14.1 14-14.1 8.2 0 13.6 5.9 13.6 13.7l-0.1 2.1h-21c0.2 3.7 3.1 6.9 7.6 6.9 3.7 0 6-1.8 6.9-4h6.1c-1.1 4.6-5.2 9-12.5 9-8.9 0.2-14.6-5.6-14.6-13.6zm6.5-2.9h14.7c-0.3-3.1-3-6-7.4-6-3.8 0.1-6.7 2.6-7.3 6z" />
+    <path fill="currentColor" d="m116.1 35.1h6c0.2 2.4 2.3 4.2 6.4 4.2 3.4 0 5.9-1.1 5.9-2.9 0-2.3-2.9-2.8-7.5-3.5-5.8-0.8-10.2-2.7-10.2-7.9 0-5.1 4.4-8.6 11.2-8.6 6.2 0 11.9 3 12.2 9h-5.8c-0.3-2.3-2.7-3.8-6.4-3.8-2.7 0-5.1 1.1-5.1 3 0 2 2.3 2.5 7.2 3.2 5.9 0.8 10.6 2.4 10.6 8.2 0 4.7-4.4 8.1-12.2 8.1s-12.3-3.4-12.3-9z" />
+    <path fill="currentColor" d="m147.1 40.5c-1-1.6 0 0 0 0-0.7-1.2 0 0 0 0 0.7 1.3 2.5 3.1 7.2 3.1h4.5v-5.2h-2.8c-2.5 0-3.1-1.2-3.1-3.3v-12.7h5.8v-5.5h-5.8v-7.1h-5.9v7.1h-4.3v5.4h4.4v13.4c0 1.8 0.2 3.7 0 4.8z" />
   </svg>
 );
- 
