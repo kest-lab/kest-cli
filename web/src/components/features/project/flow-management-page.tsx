@@ -233,17 +233,17 @@ const FLOW_UNDO_HISTORY_LIMIT = 50;
 const getStatusBadgeClassName = (status: FlowRunStatus | 'idle') => {
   switch (status) {
     case 'running':
-      return 'border-sky-200 bg-sky-500/10 text-sky-700';
+      return 'border-border-main bg-block-mint text-text-main';
     case 'passed':
-      return 'border-emerald-200 bg-emerald-500/10 text-emerald-700';
+      return 'border-border-main bg-block-lime text-text-main';
     case 'failed':
-      return 'border-rose-200 bg-rose-500/10 text-rose-700';
+      return 'border-border-main bg-block-pink text-text-main';
     case 'canceled':
-      return 'border-amber-200 bg-amber-500/10 text-amber-700';
+      return 'border-border-main bg-block-cream text-text-main';
     case 'pending':
-      return 'border-slate-200 bg-slate-500/10 text-slate-700';
+      return 'border-border-main bg-bg-subtle text-text-main';
     default:
-      return 'border-border/60 bg-background text-text-muted';
+      return 'border-border-main bg-bg-subtle text-text-muted';
   }
 };
 
@@ -3354,8 +3354,8 @@ export function ProjectFlowManagementPage({
   };
 
   const flowSidebar = (
-    <aside className="flex w-full shrink-0 flex-col border-b border-border/60 bg-bg-surface/70 lg:h-full lg:w-[320px] lg:border-r lg:border-b-0">
-      <div className="space-y-4 border-b border-border/60 px-4 py-4">
+    <aside className="flex w-full shrink-0 flex-col border-b border-border-main bg-bg-surface lg:h-full lg:w-[320px] lg:border-r lg:border-b-0">
+      <div className="space-y-4 border-b border-border-main px-4 py-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-text-main">{t('modules.flows.label')}</p>
@@ -3403,7 +3403,7 @@ export function ProjectFlowManagementPage({
         {flowListQuery.isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="h-24 animate-pulse rounded-3xl bg-muted" />
+              <div key={index} className="h-24 animate-pulse rounded-md bg-muted" />
             ))}
           </div>
         ) : flowListQuery.error ? (
@@ -3412,9 +3412,9 @@ export function ProjectFlowManagementPage({
             <AlertDescription>{t('flowPage.loadFailedDescription')}</AlertDescription>
           </Alert>
         ) : filteredFlows.length === 0 ? (
-          <Card className="border-dashed border-border/60">
+          <Card className="border-dashed border-border-main bg-bg-canvas">
             <CardContent className="space-y-4 py-10 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md border border-border-main bg-bg-surface text-text-main">
                 <FolderGit2 className="h-6 w-6" />
               </div>
               <div className="space-y-2">
@@ -3435,10 +3435,10 @@ export function ProjectFlowManagementPage({
               <div
                 key={flow.id}
                 className={cn(
-                  'rounded-3xl border px-4 py-3 transition-colors',
+                  'rounded-md border px-4 py-3 transition-colors',
                   selectedFlowId === flow.id
-                    ? 'border-primary/30 bg-primary/10'
-                    : 'border-border/60 bg-background/70 hover:bg-background'
+                    ? 'border-border-main bg-block-lilac'
+                    : 'border-border-main bg-bg-canvas hover:bg-bg-subtle'
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
