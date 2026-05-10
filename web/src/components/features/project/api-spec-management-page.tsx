@@ -2434,13 +2434,13 @@ export function ApiSpecManagementPage({
 
                       <TabsContent value="overview" className="space-y-4">
                         <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="rounded-xl border p-4">
+                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                             <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                               {t('common.projectId')}
                             </div>
                             <div className="mt-2 font-mono text-sm">{selectedSpec.project_id}</div>
                           </div>
-                          <div className="rounded-xl border p-4">
+                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                             <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                               {t('apiSpecsPage.categoryId')}
                             </div>
@@ -2448,7 +2448,7 @@ export function ApiSpecManagementPage({
                               {selectedSpec.category_id ?? t('common.notSet')}
                             </div>
                           </div>
-                          <div className="rounded-xl border p-4">
+                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                             <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                               {t('common.created')}
                             </div>
@@ -2456,7 +2456,7 @@ export function ApiSpecManagementPage({
                               {formatDate(selectedSpec.created_at, 'YYYY-MM-DD HH:mm')}
                             </div>
                           </div>
-                          <div className="rounded-xl border p-4">
+                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                             <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                               {t('common.updated')}
                             </div>
@@ -2466,7 +2466,7 @@ export function ApiSpecManagementPage({
                           </div>
                         </div>
 
-                        <div className="rounded-xl border p-4">
+                        <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                           <div className="mb-2 text-sm font-medium">{t('common.description')}</div>
                           <div className="text-sm text-muted-foreground">
                             {selectedSpec.description || t('common.noDescriptionProvided')}
@@ -2494,7 +2494,7 @@ export function ApiSpecManagementPage({
 
                       <TabsContent value="docs" className="space-y-4">
                         <div className="grid gap-3 sm:grid-cols-3">
-                          <div className="rounded-xl border p-4">
+                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                             <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                               {t('common.docSource')}
                             </div>
@@ -2502,7 +2502,7 @@ export function ApiSpecManagementPage({
                               {getDocSourceLabel(t, selectedSpec.doc_source)}
                             </div>
                           </div>
-                          <div className="rounded-xl border p-4">
+                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                             <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                               {t('apiSpecsPage.updatedDefault')}
                             </div>
@@ -2512,7 +2512,7 @@ export function ApiSpecManagementPage({
                                 : t('apiSpecs.documentationNotGenerated')}
                             </div>
                           </div>
-                          <div className="rounded-xl border p-4">
+                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                             <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                               {t('apiSpecsPage.updatedLocalized')}
                             </div>
