@@ -2592,13 +2592,16 @@ export function ApiSpecManagementPage({
 
                         {specExamplesQuery.isLoading ? (
                           <div className="space-y-3">
-                            <div className="h-24 animate-pulse rounded-xl bg-muted" />
-                            <div className="h-24 animate-pulse rounded-xl bg-muted" />
+                            <div className="h-24 animate-pulse rounded-md bg-muted" />
+                            <div className="h-24 animate-pulse rounded-md bg-muted" />
                           </div>
                         ) : specExamplesQuery.data?.items.length ? (
                           <div className="space-y-3">
                             {specExamplesQuery.data.items.map((example: ApiSpecExample) => (
-                              <div key={example.id} className="space-y-3 rounded-xl border p-4">
+                              <div
+                                key={example.id}
+                                className="space-y-3 rounded-md border border-border-main bg-bg-canvas p-4"
+                              >
                                 <div className="flex flex-wrap items-center gap-2">
                                   <div className="font-medium">{example.name}</div>
                                   <Badge variant="outline">
