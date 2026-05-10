@@ -1029,7 +1029,7 @@ function ApiSpecAICreateDialogContent({
             </Card>
 
             <div className="space-y-4">
-              <Card className="border-border/60">
+              <Card className="border-border-main bg-bg-canvas shadow-none">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Sparkles className="h-4 w-4 text-primary" />
@@ -1084,7 +1084,7 @@ function ApiSpecAICreateDialogContent({
               </Card>
 
               <details
-                className="rounded-2xl border border-border/60 bg-background"
+                className="rounded-md border border-border-main bg-bg-canvas"
                 open={showWhyDetails}
                 onToggle={event =>
                   setShowWhyDetails((event.currentTarget as HTMLDetailsElement).open)
@@ -1100,7 +1100,7 @@ function ApiSpecAICreateDialogContent({
                     {t('apiSpecs.aiCreateDialog.sections.whyTitle')}
                   </span>
                 </summary>
-                <div className="border-t border-border/60">
+                <div className="border-t border-border-main">
                   <Card className="border-0 shadow-none">
                     <CardHeader>
                       <CardDescription>
