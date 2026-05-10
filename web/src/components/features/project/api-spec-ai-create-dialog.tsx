@@ -806,7 +806,7 @@ function ApiSpecAICreateDialogContent({
 
         {hasPreviewPanel ? (
           <details
-            className="rounded-2xl border border-border/60 bg-background"
+            className="rounded-md border border-border-main bg-bg-canvas"
             open={showPreview}
             onToggle={event => setShowPreview((event.currentTarget as HTMLDetailsElement).open)}
           >
@@ -829,7 +829,7 @@ function ApiSpecAICreateDialogContent({
               ) : null}
             </summary>
 
-            <div className="border-t border-border/60 px-4 py-4">
+            <div className="border-t border-border-main px-4 py-4">
               {isGeneratingDraft || (!draft && (didDraftGenerationFail || draftStreamOutput)) ? (
                 <DraftGenerationPreview
                   status={draftStatus}
@@ -847,7 +847,7 @@ function ApiSpecAICreateDialogContent({
         {draft ? (
           <div className="space-y-4">
             <details
-              className="rounded-2xl border border-border/60 bg-background"
+              className="rounded-md border border-border-main bg-bg-canvas"
               open={showDraftDetails}
               onToggle={event =>
                 setShowDraftDetails((event.currentTarget as HTMLDetailsElement).open)
@@ -869,7 +869,7 @@ function ApiSpecAICreateDialogContent({
                 </span>
               </summary>
 
-              <div className="border-t border-border/60 px-4 py-4">
+              <div className="border-t border-border-main px-4 py-4">
                 <div className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
             <Card className="border-border/60">
               <CardHeader>
