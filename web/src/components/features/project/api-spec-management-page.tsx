@@ -634,9 +634,9 @@ export function SpecFormDialog({
         <DialogBody>
           {mode === 'edit' && isLoadingSpec ? (
             <div className="space-y-3 py-2">
-              <div className="h-10 animate-pulse rounded-xl bg-muted" />
-              <div className="h-10 animate-pulse rounded-xl bg-muted" />
-              <div className="h-48 animate-pulse rounded-xl bg-muted" />
+              <div className="h-10 animate-pulse rounded-md bg-muted" />
+              <div className="h-10 animate-pulse rounded-md bg-muted" />
+              <div className="h-48 animate-pulse rounded-md bg-muted" />
             </div>
           ) : mode === 'edit' && !spec ? (
             <Alert className="mt-2">
@@ -747,7 +747,7 @@ export function SpecFormDialog({
                   </Select>
                 </div>
 
-                <div className="flex items-center justify-between rounded-xl border px-3 py-2">
+                <div className="flex items-center justify-between rounded-md border border-border-main bg-bg-surface px-3 py-2">
                   <div className="space-y-1">
                     <Label htmlFor="spec-is-public">{t('apiSpecs.publicSpec')}</Label>
                     <div className="text-xs text-muted-foreground">
@@ -763,7 +763,7 @@ export function SpecFormDialog({
               </div>
 
               {mode === 'edit' ? (
-                <div className="rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
+                <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-3 text-xs text-muted-foreground">
                   {t('apiSpecsPage.editReadonlyNotice')}
                 </div>
               ) : null}
