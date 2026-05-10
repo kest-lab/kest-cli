@@ -199,7 +199,7 @@ function DraftGenerationPreview({
       : t('apiSpecs.aiCreateDialog.elapsedSeconds', { seconds: elapsedSeconds });
 
   return (
-    <Card className="border-border/60">
+    <Card className="border-border-main bg-bg-canvas shadow-none">
       <CardHeader>
         <CardTitle className="text-base">
           {t('apiSpecs.aiCreateDialog.sections.previewTitle')}
@@ -212,7 +212,7 @@ function DraftGenerationPreview({
       </CardHeader>
       <CardContent className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-4">
-          <div className="rounded-lg border border-border/60 p-4">
+          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="text-sm font-medium">
                 {t('apiSpecs.aiCreateDialog.sections.draftStructure')}
@@ -227,7 +227,7 @@ function DraftGenerationPreview({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-lg border border-border/60 p-4">
+            <div className="rounded-md border border-border-main bg-bg-canvas p-4">
               <div className="mb-3 text-sm font-medium">{t('common.parameters')}</div>
               <div className="space-y-3">
                 <Skeleton className="h-4 w-2/5" />
@@ -235,7 +235,7 @@ function DraftGenerationPreview({
               </div>
             </div>
 
-            <div className="rounded-lg border border-border/60 p-4">
+            <div className="rounded-md border border-border-main bg-bg-canvas p-4">
               <div className="mb-3 text-sm font-medium">{t('common.responses')}</div>
               <div className="space-y-3">
                 <Skeleton className="h-4 w-1/3" />
@@ -246,14 +246,14 @@ function DraftGenerationPreview({
         </div>
 
         <div className="space-y-3">
-          <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
+          <div className="rounded-md border border-border-main bg-bg-surface p-4">
             <div className="mb-2 flex items-center justify-between gap-2">
               <div className="text-sm font-medium">
                 {t('apiSpecs.aiCreateDialog.sections.liveOutput')}
               </div>
               <Badge variant="outline">{t('apiSpecs.aiCreateDialog.sections.streaming')}</Badge>
             </div>
-            <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-muted-foreground">
+            <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border-main bg-primary p-3 text-xs leading-6 text-primary-foreground">
               {streamOutput || t('apiSpecs.aiCreateDialog.placeholders.waitForTokens')}
             </pre>
           </div>
@@ -297,7 +297,7 @@ function PreviewSummary({ draft }: { draft: ApiSpecAIDraft }) {
       ) : null}
 
       <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-xl border border-border/60 bg-background/80 p-3">
+        <div className="rounded-md border border-border-main bg-bg-canvas p-3">
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
             {t('common.request')}
           </p>
@@ -312,7 +312,7 @@ function PreviewSummary({ draft }: { draft: ApiSpecAIDraft }) {
             })}
           </p>
         </div>
-        <div className="rounded-xl border border-border/60 bg-background/80 p-3">
+        <div className="rounded-md border border-border-main bg-bg-canvas p-3">
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
             {t('common.responses')}
           </p>
