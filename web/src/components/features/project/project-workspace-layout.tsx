@@ -91,7 +91,7 @@ export function ProjectWorkspaceLayout({
                     <div
                       className={cn(
                         'flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
-                        isActive ? 'bg-white/16 text-primary-foreground' : 'bg-bg-subtle text-text-muted'
+                        isActive ? 'bg-text-inverse/16 text-primary-foreground' : 'bg-bg-subtle text-text-muted'
                       )}
                     >
                       <Icon className="h-3 w-3" />
@@ -205,7 +205,7 @@ export function ProjectWorkspaceLayout({
                         className={cn(
                           'flex shrink-0 items-center justify-center rounded-md',
                           isDesktopNavCollapsed ? 'h-8 w-8' : 'h-8 w-8',
-                          isActive ? 'bg-white/16 text-primary-foreground' : 'bg-bg-subtle text-text-muted'
+                          isActive ? 'bg-text-inverse/16 text-primary-foreground' : 'bg-bg-subtle text-text-muted'
                         )}
                       >
                         <Icon className="h-3.5 w-3.5" />

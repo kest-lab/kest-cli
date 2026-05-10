@@ -435,7 +435,7 @@ export function ProjectDashboardPage() {
                             {isActive ? (
                               <Badge
                                 variant="outline"
-                                className="border-white/24 bg-white/16 text-primary-foreground"
+                                className="border-text-inverse/24 bg-text-inverse/16 text-primary-foreground"
                               >
                                 {t('dashboardPage.selected')}
                               </Badge>
@@ -460,7 +460,7 @@ export function ProjectDashboardPage() {
                           stopPropagation
                           triggerClassName={
                             isActive
-                              ? 'h-8 w-8 shrink-0 rounded-full text-primary-foreground hover:bg-white/16'
+                              ? 'h-8 w-8 shrink-0 rounded-full text-primary-foreground hover:bg-text-inverse/16'
                               : 'h-8 w-8 shrink-0 rounded-full text-text-muted hover:bg-bg-subtle'
                           }
                         />
