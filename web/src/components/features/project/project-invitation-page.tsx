@@ -137,10 +137,10 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
             {invitationQuery.isLoading || (!isSystemReady && isLoadingAuth) ? (
               <div className="space-y-4">
                 <div className="h-6 w-48 animate-pulse rounded bg-muted/60" />
-                <div className="h-24 animate-pulse rounded-xl bg-muted/50" />
+                <div className="h-24 animate-pulse rounded-md bg-muted/50" />
                 <div className="grid gap-3 md:grid-cols-3">
                   {Array.from({ length: 3 }).map((_, index) => (
-                    <div key={index} className="h-24 animate-pulse rounded-xl bg-muted/50" />
+                    <div key={index} className="h-24 animate-pulse rounded-md bg-muted/50" />
                   ))}
                 </div>
               </div>

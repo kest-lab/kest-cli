@@ -624,13 +624,13 @@ export function CategoryManagementPage({
               </Alert>
             ) : categoriesQuery.isLoading ? (
               <div className="space-y-3">
-                <div className="h-14 animate-pulse rounded-xl bg-muted" />
-                <div className="h-14 animate-pulse rounded-xl bg-muted" />
-                <div className="h-14 animate-pulse rounded-xl bg-muted" />
+                <div className="h-14 animate-pulse rounded-md bg-muted" />
+                <div className="h-14 animate-pulse rounded-md bg-muted" />
+                <div className="h-14 animate-pulse rounded-md bg-muted" />
               </div>
             ) : (
               <>
-                <div className="overflow-hidden rounded-xl border">
+                <div className="overflow-hidden rounded-md border border-border-main">
                   <Table>
                     <TableHeader className="bg-muted/10">
                     <TableRow className="hover:bg-transparent">
@@ -651,7 +651,7 @@ export function CategoryManagementPage({
                         return (
                           <TableRow
                             key={category.id}
-                            className="transition-colors hover:bg-muted/20"
+                            className="transition-colors hover:bg-bg-surface"
                             data-state={activeCategoryId === category.id ? 'selected' : undefined}
                           >
                             <TableCell className="min-w-[260px]">
@@ -809,9 +809,9 @@ export function CategoryManagementPage({
           <CardContent className="space-y-4 pt-6">
             {categoriesQuery.isLoading ? (
               <div className="space-y-3">
-                <div className="h-20 animate-pulse rounded-xl bg-muted" />
-                <div className="h-20 animate-pulse rounded-xl bg-muted" />
-                <div className="h-20 animate-pulse rounded-xl bg-muted" />
+                <div className="h-20 animate-pulse rounded-md bg-muted" />
+                <div className="h-20 animate-pulse rounded-md bg-muted" />
+                <div className="h-20 animate-pulse rounded-md bg-muted" />
               </div>
             ) : totalCategories === 0 ? (
               <Alert>
@@ -876,13 +876,13 @@ export function CategoryManagementPage({
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border p-4">
+                  <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                     <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                       {t('categoriesPage.categoryId')}
                     </div>
                     <div className="mt-2 font-mono text-sm">{selectedCategory.id}</div>
                   </div>
-                  <div className="rounded-xl border p-4">
+                  <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                     <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                       {t('categoriesPage.parent')}
                     </div>
@@ -890,13 +890,13 @@ export function CategoryManagementPage({
                       {selectedParent?.name || t('categoriesPage.noParentCategory')}
                     </div>
                   </div>
-                  <div className="rounded-xl border p-4">
+                  <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                     <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                       {t('categoriesPage.updatedAt')}
                     </div>
                     <div className="mt-2 text-sm">{formatDate(selectedCategory.updated_at, 'YYYY-MM-DD HH:mm')}</div>
                   </div>
-                  <div className="rounded-xl border p-4">
+                  <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                     <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                       {t('categoriesPage.testCaseCount')}
                     </div>
@@ -906,7 +906,7 @@ export function CategoryManagementPage({
                   </div>
                 </div>
 
-                <div className="rounded-xl border bg-muted/20 p-4">
+                <div className="rounded-md border border-border-main bg-bg-surface p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-medium">{t('categoriesPage.children')}</div>

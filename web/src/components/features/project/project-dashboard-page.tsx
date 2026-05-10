@@ -587,7 +587,7 @@ function PendingInvitationsPanel({
             {Array.from({ length: 2 }).map((_, index) => (
               <div
                 key={index}
-                className="h-28 animate-pulse rounded-md border border-border-main bg-muted/40"
+                className="h-28 animate-pulse rounded-md border border-border-main bg-bg-surface"
               />
             ))}
           </div>
@@ -972,7 +972,7 @@ function ProjectPreviewPanel({ project, onEdit }: { project: ApiProject; onEdit:
                   {Array.from({ length: 3 }).map((_, index) => (
                     <div
                       key={index}
-                      className="h-18 animate-pulse rounded-md border border-border-main bg-muted/40"
+                      className="h-18 animate-pulse rounded-md border border-border-main bg-bg-surface"
                     />
                   ))}
                 </div>
@@ -1089,8 +1089,8 @@ function ProjectPreviewPanel({ project, onEdit }: { project: ApiProject; onEdit:
             ) : !nextStep ? (
               <>
                 <div className="space-y-3">
-                  <div className="h-28 animate-pulse rounded-md border border-border-main bg-muted/40" />
-                  <div className="h-40 animate-pulse rounded-md border border-border-main bg-muted/40" />
+                  <div className="h-28 animate-pulse rounded-md border border-border-main bg-bg-surface" />
+                  <div className="h-40 animate-pulse rounded-md border border-border-main bg-bg-surface" />
                 </div>
                 {isSlowPreview ? (
                   <div className="space-y-3 rounded-md border border-dashed border-border-main bg-bg-surface p-4">

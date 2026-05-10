@@ -523,9 +523,9 @@ function EnvironmentFormDialog({
         <DialogBody>
           {mode === 'edit' && isLoadingEnvironment ? (
             <div className="space-y-3 py-2">
-              <div className="h-10 animate-pulse rounded-xl bg-muted" />
-              <div className="h-10 animate-pulse rounded-xl bg-muted" />
-              <div className="h-40 animate-pulse rounded-xl bg-muted" />
+              <div className="h-10 animate-pulse rounded-md bg-muted" />
+              <div className="h-10 animate-pulse rounded-md bg-muted" />
+              <div className="h-40 animate-pulse rounded-md bg-muted" />
             </div>
           ) : mode === 'edit' && !environment ? (
             <Alert className="mt-2">
@@ -2201,7 +2201,7 @@ function EnvironmentsWorkspaceSection({
                 environmentsQuery.isLoading ? (
                   <DetailSkeleton />
                 ) : environments.length === 0 ? (
-                  <Card className="border-dashed border-border/70">
+                  <Card className="border-dashed border-border-main">
                     <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
                       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
                         <Globe className="h-6 w-6" />
@@ -2229,7 +2229,7 @@ function EnvironmentsWorkspaceSection({
                   </Card>
                 ) : (
                   <div className="space-y-6">
-                    <Card className="border-border/60">
+                    <Card className="border-border-main">
                       <CardHeader>
                         <CardTitle>{t('environments.overview')}</CardTitle>
                         <CardDescription>{t('environments.overviewDescription')}</CardDescription>
@@ -2248,7 +2248,7 @@ function EnvironmentsWorkspaceSection({
                     </Card>
 
                     <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
-                      <Card className="border-border/60">
+                      <Card className="border-border-main">
                         <CardHeader>
                           <CardTitle>
                             {normalizedSearch
@@ -2304,7 +2304,7 @@ function EnvironmentsWorkspaceSection({
                         </CardContent>
                       </Card>
 
-                      <Card className="border-border/60">
+                      <Card className="border-border-main">
                         <CardHeader>
                           <CardTitle>{t('environments.apiSurface')}</CardTitle>
                           <CardDescription>
@@ -2365,7 +2365,7 @@ POST ${activeEnvironmentPath}/duplicate`}</code>
                   </Card>
 
                   <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
-                    <Card className="border-border/60">
+                    <Card className="border-border-main">
                       <CardHeader>
                         <CardTitle>{t('environments.metadata')}</CardTitle>
                         <CardDescription>{t('environments.metadataDescription')}</CardDescription>
@@ -3508,7 +3508,7 @@ function GuideState({
   actionLabel?: string;
 }) {
   return (
-    <Card className="border-dashed border-border/70">
+    <Card className="border-dashed border-border-main">
       <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
           <Icon className="h-6 w-6" />

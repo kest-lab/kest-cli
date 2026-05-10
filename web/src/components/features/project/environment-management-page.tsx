@@ -607,9 +607,9 @@ function EnvironmentFieldEditor({
 
       {mode === 'table' ? (
         <div className="space-y-3">
-          <div className="overflow-hidden rounded-xl border">
+          <div className="overflow-hidden rounded-md border border-border-main">
             <Table>
-              <TableHeader className="bg-muted/15">
+              <TableHeader className="bg-bg-surface">
                 <TableRow className="hover:bg-transparent">
                   <TableHead>{t('environments.fieldTableKey')}</TableHead>
                   <TableHead className="w-[140px]">{t('environments.fieldTableType')}</TableHead>
@@ -662,7 +662,7 @@ function EnvironmentFieldEditor({
                             }))
                           }
                         >
-                          <SelectTrigger className="w-full rounded-xl">
+                          <SelectTrigger className="w-full rounded-md">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -688,7 +688,7 @@ function EnvironmentFieldEditor({
                               }))
                             }
                           >
-                            <SelectTrigger className="w-full rounded-xl">
+                            <SelectTrigger className="w-full rounded-md">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -902,9 +902,9 @@ function EnvironmentFormDialog({
         <DialogBody>
           {mode === 'edit' && isLoadingEnvironment ? (
             <div className="space-y-3 py-2">
-              <div className="h-10 animate-pulse rounded-xl bg-muted" />
-              <div className="h-10 animate-pulse rounded-xl bg-muted" />
-              <div className="h-40 animate-pulse rounded-xl bg-muted" />
+              <div className="h-10 animate-pulse rounded-md bg-muted" />
+              <div className="h-10 animate-pulse rounded-md bg-muted" />
+              <div className="h-40 animate-pulse rounded-md bg-muted" />
             </div>
           ) : mode === 'edit' && !environment ? (
             <Alert className="mt-2">
@@ -1648,12 +1648,12 @@ export function EnvironmentManagementPage({
           <CardContent className="space-y-4 pt-6">
             {environmentsQuery.isLoading ? (
               <div className="space-y-3">
-                <div className="h-14 animate-pulse rounded-xl bg-muted" />
-                <div className="h-14 animate-pulse rounded-xl bg-muted" />
-                <div className="h-14 animate-pulse rounded-xl bg-muted" />
+                <div className="h-14 animate-pulse rounded-md bg-muted" />
+                <div className="h-14 animate-pulse rounded-md bg-muted" />
+                <div className="h-14 animate-pulse rounded-md bg-muted" />
               </div>
             ) : (
-              <div className="overflow-hidden rounded-xl border">
+              <div className="overflow-hidden rounded-md border border-border-main">
                 <Table>
                   <TableHeader className="bg-muted/10">
                     <TableRow className="hover:bg-transparent">
@@ -1811,32 +1811,32 @@ export function EnvironmentManagementPage({
 
                   <TabsContent value="overview" className="space-y-4">
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-xl border p-4">
+                      <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                         <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('environments.environmentId')}</div>
                         <div className="mt-2 font-mono text-sm">{selectedEnvironment.id}</div>
                       </div>
-                      <div className="rounded-xl border p-4">
+                      <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                         <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.projectId')}</div>
                         <div className="mt-2 font-mono text-sm">{selectedEnvironment.project_id}</div>
                       </div>
-                      <div className="rounded-xl border p-4">
+                      <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                         <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.created')}</div>
                         <div className="mt-2 text-sm">{formatDate(selectedEnvironment.created_at, 'YYYY-MM-DD HH:mm')}</div>
                       </div>
-                      <div className="rounded-xl border p-4">
+                      <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                         <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.updated')}</div>
                         <div className="mt-2 text-sm">{formatDate(selectedEnvironment.updated_at, 'YYYY-MM-DD HH:mm')}</div>
                       </div>
                     </div>
 
-                    <div className="rounded-xl border p-4">
+                    <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                       <div className="mb-2 text-sm font-medium">{t('common.baseUrl')}</div>
                       <div className="font-mono text-xs text-muted-foreground">
                         {selectedEnvironment.base_url || t('environments.baseUrlMissing')}
                       </div>
                     </div>
 
-                    <div className="rounded-xl border bg-muted/20 p-4">
+                    <div className="rounded-md border border-border-main bg-bg-surface p-4">
                       <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                         <Globe className="h-4 w-4" />
                         {t('environments.apiSurface')}

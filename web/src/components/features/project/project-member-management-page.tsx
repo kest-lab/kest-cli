@@ -252,7 +252,7 @@ function MembersTableSkeleton() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 5 }).map((_, index) => (
-        <div key={index} className="h-14 animate-pulse rounded-xl border bg-muted/40" />
+        <div key={index} className="h-14 animate-pulse rounded-md border border-border-main bg-bg-surface" />
       ))}
     </div>
   );
@@ -721,7 +721,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number |
                   </AlertDescription>
                 </Alert>
               ) : (
-                <div className="overflow-hidden rounded-xl border">
+                <div className="overflow-hidden rounded-md border border-border-main">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -875,7 +875,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number |
                   </AlertDescription>
                 </Alert>
               ) : (
-                <div className="overflow-hidden rounded-xl border">
+                <div className="overflow-hidden rounded-md border border-border-main">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1038,7 +1038,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number |
                     {inviteUserSearchQuery.isFetching ? (
                       <div className="space-y-2">
                         {Array.from({ length: 2 }).map((_, index) => (
-                          <div key={index} className="h-14 animate-pulse rounded-xl bg-muted/50" />
+                          <div key={index} className="h-14 animate-pulse rounded-md bg-muted/50" />
                         ))}
                       </div>
                     ) : inviteCandidateResults.length === 0 ? (
@@ -1247,7 +1247,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number |
                   ) : userSearchQuery.isFetching ? (
                     <div className="space-y-2">
                       {Array.from({ length: 3 }).map((_, index) => (
-                        <div key={index} className="h-14 animate-pulse rounded-xl bg-muted/50" />
+                        <div key={index} className="h-14 animate-pulse rounded-md bg-muted/50" />
                       ))}
                     </div>
                   ) : candidateResults.length === 0 ? (
@@ -1348,7 +1348,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number |
           </DialogHeader>
           <DialogBody>
             <div className="space-y-4">
-              <div className="rounded-xl border p-4">
+              <div className="rounded-md border border-border-main bg-bg-canvas p-4">
                 <div className="font-medium">{editingMember?.username}</div>
                 <div className="text-sm text-muted-foreground">{editingMember?.email}</div>
               </div>
@@ -1410,7 +1410,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number |
               </AlertDescription>
             </Alert>
             {deleteTarget ? (
-              <div className="mt-4 rounded-xl border p-4">
+              <div className="mt-4 rounded-md border border-border-main bg-bg-canvas p-4">
                 <div className="font-medium">{deleteTarget.username}</div>
                 <div className="text-sm text-muted-foreground">{deleteTarget.email}</div>
               </div>
@@ -1449,7 +1449,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number |
               </AlertDescription>
             </Alert>
             {revokeTarget ? (
-              <div className="mt-4 rounded-xl border p-4">
+              <div className="mt-4 rounded-md border border-border-main bg-bg-canvas p-4">
                 <div className="font-medium">
                   {t('membersPage.invitationSummary', {
                     role: getRoleLabel(t, revokeTarget.role),
