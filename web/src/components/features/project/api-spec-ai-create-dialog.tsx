@@ -1260,7 +1260,7 @@ function ApiSpecAICreateDialogContent({
             </details>
           </div>
         ) : (
-          <Card className="border-dashed border-border/70 bg-muted/20">
+          <Card className="border-dashed border-border-main bg-bg-surface shadow-none">
             <CardContent className="flex min-h-32 flex-col items-center justify-center gap-3 py-8 text-center">
               <FileJson2 className="h-10 w-10 text-primary/70" />
               <div className="space-y-1">
@@ -1274,7 +1274,7 @@ function ApiSpecAICreateDialogContent({
         )}
       </DialogBody>
 
-      <DialogFooter className="justify-between gap-3 border-t border-border/60 px-6 py-4">
+      <DialogFooter className="justify-between gap-3 border-t border-border-main px-6 py-4">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {draft ? (
             <>
