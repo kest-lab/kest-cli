@@ -2168,13 +2168,13 @@ export function ApiSpecManagementPage({
               <CardContent className="space-y-4 pt-6">
                 {specsQuery.isLoading ? (
                   <div className="space-y-3">
-                    <div className="h-14 animate-pulse rounded-xl bg-muted" />
-                    <div className="h-14 animate-pulse rounded-xl bg-muted" />
-                    <div className="h-14 animate-pulse rounded-xl bg-muted" />
+                    <div className="h-14 animate-pulse rounded-md bg-muted" />
+                    <div className="h-14 animate-pulse rounded-md bg-muted" />
+                    <div className="h-14 animate-pulse rounded-md bg-muted" />
                   </div>
                 ) : (
                   <>
-                    <div className="overflow-hidden rounded-xl border">
+                    <div className="overflow-hidden rounded-md border border-border-main">
                       <Table>
                         <TableHeader className="bg-muted/10">
                           <TableRow className="hover:bg-transparent">
