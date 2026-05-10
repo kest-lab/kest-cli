@@ -1190,7 +1190,7 @@ function ApiSpecAICreateDialogContent({
                         {draft.references.map(reference => (
                           <div
                             key={reference.id}
-                            className="rounded-lg border border-border/60 p-3"
+                            className="rounded-md border border-border-main bg-bg-canvas p-3"
                           >
                             <div className="flex items-center gap-2">
                               <Badge variant="outline">{reference.method}</Badge>
@@ -1228,7 +1228,10 @@ function ApiSpecAICreateDialogContent({
                     {draft.field_insights && Object.keys(draft.field_insights).length > 0 ? (
                       <div className="space-y-2">
                         {Object.entries(draft.field_insights).map(([field, insight]) => (
-                          <div key={field} className="rounded-lg border border-border/60 p-3">
+                          <div
+                            key={field}
+                            className="rounded-md border border-border-main bg-bg-canvas p-3"
+                          >
                             <div className="flex items-center justify-between gap-2">
                               <span className="font-medium">{field}</span>
                               <Badge variant="outline">
