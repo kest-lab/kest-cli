@@ -73,6 +73,7 @@ export interface MarketingFeatureSectionContent {
 }
 
 export type MarketingStoryVariant = 'flow' | 'history' | 'ai';
+export type MarketingBlockTone = 'lime' | 'lilac' | 'cream' | 'mint' | 'pink' | 'coral' | 'navy';
 
 export interface MarketingStoryMockupContent {
   title: string;
@@ -88,6 +89,7 @@ export interface MarketingStorySectionContent {
   cta: string;
   ctaHref: string;
   variant: MarketingStoryVariant;
+  blockTone: MarketingBlockTone;
   mockup: MarketingStoryMockupContent;
 }
 

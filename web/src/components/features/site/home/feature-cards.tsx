@@ -32,16 +32,16 @@ const iconMap: Record<MarketingFeatureIconKey, typeof GitBranch> = {
 
 export function FeatureCards({ content }: FeatureCardsProps) {
   return (
-    <section id="features" className="py-20 sm:py-24 lg:py-28">
+    <section id="features" className="bg-bg-canvas py-20 sm:py-24 lg:py-28">
       <div className="container">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--marketing-accent-strong)]">
+        <div className="max-w-4xl">
+          <p className="figma-eyebrow text-text-main">
             {content.eyebrow}
           </p>
-          <h2 className="mt-4 text-4xl font-semibold tracking-tight text-text-main sm:text-5xl [font-family:var(--font-space-grotesk)]">
+          <h2 className="figma-display-lg mt-4 text-text-main">
             {content.title}
           </h2>
-          <p className="mt-5 text-lg leading-8 text-text-subtle">{content.description}</p>
+          <p className="figma-body-lg mt-5 max-w-3xl text-text-subtle">{content.description}</p>
         </div>
 
         <div className="mt-14 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -51,13 +51,13 @@ export function FeatureCards({ content }: FeatureCardsProps) {
             return (
               <article
                 key={item.title}
-                className="group marketing-panel rounded-[1.75rem] p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_25px_65px_-32px_rgba(15,23,42,0.35)]"
+                className="group marketing-panel rounded-md p-6 transition-colors duration-200 hover:bg-bg-subtle"
               >
-                <div className="flex size-12 items-center justify-center rounded-2xl bg-[color:var(--marketing-accent-soft)] text-[color:var(--marketing-accent-strong)] transition-transform duration-300 group-hover:scale-105">
+                <div className="flex size-11 items-center justify-center rounded-full bg-bg-soft text-text-main">
                   <Icon className="size-5" />
                 </div>
-                <h3 className="mt-5 text-xl font-semibold text-text-main">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-text-subtle">{item.description}</p>
+                <h3 className="figma-headline mt-5 text-text-main">{item.title}</h3>
+                <p className="mt-3 text-base leading-7 text-text-subtle">{item.description}</p>
               </article>
             );
           })}

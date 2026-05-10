@@ -56,8 +56,8 @@ function NavItem({
         target={external ? '_blank' : undefined}
         rel={external ? 'noreferrer' : undefined}
         className={cn(
-          'text-sm font-medium text-text-subtle transition-colors duration-200 hover:text-text-main',
-          mobile ? 'rounded-2xl border border-border/70 bg-white px-4 py-3' : ''
+          'text-sm font-medium text-text-main transition-colors duration-200 hover:text-text-subtle',
+          mobile ? 'rounded-pill border border-border-main bg-bg-canvas px-4 py-3' : ''
         )}
       >
         {item.label}
@@ -69,12 +69,12 @@ function NavItem({
     <span
       className={cn(
         'inline-flex items-center gap-2 text-sm font-medium text-text-muted',
-        mobile ? 'rounded-2xl border border-dashed border-border/80 px-4 py-3' : ''
+        mobile ? 'rounded-pill border border-dashed border-border-main px-4 py-3' : ''
       )}
     >
       {item.label}
       {item.placeholder ? (
-        <span className="rounded-full border border-border/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.22em]">
+        <span className="figma-caption rounded-pill border border-border-main px-2 py-0.5">
           {docsSoonLabel}
         </span>
       ) : null}
@@ -106,14 +106,14 @@ export function MarketingNavbar({
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 border-b border-transparent transition-all duration-300',
+        'sticky top-0 z-50 border-b transition-all duration-300',
         scrolled
-          ? 'bg-white/82 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.28)] backdrop-blur-xl'
-          : 'bg-white/72 backdrop-blur-md'
+          ? 'border-border-main bg-bg-canvas'
+          : 'border-transparent bg-bg-canvas'
       )}
     >
       <div className="container">
-        <div className="flex h-[4.5rem] items-center justify-between gap-6">
+        <div className="flex h-16 items-center justify-between gap-6">
           <Link href="/" className="flex items-center" aria-label={brandName}>
             <Logo className="h-9 w-[111px] shrink-0 text-black" aria-hidden="true" />
           </Link>
@@ -126,10 +126,10 @@ export function MarketingNavbar({
 
           <div className="hidden items-center gap-2 lg:flex">
             <LanguageSwitcher />
-            <Button asChild variant="ghost" size="lg" className="rounded-2xl">
+            <Button asChild variant="ghost" size="lg">
               <Link href="/login">{loginLabel}</Link>
             </Button>
-            <Button asChild size="lg" className="rounded-2xl bg-slate-950 text-white hover:bg-slate-900">
+            <Button asChild size="lg">
               <Link href="/register">{signUpLabel}</Link>
             </Button>
           </div>
@@ -142,7 +142,7 @@ export function MarketingNavbar({
               size="lg"
               isIcon
               noScale
-              className="size-11 rounded-2xl bg-white"
+              className="size-11 bg-bg-canvas"
               aria-label={open ? closeMenuLabel : openMenuLabel}
               onClick={() => setOpen((value) => !value)}
             >
@@ -157,7 +157,7 @@ export function MarketingNavbar({
             open ? 'max-h-[28rem] pb-5' : 'max-h-0'
           )}
         >
-          <div className="rounded-[1.75rem] border border-border/70 bg-white/95 p-4 shadow-[0_20px_55px_-40px_rgba(15,23,42,0.4)] backdrop-blur-xl">
+          <div className="rounded-lg border border-border-main bg-bg-canvas p-4 shadow-none">
             <div className="grid gap-3">
               {navItems.map((item) => (
                 <NavItem
@@ -170,12 +170,12 @@ export function MarketingNavbar({
               ))}
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <Button asChild variant="outline" size="lg" className="rounded-2xl">
+              <Button asChild variant="outline" size="lg">
                 <Link href="/login" onClick={() => setOpen(false)}>
                   {loginLabel}
                 </Link>
               </Button>
-              <Button asChild size="lg" className="rounded-2xl bg-slate-950 text-white hover:bg-slate-900">
+              <Button asChild size="lg">
                 <Link href="/register" onClick={() => setOpen(false)}>
                   {signUpLabel}
                 </Link>

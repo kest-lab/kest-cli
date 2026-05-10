@@ -199,7 +199,7 @@ function DraftGenerationPreview({
       : t('apiSpecs.aiCreateDialog.elapsedSeconds', { seconds: elapsedSeconds });
 
   return (
-    <Card className="border-border/60">
+    <Card className="border-border-main bg-bg-canvas shadow-none">
       <CardHeader>
         <CardTitle className="text-base">
           {t('apiSpecs.aiCreateDialog.sections.previewTitle')}
@@ -212,7 +212,7 @@ function DraftGenerationPreview({
       </CardHeader>
       <CardContent className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-4">
-          <div className="rounded-lg border border-border/60 p-4">
+          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="text-sm font-medium">
                 {t('apiSpecs.aiCreateDialog.sections.draftStructure')}
@@ -227,7 +227,7 @@ function DraftGenerationPreview({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-lg border border-border/60 p-4">
+            <div className="rounded-md border border-border-main bg-bg-canvas p-4">
               <div className="mb-3 text-sm font-medium">{t('common.parameters')}</div>
               <div className="space-y-3">
                 <Skeleton className="h-4 w-2/5" />
@@ -235,7 +235,7 @@ function DraftGenerationPreview({
               </div>
             </div>
 
-            <div className="rounded-lg border border-border/60 p-4">
+            <div className="rounded-md border border-border-main bg-bg-canvas p-4">
               <div className="mb-3 text-sm font-medium">{t('common.responses')}</div>
               <div className="space-y-3">
                 <Skeleton className="h-4 w-1/3" />
@@ -246,14 +246,14 @@ function DraftGenerationPreview({
         </div>
 
         <div className="space-y-3">
-          <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
+          <div className="rounded-md border border-border-main bg-bg-surface p-4">
             <div className="mb-2 flex items-center justify-between gap-2">
               <div className="text-sm font-medium">
                 {t('apiSpecs.aiCreateDialog.sections.liveOutput')}
               </div>
               <Badge variant="outline">{t('apiSpecs.aiCreateDialog.sections.streaming')}</Badge>
             </div>
-            <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-muted-foreground">
+            <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border-main bg-primary p-3 text-xs leading-6 text-primary-foreground">
               {streamOutput || t('apiSpecs.aiCreateDialog.placeholders.waitForTokens')}
             </pre>
           </div>
@@ -297,7 +297,7 @@ function PreviewSummary({ draft }: { draft: ApiSpecAIDraft }) {
       ) : null}
 
       <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-xl border border-border/60 bg-background/80 p-3">
+        <div className="rounded-md border border-border-main bg-bg-canvas p-3">
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
             {t('common.request')}
           </p>
@@ -312,7 +312,7 @@ function PreviewSummary({ draft }: { draft: ApiSpecAIDraft }) {
             })}
           </p>
         </div>
-        <div className="rounded-xl border border-border/60 bg-background/80 p-3">
+        <div className="rounded-md border border-border-main bg-bg-canvas p-3">
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
             {t('common.responses')}
           </p>
@@ -658,7 +658,7 @@ function ApiSpecAICreateDialogContent({
         }
       }}
     >
-      <DialogHeader className="border-b border-border/60 px-6 pt-6 pb-4">
+      <DialogHeader className="border-b border-border-main px-6 pt-6 pb-4">
         <DialogTitle className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-primary" />
           {t('apiSpecs.aiCreateDialog.title')}
@@ -687,7 +687,7 @@ function ApiSpecAICreateDialogContent({
           </Alert>
         ) : null}
 
-        <div className="space-y-3 rounded-2xl border border-border/60 bg-background p-4">
+        <div className="space-y-3 rounded-md border border-border-main bg-bg-canvas p-4">
           <div>
             <p className="text-sm font-medium text-text-main">
               {t('apiSpecs.aiCreateDialog.sections.intentDescriptionCompact')}
@@ -733,7 +733,7 @@ function ApiSpecAICreateDialogContent({
           </div>
 
           <details
-            className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3"
+            className="rounded-md border border-border-main bg-bg-surface px-4 py-3"
             open={showAdvancedOptions}
             onToggle={event =>
               setShowAdvancedOptions((event.currentTarget as HTMLDetailsElement).open)
@@ -786,7 +786,7 @@ function ApiSpecAICreateDialogContent({
                 </Select>
               </div>
 
-              <div className="md:col-span-2 flex items-center justify-between rounded-xl border border-border/60 bg-background px-4 py-3">
+              <div className="md:col-span-2 flex items-center justify-between rounded-md border border-border-main bg-bg-canvas px-4 py-3">
                 <div className="space-y-1">
                   <div className="text-sm font-medium">
                     {t('apiSpecs.aiCreateDialog.fields.useProjectConventions')}
@@ -806,7 +806,7 @@ function ApiSpecAICreateDialogContent({
 
         {hasPreviewPanel ? (
           <details
-            className="rounded-2xl border border-border/60 bg-background"
+            className="rounded-md border border-border-main bg-bg-canvas"
             open={showPreview}
             onToggle={event => setShowPreview((event.currentTarget as HTMLDetailsElement).open)}
           >
@@ -829,7 +829,7 @@ function ApiSpecAICreateDialogContent({
               ) : null}
             </summary>
 
-            <div className="border-t border-border/60 px-4 py-4">
+            <div className="border-t border-border-main px-4 py-4">
               {isGeneratingDraft || (!draft && (didDraftGenerationFail || draftStreamOutput)) ? (
                 <DraftGenerationPreview
                   status={draftStatus}
@@ -847,7 +847,7 @@ function ApiSpecAICreateDialogContent({
         {draft ? (
           <div className="space-y-4">
             <details
-              className="rounded-2xl border border-border/60 bg-background"
+              className="rounded-md border border-border-main bg-bg-canvas"
               open={showDraftDetails}
               onToggle={event =>
                 setShowDraftDetails((event.currentTarget as HTMLDetailsElement).open)
@@ -869,9 +869,9 @@ function ApiSpecAICreateDialogContent({
                 </span>
               </summary>
 
-              <div className="border-t border-border/60 px-4 py-4">
+              <div className="border-t border-border-main px-4 py-4">
                 <div className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
-            <Card className="border-border/60">
+            <Card className="border-border-main bg-bg-canvas shadow-none">
               <CardHeader>
                 <CardTitle className="text-base">
                   {t('apiSpecs.aiCreateDialog.sections.reviewTitle')}
@@ -953,7 +953,7 @@ function ApiSpecAICreateDialogContent({
                     </Select>
                   </div>
 
-                  <div className="flex items-center justify-between rounded-lg border border-border/60 px-4 py-3">
+                  <div className="flex items-center justify-between rounded-md border border-border-main bg-bg-surface px-4 py-3">
                     <div>
                       <div className="text-sm font-medium">{t('common.public')}</div>
                       <div className="text-sm text-muted-foreground">
@@ -1029,7 +1029,7 @@ function ApiSpecAICreateDialogContent({
             </Card>
 
             <div className="space-y-4">
-              <Card className="border-border/60">
+              <Card className="border-border-main bg-bg-canvas shadow-none">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Sparkles className="h-4 w-4 text-primary" />
@@ -1084,7 +1084,7 @@ function ApiSpecAICreateDialogContent({
               </Card>
 
               <details
-                className="rounded-2xl border border-border/60 bg-background"
+                className="rounded-md border border-border-main bg-bg-canvas"
                 open={showWhyDetails}
                 onToggle={event =>
                   setShowWhyDetails((event.currentTarget as HTMLDetailsElement).open)
@@ -1100,7 +1100,7 @@ function ApiSpecAICreateDialogContent({
                     {t('apiSpecs.aiCreateDialog.sections.whyTitle')}
                   </span>
                 </summary>
-                <div className="border-t border-border/60">
+                <div className="border-t border-border-main">
                   <Card className="border-0 shadow-none">
                     <CardHeader>
                       <CardDescription>
@@ -1190,7 +1190,7 @@ function ApiSpecAICreateDialogContent({
                         {draft.references.map(reference => (
                           <div
                             key={reference.id}
-                            className="rounded-lg border border-border/60 p-3"
+                            className="rounded-md border border-border-main bg-bg-canvas p-3"
                           >
                             <div className="flex items-center gap-2">
                               <Badge variant="outline">{reference.method}</Badge>
@@ -1228,7 +1228,10 @@ function ApiSpecAICreateDialogContent({
                     {draft.field_insights && Object.keys(draft.field_insights).length > 0 ? (
                       <div className="space-y-2">
                         {Object.entries(draft.field_insights).map(([field, insight]) => (
-                          <div key={field} className="rounded-lg border border-border/60 p-3">
+                          <div
+                            key={field}
+                            className="rounded-md border border-border-main bg-bg-canvas p-3"
+                          >
                             <div className="flex items-center justify-between gap-2">
                               <span className="font-medium">{field}</span>
                               <Badge variant="outline">
@@ -1257,7 +1260,7 @@ function ApiSpecAICreateDialogContent({
             </details>
           </div>
         ) : (
-          <Card className="border-dashed border-border/70 bg-muted/20">
+          <Card className="border-dashed border-border-main bg-bg-surface shadow-none">
             <CardContent className="flex min-h-32 flex-col items-center justify-center gap-3 py-8 text-center">
               <FileJson2 className="h-10 w-10 text-primary/70" />
               <div className="space-y-1">
@@ -1271,7 +1274,7 @@ function ApiSpecAICreateDialogContent({
         )}
       </DialogBody>
 
-      <DialogFooter className="justify-between gap-3 border-t border-border/60 px-6 py-4">
+      <DialogFooter className="justify-between gap-3 border-t border-border-main px-6 py-4">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {draft ? (
             <>

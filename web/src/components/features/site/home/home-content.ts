@@ -149,6 +149,7 @@ function buildStorySections(t: MarketingTranslator): MarketingStorySectionConten
       cta: t('sections.flow.cta'),
       ctaHref: '#features',
       variant: 'flow',
+      blockTone: 'lime',
       mockup: {
         title: t('sections.flow.mockup.title'),
         lines: [
@@ -177,6 +178,7 @@ function buildStorySections(t: MarketingTranslator): MarketingStorySectionConten
       cta: t('sections.history.cta'),
       ctaHref: '/register',
       variant: 'history',
+      blockTone: 'navy',
       mockup: {
         title: t('sections.history.mockup.title'),
         lines: [
@@ -201,6 +203,7 @@ function buildStorySections(t: MarketingTranslator): MarketingStorySectionConten
       cta: t('sections.ai.cta'),
       ctaHref: '/register',
       variant: 'ai',
+      blockTone: 'coral',
       mockup: {
         title: t('sections.ai.mockup.title'),
         lines: [

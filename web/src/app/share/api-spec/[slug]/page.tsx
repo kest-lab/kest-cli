@@ -87,14 +87,14 @@ function CodePanel({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold tracking-tight text-slate-900">{title}</h3>
+        <h3 className="text-sm font-semibold tracking-tight text-text-main">{title}</h3>
       </div>
       {value?.trim() ? (
-        <pre className="overflow-x-auto rounded-3xl border border-slate-200 bg-slate-950 p-5 text-xs leading-6 text-slate-100">
+        <pre className="overflow-x-auto rounded-md border border-border-main bg-bg-surface p-5 text-xs leading-6 text-text-muted">
           <code>{value}</code>
         </pre>
       ) : (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-5 text-sm text-slate-500">
+        <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-5 text-sm text-text-muted">
           {emptyLabel}
         </div>
       )}
@@ -131,41 +131,41 @@ export default async function ApiSpecSharePage({
   );
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_34%),linear-gradient(180deg,_#f8fbff_0%,_#eef6ff_48%,_#f7fafc_100%)] px-4 py-10 md:px-8 md:py-14">
+    <main className="min-h-screen bg-bg-canvas px-4 py-10 md:px-8 md:py-14">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <section className="overflow-hidden rounded-[2rem] border border-sky-200/70 bg-white/80 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="border-b border-sky-100 bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(255,255,255,0.82))] px-6 py-6 md:px-8 md:py-8">
+        <section className="overflow-hidden rounded-lg border border-border-main bg-bg-canvas">
+          <div className="border-b border-border-main bg-block-cream px-6 py-6 md:px-8 md:py-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge className="bg-sky-600 text-white hover:bg-sky-600">{share.method}</Badge>
-                  <Badge variant="outline" className="border-slate-300 bg-white/70 text-slate-700">
+                  <Badge className="bg-primary text-primary-foreground hover:bg-primary">{share.method}</Badge>
+                  <Badge variant="outline" className="border-border-main bg-bg-canvas text-text-main">
                     v{share.version}
                   </Badge>
-                  <Badge variant="outline" className="border-slate-300 bg-white/70 text-slate-700">
+                  <Badge variant="outline" className="border-border-main bg-bg-canvas text-text-main">
                     {t('share.shared')}
                   </Badge>
                 </div>
                 <div>
-                  <h1 className="font-mono text-2xl font-semibold tracking-tight text-slate-950 md:text-3xl">
+                  <h1 className="font-mono text-2xl font-semibold tracking-tight text-text-main md:text-3xl">
                     {share.path}
                   </h1>
-                  <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+                  <p className="mt-3 max-w-3xl text-sm leading-7 text-text-muted">
                     {share.summary || share.description || t('share.noSummary')}
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-3xl border border-white/60 bg-white/75 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('share.published')}</p>
-                  <p className="mt-2 text-sm font-medium text-slate-900">
+                <div className="rounded-md border border-border-main bg-bg-canvas px-4 py-3">
+                  <p className="figma-caption text-text-muted">{t('share.published')}</p>
+                  <p className="mt-2 text-sm font-medium text-text-main">
                     {formatDate(share.shared_at, 'YYYY-MM-DD HH:mm')}
                   </p>
                 </div>
-                <div className="rounded-3xl border border-white/60 bg-white/75 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('share.updated')}</p>
-                  <p className="mt-2 text-sm font-medium text-slate-900">
+                <div className="rounded-md border border-border-main bg-bg-canvas px-4 py-3">
+                  <p className="figma-caption text-text-muted">{t('share.updated')}</p>
+                  <p className="mt-2 text-sm font-medium text-text-main">
                     {formatDate(share.updated_at, 'YYYY-MM-DD HH:mm')}
                   </p>
                 </div>
@@ -178,7 +178,7 @@ export default async function ApiSpecSharePage({
                   <Badge
                     key={tag}
                     variant="outline"
-                    className="rounded-full border-slate-300 bg-white/75 text-slate-700"
+                    className="rounded-full border-border-main bg-bg-canvas text-text-main"
                   >
                     {tag}
                   </Badge>
@@ -188,35 +188,35 @@ export default async function ApiSpecSharePage({
           </div>
 
           <div className="grid gap-4 px-6 py-6 md:grid-cols-3 md:px-8">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('share.docSource')}</p>
-              <p className="mt-2 text-sm font-medium text-slate-900">{share.doc_source || 'manual'}</p>
+            <div className="rounded-md border border-border-main bg-bg-surface p-4">
+              <p className="figma-caption text-text-muted">{t('share.docSource')}</p>
+              <p className="mt-2 text-sm font-medium text-text-main">{share.doc_source || 'manual'}</p>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('common.path')}</p>
-              <p className="mt-2 font-mono text-sm text-slate-900">{share.path}</p>
+            <div className="rounded-md border border-border-main bg-bg-surface p-4">
+              <p className="figma-caption text-text-muted">{t('common.path')}</p>
+              <p className="mt-2 font-mono text-sm text-text-main">{share.path}</p>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('common.method')}</p>
-              <p className="mt-2 text-sm font-medium text-slate-900">{share.method}</p>
+            <div className="rounded-md border border-border-main bg-bg-surface p-4">
+              <p className="figma-caption text-text-muted">{t('common.method')}</p>
+              <p className="mt-2 text-sm font-medium text-text-main">{share.method}</p>
             </div>
           </div>
         </section>
 
         <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
           <div className="space-y-6">
-            <Card className="rounded-[2rem] border-slate-200/80 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+            <Card className="border-border-main bg-bg-canvas">
               <CardHeader>
                 <CardTitle>{t('share.descriptionTitle')}</CardTitle>
                 <CardDescription>{t('share.descriptionDescription')}</CardDescription>
               </CardHeader>
-              <CardContent className="text-sm leading-7 text-slate-700">
+              <CardContent className="text-sm leading-7 text-text-muted">
                 {share.description || t('share.noDetailedDescription')}
               </CardContent>
             </Card>
 
             {hasDocSections ? (
-              <Card className="rounded-[2rem] border-slate-200/80 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+              <Card className="border-border-main bg-bg-canvas">
                 <CardHeader>
                   <CardTitle>{t('share.publishedDocs')}</CardTitle>
                   <CardDescription>{t('share.publishedDocsDescription')}</CardDescription>
@@ -243,7 +243,7 @@ export default async function ApiSpecSharePage({
           </div>
 
           <div className="space-y-6">
-            <Card className="rounded-[2rem] border-slate-200/80 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+            <Card className="border-border-main bg-bg-canvas">
               <CardHeader>
                 <CardTitle>{t('share.requestSchema')}</CardTitle>
                 <CardDescription>{t('share.requestSchemaDescription')}</CardDescription>
@@ -257,7 +257,7 @@ export default async function ApiSpecSharePage({
               </CardContent>
             </Card>
 
-            <Card className="rounded-[2rem] border-slate-200/80 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+            <Card className="border-border-main bg-bg-canvas">
               <CardHeader>
                 <CardTitle>{t('common.parameters')}</CardTitle>
                 <CardDescription>{t('share.parametersDescription')}</CardDescription>
@@ -271,7 +271,7 @@ export default async function ApiSpecSharePage({
               </CardContent>
             </Card>
 
-            <Card className="rounded-[2rem] border-slate-200/80 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+            <Card className="border-border-main bg-bg-canvas">
               <CardHeader>
                 <CardTitle>{t('common.responses')}</CardTitle>
                 <CardDescription>{t('share.responsesDescription')}</CardDescription>

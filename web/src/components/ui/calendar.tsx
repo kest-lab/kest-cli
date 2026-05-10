@@ -104,7 +104,7 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
             else if (mode === "years") setViewDate(new Date(year - 12, month, 1))
             else setViewDate(new Date(year - 1, month, 1))
           }}
-          className="size-8 flex items-center justify-center hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground active:scale-90 cursor-pointer"
+          className="size-8 flex items-center justify-center hover:bg-bg-subtle rounded-full transition-colors text-muted-foreground hover:text-foreground active:scale-90 cursor-pointer"
         >
           <ChevronLeft className="size-4" />
         </button>
@@ -112,13 +112,13 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
           className="flex items-center gap-1 font-semibold text-sm tracking-tight px-2 py-1 rounded-md transition-colors"
         >
           {mode === "days" ? (
-            <div className="flex items-center hover:bg-muted p-1 rounded-md transition-colors">
+            <div className="flex items-center hover:bg-bg-subtle p-1 rounded-md transition-colors">
               <input
                 type="text"
                 value={yearInput}
                 onChange={handleYearInput}
                 onBlur={() => setYearInput(year.toString())}
-                className="w-10 bg-transparent text-center focus:outline-hidden focus:bg-background rounded px-0.5 border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-10 bg-transparent text-center focus:outline-hidden focus:bg-bg-canvas rounded px-0.5 border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <span 
                 className="cursor-pointer select-none active:scale-95 px-1 rounded-sm hover:text-primary transition-colors"
@@ -135,14 +135,14 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
             </div>
           ) : mode === "years" ? (
             <span 
-              className="cursor-pointer select-none active:scale-95 px-3 py-1 rounded-md hover:bg-muted transition-colors"
+              className="cursor-pointer select-none active:scale-95 px-3 py-1 rounded-md hover:bg-bg-subtle transition-colors"
               onClick={() => setMode("days")}
             >
               {years[0]} - {years[years.length - 1]}
             </span>
           ) : (
             <span 
-              className="cursor-pointer select-none active:scale-95 px-3 py-1 rounded-md hover:bg-muted transition-colors"
+              className="cursor-pointer select-none active:scale-95 px-3 py-1 rounded-md hover:bg-bg-subtle transition-colors"
               onClick={() => setMode("days")}
             >
               {year}{t.common('year')}
@@ -155,7 +155,7 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
             else if (mode === "years") setViewDate(new Date(year + 12, month, 1))
             else setViewDate(new Date(year + 1, month, 1))
           }}
-          className="size-8 flex items-center justify-center hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground active:scale-90 cursor-pointer"
+          className="size-8 flex items-center justify-center hover:bg-bg-subtle rounded-full transition-colors text-muted-foreground hover:text-foreground active:scale-90 cursor-pointer"
         >
           <ChevronRight className="size-4" />
         </button>
@@ -182,7 +182,7 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
                     "size-8 flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 relative cursor-pointer",
                     isSelected(day) 
                       ? "bg-primary text-primary-foreground font-bold shadow-button-primary scale-110 z-10" 
-                      : "hover:bg-muted active:scale-95",
+                      : "hover:bg-bg-subtle active:scale-95",
                     isToday(day) && !isSelected(day) && "after:absolute after:bottom-1 after:size-1 after:bg-primary after:rounded-full after:animate-pulse",
                     !isSelected(day) && !isToday(day) && "text-foreground/90"
                   )}
@@ -201,7 +201,7 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
               onClick={() => handleYearSelect(y)}
               className={cn(
                 "h-12 flex items-center justify-center rounded-xl text-sm font-medium transition-colors cursor-pointer",
-                y === year ? "bg-primary text-primary-foreground font-bold" : "hover:bg-muted text-foreground/80 active:bg-muted/80"
+                y === year ? "bg-primary text-primary-foreground font-bold" : "hover:bg-bg-subtle text-foreground/80 active:bg-bg-surface"
               )}
             >
               {y}
@@ -216,7 +216,7 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
               onClick={() => handleMonthSelect(i)}
               className={cn(
                 "h-12 flex items-center justify-center rounded-xl text-sm font-medium transition-colors cursor-pointer",
-                i === month ? "bg-primary text-primary-foreground font-bold" : "hover:bg-muted text-foreground/80 active:bg-muted/80"
+                i === month ? "bg-primary text-primary-foreground font-bold" : "hover:bg-bg-subtle text-foreground/80 active:bg-bg-surface"
               )}
             >
               {m}
@@ -226,7 +226,7 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
       )}
       
       {showFooter && (
-        <div className="mt-4 pt-3 border-t border-border flex items-center justify-start text-xs text-muted-foreground/80">
+        <div className="mt-4 pt-3 border-t border-border-main flex items-center justify-start text-xs text-muted-foreground/80">
           <button 
             onClick={() => {
               const now = new Date()

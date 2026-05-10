@@ -250,32 +250,32 @@ const getRunStatusLabel = (t: ProjectT, status?: string) => {
 const getRunStatusBadgeClassName = (status?: string) => {
   switch (normalizeRunStatus(status)) {
     case 'pass':
-      return 'border-emerald-200 bg-emerald-500/10 text-emerald-700';
+      return 'border-border-main bg-bg-subtle text-text-main';
     case 'fail':
-      return 'border-rose-200 bg-rose-500/10 text-rose-700';
+      return 'border-border-main bg-block-pink text-text-main';
     case 'error':
-      return 'border-amber-200 bg-amber-500/10 text-amber-700';
+      return 'border-border-main bg-block-cream text-text-main';
     case 'running':
-      return 'border-sky-200 bg-sky-500/10 text-sky-700';
+      return 'border-border-main bg-bg-subtle text-text-main';
     default:
-      return 'border-slate-200 bg-slate-500/10 text-slate-700';
+      return 'border-border-main bg-bg-subtle text-text-main';
   }
 };
 
 const getMethodBadgeClassName = (method?: string) => {
   switch (method) {
     case 'GET':
-      return 'border-emerald-200 bg-emerald-500/10 text-emerald-700';
+      return 'border-border-main bg-bg-subtle text-text-main';
     case 'POST':
-      return 'border-sky-200 bg-sky-500/10 text-sky-700';
+      return 'border-border-main bg-bg-subtle text-text-main';
     case 'PUT':
-      return 'border-amber-200 bg-amber-500/10 text-amber-700';
+      return 'border-border-main bg-bg-subtle text-text-main';
     case 'PATCH':
-      return 'border-violet-200 bg-violet-500/10 text-violet-700';
+      return 'border-border-main bg-bg-subtle text-text-main';
     case 'DELETE':
-      return 'border-rose-200 bg-rose-500/10 text-rose-700';
+      return 'border-border-main bg-bg-subtle text-text-main';
     default:
-      return 'border-slate-200 bg-slate-500/10 text-slate-700';
+      return 'border-border-main bg-bg-subtle text-text-main';
   }
 };
 
@@ -329,7 +329,7 @@ function RoleBadge({ role }: { role?: ProjectMemberRole }) {
   const t = useT('project');
 
   return (
-    <Badge variant="outline" className="border-primary/20 bg-primary/10 text-primary">
+    <Badge variant="outline" className="border-border-main bg-bg-subtle text-text-main">
       {t('roles.badge', { role: getRoleLabel(t, role) })}
     </Badge>
   );
@@ -364,14 +364,14 @@ function CodeBlock({
 }) {
   if (!value?.trim()) {
     return (
-      <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+      <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-4 text-sm text-muted-foreground">
         {emptyLabel}
       </div>
     );
   }
 
   return (
-    <pre className="overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs leading-6 text-slate-100">
+    <pre className="overflow-x-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
       <code>{value}</code>
     </pre>
   );
@@ -386,14 +386,14 @@ function MarkdownPreview({
 }) {
   if (!value?.trim()) {
     return (
-      <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+      <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-4 text-sm text-muted-foreground">
         {emptyLabel}
       </div>
     );
   }
 
   return (
-    <div className="markdown-content rounded-2xl border border-border/60 bg-background/80 p-5">
+    <div className="markdown-content rounded-md border border-border-main bg-bg-surface p-5">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -412,7 +412,7 @@ function MarkdownPreview({
             if (isInlineCode) {
               return (
                 <code
-                  className="rounded bg-slate-950/8 px-1.5 py-0.5 font-mono text-[0.925em] text-text-main"
+                  className="rounded bg-bg-canvas px-1.5 py-0.5 font-mono text-[0.925em] text-text-main"
                   {...props}
                 >
                   {children}
@@ -428,7 +428,7 @@ function MarkdownPreview({
           },
           pre: ({ children, ...props }) => (
             <pre
-              className="overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs leading-6 text-slate-100"
+              className="overflow-x-auto rounded-md border border-border-main bg-bg-canvas p-4 text-xs leading-6 text-text-muted"
               {...props}
             >
               {children}
@@ -445,7 +445,7 @@ function MarkdownPreview({
           th: ({ className, ...props }) => (
             <th
               className={cn(
-                'border border-border/60 bg-muted/40 px-3 py-2 text-left font-semibold',
+                'border border-border-main bg-bg-surface px-3 py-2 text-left font-semibold',
                 className
               )}
               {...props}
@@ -453,7 +453,7 @@ function MarkdownPreview({
           ),
           td: ({ className, ...props }) => (
             <td
-              className={cn('border border-border/60 px-3 py-2 align-top', className)}
+              className={cn('border border-border-main px-3 py-2 align-top', className)}
               {...props}
             />
           ),
@@ -496,7 +496,7 @@ function SummaryField({
     !(typeof value === 'string' && value.trim().length === 0);
 
   return (
-    <div className="space-y-1 rounded-xl border border-border/60 bg-muted/15 p-3">
+    <div className="space-y-1 rounded-md border border-border-main bg-bg-canvas p-3">
       <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
       <div className="text-sm font-medium text-foreground">
         {hasValue ? value : t('common.notSet')}
@@ -675,9 +675,9 @@ function TestCaseFormDialog({
         <DialogBody>
           {mode === 'edit' && isLoadingTestCase ? (
             <div className="space-y-3 py-2">
-              <div className="h-10 animate-pulse rounded-xl bg-muted" />
-              <div className="h-10 animate-pulse rounded-xl bg-muted" />
-              <div className="h-32 animate-pulse rounded-xl bg-muted" />
+              <div className="h-10 animate-pulse rounded-md bg-muted" />
+              <div className="h-10 animate-pulse rounded-md bg-muted" />
+              <div className="h-32 animate-pulse rounded-md bg-muted" />
             </div>
           ) : mode === 'edit' && !testCase ? (
             <Alert className="mt-2">
@@ -922,7 +922,7 @@ function DuplicateTestCaseDialog({
 
         <DialogBody>
           <form id="duplicate-test-case-form" onSubmit={handleSubmit} className="space-y-4 py-1">
-            <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
+            <div className="rounded-md border border-border-main bg-bg-surface p-4 text-sm text-muted-foreground">
               {t('testCasesPage.duplicateSourceLabel')}
               {' '}
               <span className="font-medium text-foreground">
@@ -1090,7 +1090,7 @@ function CreateFromSpecDialog({
             </div>
 
             {selectedSpec ? (
-              <div className="rounded-xl border border-primary/10 bg-primary/5 p-4 text-sm">
+              <div className="rounded-md border border-border-main bg-bg-surface p-4 text-sm">
                 <div className="font-medium text-foreground">{selectedSpec.method} {selectedSpec.path}</div>
                 <div className="mt-1 text-muted-foreground">
                   {selectedSpec.summary || selectedSpec.description || t('common.noSummaryProvided')}
@@ -1123,7 +1123,7 @@ function CreateFromSpecDialog({
               </div>
             </div>
 
-            <div className="rounded-xl border border-border/60 p-4">
+            <div className="rounded-md border border-border-main p-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   <Label htmlFor="from-spec-use-example" className="text-sm font-medium">
@@ -1269,7 +1269,7 @@ function RunTestCaseDialog({
 
         <DialogBody>
           <form id="run-test-case-form" onSubmit={handleSubmit} className="space-y-5 py-1">
-            <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm">
+            <div className="rounded-md border border-border-main bg-bg-surface p-4 text-sm">
               <div className="font-medium text-foreground">
                 {testCase?.name || t('testCasesPage.unknownTestCase')}
               </div>
@@ -1372,7 +1372,7 @@ function DeleteTestCaseDialog({
         </DialogHeader>
 
         <DialogBody>
-          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
+          <div className="rounded-md border border-border-main bg-block-pink p-4">
             <div className="text-sm text-muted-foreground">
               {t('testCasesPage.deleteTargetDescription', {
                 name: testCase?.name || t('testCasesPage.deleteFallbackTarget'),
@@ -1434,9 +1434,9 @@ function RunDetailDialog({
         <DialogBody>
           {runQuery.isLoading ? (
             <div className="space-y-3 py-2">
-              <div className="h-10 animate-pulse rounded-xl bg-muted" />
-              <div className="h-24 animate-pulse rounded-xl bg-muted" />
-              <div className="h-48 animate-pulse rounded-xl bg-muted" />
+              <div className="h-10 animate-pulse rounded-md bg-muted" />
+              <div className="h-24 animate-pulse rounded-md bg-muted" />
+              <div className="h-48 animate-pulse rounded-md bg-muted" />
             </div>
           ) : runQuery.isError || !run ? (
             <Alert>
@@ -1522,7 +1522,7 @@ function RunDetailDialog({
                     run.assertions.map((assertion, index) => (
                       <div
                         key={`${assertion.type}-${index}`}
-                        className="rounded-xl border border-border/60 bg-muted/15 p-4"
+                        className="rounded-md border border-border-main bg-bg-canvas p-4"
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <RunStatusBadge status={assertion.passed ? 'pass' : 'fail'} />
@@ -1944,55 +1944,54 @@ export function TestCaseManagementPage({
     <>
       <main className="h-full min-h-0 overflow-y-auto">
         <div className="space-y-8 p-6 pt-6">
-          <div className="relative overflow-hidden rounded-xl border border-primary/10 bg-linear-to-r from-primary/10 via-cyan-500/5 to-transparent p-6 transition-colors duration-500">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0xOCAxOGgyNHYyNEgxOHoiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utb3BhY2l0eT0iLjA1Ii8+PC9nPjwvc3ZnPg==')] opacity-50" />
-          <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="space-y-3">
-              <Button asChild variant="link" className="h-auto px-0 text-sm text-muted-foreground">
-                <Link href={buildProjectDetailRoute(projectId)}>
-                  <ArrowLeft className="h-4 w-4" />
-                  {t('testCasesPage.backToProjectOverview')}
-                </Link>
-              </Button>
+          <div className="rounded-lg border border-border-main bg-block-cream p-6">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="space-y-3">
+                <Button asChild variant="link" className="h-auto px-0 text-sm text-muted-foreground">
+                  <Link href={buildProjectDetailRoute(projectId)}>
+                    <ArrowLeft className="h-4 w-4" />
+                    {t('testCasesPage.backToProjectOverview')}
+                  </Link>
+                </Button>
 
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-3xl font-bold tracking-tight">{t('testCasesPage.title')}</h1>
-                  <FlaskConical className="h-6 w-6 text-primary" />
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-3xl font-bold tracking-tight">{t('testCasesPage.title')}</h1>
+                    <FlaskConical className="h-6 w-6 text-text-main" />
+                  </div>
+                  <p className="max-w-3xl text-sm text-text-muted">
+                    {t('testCasesPage.description', {
+                      listPath: buildApiPath('/projects/:id/test-cases'),
+                      runPath: buildApiPath('/projects/:id/test-cases/:tcid/run'),
+                      historyPath: buildApiPath('/projects/:id/test-cases/:tcid/runs'),
+                    })}
+                  </p>
                 </div>
-                <p className="max-w-3xl text-sm text-text-muted">
-                  {t('testCasesPage.description', {
-                    listPath: buildApiPath('/projects/:id/test-cases'),
-                    runPath: buildApiPath('/projects/:id/test-cases/:tcid/run'),
-                    historyPath: buildApiPath('/projects/:id/test-cases/:tcid/runs'),
-                  })}
-                </p>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">
+                    {t('testCasesPage.projectBadge', {
+                      name: projectQuery.data?.name || `#${projectId}`,
+                    })}
+                  </Badge>
+                  <Badge variant="outline">{t('testCasesPage.totalCount', { count: totalTestCases })}</Badge>
+                  <RoleBadge role={projectRole} />
+                </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">
-                  {t('testCasesPage.projectBadge', {
-                    name: projectQuery.data?.name || `#${projectId}`,
-                  })}
-                </Badge>
-                <Badge variant="outline">{t('testCasesPage.totalCount', { count: totalTestCases })}</Badge>
-                <RoleBadge role={projectRole} />
+              <div className="flex flex-wrap items-center gap-3">
+                <Button type="button" onClick={openCreateDialog} disabled={!canCreate}>
+                  <Plus className="h-4 w-4" />
+                  {t('testCasesPage.create')}
+                </Button>
+                <ActionMenu
+                  items={headerActionItems}
+                  ariaLabel={t('testCasesPage.openManagementActions')}
+                  triggerVariant="outline"
+                />
               </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Button type="button" onClick={openCreateDialog} disabled={!canCreate}>
-                <Plus className="h-4 w-4" />
-                {t('testCasesPage.create')}
-              </Button>
-              <ActionMenu
-                items={headerActionItems}
-                ariaLabel={t('testCasesPage.openManagementActions')}
-                triggerVariant="outline"
-              />
             </div>
           </div>
-        </div>
 
         {projectRole === 'read' ? (
           <Alert>
@@ -2077,8 +2076,8 @@ export function TestCaseManagementPage({
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <Card className="border-border/50 shadow-premium">
-            <CardHeader className="border-b bg-muted/20">
+          <Card className="border-border-main bg-bg-canvas">
+            <CardHeader className="border-b border-border-main bg-bg-canvas">
               <CardTitle>{t('testCasesPage.listTitle')}</CardTitle>
               <CardDescription>
                 {t('testCasesPage.listDescription', {
@@ -2149,8 +2148,8 @@ export function TestCaseManagementPage({
                   </AlertDescription>
                 </Alert>
               ) : testCases.length === 0 ? (
-                <div className="rounded-2xl border border-dashed p-8 text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-8 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <FlaskConical className="h-6 w-6" />
                   </div>
                   <h3 className="mt-4 text-lg font-semibold">{t('testCasesPage.emptyTitle')}</h3>
@@ -2174,7 +2173,7 @@ export function TestCaseManagementPage({
                 </div>
               ) : (
                 <>
-                  <div className="overflow-hidden rounded-xl border border-border/60">
+                  <div className="overflow-hidden rounded-md border border-border-main">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -2195,8 +2194,8 @@ export function TestCaseManagementPage({
                             <TableRow
                               key={testCase.id}
                               className={cn(
-                                'cursor-pointer transition-colors hover:bg-muted/40',
-                                isActive && 'bg-primary/5'
+                                'cursor-pointer transition-colors hover:bg-bg-surface',
+                                isActive && 'bg-bg-subtle'
                               )}
                               onClick={() => selectTestCase(testCase.id)}
                             >
@@ -2316,8 +2315,8 @@ export function TestCaseManagementPage({
             </CardContent>
           </Card>
 
-          <Card className="border-border/50 shadow-premium">
-            <CardHeader className="border-b bg-muted/20">
+          <Card className="border-border-main bg-bg-canvas">
+            <CardHeader className="border-b border-border-main bg-bg-canvas">
               <CardTitle>{t('testCasesPage.detailTitle')}</CardTitle>
               <CardDescription>
                 {t('testCasesPage.detailDescription', {
@@ -2329,9 +2328,9 @@ export function TestCaseManagementPage({
             <CardContent className="space-y-4 pt-6">
               {activeTestCaseQuery.isLoading && !activeTestCase ? (
                 <div className="space-y-3">
-                  <div className="h-10 animate-pulse rounded-xl bg-muted" />
-                  <div className="h-28 animate-pulse rounded-xl bg-muted" />
-                  <div className="h-56 animate-pulse rounded-xl bg-muted" />
+                  <div className="h-10 animate-pulse rounded-md bg-muted" />
+                  <div className="h-28 animate-pulse rounded-md bg-muted" />
+                  <div className="h-56 animate-pulse rounded-md bg-muted" />
                 </div>
               ) : !activeTestCase ? (
                 <Alert>
@@ -2342,7 +2341,7 @@ export function TestCaseManagementPage({
                 </Alert>
               ) : (
                 <>
-                  <div className="rounded-2xl border border-primary/10 bg-linear-to-br from-primary/10 via-transparent to-white p-5">
+                  <div className="rounded-md border border-border-main bg-bg-surface p-5">
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
@@ -2484,7 +2483,7 @@ export function TestCaseManagementPage({
 
                     <TabsContent value="runs" className="space-y-4">
                       {effectiveLatestRunResult ? (
-                        <div className="rounded-2xl border border-primary/10 bg-primary/5 p-4">
+                        <div className="rounded-md border border-border-main bg-bg-surface p-4">
                           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div className="space-y-1">
                               <div className="text-sm font-semibold">{t('testCasesPage.latestAdHocRun')}</div>
@@ -2574,7 +2573,7 @@ export function TestCaseManagementPage({
                         </Alert>
                       ) : (
                         <>
-                          <div className="overflow-hidden rounded-xl border border-border/60">
+                          <div className="overflow-hidden rounded-md border border-border-main">
                             <Table>
                               <TableHeader>
                                 <TableRow>

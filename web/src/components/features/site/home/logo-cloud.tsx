@@ -16,17 +16,17 @@ export interface LogoCloudProps {
 
 export function LogoCloud({ title, logos }: LogoCloudProps) {
   return (
-    <section className="py-8 sm:py-12">
+    <section className="bg-bg-inverse py-5 text-text-inverse">
       <div className="container">
-        <div className="rounded-[2rem] border border-border/70 bg-white/70 px-6 py-8 shadow-[0_18px_45px_-35px_rgba(15,23,42,0.28)] backdrop-blur-sm">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.3em] text-text-muted">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:gap-8">
+          <p className="figma-caption shrink-0 text-text-inverse">
             {title}
           </p>
-          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid flex-1 grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-5">
             {logos.map((logo) => (
               <div
                 key={logo.name}
-                className="flex min-h-14 items-center justify-center rounded-2xl border border-border/70 bg-bg-canvas px-4 text-center text-sm font-semibold tracking-[0.22em] text-text-muted transition-colors duration-300 hover:text-text-subtle"
+                className="figma-caption flex min-h-9 items-center justify-center text-center text-text-inverse/75 transition-colors duration-200 hover:text-text-inverse"
               >
                 {logo.name}
               </div>

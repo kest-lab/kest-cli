@@ -29,17 +29,17 @@ import { formatDate } from '@/utils';
 const getStatusBadgeClassName = (status?: string) => {
   switch (status) {
     case 'active':
-      return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      return 'border-border-main bg-block-lime text-text-main';
     case 'rejected':
-      return 'border-slate-200 bg-slate-100 text-slate-700';
+      return 'border-border-main bg-bg-subtle text-text-main';
     case 'used_up':
-      return 'border-amber-200 bg-amber-50 text-amber-700';
+      return 'border-border-main bg-block-cream text-text-main';
     case 'revoked':
-      return 'border-rose-200 bg-rose-50 text-rose-700';
+      return 'border-border-main bg-block-pink text-text-main';
     case 'expired':
-      return 'border-slate-200 bg-slate-100 text-slate-700';
+      return 'border-border-main bg-bg-subtle text-text-main';
     default:
-      return 'border-border bg-muted text-muted-foreground';
+      return 'border-border-main bg-bg-subtle text-text-muted';
   }
 };
 
@@ -113,10 +113,10 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
   };
 
   return (
-    <main className="min-h-screen bg-linear-to-b from-primary/10 via-background to-background px-4 py-10 sm:px-6">
+    <main className="min-h-screen bg-bg-canvas px-4 py-10 sm:px-6">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
-        <Card className="overflow-hidden border-primary/15">
-          <CardHeader className="gap-4 bg-linear-to-r from-primary/10 via-cyan-500/5 to-transparent">
+        <Card className="overflow-hidden border-border-main bg-bg-canvas">
+          <CardHeader className="gap-4 border-b border-border-main bg-block-cream">
             <div className="flex flex-wrap items-center gap-3">
               <Badge variant="outline" className={getStatusBadgeClassName(invitation?.status)}>
                 {getInvitationStatusLabel(invitation?.status)}
@@ -127,7 +127,7 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
               </Badge>
             </div>
             <div className="space-y-2">
-              <CardTitle className="text-3xl tracking-tight">{t('invitation.title')}</CardTitle>
+              <CardTitle className="figma-headline">{t('invitation.title')}</CardTitle>
               <CardDescription className="max-w-2xl text-sm text-muted-foreground">
                 {t('invitation.description')}
               </CardDescription>
@@ -136,11 +136,11 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
           <CardContent className="space-y-6 p-6">
             {invitationQuery.isLoading || (!isSystemReady && isLoadingAuth) ? (
               <div className="space-y-4">
-                <div className="h-6 w-48 animate-pulse rounded bg-muted/60" />
-                <div className="h-24 animate-pulse rounded-xl bg-muted/50" />
+                <div className="h-6 w-48 animate-pulse rounded bg-bg-subtle" />
+                <div className="h-24 animate-pulse rounded-md bg-bg-surface" />
                 <div className="grid gap-3 md:grid-cols-3">
                   {Array.from({ length: 3 }).map((_, index) => (
-                    <div key={index} className="h-24 animate-pulse rounded-xl bg-muted/50" />
+                    <div key={index} className="h-24 animate-pulse rounded-md bg-bg-surface" />
                   ))}
                 </div>
               </div>
@@ -154,10 +154,10 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
               </Alert>
             ) : (
               <>
-                <div className="rounded-2xl border border-primary/15 bg-primary/5 p-5">
+                <div className="rounded-md border border-border-main bg-bg-canvas p-5">
                   <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                     <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">{t('invitation.projectLabel')}</p>
+                      <p className="figma-caption text-muted-foreground">{t('invitation.projectLabel')}</p>
                       <h1 className="text-2xl font-semibold tracking-tight">
                         {invitation.project_name}
                       </h1>
@@ -172,7 +172,7 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-2xl border p-5">
+                  <div className="rounded-md border border-border-main bg-bg-canvas p-5">
                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <ShieldCheck className="h-4 w-4" />
                       {t('invitation.roleLabel')}
@@ -181,7 +181,7 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
                       {getRoleLabel(invitation.role)}
                     </p>
                   </div>
-                  <div className="rounded-2xl border p-5">
+                  <div className="rounded-md border border-border-main bg-bg-canvas p-5">
                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <Clock3 className="h-4 w-4" />
                       {t('invitation.expiresLabel')}
@@ -192,7 +192,7 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
                         : t('invitation.never')}
                     </p>
                   </div>
-                  <div className="rounded-2xl border p-5">
+                  <div className="rounded-md border border-border-main bg-bg-canvas p-5">
                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <MailPlus className="h-4 w-4" />
                       {t('invitation.remainingUsesLabel')}

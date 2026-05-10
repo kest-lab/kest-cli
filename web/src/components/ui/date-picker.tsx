@@ -54,7 +54,7 @@ const TimeColumn = ({
   }, [value])
 
   return (
-    <div className="flex flex-col items-center bg-muted/20 last:border-0 border-r border-border/10 w-14 shrink-0 overflow-hidden">
+    <div className="flex flex-col items-center bg-bg-surface last:border-0 border-r border-border-main w-14 shrink-0 overflow-hidden">
       <div className="text-xs font-bold text-muted-foreground/60 py-3 uppercase tracking-widest">{label}</div>
       <div 
         ref={scrollRef}
@@ -69,7 +69,7 @@ const TimeColumn = ({
             className={cn(
               "size-8 shrink-0 flex items-center justify-center text-sm font-medium transition-all rounded-lg mb-2 last:mb-0 cursor-pointer",
               value === i 
-                ? "bg-primary text-primary-foreground font-bold shadow-md scale-110 z-10" 
+                ? "bg-primary text-primary-foreground font-bold ring-2 ring-primary/12 z-10" 
                 : "text-foreground/80 hover:bg-primary/10 hover:text-foreground"
             )}
           >
@@ -140,7 +140,7 @@ export function DatePicker({
         </button>
       </PopoverTrigger>
       <PopoverContent className="p-0 overflow-hidden" align="start">
-        <div className="flex bg-popover/30 backdrop-blur-2xl">
+        <div className="flex bg-bg-canvas">
           <Calendar 
             selected={date} 
             showFooter={false}
@@ -156,14 +156,14 @@ export function DatePicker({
             }} 
           />
           {showTime && (
-            <div className="flex border-l border-border/40 animate-in slide-in-from-right-4">
+            <div className="flex border-l border-border-main animate-in slide-in-from-right-4">
               <TimeColumn label={t.common('hour').charAt(0)} max={23} value={date?.getHours() || 0} onChange={(v) => handleTimeChange('h', v)} />
               <TimeColumn label={t.common('minute').charAt(0)} max={59} value={date?.getMinutes() || 0} onChange={(v) => handleTimeChange('m', v)} />
               <TimeColumn label={t.common('second').charAt(0)} max={59} value={date?.getSeconds() || 0} onChange={(v) => handleTimeChange('s', v)} />
             </div>
           )}
         </div>
-        <div className="p-2 border-t border-border flex items-center justify-between bg-muted/10">
+        <div className="p-2 border-t border-border-main flex items-center justify-between bg-bg-surface">
           <div className="flex items-center gap-2">
             <button 
               onClick={() => {
