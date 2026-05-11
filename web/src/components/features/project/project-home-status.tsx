@@ -33,26 +33,26 @@ export const getProjectHomeStatusLabel = (t: ProjectT, tone: ProjectHomeStatusTo
 export const getProjectHomeStatusBadgeClassName = (tone: ProjectHomeStatusTone) => {
   switch (tone) {
     case 'ready':
-      return 'border-border-main bg-block-lime text-text-main';
+      return 'border-border-strong bg-highlight text-text-main';
     case 'available':
-      return 'border-border-main bg-block-mint text-text-main';
+      return 'border-border-subtle bg-block-mint text-text-main';
     case 'optional':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     default:
-      return 'border-border-main bg-block-cream text-text-main';
+      return 'border-border-subtle bg-block-cream text-text-main';
   }
 };
 
 export const getProjectHomeStatusAccentClassName = (tone: ProjectHomeStatusTone) => {
   switch (tone) {
     case 'ready':
-      return 'border border-border-main bg-block-lime text-text-main';
+      return 'border border-border-strong bg-highlight text-text-main';
     case 'available':
-      return 'border border-border-main bg-block-mint text-text-main';
+      return 'border border-border-subtle bg-block-mint text-text-main';
     case 'optional':
-      return 'border border-border-main bg-bg-subtle text-text-main';
+      return 'border border-border-subtle bg-bg-subtle text-text-main';
     default:
-      return 'border border-border-main bg-block-cream text-text-main';
+      return 'border border-border-subtle bg-block-cream text-text-main';
   }
 };
 

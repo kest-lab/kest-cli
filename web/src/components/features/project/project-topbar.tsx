@@ -71,7 +71,7 @@ export function ProjectTopbar() {
   };
 
   return (
-    <header className="z-40 flex h-14 shrink-0 items-center justify-between border-b border-border-main bg-bg-canvas px-4 md:px-6">
+    <header className="z-40 flex h-16 shrink-0 items-center justify-between border-b border-border-subtle bg-bg-canvas px-4 shadow-sm md:px-6">
       <div className="flex min-w-0 items-center gap-4">
         <Link href={ROUTES.CONSOLE.PROJECTS} className="group flex items-center" aria-label="KEST">
           <Logo className="h-8 w-[99px] shrink-0 text-black transition-transform group-hover:scale-[1.03]" aria-hidden="true" />
@@ -86,7 +86,7 @@ export function ProjectTopbar() {
               variant="outline"
               size="sm"
               noScale
-              className="hidden border-border-main bg-bg-surface px-3 text-text-main hover:bg-bg-subtle md:inline-flex"
+              className="hidden border-border-strong bg-bg-canvas px-3 text-text-main shadow-sm hover:border-border-strong hover:bg-bg-subtle md:inline-flex"
               data-onboarding="command-palette"
               onClick={() => {
                 window.dispatchEvent(new Event(OPEN_COMMAND_PALETTE_EVENT));
@@ -94,7 +94,7 @@ export function ProjectTopbar() {
             >
               <Command className="h-3.5 w-3.5" />
               <span>{t('topbar.commandMenu')}</span>
-              <span className="rounded-full border border-border-main bg-bg-canvas px-1.5 py-0.5 text-[10px] uppercase tracking-[0.18em] text-text-muted">
+              <span className="rounded-full border border-border-strong bg-highlight px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-normal text-text-main">
                 Cmd+K
               </span>
             </Button>
@@ -111,7 +111,7 @@ export function ProjectTopbar() {
               variant="ghost"
               isIcon
               noScale
-              className="h-9 w-9 rounded-full border border-border-main bg-bg-surface hover:bg-bg-subtle"
+              className="h-9 w-9 rounded-full border border-border-strong bg-bg-canvas shadow-sm hover:bg-bg-subtle"
               data-onboarding="help-button"
               aria-label={t('topbar.help')}
               onClick={() => {
@@ -137,7 +137,7 @@ export function ProjectTopbar() {
                   variant="ghost"
                   isIcon
                   noScale
-                  className="relative h-9 w-9 rounded-full border border-border-main bg-bg-surface hover:bg-bg-subtle"
+                  className="relative h-9 w-9 rounded-full border border-border-strong bg-bg-canvas shadow-sm hover:bg-bg-subtle"
                   aria-label={t('topbar.notifications')}
                 >
                   <Bell className="h-4 w-4 text-text-main" />
@@ -154,7 +154,7 @@ export function ProjectTopbar() {
               <p>{t('topbar.notifications')}</p>
             </TooltipContent>
           </Tooltip>
-          <DropdownMenuContent align="end" className="w-72 rounded-lg border-border-main bg-bg-canvas p-1 shadow-soft">
+          <DropdownMenuContent align="end" className="w-72 rounded-2xl border-border-subtle bg-bg-canvas p-1 shadow-soft">
             <DropdownMenuLabel>{t('topbar.notifications')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {receivedInvitationsQuery.isError ? (
@@ -167,14 +167,14 @@ export function ProjectTopbar() {
               </div>
             ) : (
               <>
-                <div className="px-2 py-2 text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+                <div className="px-2 py-2 text-xs font-medium uppercase tracking-normal text-text-muted">
                   {t('topbar.pendingInvitations', { count: pendingInvitationCount })}
                 </div>
                 {invitationPreview.map(invitation => (
                   <DropdownMenuItem
                     key={invitation.id}
                     asChild
-                    className="cursor-pointer rounded-md"
+                    className="cursor-pointer rounded-xl"
                   >
                     <Link href={buildProjectInviteRoute(invitation.slug)}>
                       <div className="min-w-0">
@@ -189,7 +189,7 @@ export function ProjectTopbar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   asChild
-                  className="cursor-pointer rounded-md text-text-main focus:text-text-main"
+                  className="cursor-pointer rounded-xl text-text-main focus:text-text-main"
                 >
                   <Link href={ROUTES.CONSOLE.PROJECTS}>{t('topbar.reviewInvitations')}</Link>
                 </DropdownMenuItem>
@@ -206,7 +206,7 @@ export function ProjectTopbar() {
                   variant="ghost"
                   isIcon
                   noScale
-                  className="h-9 w-9 overflow-hidden rounded-full border border-border-main bg-bg-surface hover:bg-bg-subtle"
+                  className="h-9 w-9 overflow-hidden rounded-full border border-border-strong bg-bg-canvas shadow-sm hover:bg-bg-subtle"
                   aria-label={t('topbar.profile')}
                 >
                   <Avatar className="h-full w-full">
@@ -223,19 +223,19 @@ export function ProjectTopbar() {
               <p>{t('topbar.profile')}</p>
             </TooltipContent>
           </Tooltip>
-          <DropdownMenuContent align="end" className="w-56 rounded-lg border-border-main bg-bg-canvas p-1 shadow-soft">
-            <DropdownMenuLabel className="px-2 py-1.5 text-xs font-medium uppercase tracking-wider text-text-muted">
+          <DropdownMenuContent align="end" className="w-56 rounded-2xl border-border-subtle bg-bg-canvas p-1 shadow-soft">
+            <DropdownMenuLabel className="px-2 py-1.5 text-xs font-medium uppercase tracking-normal text-text-muted">
               {displayName}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="cursor-pointer rounded-md">
+            <DropdownMenuItem asChild className="cursor-pointer rounded-xl">
               <Link href={ROUTES.CONSOLE.SETTINGS}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>{t('topbar.accountSettings')}</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem
-              className="cursor-pointer rounded-md text-destructive focus:bg-destructive/10"
+              className="cursor-pointer rounded-xl text-destructive focus:bg-destructive/10"
               onClick={handleLogout}
             >
               <LogOut className="mr-2 h-4 w-4" />

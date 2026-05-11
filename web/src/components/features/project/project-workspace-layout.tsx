@@ -50,20 +50,20 @@ export function ProjectWorkspaceLayout({
   };
 
   return (
-    <div className="flex min-h-full flex-col bg-bg-canvas lg:h-full lg:min-h-0 lg:flex-row lg:overflow-hidden">
+    <div className="flex min-h-full flex-col bg-bg-soft lg:h-full lg:min-h-0 lg:flex-row lg:overflow-hidden">
       <aside
         className={cn(
-          'w-full shrink-0 border-b border-border-main bg-bg-canvas lg:border-r lg:border-b-0 lg:transition-[width]',
+          'w-full shrink-0 border-b border-border-subtle bg-bg-canvas lg:border-r lg:border-b-0 lg:transition-[width]',
           isDesktopNavCollapsed ? 'lg:w-[92px]' : 'lg:w-[236px]'
         )}
       >
-        <div className="flex items-center gap-3 border-b border-border-main p-3 lg:hidden">
+        <div className="flex items-center gap-3 border-b border-border-subtle p-3 lg:hidden">
           <Button
             asChild
             variant="ghost"
             size="sm"
             isIcon
-            className="h-8 w-8 shrink-0 rounded-full border border-border-main bg-bg-surface text-text-main hover:bg-bg-subtle"
+            className="h-8 w-8 shrink-0 rounded-full border border-border-strong bg-bg-canvas text-text-main shadow-sm hover:bg-bg-subtle"
           >
             <Link href={buildProjectDetailRoute(projectId)}>
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -84,14 +84,14 @@ export function ProjectWorkspaceLayout({
                     className={cn(
                       'flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors',
                       isActive
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border-main bg-bg-surface text-text-muted hover:bg-bg-subtle hover:text-text-main'
+                        ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                        : 'border-border-subtle bg-bg-canvas text-text-muted shadow-sm hover:border-border-strong hover:bg-bg-subtle hover:text-text-main'
                     )}
                   >
                     <div
                       className={cn(
                         'flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
-                        isActive ? 'bg-text-inverse/16 text-primary-foreground' : 'bg-bg-subtle text-text-muted'
+                        isActive ? 'bg-text-inverse/16 text-primary-foreground' : 'bg-highlight-subtle text-text-main'
                       )}
                     >
                       <Icon className="h-3 w-3" />
@@ -107,13 +107,13 @@ export function ProjectWorkspaceLayout({
                 return (
                   <div
                     key={item.value}
-                    className="flex shrink-0 items-center gap-2 rounded-full border border-dashed border-border-main bg-bg-subtle px-3 py-2 text-xs font-medium text-text-muted whitespace-nowrap"
+                    className="flex shrink-0 items-center gap-2 rounded-full border border-dashed border-border-subtle bg-bg-subtle px-3 py-2 text-xs font-medium text-text-muted whitespace-nowrap"
                   >
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-bg-canvas text-text-muted">
                       <Icon className="h-3 w-3" />
                     </div>
                     <span>{getProjectModuleCopy(t, item.i18nKey, 'shortLabel')}</span>
-                    <span className="text-[10px] uppercase tracking-[0.16em] text-text-muted/80">
+                    <span className="text-[10px] font-semibold uppercase tracking-normal text-text-muted/80">
                       {t('common.soon')}
                     </span>
                   </div>
@@ -132,7 +132,7 @@ export function ProjectWorkspaceLayout({
                   variant="ghost"
                   size="sm"
                   isIcon
-                  className="h-8 w-8 rounded-full border border-border-main bg-bg-surface text-text-main hover:bg-bg-subtle"
+                  className="h-8 w-8 rounded-full border border-border-strong bg-bg-canvas text-text-main shadow-sm hover:bg-bg-subtle"
                 >
                   <Link href={buildProjectDetailRoute(projectId)}>
                     <ArrowLeft className="h-3.5 w-3.5" />
@@ -151,7 +151,7 @@ export function ProjectWorkspaceLayout({
                   variant="ghost"
                   size="sm"
                   isIcon
-                  className="h-8 w-8 rounded-full border border-border-main bg-bg-surface text-text-main hover:bg-bg-subtle"
+                  className="h-8 w-8 rounded-full border border-border-strong bg-bg-canvas text-text-main shadow-sm hover:bg-bg-subtle"
                   onClick={() => updateDesktopNavCollapsed(!isDesktopNavCollapsed)}
                   aria-label={
                     isDesktopNavCollapsed
@@ -176,7 +176,7 @@ export function ProjectWorkspaceLayout({
             </Tooltip>
           </div>
 
-          <Separator className="bg-border-main" />
+          <Separator className="bg-border-subtle" />
 
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             <nav className="space-y-4">
@@ -196,16 +196,16 @@ export function ProjectWorkspaceLayout({
                           ? 'items-center justify-center px-2 py-3 text-center'
                           : 'items-center gap-3 px-3 py-3',
                         isActive
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-transparent text-text-muted hover:border-border-main hover:bg-bg-subtle hover:text-text-main'
+                          ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                          : 'border-transparent text-text-muted hover:border-border-subtle hover:bg-bg-subtle hover:text-text-main'
                       )}
                       aria-label={label}
                     >
                       <div
                         className={cn(
-                          'flex shrink-0 items-center justify-center rounded-md',
+                          'flex shrink-0 items-center justify-center rounded-xl',
                           isDesktopNavCollapsed ? 'h-8 w-8' : 'h-8 w-8',
-                          isActive ? 'bg-text-inverse/16 text-primary-foreground' : 'bg-bg-subtle text-text-muted'
+                          isActive ? 'bg-text-inverse/16 text-primary-foreground' : 'bg-highlight-subtle text-text-main'
                         )}
                       >
                         <Icon className="h-3.5 w-3.5" />
@@ -235,7 +235,7 @@ export function ProjectWorkspaceLayout({
 
               {plannedModules.length > 0 ? (
                 <>
-                  <Separator className="bg-border-main" />
+                  <Separator className="bg-border-subtle" />
                   <div className="space-y-2 pt-1">
                     {plannedModules.map(item => {
                       const Icon = item.icon;
@@ -244,7 +244,7 @@ export function ProjectWorkspaceLayout({
                         <div
                           key={item.value}
                           className={cn(
-                            'rounded-full border border-dashed border-border-main bg-bg-subtle text-text-muted',
+                            'rounded-full border border-dashed border-border-subtle bg-bg-subtle text-text-muted',
                             isDesktopNavCollapsed
                               ? 'flex items-center justify-center px-2 py-3 text-center'
                               : 'flex items-center gap-3 px-3 py-3'
@@ -257,7 +257,7 @@ export function ProjectWorkspaceLayout({
                           {!isDesktopNavCollapsed ? (
                             <div className="min-w-0">
                               <p className="truncate text-sm font-medium">{label}</p>
-                              <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-text-muted/80">
+                              <p className="mt-1 text-[10px] font-semibold uppercase tracking-normal text-text-muted/80">
                                 {t('common.soon')}
                               </p>
                             </div>
@@ -287,7 +287,7 @@ export function ProjectWorkspaceLayout({
         </div>
       </aside>
 
-      <div className="min-w-0 flex-1 lg:min-h-0 lg:overflow-hidden">{children}</div>
+      <div className="min-w-0 flex-1 bg-bg-soft lg:min-h-0 lg:overflow-hidden">{children}</div>
     </div>
   );
 }
