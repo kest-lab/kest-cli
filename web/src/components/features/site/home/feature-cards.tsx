@@ -30,6 +30,15 @@ const iconMap: Record<MarketingFeatureIconKey, typeof GitBranch> = {
   diagnosis: Bot,
 };
 
+const cardToneClasses = [
+  'bg-block-pink',
+  'bg-block-mint',
+  'bg-block-cream',
+  'bg-block-lilac',
+  'bg-block-coral',
+  'bg-block-lime',
+];
+
 export function FeatureCards({ content }: FeatureCardsProps) {
   return (
     <section id="features" className="bg-bg-canvas py-20 sm:py-24 lg:py-28">
@@ -45,15 +54,15 @@ export function FeatureCards({ content }: FeatureCardsProps) {
         </div>
 
         <div className="mt-14 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {content.items.map((item) => {
+          {content.items.map((item, index) => {
             const Icon = iconMap[item.icon];
 
             return (
               <article
                 key={item.title}
-                className="group marketing-panel rounded-md p-6 transition-colors duration-200 hover:bg-bg-subtle"
+                className={`group rounded-[1.75rem] border border-border-subtle p-7 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(5,0,56,0.12)] ${cardToneClasses[index % cardToneClasses.length]}`}
               >
-                <div className="flex size-11 items-center justify-center rounded-full bg-bg-soft text-text-main">
+                <div className="flex size-11 items-center justify-center rounded-full border border-border-main bg-bg-canvas text-text-main">
                   <Icon className="size-5" />
                 </div>
                 <h3 className="figma-headline mt-5 text-text-main">{item.title}</h3>

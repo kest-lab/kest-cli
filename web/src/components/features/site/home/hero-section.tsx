@@ -18,23 +18,22 @@ export interface HeroSectionProps {
 
 export function HeroSection({ content }: HeroSectionProps) {
   return (
-    <section id="product" className="relative overflow-hidden bg-bg-canvas py-16 sm:py-20 lg:py-24">
+    <section id="product" className="relative overflow-hidden bg-bg-canvas py-[4.5rem] sm:py-24 lg:py-28">
       <div className="container relative">
         <div className="flex flex-col gap-12 lg:gap-14">
           <div className="max-w-5xl">
-            <div className="figma-caption inline-flex items-center gap-2 rounded-pill border border-border-main bg-bg-canvas px-3 py-2 text-text-main">
-              <span className="size-1.5 rounded-full bg-primary" />
+            <div className="figma-caption inline-flex items-center rounded-full bg-highlight px-3 py-1.5 text-text-main">
               {content.badge}
             </div>
 
             <h1 className="figma-display-xl mt-6 max-w-5xl text-balance text-text-main">
               {content.title}
             </h1>
-            <p className="figma-body-lg mt-6 max-w-2xl text-text-subtle">
+            <p className="figma-body-lg mt-6 max-w-3xl text-text-subtle">
               {content.description}
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button asChild size="2xl">
+              <Button asChild size="2xl" className="bg-primary text-primary-foreground hover:bg-primary/95">
                 <Link href="/register" className="inline-flex items-center gap-2 whitespace-nowrap">
                   <span>{content.primaryCta}</span>
                 </Link>
@@ -43,7 +42,7 @@ export function HeroSection({ content }: HeroSectionProps) {
                 type="button"
                 variant="outline"
                 size="2xl"
-                className="bg-bg-canvas"
+                className="border-border-strong bg-bg-canvas text-text-main hover:bg-bg-soft"
               >
                 {content.secondaryCta}
               </Button>

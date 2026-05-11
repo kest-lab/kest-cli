@@ -56,8 +56,8 @@ function NavItem({
         target={external ? '_blank' : undefined}
         rel={external ? 'noreferrer' : undefined}
         className={cn(
-          'text-sm font-medium text-text-main transition-colors duration-200 hover:text-text-subtle',
-          mobile ? 'rounded-pill border border-border-main bg-bg-canvas px-4 py-3' : ''
+          'text-sm font-medium text-text-main transition-colors duration-200 hover:text-blue-600',
+          mobile ? 'rounded-full border border-border-main bg-bg-canvas px-4 py-2.5' : ''
         )}
       >
         {item.label}
@@ -69,12 +69,12 @@ function NavItem({
     <span
       className={cn(
         'inline-flex items-center gap-2 text-sm font-medium text-text-muted',
-        mobile ? 'rounded-pill border border-dashed border-border-main px-4 py-3' : ''
+        mobile ? 'rounded-full border border-dashed border-border-main px-4 py-2.5' : ''
       )}
     >
       {item.label}
       {item.placeholder ? (
-        <span className="figma-caption rounded-pill border border-border-main px-2 py-0.5">
+        <span className="figma-caption rounded-full bg-highlight px-2 py-0.5 text-text-main">
           {docsSoonLabel}
         </span>
       ) : null}
@@ -108,12 +108,12 @@ export function MarketingNavbar({
       className={cn(
         'sticky top-0 z-50 border-b transition-all duration-300',
         scrolled
-          ? 'border-border-main bg-bg-canvas'
+          ? 'border-border-main bg-bg-canvas shadow-[0_10px_30px_-25px_rgba(5,0,56,0.45)]'
           : 'border-transparent bg-bg-canvas'
       )}
     >
       <div className="container">
-        <div className="flex h-16 items-center justify-between gap-6">
+        <div className="flex h-[4.25rem] items-center justify-between gap-6">
           <Link href="/" className="flex items-center" aria-label={brandName}>
             <Logo className="h-9 w-[111px] shrink-0 text-black" aria-hidden="true" />
           </Link>
@@ -126,10 +126,10 @@ export function MarketingNavbar({
 
           <div className="hidden items-center gap-2 lg:flex">
             <LanguageSwitcher />
-            <Button asChild variant="ghost" size="lg">
+            <Button asChild variant="ghost" size="lg" className="text-text-subtle hover:text-text-main">
               <Link href="/login">{loginLabel}</Link>
             </Button>
-            <Button asChild size="lg">
+            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/95">
               <Link href="/register">{signUpLabel}</Link>
             </Button>
           </div>
@@ -157,7 +157,7 @@ export function MarketingNavbar({
             open ? 'max-h-[28rem] pb-5' : 'max-h-0'
           )}
         >
-          <div className="rounded-lg border border-border-main bg-bg-canvas p-4 shadow-none">
+          <div className="rounded-2xl border border-border-main bg-bg-canvas p-4 shadow-[0_12px_32px_-4px_rgba(5,0,56,0.08)]">
             <div className="grid gap-3">
               {navItems.map((item) => (
                 <NavItem
@@ -170,12 +170,12 @@ export function MarketingNavbar({
               ))}
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <Button asChild variant="outline" size="lg">
+              <Button asChild variant="outline" size="lg" className="border-border-strong">
                 <Link href="/login" onClick={() => setOpen(false)}>
                   {loginLabel}
                 </Link>
               </Button>
-              <Button asChild size="lg">
+              <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/95">
                 <Link href="/register" onClick={() => setOpen(false)}>
                   {signUpLabel}
                 </Link>
