@@ -135,7 +135,7 @@ export function AccountSettings() {
   return (
     <div className="flex-1 space-y-6 p-6 pt-6">
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">{t.console('account.title')}</h1>
+        <h1 className="text-3xl font-bold tracking-normal">{t.console('account.title')}</h1>
         <p className="text-sm text-muted-foreground">
           {t.console('account.connectedTo')} <code>{profilePath}</code>, <code>{passwordPath}</code>, and <code>{accountPath}</code>.
         </p>
@@ -219,29 +219,29 @@ export function AccountSettings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center justify-between rounded-2xl border border-border-subtle bg-bg-soft p-3">
               <span className="text-muted-foreground">{t.console('account.status')}</span>
               <Badge variant="outline">{resolveStatusLabel(profile.status, t.common('active'), t.common('inactive'))}</Badge>
             </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center justify-between rounded-2xl border border-border-subtle bg-bg-soft p-3">
               <span className="text-muted-foreground">{t.console('account.userId')}</span>
               <span className="font-medium">{profile.id}</span>
             </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center justify-between rounded-2xl border border-border-subtle bg-bg-soft p-3">
               <span className="text-muted-foreground">{t.console('account.created')}</span>
               <span className="font-medium">{formatDate(profile.created_at, 'YYYY-MM-DD HH:mm')}</span>
             </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center justify-between rounded-2xl border border-border-subtle bg-bg-soft p-3">
               <span className="text-muted-foreground">{t.console('account.updated')}</span>
               <span className="font-medium">{formatDate(profile.updated_at, 'YYYY-MM-DD HH:mm')}</span>
             </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center justify-between rounded-2xl border border-border-subtle bg-bg-soft p-3">
               <span className="text-muted-foreground">{t.console('account.lastLogin')}</span>
               <span className="font-medium">
                 {profile.last_login ? formatDate(profile.last_login, 'YYYY-MM-DD HH:mm') : t.console('account.never')}
               </span>
             </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center justify-between rounded-2xl border border-border-subtle bg-bg-soft p-3">
               <span className="text-muted-foreground">{t.console('account.superAdmin')}</span>
               <span className="font-medium">{profile.is_super_admin ? t.console('account.yes') : t.console('account.no')}</span>
             </div>

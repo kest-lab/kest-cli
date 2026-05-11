@@ -429,7 +429,7 @@ function RoleBadge({ role }: { role?: ProjectMemberRole }) {
   const t = useT('project');
 
   return (
-    <Badge variant="outline" className="border-border-main bg-bg-subtle text-text-main">
+    <Badge variant="outline" className="border-border-subtle bg-bg-subtle text-text-main">
       {t('roles.badge', { role: getRoleLabel(t, role) })}
     </Badge>
   );
@@ -448,16 +448,16 @@ function EnvironmentFieldPreview({
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-4 text-sm text-muted-foreground">
+      <div className="rounded-md border border-dashed border-border-subtle bg-bg-soft p-4 text-sm text-muted-foreground">
         {emptyLabel}
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-md border border-border-main">
+    <div className="overflow-hidden rounded-md border border-border-subtle">
       <Table>
-        <TableHeader className="bg-bg-surface">
+        <TableHeader className="bg-bg-soft">
           <TableRow className="hover:bg-transparent">
             <TableHead>{t('environments.fieldTableKey')}</TableHead>
             <TableHead>{t('environments.fieldTableType')}</TableHead>
@@ -607,9 +607,9 @@ function EnvironmentFieldEditor({
 
       {mode === 'table' ? (
         <div className="space-y-3">
-          <div className="overflow-hidden rounded-md border border-border-main">
+          <div className="overflow-hidden rounded-md border border-border-subtle">
             <Table>
-              <TableHeader className="bg-bg-surface">
+              <TableHeader className="bg-bg-soft">
                 <TableRow className="hover:bg-transparent">
                   <TableHead>{t('environments.fieldTableKey')}</TableHead>
                   <TableHead className="w-[140px]">{t('environments.fieldTableType')}</TableHead>
@@ -1519,7 +1519,7 @@ export function EnvironmentManagementPage({
     <>
       <main className="h-full min-h-0 overflow-y-auto">
         <div className="space-y-8 p-6 pt-6">
-          <div className="rounded-lg border border-border-main bg-block-cream p-6">
+          <div className="rounded-lg border border-border-subtle bg-block-cream p-6">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="space-y-3">
                 <Button asChild variant="link" className="h-auto px-0 text-sm text-muted-foreground">
@@ -1531,7 +1531,7 @@ export function EnvironmentManagementPage({
 
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-3xl font-bold tracking-tight">{t('environments.title')}</h1>
+                    <h1 className="text-3xl font-bold tracking-normal">{t('environments.title')}</h1>
                     <Globe className="h-6 w-6 text-text-main" />
                     <RoleBadge role={currentRole} />
                   </div>
@@ -1628,8 +1628,8 @@ export function EnvironmentManagementPage({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.95fr]">
-        <Card className="overflow-hidden border-border-main bg-bg-canvas">
-          <CardHeader className="gap-4 border-b border-border-main bg-bg-canvas">
+        <Card className="overflow-hidden border-border-subtle bg-bg-canvas">
+          <CardHeader className="gap-4 border-b border-border-subtle bg-bg-canvas">
             <div>
               <CardTitle>{t('environments.listTitle')}</CardTitle>
               <CardDescription>
@@ -1653,9 +1653,9 @@ export function EnvironmentManagementPage({
                 <div className="h-14 animate-pulse rounded-md bg-muted" />
               </div>
             ) : (
-              <div className="overflow-hidden rounded-md border border-border-main">
+              <div className="overflow-hidden rounded-md border border-border-subtle">
                 <Table>
-                  <TableHeader className="bg-bg-surface">
+                  <TableHeader className="bg-bg-soft">
                     <TableRow className="hover:bg-transparent">
                       <TableHead>{t('common.name')}</TableHead>
                       <TableHead>{t('common.displayName')}</TableHead>
@@ -1671,7 +1671,7 @@ export function EnvironmentManagementPage({
                         data-state={environment.id === activeEnvironmentId ? 'selected' : undefined}
                         className={cn(
                           'cursor-pointer transition-colors',
-                          environment.id === activeEnvironmentId ? 'bg-bg-surface' : ''
+                          environment.id === activeEnvironmentId ? 'bg-bg-soft' : ''
                         )}
                         onClick={() => {
                           setSelectedEnvironmentId(environment.id);
@@ -1749,8 +1749,8 @@ export function EnvironmentManagementPage({
           </CardContent>
         </Card>
 
-        <Card className="border-border-main bg-bg-canvas">
-          <CardHeader className="border-b border-border-main bg-bg-canvas">
+        <Card className="border-border-subtle bg-bg-canvas">
+          <CardHeader className="border-b border-border-subtle bg-bg-canvas">
             <CardTitle>{t('environments.selectedTitle')}</CardTitle>
             <CardDescription>
               {t('environments.currentDescriptionWithSelection')}
@@ -1767,7 +1767,7 @@ export function EnvironmentManagementPage({
               </Alert>
             ) : (
               <>
-                <div className="rounded-md border border-border-main bg-bg-surface p-4">
+                <div className="rounded-md border border-border-subtle bg-bg-soft p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
@@ -1811,32 +1811,32 @@ export function EnvironmentManagementPage({
 
                   <TabsContent value="overview" className="space-y-4">
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('environments.environmentId')}</div>
+                      <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                        <div className="text-xs uppercase tracking-normal text-muted-foreground">{t('environments.environmentId')}</div>
                         <div className="mt-2 font-mono text-sm">{selectedEnvironment.id}</div>
                       </div>
-                      <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.projectId')}</div>
+                      <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                        <div className="text-xs uppercase tracking-normal text-muted-foreground">{t('common.projectId')}</div>
                         <div className="mt-2 font-mono text-sm">{selectedEnvironment.project_id}</div>
                       </div>
-                      <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.created')}</div>
+                      <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                        <div className="text-xs uppercase tracking-normal text-muted-foreground">{t('common.created')}</div>
                         <div className="mt-2 text-sm">{formatDate(selectedEnvironment.created_at, 'YYYY-MM-DD HH:mm')}</div>
                       </div>
-                      <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{t('common.updated')}</div>
+                      <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                        <div className="text-xs uppercase tracking-normal text-muted-foreground">{t('common.updated')}</div>
                         <div className="mt-2 text-sm">{formatDate(selectedEnvironment.updated_at, 'YYYY-MM-DD HH:mm')}</div>
                       </div>
                     </div>
 
-                    <div className="rounded-md border border-border-main bg-bg-canvas p-4">
+                    <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
                       <div className="mb-2 text-sm font-medium">{t('common.baseUrl')}</div>
                       <div className="font-mono text-xs text-muted-foreground">
                         {selectedEnvironment.base_url || t('environments.baseUrlMissing')}
                       </div>
                     </div>
 
-                    <div className="rounded-md border border-border-main bg-bg-surface p-4">
+                    <div className="rounded-md border border-border-subtle bg-bg-soft p-4">
                       <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                         <Globe className="h-4 w-4" />
                         {t('environments.apiSurface')}
