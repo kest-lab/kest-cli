@@ -38,6 +38,7 @@ export function buildMarketingChromeContent(t: MarketingTranslator): MarketingCh
     ],
     loginLabel: t('nav.login'),
     signUpLabel: t('nav.signUp'),
+    contactSalesLabel: t('nav.contactSales'),
     docsSoonLabel: t('nav.docsSoon'),
     footer: {
       tagline: t('brand.tagline'),
@@ -52,7 +53,15 @@ export function buildMarketingChromeContent(t: MarketingTranslator): MarketingCh
           ],
         },
         {
-          title: t('footer.apiDocs'),
+          title: t('footer.solutions'),
+          links: [
+            { label: t('footer.links.teams'), href: '#features' },
+            { label: t('footer.links.enterprise'), href: '#pricing' },
+            { label: t('footer.links.security'), placeholder: true },
+          ],
+        },
+        {
+          title: t('footer.tools'),
           links: [
             { label: t('footer.links.docsOverview'), href: API_DOCS_URL },
             { label: t('footer.links.examples'), href: API_DOCS_URL },
@@ -76,11 +85,11 @@ export function buildMarketingChromeContent(t: MarketingTranslator): MarketingCh
           ],
         },
         {
-          title: t('footer.legal'),
+          title: t('footer.plans'),
           links: [
+            { label: t('footer.links.pricing'), href: '#pricing' },
+            { label: t('footer.links.contactSales'), placeholder: true },
             { label: t('footer.links.privacy'), placeholder: true },
-            { label: t('footer.links.terms'), placeholder: true },
-            { label: t('footer.links.security'), placeholder: true },
           ],
         },
       ],
@@ -89,6 +98,9 @@ export function buildMarketingChromeContent(t: MarketingTranslator): MarketingCh
         { label: t('footer.links.discord'), placeholder: true },
         { label: t('footer.links.x'), placeholder: true },
       ],
+      appStoreLabel: t('footer.appStore'),
+      googlePlayLabel: t('footer.googlePlay'),
+      reviewBadgeLabel: t('footer.reviewBadge'),
     },
   };
 }
@@ -263,6 +275,98 @@ export function buildMarketingPageContent(t: MarketingTranslator): MarketingPage
     logos: logoNames.map((name) => ({ name })),
     features: buildFeatureSection(t),
     sections: buildStorySections(t),
+    pricing: {
+      eyebrow: t('pricing.eyebrow'),
+      title: t('pricing.title'),
+      description: t('pricing.description'),
+      monthlyLabel: t('pricing.monthly'),
+      annualLabel: t('pricing.annual'),
+      discountLabel: t('pricing.discount'),
+      tiers: [
+        {
+          name: t('pricing.tiers.free.name'),
+          description: t('pricing.tiers.free.description'),
+          price: t('pricing.tiers.free.price'),
+          cadence: t('pricing.tiers.free.cadence'),
+          cta: t('pricing.tiers.free.cta'),
+          features: [
+            t('pricing.tiers.free.features.one'),
+            t('pricing.tiers.free.features.two'),
+            t('pricing.tiers.free.features.three'),
+          ],
+        },
+        {
+          name: t('pricing.tiers.starter.name'),
+          description: t('pricing.tiers.starter.description'),
+          price: t('pricing.tiers.starter.price'),
+          cadence: t('pricing.tiers.starter.cadence'),
+          cta: t('pricing.tiers.starter.cta'),
+          features: [
+            t('pricing.tiers.starter.features.one'),
+            t('pricing.tiers.starter.features.two'),
+            t('pricing.tiers.starter.features.three'),
+          ],
+        },
+        {
+          name: t('pricing.tiers.business.name'),
+          description: t('pricing.tiers.business.description'),
+          price: t('pricing.tiers.business.price'),
+          cadence: t('pricing.tiers.business.cadence'),
+          badge: t('pricing.tiers.business.badge'),
+          cta: t('pricing.tiers.business.cta'),
+          featured: true,
+          features: [
+            t('pricing.tiers.business.features.one'),
+            t('pricing.tiers.business.features.two'),
+            t('pricing.tiers.business.features.three'),
+          ],
+        },
+        {
+          name: t('pricing.tiers.enterprise.name'),
+          description: t('pricing.tiers.enterprise.description'),
+          price: t('pricing.tiers.enterprise.price'),
+          cadence: t('pricing.tiers.enterprise.cadence'),
+          cta: t('pricing.tiers.enterprise.cta'),
+          enterprise: true,
+          features: [
+            t('pricing.tiers.enterprise.features.one'),
+            t('pricing.tiers.enterprise.features.two'),
+            t('pricing.tiers.enterprise.features.three'),
+          ],
+        },
+      ],
+      comparisonTitle: t('pricing.comparisonTitle'),
+      comparisonRows: [
+        {
+          feature: t('pricing.comparison.flows'),
+          free: t('pricing.values.basic'),
+          starter: t('pricing.values.standard'),
+          business: t('pricing.values.advanced'),
+          enterprise: t('pricing.values.custom'),
+        },
+        {
+          feature: t('pricing.comparison.history'),
+          free: t('pricing.values.sevenDays'),
+          starter: t('pricing.values.thirtyDays'),
+          business: t('pricing.values.unlimited'),
+          enterprise: t('pricing.values.unlimited'),
+        },
+        {
+          feature: t('pricing.comparison.ai'),
+          free: t('pricing.values.limited'),
+          starter: t('pricing.values.included'),
+          business: t('pricing.values.priority'),
+          enterprise: t('pricing.values.custom'),
+        },
+        {
+          feature: t('pricing.comparison.governance'),
+          free: t('pricing.values.basic'),
+          starter: t('pricing.values.team'),
+          business: t('pricing.values.advanced'),
+          enterprise: t('pricing.values.custom'),
+        },
+      ],
+    },
     stats: {
       eyebrow: t('stats.eyebrow'),
       title: t('stats.title'),

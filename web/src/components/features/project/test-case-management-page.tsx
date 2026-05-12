@@ -445,7 +445,7 @@ function MarkdownPreview({
           th: ({ className, ...props }) => (
             <th
               className={cn(
-                'border border-border-subtle bg-bg-soft px-3 py-2 text-left font-semibold',
+                'border border-border-subtle bg-bg-soft px-3 py-2 text-left font-medium',
                 className
               )}
               {...props}
@@ -1956,7 +1956,7 @@ export function TestCaseManagementPage({
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <h1 className="text-3xl font-bold tracking-normal">{t('testCasesPage.title')}</h1>
+                    <h1 className="text-3xl font-medium tracking-normal">{t('testCasesPage.title')}</h1>
                     <FlaskConical className="h-6 w-6 text-text-main" />
                   </div>
                   <p className="max-w-3xl text-sm text-text-muted">
@@ -2152,7 +2152,7 @@ export function TestCaseManagementPage({
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <FlaskConical className="h-6 w-6" />
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold">{t('testCasesPage.emptyTitle')}</h3>
+                  <h3 className="mt-4 text-lg font-medium">{t('testCasesPage.emptyTitle')}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {deferredKeyword || apiSpecFilter !== 'all' || envFilter !== 'all'
                       ? t('testCasesPage.emptyFilteredDescription')
@@ -2345,7 +2345,7 @@ export function TestCaseManagementPage({
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold">{activeTestCase.name}</h2>
+                          <h2 className="text-xl font-medium">{activeTestCase.name}</h2>
                           <MethodBadge method={activeTestCase.method} />
                           {effectiveLatestRunResult ? <RunStatusBadge status={effectiveLatestRunResult.status} /> : null}
                         </div>
@@ -2486,7 +2486,7 @@ export function TestCaseManagementPage({
                         <div className="rounded-md border border-border-subtle bg-bg-soft p-4">
                           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div className="space-y-1">
-                              <div className="text-sm font-semibold">{t('testCasesPage.latestAdHocRun')}</div>
+                              <div className="text-sm font-medium">{t('testCasesPage.latestAdHocRun')}</div>
                               <div className="text-sm text-muted-foreground">
                                 {t('testCasesPage.latestAdHocRunDescription')}
                               </div>

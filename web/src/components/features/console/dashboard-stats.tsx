@@ -43,7 +43,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border p-6 shadow-sm transition-colors",
+        "rounded-xl border p-6 transition-colors",
         variantStyles[variant],
         className
       )}
@@ -52,7 +52,7 @@ export function StatCard({
         <div className="space-y-2">
           <p className="text-sm font-medium text-text-muted">{title}</p>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold tracking-normal text-text-main">
+            <span className="text-3xl font-medium tracking-normal text-text-main">
               {value}
             </span>
             {trend && (
@@ -92,7 +92,7 @@ export function StatCard({
 // Skeleton for loading states
 export function StatCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-border-subtle bg-bg-canvas p-6 shadow-sm">
+    <div className="rounded-xl border border-border-subtle bg-bg-canvas p-6">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <div className="h-4 w-24 animate-pulse rounded bg-muted" />

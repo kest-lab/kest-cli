@@ -467,7 +467,7 @@ export function CategoryManagementPage({
 
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-3xl font-bold tracking-normal">{t('categoriesPage.title')}</h1>
+                    <h1 className="text-3xl font-medium tracking-normal">{t('categoriesPage.title')}</h1>
                     <Tags className="h-6 w-6 text-text-main" />
                     <RoleBadge role={currentRole} />
                   </div>
@@ -840,7 +840,7 @@ export function CategoryManagementPage({
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-xl font-semibold">{selectedCategory.name}</h2>
+                        <h2 className="text-xl font-medium">{selectedCategory.name}</h2>
                         <Badge variant="outline">
                           {selectedCategory.parent_id
                             ? t('categoriesPage.childCategory')

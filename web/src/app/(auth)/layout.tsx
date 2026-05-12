@@ -40,7 +40,7 @@ export default function AuthLayout({ children }: PropsWithChildren) {
               return (
                 <div
                   key={feature.key}
-                  className="flex items-center gap-3 rounded-2xl border border-border-subtle bg-bg-canvas p-4 shadow-sm"
+                  className="flex items-center gap-3 rounded-xl border border-border-subtle bg-bg-canvas p-4"
                 >
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <IconComponent className="size-4" />
@@ -52,15 +52,15 @@ export default function AuthLayout({ children }: PropsWithChildren) {
           </div>
 
           <div className="mt-12 grid gap-3 xl:grid-cols-3">
-            <div className="rounded-2xl border border-border-subtle bg-bg-canvas p-4 shadow-sm">
+            <div className="rounded-xl border border-border-subtle bg-bg-canvas p-4">
               <p className="figma-caption text-text-main">{t('auth.insight1Title')}</p>
               <p className="mt-3 text-sm leading-6 text-text-subtle">{t('auth.insight1Description')}</p>
             </div>
-            <div className="rounded-2xl border border-border-subtle bg-block-mint p-4 shadow-sm">
+            <div className="rounded-xl border border-border-subtle bg-block-mint p-4">
               <p className="figma-caption text-text-main">{t('auth.insight2Title')}</p>
               <p className="mt-3 text-sm leading-6 text-text-subtle">{t('auth.insight2Description')}</p>
             </div>
-            <div className="rounded-2xl border border-border-subtle bg-bg-canvas p-4 shadow-sm">
+            <div className="rounded-xl border border-border-subtle bg-bg-canvas p-4">
               <p className="figma-caption text-text-main">{t('auth.insight3Title')}</p>
               <p className="mt-3 text-sm leading-6 text-text-subtle">{t('auth.insight3Description')}</p>
             </div>
@@ -83,7 +83,7 @@ export default function AuthLayout({ children }: PropsWithChildren) {
             </p>
           </div>
 
-          <div className="w-full max-w-sm rounded-[1.75rem] border border-border-subtle bg-bg-canvas p-6 shadow-soft sm:p-8">
+          <div className="w-full max-w-sm rounded-xl border border-border-subtle bg-bg-canvas p-6 sm:p-8">
             {children}
           </div>
         </div>

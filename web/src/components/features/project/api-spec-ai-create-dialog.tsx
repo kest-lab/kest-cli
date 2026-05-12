@@ -199,7 +199,7 @@ function DraftGenerationPreview({
       : t('apiSpecs.aiCreateDialog.elapsedSeconds', { seconds: elapsedSeconds });
 
   return (
-    <Card className="border-border-subtle bg-bg-canvas shadow-sm">
+    <Card className="border-border-subtle bg-bg-canvas">
       <CardHeader>
         <CardTitle className="text-base">
           {t('apiSpecs.aiCreateDialog.sections.previewTitle')}
@@ -871,7 +871,7 @@ function ApiSpecAICreateDialogContent({
 
               <div className="border-t border-border-subtle px-4 py-4">
                 <div className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
-            <Card className="border-border-subtle bg-bg-canvas shadow-sm">
+            <Card className="border-border-subtle bg-bg-canvas">
               <CardHeader>
                 <CardTitle className="text-base">
                   {t('apiSpecs.aiCreateDialog.sections.reviewTitle')}
@@ -1029,7 +1029,7 @@ function ApiSpecAICreateDialogContent({
             </Card>
 
             <div className="space-y-4">
-              <Card className="border-border-subtle bg-bg-canvas shadow-sm">
+              <Card className="border-border-subtle bg-bg-canvas">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Sparkles className="h-4 w-4 text-primary" />
@@ -1260,7 +1260,7 @@ function ApiSpecAICreateDialogContent({
             </details>
           </div>
         ) : (
-          <Card className="border-dashed border-border-subtle bg-bg-soft shadow-sm">
+          <Card className="border-dashed border-border-subtle bg-bg-soft">
             <CardContent className="flex min-h-32 flex-col items-center justify-center gap-3 py-8 text-center">
               <FileJson2 className="h-10 w-10 text-primary/70" />
               <div className="space-y-1">

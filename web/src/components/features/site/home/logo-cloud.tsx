@@ -16,7 +16,7 @@ export interface LogoCloudProps {
 
 export function LogoCloud({ title, logos }: LogoCloudProps) {
   return (
-    <section className="border-y border-border-main bg-bg-canvas py-5 text-text-main">
+    <section className="border-y border-border-main bg-bg-canvas py-8 text-text-main">
       <div className="container">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:gap-8">
           <p className="figma-caption shrink-0 text-text-muted">
@@ -26,7 +26,7 @@ export function LogoCloud({ title, logos }: LogoCloudProps) {
             {logos.map((logo) => (
               <div
                 key={logo.name}
-                className="figma-caption flex min-h-9 items-center justify-center rounded-full bg-bg-subtle px-3 text-center text-text-muted transition-colors duration-200 hover:text-text-main"
+                className="figma-caption flex min-h-[100px] items-center justify-center bg-transparent px-3 text-center text-text-muted"
               >
                 {logo.name}
               </div>

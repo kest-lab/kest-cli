@@ -60,7 +60,7 @@ export function FeatureCards({ content }: FeatureCardsProps) {
             return (
               <article
                 key={item.title}
-                className={`group rounded-[1.75rem] border border-border-subtle p-7 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(5,0,56,0.12)] ${cardToneClasses[index % cardToneClasses.length]}`}
+                className={`rounded-[1.75rem] border border-border-subtle p-8 ${cardToneClasses[index % cardToneClasses.length]}`}
               >
                 <div className="flex size-11 items-center justify-center rounded-full border border-border-main bg-bg-canvas text-text-main">
                   <Icon className="size-5" />

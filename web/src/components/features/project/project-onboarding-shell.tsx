@@ -321,7 +321,7 @@ export function ProjectOnboardingShell() {
                     key={item.id}
                     type="button"
                     onClick={item.onSelect}
-                    className="flex w-full items-start gap-3 rounded-2xl border border-border-subtle bg-bg-canvas px-4 py-3 text-left shadow-sm transition-colors hover:bg-bg-subtle"
+                    className="flex w-full items-start gap-3 rounded-2xl border border-border-subtle bg-bg-canvas px-4 py-3 text-left transition-colors hover:bg-bg-subtle"
                   >
                     <div className="mt-0.5 rounded-xl border border-border-subtle bg-highlight-subtle p-2 text-text-main">
                       {item.icon}
@@ -350,7 +350,7 @@ export function ProjectOnboardingShell() {
                 href={DOCS_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-2xl border border-border-subtle bg-bg-canvas p-4 shadow-sm transition-colors hover:bg-bg-subtle"
+                className="rounded-2xl border border-border-subtle bg-bg-canvas p-4 transition-colors hover:bg-bg-subtle"
               >
                 <BookOpenText className="h-5 w-5 text-text-main" />
                 <p className="mt-3 text-sm font-medium">{t('helpCenter.docsTitle')}</p>
@@ -360,7 +360,7 @@ export function ProjectOnboardingShell() {
                 href={VIDEO_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-2xl border border-border-subtle bg-bg-canvas p-4 shadow-sm transition-colors hover:bg-bg-subtle"
+                className="rounded-2xl border border-border-subtle bg-bg-canvas p-4 transition-colors hover:bg-bg-subtle"
               >
                 <PlayCircle className="h-5 w-5 text-text-main" />
                 <p className="mt-3 text-sm font-medium">{t('helpCenter.videoTitle')}</p>
@@ -372,7 +372,7 @@ export function ProjectOnboardingShell() {
                   setIsHelpOpen(false);
                   setIsCommandOpen(true);
                 }}
-                className="rounded-2xl border border-border-subtle bg-bg-canvas p-4 text-left shadow-sm transition-colors hover:bg-bg-subtle"
+                className="rounded-2xl border border-border-subtle bg-bg-canvas p-4 text-left transition-colors hover:bg-bg-subtle"
               >
                 <Command className="h-5 w-5 text-text-main" />
                 <p className="mt-3 text-sm font-medium">{t('helpCenter.commandTitle')}</p>
@@ -437,7 +437,7 @@ export function ProjectOnboardingShell() {
               <p className="text-sm font-medium text-text-main">{currentTourStep.title}</p>
               <p className="mt-2 text-sm leading-6 text-text-muted">{currentTourStep.description}</p>
               {isTourLocked ? (
-                <p className="mt-3 text-xs font-semibold uppercase tracking-normal text-text-main">
+                <p className="mt-3 text-xs font-medium uppercase tracking-normal text-text-main">
                   {t('onboardingTour.lockedCountdown', { seconds: tourLockSeconds })}
                 </p>
               ) : null}

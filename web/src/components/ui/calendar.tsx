@@ -104,12 +104,12 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
             else if (mode === "years") setViewDate(new Date(year - 12, month, 1))
             else setViewDate(new Date(year - 1, month, 1))
           }}
-          className="size-8 flex items-center justify-center hover:bg-bg-subtle rounded-full transition-colors text-muted-foreground hover:text-foreground active:scale-90 cursor-pointer"
+          className="size-8 flex items-center justify-center hover:bg-bg-subtle rounded-full transition-colors duration-200 text-muted-foreground hover:text-foreground active:bg-bg-surface cursor-pointer"
         >
           <ChevronLeft className="size-4" />
         </button>
         <div 
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold tracking-normal transition-colors"
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium tracking-normal transition-colors duration-200"
         >
           {mode === "days" ? (
             <div className="flex items-center hover:bg-bg-subtle p-1 rounded-md transition-colors">
@@ -121,13 +121,13 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
                 className="w-10 bg-transparent text-center focus:outline-hidden focus:bg-bg-canvas rounded px-0.5 border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <span 
-                className="cursor-pointer select-none active:scale-95 px-1 rounded-sm hover:text-primary transition-colors"
+                className="cursor-pointer select-none px-1 rounded-sm hover:text-primary transition-colors duration-200 active:text-primary-strong"
                 onClick={() => setMode("years")}
               >
                 {t.common('year')}
               </span>
               <span 
-                className="cursor-pointer select-none active:scale-95 ml-1 px-1 rounded-sm hover:text-primary transition-colors"
+                className="cursor-pointer select-none ml-1 px-1 rounded-sm hover:text-primary transition-colors duration-200 active:text-primary-strong"
                 onClick={() => setMode("months")}
               >
                 {month + 1}{t.common('month')}
@@ -135,14 +135,14 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
             </div>
           ) : mode === "years" ? (
             <span 
-              className="cursor-pointer select-none active:scale-95 px-3 py-1 rounded-md hover:bg-bg-subtle transition-colors"
+              className="cursor-pointer select-none px-3 py-1 rounded-md hover:bg-bg-subtle transition-colors duration-200 active:bg-bg-surface"
               onClick={() => setMode("days")}
             >
               {years[0]} - {years[years.length - 1]}
             </span>
           ) : (
             <span 
-              className="cursor-pointer select-none active:scale-95 px-3 py-1 rounded-md hover:bg-bg-subtle transition-colors"
+              className="cursor-pointer select-none px-3 py-1 rounded-md hover:bg-bg-subtle transition-colors duration-200 active:bg-bg-surface"
               onClick={() => setMode("days")}
             >
               {year}{t.common('year')}
@@ -155,7 +155,7 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
             else if (mode === "years") setViewDate(new Date(year + 12, month, 1))
             else setViewDate(new Date(year + 1, month, 1))
           }}
-          className="size-8 flex items-center justify-center hover:bg-bg-subtle rounded-full transition-colors text-muted-foreground hover:text-foreground active:scale-90 cursor-pointer"
+          className="size-8 flex items-center justify-center hover:bg-bg-subtle rounded-full transition-colors duration-200 text-muted-foreground hover:text-foreground active:bg-bg-surface cursor-pointer"
         >
           <ChevronRight className="size-4" />
         </button>
@@ -179,10 +179,10 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
                   key={day}
                   onClick={() => onSelect?.(new Date(year, month, day))}
                   className={cn(
-                    "size-8 flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 relative cursor-pointer",
+                    "size-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors duration-200 relative cursor-pointer",
                     isSelected(day) 
-                      ? "bg-primary text-primary-foreground font-bold shadow-button-primary scale-110 z-10" 
-                      : "hover:bg-bg-subtle active:scale-95",
+                      ? "bg-primary text-primary-foreground z-10" 
+                      : "hover:bg-bg-subtle active:bg-bg-surface",
                     isToday(day) && !isSelected(day) && "after:absolute after:bottom-1 after:size-1 after:bg-primary after:rounded-full after:animate-pulse",
                     !isSelected(day) && !isToday(day) && "text-foreground/90"
                   )}
@@ -201,7 +201,7 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
               onClick={() => handleYearSelect(y)}
               className={cn(
                 "h-12 flex items-center justify-center rounded-xl text-sm font-medium transition-colors cursor-pointer",
-                y === year ? "bg-primary text-primary-foreground font-bold" : "hover:bg-bg-subtle text-foreground/80 active:bg-bg-surface"
+                y === year ? "bg-primary text-primary-foreground" : "hover:bg-bg-subtle text-foreground/80 active:bg-bg-surface"
               )}
             >
               {y}
@@ -216,7 +216,7 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
               onClick={() => handleMonthSelect(i)}
               className={cn(
                 "h-12 flex items-center justify-center rounded-xl text-sm font-medium transition-colors cursor-pointer",
-                i === month ? "bg-primary text-primary-foreground font-bold" : "hover:bg-bg-subtle text-foreground/80 active:bg-bg-surface"
+                i === month ? "bg-primary text-primary-foreground" : "hover:bg-bg-subtle text-foreground/80 active:bg-bg-surface"
               )}
             >
               {m}
@@ -235,7 +235,7 @@ export function Calendar({ selected, onSelect, onToday, className, showFooter = 
               setMode("days")
               onToday?.()
             }}
-            className="hover:text-primary transition-colors font-bold px-2 py-1 rounded-md hover:bg-primary/5 cursor-pointer"
+            className="hover:text-primary transition-colors duration-200 font-medium px-2 py-1 rounded-md hover:bg-primary/5 cursor-pointer active:text-primary-strong"
           >
             {t.common('now')}
           </button>

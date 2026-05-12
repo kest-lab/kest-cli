@@ -87,7 +87,7 @@ function CodePanel({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold tracking-normal text-text-main">{title}</h3>
+        <h3 className="text-sm font-medium tracking-normal text-text-main">{title}</h3>
       </div>
       {value?.trim() ? (
         <pre className="overflow-x-auto rounded-xl border border-border-main bg-bg-subtle p-5 text-xs leading-6 text-text-muted">
@@ -133,7 +133,7 @@ export default async function ApiSpecSharePage({
   return (
     <main className="min-h-screen bg-bg-canvas px-4 py-10 md:px-8 md:py-14">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <section className="overflow-hidden rounded-[1.75rem] border border-border-subtle bg-bg-canvas shadow-soft">
+        <section className="overflow-hidden rounded-xl border border-border-subtle bg-bg-canvas">
           <div className="border-b border-border-subtle bg-block-lime px-6 py-6 md:px-8 md:py-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div className="space-y-3">
@@ -147,7 +147,7 @@ export default async function ApiSpecSharePage({
                   </Badge>
                 </div>
                 <div>
-                  <h1 className="font-mono text-2xl font-semibold tracking-normal text-text-main md:text-3xl">
+                  <h1 className="font-mono text-2xl font-medium tracking-normal text-text-main md:text-3xl">
                     {share.path}
                   </h1>
                   <p className="mt-3 max-w-3xl text-sm leading-7 text-text-muted">
@@ -157,13 +157,13 @@ export default async function ApiSpecSharePage({
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-border-subtle bg-bg-canvas px-4 py-3">
+                <div className="rounded-xl border border-border-subtle bg-bg-canvas px-4 py-3">
                   <p className="figma-caption text-text-muted">{t('share.published')}</p>
                   <p className="mt-2 text-sm font-medium text-text-main">
                     {formatDate(share.shared_at, 'YYYY-MM-DD HH:mm')}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-border-subtle bg-bg-canvas px-4 py-3">
+                <div className="rounded-xl border border-border-subtle bg-bg-canvas px-4 py-3">
                   <p className="figma-caption text-text-muted">{t('share.updated')}</p>
                   <p className="mt-2 text-sm font-medium text-text-main">
                     {formatDate(share.updated_at, 'YYYY-MM-DD HH:mm')}
@@ -188,15 +188,15 @@ export default async function ApiSpecSharePage({
           </div>
 
           <div className="grid gap-4 px-6 py-6 md:grid-cols-3 md:px-8">
-            <div className="rounded-2xl border border-border-subtle bg-bg-subtle p-4">
+            <div className="rounded-xl border border-border-subtle bg-bg-subtle p-4">
               <p className="figma-caption text-text-muted">{t('share.docSource')}</p>
               <p className="mt-2 text-sm font-medium text-text-main">{share.doc_source || 'manual'}</p>
             </div>
-            <div className="rounded-2xl border border-border-subtle bg-bg-subtle p-4">
+            <div className="rounded-xl border border-border-subtle bg-bg-subtle p-4">
               <p className="figma-caption text-text-muted">{t('common.path')}</p>
               <p className="mt-2 font-mono text-sm text-text-main">{share.path}</p>
             </div>
-            <div className="rounded-2xl border border-border-subtle bg-bg-subtle p-4">
+            <div className="rounded-xl border border-border-subtle bg-bg-subtle p-4">
               <p className="figma-caption text-text-muted">{t('common.method')}</p>
               <p className="mt-2 text-sm font-medium text-text-main">{share.method}</p>
             </div>

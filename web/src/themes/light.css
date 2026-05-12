@@ -26,8 +26,8 @@
   --accent: var(--miro-surface);
   --accent-foreground: var(--miro-ink);
   
-  --destructive: var(--red-500);
-  --destructive-foreground: var(--neutral-0);
+  --destructive: var(--miro-coral-dark);
+  --destructive-foreground: var(--miro-canvas);
   
   --border: var(--miro-hairline);
   --input: var(--miro-hairline-strong);
@@ -37,7 +37,7 @@
   
   /* Surfaces & Backgrounds */
   --bg-canvas: var(--miro-canvas);
-  --bg-surface: var(--miro-canvas);
+  --bg-surface: var(--miro-surface);
   --bg-subtle: var(--miro-surface);
   --bg-inverse: var(--miro-footer-bg);
   --bg-soft: var(--miro-surface-soft);
@@ -82,8 +82,8 @@
   --warning: var(--yellow-500);
   --warning-subtle: oklch(from var(--warning) l c h / 0.1);
   
-  --error: var(--red-500);
-  --error-subtle: oklch(from var(--error) l c h / 0.1);
+  --error: var(--miro-coral-dark);
+  --error-subtle: var(--miro-brand-red);
   
   --info: var(--miro-brand-blue);
   --info-subtle: oklch(from var(--info) l c h / 0.1);

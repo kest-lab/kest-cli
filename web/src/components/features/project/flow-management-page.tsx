@@ -235,7 +235,7 @@ const getStatusBadgeClassName = (status: FlowRunStatus | 'idle') => {
     case 'running':
       return 'border-border-subtle bg-block-mint text-text-main';
     case 'passed':
-      return 'border-border-strong bg-highlight text-text-main';
+      return 'border-border-strong bg-[var(--miro-surface-yellow)] text-[var(--miro-yellow-dark)]';
     case 'failed':
       return 'border-border-subtle bg-block-pink text-text-main';
     case 'canceled':
@@ -1109,7 +1109,7 @@ const HttpStepNode = ({ data, selected }: NodeProps) => {
   return (
     <div
       className={cn(
-        'w-[240px] rounded-2xl border bg-bg-canvas p-4 shadow-sm transition-colors',
+        'w-[240px] rounded-2xl border bg-bg-canvas p-4 transition-colors',
         selected ? 'border-border-subtle bg-block-lilac ring-2 ring-primary/15' : 'border-border-subtle'
       )}
     >
@@ -1125,7 +1125,7 @@ const HttpStepNode = ({ data, selected }: NodeProps) => {
       />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text-main">{name}</p>
+          <p className="truncate text-sm font-medium text-text-main">{name}</p>
           <p className="mt-1 line-clamp-2 text-xs leading-5 text-text-muted">
             {requestPreview
               ? `${flowData.method} ${requestPreview}`
@@ -1285,7 +1285,7 @@ function FlowInspector({
     const captureDefinitions = parseCaptureDefinitions(selectedNode.data.captures);
     return (
       <div className="space-y-6">
-        <Card className="rounded-2xl border-border-subtle bg-bg-canvas shadow-sm">
+        <Card className="rounded-2xl border-border-subtle bg-bg-canvas">
           <CardHeader>
             <CardTitle>{t('flowPage.inspector.stepTitle')}</CardTitle>
             <CardDescription>{t('flowPage.inspector.stepDescription')}</CardDescription>
@@ -1500,7 +1500,7 @@ function FlowInspector({
     const selectedEdgeError = edgeErrors[selectedEdge.id];
     return (
       <div className="space-y-6">
-        <Card className="rounded-2xl border-border-subtle bg-bg-canvas shadow-sm">
+        <Card className="rounded-2xl border-border-subtle bg-bg-canvas">
           <CardHeader>
             <CardTitle>{t('flowPage.inspector.edgeMappingsTitle')}</CardTitle>
             <CardDescription>{t('flowPage.inspector.edgeMappingsDescription')}</CardDescription>
@@ -1613,7 +1613,7 @@ function FlowInspector({
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-2xl border-border-subtle bg-bg-canvas shadow-sm">
+      <Card className="rounded-2xl border-border-subtle bg-bg-canvas">
         <CardHeader>
           <CardTitle>{t('flowPage.inspector.flowSettingsTitle')}</CardTitle>
           <CardDescription>{t('flowPage.inspector.flowSettingsDescription')}</CardDescription>
@@ -1727,7 +1727,7 @@ function RunHistoryPanel({
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-2xl border-border-subtle bg-bg-canvas shadow-sm">
+      <Card className="rounded-2xl border-border-subtle bg-bg-canvas">
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
@@ -1780,7 +1780,7 @@ function RunHistoryPanel({
       </Card>
 
       {selectedRun ? (
-        <Card className="rounded-2xl border-border-subtle bg-bg-canvas shadow-sm">
+        <Card className="rounded-2xl border-border-subtle bg-bg-canvas">
           <CardHeader>
             <CardTitle>{t('flowPage.runHistory.runLogTitle')}</CardTitle>
             <CardDescription>
@@ -1877,7 +1877,7 @@ function RunHistoryPanel({
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-text-main">
+                      <p className="text-sm font-medium text-text-main">
                         {stepNameById.get(activeRunStepResult.step_id) ??
                           t('flowPage.stepNumberLabel', { id: activeRunStepResult.step_id })}
                       </p>
@@ -2173,7 +2173,7 @@ function ResultJsonCard({
   action?: React.ReactNode;
 }) {
   return (
-    <Card className="rounded-2xl border-border-subtle bg-bg-canvas shadow-sm">
+    <Card className="rounded-2xl border-border-subtle bg-bg-canvas">
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
           <CardTitle>{title}</CardTitle>
@@ -3358,7 +3358,7 @@ export function ProjectFlowManagementPage({
       <div className="space-y-4 border-b border-border-subtle px-4 py-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-text-main">{t('modules.flows.label')}</p>
+            <p className="text-sm font-medium text-text-main">{t('modules.flows.label')}</p>
             <p className="text-sm leading-6 text-text-muted">{t('flowPage.sidebarDescription')}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -3412,13 +3412,13 @@ export function ProjectFlowManagementPage({
             <AlertDescription>{t('flowPage.loadFailedDescription')}</AlertDescription>
           </Alert>
         ) : filteredFlows.length === 0 ? (
-          <Card className="rounded-2xl border-dashed border-border-subtle bg-bg-canvas shadow-sm">
+          <Card className="rounded-2xl border-dashed border-border-subtle bg-bg-canvas">
             <CardContent className="space-y-4 py-10 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-border-subtle bg-highlight-subtle text-text-main">
                 <FolderGit2 className="h-6 w-6" />
               </div>
               <div className="space-y-2">
-                <p className="text-lg font-semibold text-text-main">{t('flowPage.emptyTitle')}</p>
+                <p className="text-lg font-medium text-text-main">{t('flowPage.emptyTitle')}</p>
                 <p className="text-sm leading-6 text-text-muted">
                   {t('flowPage.emptyDescription')}
                 </p>
@@ -3435,7 +3435,7 @@ export function ProjectFlowManagementPage({
               <div
                 key={flow.id}
                 className={cn(
-                  'rounded-2xl border px-4 py-3 shadow-sm transition-colors',
+                  'rounded-2xl border px-4 py-3 transition-colors',
                   selectedFlowId === flow.id
                     ? 'border-border-subtle bg-block-lilac'
                     : 'border-border-subtle bg-bg-canvas hover:bg-bg-subtle'
@@ -3447,7 +3447,7 @@ export function ProjectFlowManagementPage({
                     className="min-w-0 flex-1 text-left"
                     onClick={() => navigateToFlow(flow.id)}
                   >
-                    <p className="truncate text-sm font-semibold text-text-main">{flow.name}</p>
+                    <p className="truncate text-sm font-medium text-text-main">{flow.name}</p>
                     <p className="mt-1 line-clamp-2 text-xs leading-5 text-text-muted">
                       {flow.description || t('common.noDescriptionProvided')}
                     </p>
@@ -3484,13 +3484,13 @@ export function ProjectFlowManagementPage({
       <div className="h-[420px] animate-pulse rounded-2xl bg-muted" />
     </div>
   ) : selectedFlowId && !selectedFlowQuery.data ? (
-    <Card className="rounded-2xl border-dashed border-border-subtle bg-bg-canvas shadow-sm">
+    <Card className="rounded-2xl border-dashed border-border-subtle bg-bg-canvas">
       <CardContent className="space-y-4 py-14 text-center">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-border-subtle bg-highlight-subtle text-text-main">
           <FileClock className="h-6 w-6" />
         </div>
         <div className="space-y-2">
-          <p className="text-lg font-semibold text-text-main">{t('flowPage.notFoundTitle')}</p>
+          <p className="text-lg font-medium text-text-main">{t('flowPage.notFoundTitle')}</p>
           <p className="text-sm leading-6 text-text-muted">{t('flowPage.notFoundDescription')}</p>
         </div>
         <Button asChild variant="outline">
@@ -3499,13 +3499,13 @@ export function ProjectFlowManagementPage({
       </CardContent>
     </Card>
   ) : !selectedFlowId ? (
-    <Card className="rounded-2xl border-dashed border-border-subtle bg-bg-canvas shadow-sm">
+    <Card className="rounded-2xl border-dashed border-border-subtle bg-bg-canvas">
       <CardContent className="space-y-4 py-14 text-center">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-border-subtle bg-highlight-subtle text-text-main">
           <Workflow className="h-6 w-6" />
         </div>
         <div className="space-y-2">
-          <p className="text-lg font-semibold text-text-main">{t('flowPage.selectTitle')}</p>
+          <p className="text-lg font-medium text-text-main">{t('flowPage.selectTitle')}</p>
           <p className="text-sm leading-6 text-text-muted">
             {showFlowSidebar
               ? t('flowPage.selectDescriptionWithSidebar')
@@ -3628,7 +3628,7 @@ export function ProjectFlowManagementPage({
       <div className="flex flex-col xl:min-h-0 xl:flex-1 xl:flex-row">
         <div className="min-w-0 flex-1 bg-bg-soft">
           <div className="min-h-[720px] p-4 md:p-6">
-            <div className="h-[min(72vh,960px)] min-h-[720px] overflow-hidden rounded-[1.75rem] border border-border-subtle bg-bg-canvas shadow-sm">
+            <div className="h-[min(72vh,960px)] min-h-[720px] overflow-hidden rounded-[1.75rem] border border-border-subtle bg-bg-canvas">
               <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -3663,21 +3663,21 @@ export function ProjectFlowManagementPage({
                   variant={BackgroundVariant.Lines}
                   gap={24}
                   lineWidth={1}
-                  color="rgba(0, 0, 0, 0.08)"
+                  color="var(--border-subtle)"
                 />
                 <Background
                   id="flow-grid-major"
                   variant={BackgroundVariant.Lines}
                   gap={120}
                   lineWidth={1.2}
-                  color="rgba(0, 0, 0, 0.14)"
+                  color="var(--border-main)"
                 />
                 <Panel position="top-right" className="!m-4 flex max-w-[min(90vw,360px)] flex-col items-end gap-3">
                   {isCanvasToolsOpen ? (
-                    <div className="w-[min(90vw,320px)] rounded-2xl border border-border-subtle bg-bg-canvas p-3 shadow-sm">
+                    <div className="w-[min(90vw,320px)] rounded-2xl border border-border-subtle bg-bg-canvas p-3">
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-normal text-text-muted">
+                          <p className="text-xs font-medium uppercase tracking-normal text-text-muted">
                             {t('flowPage.canvasToolsLabel')}
                           </p>
                           <p className="mt-1 text-sm text-text-main">
@@ -3885,7 +3885,7 @@ export function ProjectFlowManagementPage({
                           size="lg"
                           isIcon
                           aria-label={t('flowPage.openCanvasTools')}
-                          className="h-14 w-14 rounded-full border border-border-subtle bg-primary text-primary-foreground shadow-sm"
+                          className="h-14 w-14 rounded-full border border-border-subtle bg-primary text-primary-foreground"
                           onClick={() => setIsCanvasToolsOpen(true)}
                         >
                           <CircleHelp className="h-5 w-5" />
@@ -4003,7 +4003,7 @@ export function ProjectFlowManagementPage({
         ) : null}
 
         <main className="flex min-w-0 flex-1 flex-col">
-          <div className="space-y-4 border-b border-border-subtle bg-bg-canvas px-4 py-4 shadow-sm md:px-6">
+          <div className="space-y-4 border-b border-border-subtle bg-bg-canvas px-4 py-4 md:px-6">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -4030,7 +4030,7 @@ export function ProjectFlowManagementPage({
                   {t('modules.flows.label')}
                 </Badge>
                 <div>
-                  <h2 className="text-2xl font-semibold tracking-normal">
+                  <h2 className="text-2xl font-medium tracking-normal">
                     {selectedFlowQuery.data?.name || t('flowPage.heroTitleFallback')}
                   </h2>
                   <p className="mt-2 max-w-4xl text-sm leading-6 text-text-muted">
@@ -4073,7 +4073,7 @@ export function ProjectFlowManagementPage({
           <DialogBody className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-border-subtle bg-bg-soft p-4">
-                <p className="text-sm font-semibold text-text-main">
+                <p className="text-sm font-medium text-text-main">
                   {t('flowPage.deleteSelection')}
                 </p>
                 <p className="mt-2 font-mono text-xs text-text-muted">
@@ -4081,13 +4081,13 @@ export function ProjectFlowManagementPage({
                 </p>
               </div>
               <div className="rounded-2xl border border-border-subtle bg-bg-soft p-4">
-                <p className="text-sm font-semibold text-text-main">{t('flowPage.undo')}</p>
+                <p className="text-sm font-medium text-text-main">{t('flowPage.undo')}</p>
                 <p className="mt-2 font-mono text-xs text-text-muted">
                   {t('flowPage.shortcutUndo')}
                 </p>
               </div>
               <div className="rounded-2xl border border-border-subtle bg-bg-soft p-4">
-                <p className="text-sm font-semibold text-text-main">
+                <p className="text-sm font-medium text-text-main">
                   {t('flowPage.duplicateSelection')}
                 </p>
                 <p className="mt-2 font-mono text-xs text-text-muted">
@@ -4095,7 +4095,7 @@ export function ProjectFlowManagementPage({
                 </p>
               </div>
               <div className="rounded-2xl border border-border-subtle bg-bg-soft p-4">
-                <p className="text-sm font-semibold text-text-main">
+                <p className="text-sm font-medium text-text-main">
                   {t('flowPage.openShortcuts')}
                 </p>
                 <p className="mt-2 font-mono text-xs text-text-muted">

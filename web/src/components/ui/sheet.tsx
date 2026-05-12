@@ -85,7 +85,7 @@ function SheetContent({
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          "bg-bg-canvas data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-soft transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
+          "bg-bg-canvas data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-modal transition ease-in-out data-[state=closed]:duration-200 data-[state=open]:duration-200",
           side === "right" &&
             "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
           side === "left" &&
@@ -99,7 +99,7 @@ function SheetContent({
         {...props}
       >
         {children}
-        <SheetPrimitive.Close className="absolute right-4 top-4 flex size-7 cursor-pointer items-center justify-center rounded-full border border-border-main bg-bg-subtle text-muted-foreground transition-all hover:bg-bg-surface hover:text-foreground focus-ring disabled:cursor-not-allowed disabled:opacity-50">
+        <SheetPrimitive.Close className="absolute right-4 top-4 flex size-9 cursor-pointer items-center justify-center rounded-full border border-border-main bg-bg-canvas text-muted-foreground transition-colors hover:text-foreground focus-ring disabled:cursor-not-allowed disabled:opacity-50">
           <XIcon className="size-4" />
           <span className="sr-only">{t.common('close')}</span>
         </SheetPrimitive.Close>
@@ -135,7 +135,7 @@ function SheetTitle({
   return (
     <SheetPrimitive.Title
       data-slot="sheet-title"
-      className={cn("text-foreground font-semibold", className)}
+      className={cn("text-foreground font-medium", className)}
       {...props}
     />
   )

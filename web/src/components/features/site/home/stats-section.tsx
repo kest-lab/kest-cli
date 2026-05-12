@@ -30,8 +30,8 @@ export function StatsSection({ content }: StatsSectionProps) {
 
           <div className="mt-14 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {content.items.map((item) => (
-              <article key={item.label} className="rounded-2xl border border-border-subtle bg-bg-canvas/90 p-6">
-                <p className="text-5xl font-medium leading-none text-text-main">
+              <article key={item.label} className="rounded-xl border border-border-subtle bg-bg-canvas/90 p-6">
+                <p className="text-[4rem] font-medium leading-[1.1] tracking-[-0.09375rem] text-text-main">
                   {item.value}
                 </p>
                 <p className="figma-caption mt-3 text-text-main">

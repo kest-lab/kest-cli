@@ -64,14 +64,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
 
       return (
-        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-md border border-dashed p-8 text-center animate-in fade-in-50">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-            <AlertTriangle className="h-10 w-10 text-orange-500" />
+        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-dashed border-border-subtle bg-bg-soft p-8 text-center animate-in fade-in-50">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-block-cream">
+            <AlertTriangle className="h-10 w-10 text-text-main" />
           </div>
-          <h2 className="mt-6 text-xl font-semibold">
+          <h2 className="mt-6 text-xl font-medium text-text-main">
             {this.props.fallbackTitle || 'Something went wrong'}
           </h2>
-          <p className="mb-8 mt-2 text-center text-sm text-muted-foreground max-w-md">
+          <p className="mb-8 mt-2 max-w-md text-center text-sm text-text-subtle">
             {this.state.error?.message || this.props.fallbackDescription || 'An unexpected error occurred in the application.'}
           </p>
           <Button onClick={this.resetError}>

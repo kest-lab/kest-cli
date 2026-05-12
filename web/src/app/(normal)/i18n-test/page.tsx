@@ -21,9 +21,9 @@ export default function I18nTestPage() {
   const tLevel4 = useT('test.level1.level2.level3.level4');
 
   return (
-    <div className="container max-w-4xl py-10 space-y-10 animate-in fade-in duration-500">
+    <div className="container max-w-4xl py-10 space-y-10 animate-in fade-in duration-200">
       <div className="space-y-2">
-        <h1 className="text-4xl font-extrabold tracking-tight text-text-main lg:text-5xl">
+        <h1 className="figma-display-lg text-text-main">
           {tGlobal('test.title')}
         </h1>
         <p className="text-muted-foreground text-lg">
@@ -33,14 +33,14 @@ export default function I18nTestPage() {
 
       <div className="grid gap-6">
         {/* Level 1 Scope */}
-        <Card className="overflow-hidden border-border-main bg-bg-canvas transition-colors duration-300 hover:border-border-strong">
+        <Card className="overflow-hidden border-border-main bg-bg-canvas transition-colors duration-200 hover:border-border-strong">
           <CardHeader className="border-b border-border-main bg-bg-surface">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="rounded-md bg-primary p-2 text-primary-foreground">
                   <Layers className="w-5 h-5" />
                 </div>
-                <CardTitle className="text-xl">Scope: <code className="text-primary">test.level1</code></CardTitle>
+                <CardTitle className="text-xl">Scope: <code className="text-brand">test.level1</code></CardTitle>
               </div>
               <Badge variant="outline" className="border-border-main bg-bg-canvas">Level 1</Badge>
             </div>
@@ -49,7 +49,7 @@ export default function I18nTestPage() {
             <div className="flex items-center gap-3 rounded-md border border-border-main bg-bg-surface p-3 transition-colors">
               <CheckCircle2 className="w-5 h-5 text-success" />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-muted-foreground mb-1 uppercase tracking-wider">{"t('title')"}</p>
+                <p className="mb-1 text-sm font-medium uppercase tracking-normal text-muted-foreground">{"t('title')"}</p>
                 <p className="text-xl font-medium">{tLevel1('title')}</p>
               </div>
             </div>
@@ -60,14 +60,14 @@ export default function I18nTestPage() {
         </Card>
 
         {/* Level 2 Scope */}
-        <Card className="overflow-hidden border-border-main bg-block-mint transition-colors duration-300 hover:border-border-strong">
+        <Card className="overflow-hidden border-border-main bg-block-mint transition-colors duration-200 hover:border-border-strong">
           <CardHeader className="border-b border-border-main bg-bg-canvas">
              <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="rounded-md bg-primary p-2 text-primary-foreground">
                   <Layers className="w-5 h-5" />
                 </div>
-                <CardTitle className="text-xl">Scope: <code className="font-bold text-text-main">test...level2</code></CardTitle>
+                <CardTitle className="text-xl">Scope: <code className="font-medium text-text-main">test...level2</code></CardTitle>
               </div>
               <Badge variant="outline" className="border-border-main bg-bg-canvas">Level 2</Badge>
             </div>
@@ -75,11 +75,11 @@ export default function I18nTestPage() {
           <CardContent className="pt-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="rounded-md border border-border-main bg-bg-canvas p-4 transition-colors">
-                <p className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-tighter">{"t('title')"}</p>
-                <p className="text-lg font-semibold">{tLevel2('title')}</p>
+                <p className="mb-1 text-xs font-medium uppercase tracking-normal text-muted-foreground">{"t('title')"}</p>
+                <p className="text-lg font-medium">{tLevel2('title')}</p>
               </div>
               <div className="rounded-md border border-border-main bg-bg-canvas p-4 transition-colors">
-                <p className="text-xs font-bold text-muted-foreground mb-1 uppercase tracking-tighter">{"t('message')"}</p>
+                <p className="mb-1 text-xs font-medium uppercase tracking-normal text-muted-foreground">{"t('message')"}</p>
                 <p className="text-lg font-medium">{tLevel2('message')}</p>
               </div>
             </div>
@@ -90,7 +90,7 @@ export default function I18nTestPage() {
         </Card>
 
         {/* Level 4 Scope - Deepest */}
-        <Card className="group relative overflow-hidden border-border-main bg-block-cream transition-colors duration-300 hover:border-border-strong">
+        <Card className="group relative overflow-hidden border-border-main bg-block-cream transition-colors duration-200 hover:border-border-strong">
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
             <Layers className="w-40 h-40 -mr-10 -mt-10 rotate-12" />
           </div>
@@ -108,11 +108,11 @@ export default function I18nTestPage() {
           <CardContent className="pt-6 space-y-6">
             <div className="rounded-lg border border-dashed border-border-main bg-bg-canvas p-6 transition-colors group-hover:border-border-strong">
               <div className="space-y-4">
-                <div className="flex items-center gap-2 font-semibold text-text-main">
+                <div className="flex items-center gap-2 font-medium text-text-main">
                   <span>{tLevel4('title')}</span>
                   <ChevronRight className="w-4 h-4" />
                 </div>
-                <h3 className="text-2xl font-bold tracking-tight">{tLevel4('message')}</h3>
+                <h3 className="text-2xl font-medium tracking-normal">{tLevel4('message')}</h3>
                 <p className="rounded-md border border-border-main bg-bg-surface p-3 font-mono text-sm text-muted-foreground">
                   {tLevel4('deepValue', { value: 'Successfully Injected!' })}
                 </p>

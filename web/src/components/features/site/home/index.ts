@@ -8,5 +8,6 @@ export * from './marketing-home-page';
 export * from './marketing-navbar';
 export * from './product-preview-mockup';
 export * from './product-story-section';
+export * from './pricing-section';
 export * from './stats-section';
 export * from './types';

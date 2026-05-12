@@ -576,7 +576,7 @@ export function ProjectMemberManagementPage({ projectId }: { projectId: number |
 
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-3xl font-bold tracking-normal">{t('membersPage.title')}</h1>
+                    <h1 className="text-3xl font-medium tracking-normal">{t('membersPage.title')}</h1>
                     <Users className="h-6 w-6 text-text-main" />
                     <RoleBadge role={currentRole} />
                   </div>

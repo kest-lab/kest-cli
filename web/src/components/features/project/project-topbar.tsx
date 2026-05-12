@@ -71,10 +71,10 @@ export function ProjectTopbar() {
   };
 
   return (
-    <header className="z-40 flex h-16 shrink-0 items-center justify-between border-b border-border-subtle bg-bg-canvas px-4 shadow-sm md:px-6">
+    <header className="z-40 flex h-16 shrink-0 items-center justify-between border-b border-border-subtle bg-bg-canvas px-4 md:px-6">
       <div className="flex min-w-0 items-center gap-4">
         <Link href={ROUTES.CONSOLE.PROJECTS} className="group flex items-center" aria-label="KEST">
-          <Logo className="h-8 w-[99px] shrink-0 text-black transition-transform group-hover:scale-[1.03]" aria-hidden="true" />
+          <Logo className="h-8 w-[99px] shrink-0 text-black" aria-hidden="true" />
         </Link>
       </div>
 
@@ -86,7 +86,7 @@ export function ProjectTopbar() {
               variant="outline"
               size="sm"
               noScale
-              className="hidden border-border-strong bg-bg-canvas px-3 text-text-main shadow-sm hover:border-border-strong hover:bg-bg-subtle md:inline-flex"
+              className="hidden border-border-strong bg-bg-canvas px-3 text-text-main hover:border-border-strong hover:bg-bg-subtle md:inline-flex"
               data-onboarding="command-palette"
               onClick={() => {
                 window.dispatchEvent(new Event(OPEN_COMMAND_PALETTE_EVENT));
@@ -94,7 +94,7 @@ export function ProjectTopbar() {
             >
               <Command className="h-3.5 w-3.5" />
               <span>{t('topbar.commandMenu')}</span>
-              <span className="rounded-full border border-border-strong bg-highlight px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-normal text-text-main">
+              <span className="rounded-full border border-border-strong bg-[var(--miro-surface-yellow)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.04em] text-[var(--miro-yellow-dark)]">
                 Cmd+K
               </span>
             </Button>
@@ -111,7 +111,7 @@ export function ProjectTopbar() {
               variant="ghost"
               isIcon
               noScale
-              className="h-9 w-9 rounded-full border border-border-strong bg-bg-canvas shadow-sm hover:bg-bg-subtle"
+              className="h-9 w-9 rounded-full border border-border-strong bg-bg-canvas hover:bg-bg-subtle"
               data-onboarding="help-button"
               aria-label={t('topbar.help')}
               onClick={() => {
@@ -137,7 +137,7 @@ export function ProjectTopbar() {
                   variant="ghost"
                   isIcon
                   noScale
-                  className="relative h-9 w-9 rounded-full border border-border-strong bg-bg-canvas shadow-sm hover:bg-bg-subtle"
+                  className="relative h-9 w-9 rounded-full border border-border-strong bg-bg-canvas hover:bg-bg-subtle"
                   aria-label={t('topbar.notifications')}
                 >
                   <Bell className="h-4 w-4 text-text-main" />
@@ -154,7 +154,7 @@ export function ProjectTopbar() {
               <p>{t('topbar.notifications')}</p>
             </TooltipContent>
           </Tooltip>
-          <DropdownMenuContent align="end" className="w-72 rounded-2xl border-border-subtle bg-bg-canvas p-1 shadow-soft">
+          <DropdownMenuContent align="end" className="w-72 rounded-xl border-border-subtle bg-bg-canvas p-1">
             <DropdownMenuLabel>{t('topbar.notifications')}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {receivedInvitationsQuery.isError ? (
@@ -206,7 +206,7 @@ export function ProjectTopbar() {
                   variant="ghost"
                   isIcon
                   noScale
-                  className="h-9 w-9 overflow-hidden rounded-full border border-border-strong bg-bg-canvas shadow-sm hover:bg-bg-subtle"
+                  className="h-9 w-9 overflow-hidden rounded-full border border-border-strong bg-bg-canvas hover:bg-bg-subtle"
                   aria-label={t('topbar.profile')}
                 >
                   <Avatar className="h-full w-full">
@@ -223,7 +223,7 @@ export function ProjectTopbar() {
               <p>{t('topbar.profile')}</p>
             </TooltipContent>
           </Tooltip>
-          <DropdownMenuContent align="end" className="w-56 rounded-2xl border-border-subtle bg-bg-canvas p-1 shadow-soft">
+          <DropdownMenuContent align="end" className="w-56 rounded-xl border-border-subtle bg-bg-canvas p-1">
             <DropdownMenuLabel className="px-2 py-1.5 text-xs font-medium uppercase tracking-normal text-text-muted">
               {displayName}
             </DropdownMenuLabel>

@@ -47,7 +47,7 @@ export function LanguageSwitcher({ showTooltip = false }: { showTooltip?: boolea
             >
               <Globe
                 className={cn(
-                  'size-4.5 text-text-main transition-transform duration-300',
+                  'size-4.5 text-text-main transition-transform duration-200',
                   isPending && 'animate-spin'
                 )}
               />
@@ -63,7 +63,7 @@ export function LanguageSwitcher({ showTooltip = false }: { showTooltip?: boolea
       </Tooltip>
       <DropdownMenuContent
         align="end"
-        className="w-[160px] rounded-lg border-border-main bg-bg-canvas p-1 shadow-soft animate-in fade-in zoom-in-95 duration-200"
+        className="w-[160px] rounded-lg border-border-main bg-bg-canvas p-1 shadow-modal animate-in fade-in zoom-in-95 duration-200"
       >
         <div className="figma-caption px-2 py-1.5 text-text-muted">
           {t('common.selectLanguage')}

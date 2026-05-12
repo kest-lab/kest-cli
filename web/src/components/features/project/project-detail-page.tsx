@@ -376,7 +376,7 @@ function ProjectModuleCardTile({
   const Icon = module.icon;
 
   return (
-    <Card className="rounded-2xl border-border-subtle bg-bg-canvas shadow-sm transition-colors hover:bg-bg-subtle">
+    <Card className="rounded-2xl border-border-subtle bg-bg-canvas transition-colors hover:bg-bg-subtle">
       <CardContent className="flex h-full flex-col p-5">
         <div className="flex items-start justify-between gap-3">
           <div
@@ -388,7 +388,7 @@ function ProjectModuleCardTile({
         </div>
 
         <div className="mt-5">
-          <p className="text-3xl font-semibold tracking-normal text-text-main">
+          <p className="text-3xl font-medium tracking-normal text-text-main">
             {formatModuleMetricValue(module.metricValue, isMetricLoading)}
           </p>
           <p className="mt-1 text-xs font-medium uppercase tracking-normal text-text-muted">
@@ -397,7 +397,7 @@ function ProjectModuleCardTile({
         </div>
 
         <div className="mt-4 space-y-2">
-          <h3 className="text-base font-semibold tracking-normal text-text-main">{module.title}</h3>
+          <h3 className="text-base font-medium tracking-normal text-text-main">{module.title}</h3>
           <p className="text-sm leading-6 text-text-muted">{module.description}</p>
         </div>
 
@@ -590,7 +590,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
     <>
       <main className="h-full min-h-0 overflow-y-auto">
         <div className="space-y-6 p-4 md:p-6">
-          <section className="rounded-[1.75rem] border border-border-subtle bg-block-lime p-5 shadow-sm md:p-6">
+          <section className="rounded-[1.75rem] border border-border-subtle bg-block-lime p-5 md:p-6">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
               <div className="min-w-0 space-y-4">
                 <Button asChild variant="link" className="h-auto px-0 text-sm text-text-muted">
@@ -602,7 +602,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
 
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-2xl font-semibold tracking-normal md:text-3xl">
+                    <h1 className="text-2xl font-medium tracking-normal md:text-3xl">
                       {project?.name || `Project #${projectId}`}
                     </h1>
                     <FolderKanban className="h-6 w-6 text-text-main" />
@@ -654,7 +654,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
                     ariaLabel={t('projectDetail.openProjectActions')}
                     triggerVariant="ghost"
                     triggerSize="default"
-                    triggerClassName="h-10 w-10 rounded-full border border-border-strong bg-bg-canvas shadow-sm"
+                    triggerClassName="h-10 w-10 rounded-full border border-border-strong bg-bg-canvas"
                   />
                 </div>
               ) : null}
@@ -670,7 +670,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
 
           {shouldShowOverview ? (
             <>
-              <section className="rounded-[1.75rem] border border-border-subtle bg-block-lilac p-5 shadow-sm md:p-6">
+              <section className="rounded-[1.75rem] border border-border-subtle bg-block-lilac p-5 md:p-6">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div className="space-y-3">
                     <Badge
@@ -680,7 +680,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
                       {t('projectDetail.nextStep')}
                     </Badge>
                     <div>
-                      <h2 className="text-xl font-semibold tracking-normal">{nextAction.title}</h2>
+                      <h2 className="text-xl font-medium tracking-normal">{nextAction.title}</h2>
                       <p className="mt-2 max-w-3xl text-sm leading-6 text-text-muted">
                         {nextAction.description}
                       </p>
@@ -710,10 +710,10 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
                 </div>
               </section>
 
-              <section className="rounded-[1.75rem] border border-border-subtle bg-bg-canvas p-5 shadow-sm">
+              <section className="rounded-[1.75rem] border border-border-subtle bg-bg-canvas p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold tracking-normal">
+                    <h2 className="text-lg font-medium tracking-normal">
                       {t('projectDetail.workspaceModules')}
                     </h2>
                     <p className="mt-1 max-w-3xl text-sm text-text-muted">
@@ -777,7 +777,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
           ) : null}
 
           <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-            <Card className="rounded-2xl border-border-subtle bg-bg-canvas shadow-sm">
+            <Card className="rounded-2xl border-border-subtle bg-bg-canvas">
               <CardHeader>
                 <CardTitle>{t('projectDetail.projectDetails')}</CardTitle>
                 <CardDescription>{t('projectDetail.projectDetailsDescription')}</CardDescription>
@@ -814,7 +814,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
               </CardContent>
             </Card>
 
-            <Card id="cli-sync" className="rounded-2xl border-border-subtle bg-bg-canvas shadow-sm">
+            <Card id="cli-sync" className="rounded-2xl border-border-subtle bg-bg-canvas">
               <CardHeader>
                 <CardTitle>{t('projectDetail.cliSync')}</CardTitle>
                 <CardDescription>{t('projectDetail.cliSyncDescription')}</CardDescription>

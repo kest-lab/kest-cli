@@ -182,11 +182,11 @@ export function ProjectManagementPage() {
 
   return (
     <div className="flex-1 space-y-8 p-4 pt-5 md:p-6">
-      <div className="rounded-[1.75rem] border border-border-subtle bg-block-lime p-6 shadow-sm">
+      <div className="rounded-[1.75rem] border border-border-subtle bg-block-lime p-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold tracking-normal">{t('projectsPage.title')}</h1>
+              <h1 className="text-3xl font-medium tracking-normal">{t('projectsPage.title')}</h1>
               <FolderKanban className="h-6 w-6 text-text-main" />
             </div>
             <p className="max-w-3xl text-sm text-text-muted">
@@ -259,7 +259,7 @@ export function ProjectManagementPage() {
         )}
       </div>
 
-      <Card className="overflow-hidden rounded-2xl border-border-subtle bg-bg-canvas shadow-sm">
+      <Card className="overflow-hidden rounded-2xl border-border-subtle bg-bg-canvas">
         <CardHeader className="flex flex-col gap-3 border-b border-border-subtle bg-bg-soft md:flex-row md:items-center md:justify-between">
           <div>
             <CardTitle>{t('projectsPage.cardTitle')}</CardTitle>

@@ -82,9 +82,20 @@ export function MarketingFooter({ brandName, content }: MarketingFooterProps) {
                 })}
               </div>
             </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <span className="rounded-md bg-bg-canvas px-4 py-2 text-sm font-medium text-text-main">
+                {content.appStoreLabel}
+              </span>
+              <span className="rounded-md bg-bg-canvas px-4 py-2 text-sm font-medium text-text-main">
+                {content.googlePlayLabel}
+              </span>
+              <span className="rounded-md border border-text-inverse/20 px-4 py-2 text-sm text-text-inverse/80">
+                {content.reviewBadgeLabel}
+              </span>
+            </div>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-6">
             {content.columns.map((column) => (
               <div key={column.title}>
                 <p className="figma-caption text-text-inverse/60">{column.title}</p>

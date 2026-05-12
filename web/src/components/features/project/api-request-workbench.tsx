@@ -232,7 +232,7 @@ interface RequestPageTab {
 interface CollectionNode {
   id: string;
   name: string;
-  color: string;
+  colorTone: CollectionColorTone;
   isFolder: boolean;
   requestIds: string[];
 }
@@ -261,6 +261,7 @@ interface ImportDialogTarget {
 
 type ImportDialogKind = 'postman' | 'markdown';
 type ProjectTranslationFn = ScopedTranslations<'project'>;
+type CollectionColorTone = 'lime' | 'mint' | 'cream' | 'lilac' | 'pink' | 'coral';
 const METHOD_OPTIONS: RequestMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 const PRIMARY_SECTION_ITEMS: RequestSection[] = [
   'params',
@@ -282,7 +283,15 @@ const BODY_MODE_OPTIONS: BodyMode[] = [
   'graphql',
 ];
 const AUTHORIZATION_OPTIONS: AuthorizationMode[] = ['none', 'bearer', 'basic', 'api-key'];
-const COLLECTION_COLORS = ['#2563eb', '#0f766e', '#ea580c', '#7c3aed', '#dc2626'];
+const COLLECTION_COLOR_TONES: CollectionColorTone[] = ['lime', 'mint', 'cream', 'lilac', 'pink', 'coral'];
+const COLLECTION_COLOR_DOT_CLASS_NAMES: Record<CollectionColorTone, string> = {
+  lime: 'bg-highlight',
+  mint: 'bg-block-mint',
+  cream: 'bg-block-cream',
+  lilac: 'bg-block-lilac',
+  pink: 'bg-block-pink',
+  coral: 'bg-block-coral',
+};
 const REQUEST_TEMPLATE_PATTERN = /\{\{([^}]+)\}\}/g;
 const DEFAULT_JSON_BODY = '{\n  "ping": "hello"\n}';
 const DEFAULT_JSON_PLACEHOLDER = '{\n  \n}';
@@ -300,6 +309,8 @@ const createLocalId = (prefix: string) =>
   `${prefix}-${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36)}`;
 
 const DEFAULT_REQUEST_TEMPLATE = '{{base_url}}/path';
+const getCollectionColorTone = (index: number) =>
+  COLLECTION_COLOR_TONES[index % COLLECTION_COLOR_TONES.length];
 
 const getDefaultRequestTitle = (t: ProjectTranslationFn, index: number) =>
   index === 1
@@ -1759,7 +1770,7 @@ const buildWorkbenchStateFromServer = (
   const collections: CollectionNode[] = flattenedCollections.map((collection, index) => ({
     id: String(collection.id),
     name: collection.name,
-    color: COLLECTION_COLORS[index % COLLECTION_COLORS.length],
+    colorTone: getCollectionColorTone(index),
     isFolder: collection.is_folder,
     requestIds: (requestsByCollectionId[String(collection.id)] ?? []).map(
       request => `request-${request.id}`
@@ -1801,7 +1812,7 @@ const mergeServerCollections = (
 
       return {
         ...collection,
-        color: currentCollection?.color ?? collection.color,
+        colorTone: currentCollection?.colorTone ?? collection.colorTone,
         isFolder: currentCollection?.isFolder ?? collection.isFolder,
         requestIds: Array.from(new Set([...localOnlyRequestIds, ...collection.requestIds])),
       };
@@ -1879,7 +1890,7 @@ const areCollectionNodesEqual = (left: CollectionNode[], right: CollectionNode[]
     return (
       collection.id === other.id &&
       collection.name === other.name &&
-      collection.color === other.color &&
+      collection.colorTone === other.colorTone &&
       collection.isFolder === other.isFolder &&
       areStringArraysEqual(collection.requestIds, other.requestIds)
     );
@@ -2720,7 +2731,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       const nextCollection: CollectionNode = {
         id: String(createdCollection.id),
         name: createdCollection.name,
-        color: COLLECTION_COLORS[(collectionNumber - 1) % COLLECTION_COLORS.length],
+        colorTone: getCollectionColorTone(collectionNumber - 1),
         isFolder: createdCollection.is_folder,
         requestIds: [],
       };
@@ -3515,7 +3526,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
         <div className="min-h-0 min-w-0 flex-1 overflow-auto p-4 md:p-6">
           {activeTab ? (
             <div className="mx-auto flex min-h-full max-w-[1600px] flex-col gap-4">
-              <Card className="gap-0 rounded-2xl border-border-subtle bg-bg-canvas py-0 shadow-sm">
+              <Card className="gap-0 rounded-2xl border-border-subtle bg-bg-canvas py-0">
                 <CardHeader className="gap-4 border-b border-border-subtle py-5">
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="space-y-2">
@@ -3634,11 +3645,11 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
             </div>
           ) : (
             <div className="mx-auto flex min-h-full max-w-[960px] items-center justify-center">
-              <div className="w-full max-w-[680px] rounded-[1.75rem] border border-dashed border-border-subtle bg-bg-soft px-8 py-16 text-center shadow-sm">
+              <div className="w-full max-w-[680px] rounded-[1.75rem] border border-dashed border-border-subtle bg-bg-soft px-8 py-16 text-center">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-border-subtle bg-highlight-subtle text-text-main">
                   <FolderOpen className="h-6 w-6" />
                 </div>
-                <p className="mt-6 text-2xl font-semibold tracking-normal text-text-main">
+                <p className="mt-6 text-2xl font-medium tracking-normal text-text-main">
                   {t('collections.workbench.empty.workspaceTitle')}
                 </p>
                 <p className="mt-3 text-base leading-7 text-text-muted">
@@ -3813,7 +3824,7 @@ function CollectionsSidebar({
       <div className="space-y-4 p-4">
         {isEmpty ? (
           <div className="rounded-2xl border border-dashed border-border-subtle bg-bg-canvas p-4">
-            <p className="text-sm font-semibold text-text-main">
+            <p className="text-sm font-medium text-text-main">
               {t('collections.workbench.empty.sidebarTitle')}
             </p>
             <p className="mt-2 text-sm leading-6 text-text-muted">
@@ -3922,7 +3933,7 @@ function CollectionsSidebar({
                 key={collection.id}
                 className={cn(
                   'group/collection rounded-2xl border border-transparent bg-bg-canvas p-1.5 transition-colors',
-                  isActiveCollection ? 'border-border-subtle bg-block-lilac shadow-sm' : 'hover:bg-bg-subtle'
+                  isActiveCollection ? 'border-border-subtle bg-block-lilac' : 'hover:bg-bg-subtle'
                 )}
               >
                 <div className="flex items-start gap-2">
@@ -3948,8 +3959,10 @@ function CollectionsSidebar({
                   >
                     <div className="flex items-center gap-2">
                       <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: collection.color }}
+                        className={cn(
+                          'h-2.5 w-2.5 rounded-full border border-border-subtle',
+                          COLLECTION_COLOR_DOT_CLASS_NAMES[collection.colorTone]
+                        )}
                         aria-hidden="true"
                       />
                       <p className="truncate text-sm font-medium text-text-main">
@@ -4770,11 +4783,11 @@ function ExampleDetailDialog({
             </div>
           ) : example ? (
             <>
-              <div className="rounded-2xl border border-border-subtle bg-bg-canvas p-5 shadow-sm">
+              <div className="rounded-2xl border border-border-subtle bg-bg-canvas p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-lg font-semibold text-text-main">{example.name}</p>
+                      <p className="text-lg font-medium text-text-main">{example.name}</p>
                       {example.is_default ? (
                         <Badge
                           variant="outline"
@@ -4954,7 +4967,7 @@ function ExamplesPanel({
 
   return (
     <div className="space-y-4">
-      <Card className="rounded-2xl border-border-subtle bg-bg-canvas py-0 shadow-sm">
+      <Card className="rounded-2xl border-border-subtle bg-bg-canvas py-0">
         <CardHeader className="border-b border-border-subtle py-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -4990,7 +5003,7 @@ function ExamplesPanel({
         <CardContent className="space-y-4 px-5 py-5">
           {!canCreateExamples ? (
             <div className="rounded-2xl border border-dashed border-border-subtle bg-bg-soft p-5">
-              <p className="text-sm font-semibold text-text-main">
+              <p className="text-sm font-medium text-text-main">
                 {t('collections.workbench.examples.requiresSavedRequestTitle')}
               </p>
               <p className="mt-2 text-sm leading-6 text-text-muted">
@@ -4999,7 +5012,7 @@ function ExamplesPanel({
             </div>
           ) : !requestPersisted ? (
             <div className="rounded-2xl border border-dashed border-border-subtle bg-bg-soft p-5">
-              <p className="text-sm font-semibold text-text-main">
+              <p className="text-sm font-medium text-text-main">
                 {t('collections.workbench.examples.requestNotPersistedTitle')}
               </p>
               <p className="mt-2 text-sm leading-6 text-text-muted">
@@ -5024,7 +5037,7 @@ function ExamplesPanel({
             </div>
           ) : examples.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border-subtle bg-bg-soft p-5">
-              <p className="text-sm font-semibold text-text-main">
+              <p className="text-sm font-medium text-text-main">
                 {t('collections.workbench.examples.emptyTitle')}
               </p>
               <p className="mt-2 text-sm leading-6 text-text-muted">
@@ -5036,12 +5049,12 @@ function ExamplesPanel({
               {examples.map(example => (
                 <div
                   key={example.id}
-                  className="rounded-2xl border border-border-subtle bg-bg-canvas p-4 shadow-sm"
+                  className="rounded-2xl border border-border-subtle bg-bg-canvas p-4"
                 >
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-text-main">{example.name}</p>
+                        <p className="text-sm font-medium text-text-main">{example.name}</p>
                         {example.is_default ? (
                           <Badge
                             variant="outline"
@@ -5182,7 +5195,7 @@ function ExampleSnapshotBlock({
   tone?: 'light' | 'dark';
 }) {
   return (
-    <div className="rounded-2xl border border-border-subtle bg-bg-canvas p-4 shadow-sm">
+    <div className="rounded-2xl border border-border-subtle bg-bg-canvas p-4">
       <p className="text-sm font-medium text-text-main">{title}</p>
       <pre
         className={cn(
@@ -5407,7 +5420,7 @@ function EnvironmentSwitcher({
   const t = useT('project');
 
   return (
-    <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-canvas px-2.5 py-1 shadow-sm">
+    <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-border-subtle bg-bg-canvas px-2.5 py-1">
       <span className="text-[10px] font-medium uppercase tracking-normal text-text-muted">
         {t('common.environment')}
       </span>
@@ -5461,10 +5474,10 @@ function RequestToolbar({
   const t = useT('project');
 
   return (
-    <div className="rounded-2xl border border-border-subtle bg-bg-soft p-3 shadow-sm">
+    <div className="rounded-2xl border border-border-subtle bg-bg-soft p-3">
       <div className="grid gap-3 xl:grid-cols-[140px_minmax(0,1fr)_auto]">
         <Select value={tab.method} onValueChange={value => onMethodChange(value as RequestMethod)}>
-          <SelectTrigger className="h-11 w-full rounded-xl border-border-subtle bg-bg-canvas font-semibold">
+          <SelectTrigger className="h-11 w-full rounded-xl border-border-subtle bg-bg-canvas font-medium">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -5784,10 +5797,10 @@ function KeyValueEditor({
   };
 
   return (
-    <div className="rounded-2xl border border-border-subtle bg-bg-canvas shadow-sm">
+    <div className="rounded-2xl border border-border-subtle bg-bg-canvas">
       <div className="flex flex-col gap-4 border-b border-border-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h3 className="text-base font-semibold text-text-main">{title}</h3>
+          <h3 className="text-base font-medium text-text-main">{title}</h3>
           <p className="mt-1 text-sm text-text-muted">{description}</p>
         </div>
 
@@ -5904,7 +5917,7 @@ function AuthorizationPanel({
 
   return (
     <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-      <Card className="rounded-2xl border-border-subtle bg-bg-canvas py-0 shadow-sm">
+      <Card className="rounded-2xl border-border-subtle bg-bg-canvas py-0">
         <CardHeader className="border-b border-border-subtle py-5">
           <CardTitle>{t('collections.workbench.sections.authorization')}</CardTitle>
           <CardDescription>{t('collections.workbench.authorization.description')}</CardDescription>
@@ -5933,7 +5946,7 @@ function AuthorizationPanel({
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border-border-subtle bg-bg-canvas py-0 shadow-sm">
+      <Card className="rounded-2xl border-border-subtle bg-bg-canvas py-0">
         <CardHeader className="border-b border-border-subtle py-5">
           <CardTitle>{t('collections.workbench.authorization.credentialsTitle')}</CardTitle>
           <CardDescription>
@@ -6118,10 +6131,10 @@ function BodyEditor({
   };
 
   return (
-    <div className="rounded-2xl border border-border-subtle bg-bg-canvas shadow-sm">
+    <div className="rounded-2xl border border-border-subtle bg-bg-canvas">
       <div className="border-b border-border-subtle px-5 py-5">
         <div>
-          <h3 className="text-base font-semibold text-text-main">
+          <h3 className="text-base font-medium text-text-main">
             {t('collections.workbench.sections.body')}
           </h3>
           <p className="mt-1 text-sm text-text-muted">
@@ -6473,7 +6486,7 @@ function ScriptsPanel({
   const t = useT('project');
 
   return (
-    <Card className="rounded-2xl border-border-subtle bg-bg-canvas py-0 shadow-sm">
+    <Card className="rounded-2xl border-border-subtle bg-bg-canvas py-0">
       <CardHeader className="border-b border-border-subtle py-5">
         <CardTitle>{t('collections.workbench.sections.scripts')}</CardTitle>
         <CardDescription>{t('collections.workbench.scripts.description')}</CardDescription>
@@ -6524,7 +6537,7 @@ function SettingsPanel({
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       {settingItems.map(item => (
-        <Card key={item.key} className="rounded-2xl border-border-subtle bg-bg-canvas py-0 shadow-sm">
+        <Card key={item.key} className="rounded-2xl border-border-subtle bg-bg-canvas py-0">
           <CardHeader className="border-b border-border-subtle py-5">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -6562,7 +6575,7 @@ function ResponsePanel({
     .join('\n');
 
   return (
-    <Card className="min-h-[320px] gap-0 rounded-2xl border-border-subtle bg-bg-canvas py-0 shadow-sm">
+    <Card className="min-h-[320px] gap-0 rounded-2xl border-border-subtle bg-bg-canvas py-0">
       <CardHeader className="gap-4 border-b border-border-subtle py-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -6615,14 +6628,14 @@ function ResponsePanel({
           </div>
         ) : response.error ? (
           <div className="flex flex-1 flex-col justify-center rounded-2xl border border-border-subtle bg-block-pink p-6">
-            <p className="text-sm font-semibold text-text-main">
+            <p className="text-sm font-medium text-text-main">
               {t('collections.workbench.response.errorTitle')}
             </p>
             <p className="mt-2 text-sm leading-6 text-text-main">{response.error}</p>
           </div>
         ) : response.status === null ? (
           <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-border-subtle bg-bg-soft text-center">
-            <p className="text-base font-semibold text-text-main">
+            <p className="text-base font-medium text-text-main">
               {t('collections.workbench.response.emptyTitle')}
             </p>
             <p className="mt-2 max-w-xl text-sm leading-6 text-text-muted">
@@ -6633,7 +6646,7 @@ function ResponsePanel({
           <div className="flex min-h-0 flex-1 flex-col gap-4">
             {responseHeaders ? (
               <div className="rounded-2xl border border-border-subtle bg-bg-soft p-4">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-normal text-text-muted">
+                <p className="mb-2 text-xs font-medium uppercase tracking-normal text-text-muted">
                   {t('common.headers')}
                 </p>
                 <pre className="overflow-auto text-xs leading-6 text-text-main">
@@ -6664,7 +6677,7 @@ function MethodBadge({ method, compact = false }: { method: RequestMethod; compa
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border font-semibold tracking-normal',
+        'inline-flex items-center rounded-full border font-medium tracking-normal',
         compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-[11px]',
         METHOD_BADGE_STYLES[method]
       )}

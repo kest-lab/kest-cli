@@ -33,7 +33,7 @@ export const getProjectHomeStatusLabel = (t: ProjectT, tone: ProjectHomeStatusTo
 export const getProjectHomeStatusBadgeClassName = (tone: ProjectHomeStatusTone) => {
   switch (tone) {
     case 'ready':
-      return 'border-border-strong bg-highlight text-text-main';
+      return 'border-border-strong bg-[var(--miro-surface-yellow)] text-[var(--miro-yellow-dark)]';
     case 'available':
       return 'border-border-subtle bg-block-mint text-text-main';
     case 'optional':
@@ -46,7 +46,7 @@ export const getProjectHomeStatusBadgeClassName = (tone: ProjectHomeStatusTone) 
 export const getProjectHomeStatusAccentClassName = (tone: ProjectHomeStatusTone) => {
   switch (tone) {
     case 'ready':
-      return 'border border-border-strong bg-highlight text-text-main';
+      return 'border border-border-strong bg-[var(--miro-surface-yellow)] text-[var(--miro-yellow-dark)]';
     case 'available':
       return 'border border-border-subtle bg-block-mint text-text-main';
     case 'optional':

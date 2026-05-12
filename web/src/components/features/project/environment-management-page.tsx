@@ -1531,7 +1531,7 @@ export function EnvironmentManagementPage({
 
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-3xl font-bold tracking-normal">{t('environments.title')}</h1>
+                    <h1 className="text-3xl font-medium tracking-normal">{t('environments.title')}</h1>
                     <Globe className="h-6 w-6 text-text-main" />
                     <RoleBadge role={currentRole} />
                   </div>
@@ -1771,7 +1771,7 @@ export function EnvironmentManagementPage({
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-xl font-semibold">{selectedEnvironment.display_name || selectedEnvironment.name}</h2>
+                        <h2 className="text-xl font-medium">{selectedEnvironment.display_name || selectedEnvironment.name}</h2>
                         <Badge variant="outline" className="font-mono">
                           {selectedEnvironment.name}
                         </Badge>

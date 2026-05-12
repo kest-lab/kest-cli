@@ -63,7 +63,7 @@ export function ProjectWorkspaceLayout({
             variant="ghost"
             size="sm"
             isIcon
-            className="h-8 w-8 shrink-0 rounded-full border border-border-strong bg-bg-canvas text-text-main shadow-sm hover:bg-bg-subtle"
+            className="h-8 w-8 shrink-0 rounded-full border border-border-strong bg-bg-canvas text-text-main hover:bg-bg-subtle"
           >
             <Link href={buildProjectDetailRoute(projectId)}>
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -84,8 +84,8 @@ export function ProjectWorkspaceLayout({
                     className={cn(
                       'flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors',
                       isActive
-                        ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                        : 'border-border-subtle bg-bg-canvas text-text-muted shadow-sm hover:border-border-strong hover:bg-bg-subtle hover:text-text-main'
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border-subtle bg-bg-canvas text-text-muted hover:border-border-strong hover:bg-bg-subtle hover:text-text-main'
                     )}
                   >
                     <div
@@ -113,7 +113,7 @@ export function ProjectWorkspaceLayout({
                       <Icon className="h-3 w-3" />
                     </div>
                     <span>{getProjectModuleCopy(t, item.i18nKey, 'shortLabel')}</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-normal text-text-muted/80">
+                    <span className="text-[10px] font-medium uppercase tracking-normal text-text-muted/80">
                       {t('common.soon')}
                     </span>
                   </div>
@@ -132,7 +132,7 @@ export function ProjectWorkspaceLayout({
                   variant="ghost"
                   size="sm"
                   isIcon
-                  className="h-8 w-8 rounded-full border border-border-strong bg-bg-canvas text-text-main shadow-sm hover:bg-bg-subtle"
+                  className="h-8 w-8 rounded-full border border-border-strong bg-bg-canvas text-text-main hover:bg-bg-subtle"
                 >
                   <Link href={buildProjectDetailRoute(projectId)}>
                     <ArrowLeft className="h-3.5 w-3.5" />
@@ -151,7 +151,7 @@ export function ProjectWorkspaceLayout({
                   variant="ghost"
                   size="sm"
                   isIcon
-                  className="h-8 w-8 rounded-full border border-border-strong bg-bg-canvas text-text-main shadow-sm hover:bg-bg-subtle"
+                  className="h-8 w-8 rounded-full border border-border-strong bg-bg-canvas text-text-main hover:bg-bg-subtle"
                   onClick={() => updateDesktopNavCollapsed(!isDesktopNavCollapsed)}
                   aria-label={
                     isDesktopNavCollapsed
@@ -196,7 +196,7 @@ export function ProjectWorkspaceLayout({
                           ? 'items-center justify-center px-2 py-3 text-center'
                           : 'items-center gap-3 px-3 py-3',
                         isActive
-                          ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                          ? 'border-primary bg-primary text-primary-foreground'
                           : 'border-transparent text-text-muted hover:border-border-subtle hover:bg-bg-subtle hover:text-text-main'
                       )}
                       aria-label={label}
@@ -257,7 +257,7 @@ export function ProjectWorkspaceLayout({
                           {!isDesktopNavCollapsed ? (
                             <div className="min-w-0">
                               <p className="truncate text-sm font-medium">{label}</p>
-                              <p className="mt-1 text-[10px] font-semibold uppercase tracking-normal text-text-muted/80">
+                              <p className="mt-1 text-[10px] font-medium uppercase tracking-normal text-text-muted/80">
                                 {t('common.soon')}
                               </p>
                             </div>

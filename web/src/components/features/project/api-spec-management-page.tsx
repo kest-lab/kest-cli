@@ -1994,7 +1994,7 @@ export function ApiSpecManagementPage({
 
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-3xl font-bold tracking-normal">{t('apiSpecsPage.title')}</h1>
+                    <h1 className="text-3xl font-medium tracking-normal">{t('apiSpecsPage.title')}</h1>
                     <Braces className="h-6 w-6 text-text-main" />
                     <RoleBadge role={currentRole} />
                   </div>
@@ -2391,7 +2391,7 @@ export function ApiSpecManagementPage({
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <MethodBadge method={selectedSpec.method} />
-                            <h2 className="font-mono text-base font-semibold">
+                            <h2 className="font-mono text-base font-medium">
                               {selectedSpec.path}
                             </h2>
                             <Badge variant="outline">v{selectedSpec.version}</Badge>

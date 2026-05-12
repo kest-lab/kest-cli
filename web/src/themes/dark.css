@@ -14,8 +14,8 @@
   --popover: var(--miro-charcoal);
   --popover-foreground: var(--miro-on-primary);
   
-  --primary: var(--miro-brand-yellow);
-  --primary-foreground: var(--miro-primary);
+  --primary: var(--miro-primary);
+  --primary-foreground: var(--miro-on-primary);
   
   --secondary: var(--miro-charcoal);
   --secondary-foreground: var(--miro-on-primary);
@@ -26,12 +26,12 @@
   --accent: var(--miro-charcoal);
   --accent-foreground: var(--miro-on-primary);
   
-  --destructive: var(--red-500);
+  --destructive: var(--miro-coral-light);
   --destructive-foreground: var(--neutral-0);
   
   --border: color-mix(in srgb, var(--miro-on-primary), transparent 78%);
   --input: color-mix(in srgb, var(--miro-on-primary), transparent 72%);
-  --ring: var(--miro-brand-yellow);
+  --ring: var(--miro-brand-blue);
 
   /* --- Semantic Design Tokens --- */
   
@@ -61,9 +61,9 @@
   --border-strong: color-mix(in srgb, var(--miro-on-primary), transparent 48%);
 
   /* Brand / Primary */
-  --brand-main: var(--miro-brand-yellow);
-  --brand-subtle: color-mix(in srgb, var(--miro-brand-yellow), transparent 82%);
-  --brand-strong: var(--miro-brand-yellow);
+  --brand-main: var(--miro-primary);
+  --brand-subtle: color-mix(in srgb, var(--miro-on-primary), transparent 88%);
+  --brand-strong: var(--miro-primary);
 
   /* Marketing block colors stay pastel against dark chrome. */
   --block-lime: var(--miro-yellow-light);
@@ -82,8 +82,8 @@
   --warning: var(--yellow-500);
   --warning-subtle: oklch(from var(--warning) l c h / 0.15);
   
-  --error: var(--red-500);
-  --error-subtle: oklch(from var(--error) l c h / 0.15);
+  --error: var(--miro-coral-light);
+  --error-subtle: color-mix(in srgb, var(--miro-coral-light), transparent 82%);
   
   --info: var(--miro-brand-blue);
   --info-subtle: oklch(from var(--info) l c h / 0.15);
@@ -97,7 +97,7 @@
   /* Legacy semantics maintained for compatibility */
   --primary-subtle: var(--brand-subtle);
   --primary-strong: var(--brand-strong);
-  --primary-deeper: var(--miro-brand-yellow);
+  --primary-deeper: var(--miro-charcoal);
   
   --secondary-subtle: oklch(from var(--secondary) l c h / 0.15);
   --secondary-deeper: color-mix(in srgb, var(--miro-on-primary), transparent 82%);

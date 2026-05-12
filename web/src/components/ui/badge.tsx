@@ -14,18 +14,28 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-pill border px-2.5 py-0.5 text-xs font-medium tracking-normal w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-ring transition-[color,box-shadow] overflow-hidden",
+  "inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[13px] font-semibold leading-[1.4] tracking-normal w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-ring transition-[color,box-shadow] overflow-hidden",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+          "border-transparent bg-highlight text-text-main [a&]:hover:bg-highlight",
         secondary:
           "border-border-main bg-secondary text-secondary-foreground [a&]:hover:bg-secondary-deeper",
         destructive:
-          "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+          "border-transparent bg-error-subtle text-destructive [a&]:hover:bg-error-subtle focus-visible:ring-destructive/20",
         outline:
           "border-border-strong bg-background text-foreground [a&]:hover:bg-bg-subtle",
+        tagYellow:
+          "border-transparent bg-[var(--miro-surface-yellow)] text-[var(--miro-yellow-dark)]",
+        tagPurple:
+          "border-transparent bg-[var(--miro-surface-featured)] text-brand",
+        tagCoral:
+          "border-transparent bg-block-coral text-[var(--miro-coral-dark)]",
+        success:
+          "border-transparent bg-success text-primary-foreground",
+        discount:
+          "rounded-sm border-transparent bg-highlight px-1.5 py-0.5 text-text-main",
       },
     },
     defaultVariants: {

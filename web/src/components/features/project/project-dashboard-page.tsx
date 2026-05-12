@@ -622,7 +622,7 @@ function PendingInvitationsPanel({
                       <Badge variant="outline">{invitation.project_slug}</Badge>
                     </div>
                     <div>
-                      <p className="text-lg font-semibold tracking-normal">
+                      <p className="text-lg font-medium tracking-normal">
                         {invitation.project_name}
                       </p>
                       <p className="mt-1 text-sm text-text-muted">
