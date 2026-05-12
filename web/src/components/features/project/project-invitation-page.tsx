@@ -29,17 +29,17 @@ import { formatDate } from '@/utils';
 const getStatusBadgeClassName = (status?: string) => {
   switch (status) {
     case 'active':
-      return 'border-border-main bg-block-lime text-text-main';
+      return 'border-border-strong bg-[var(--miro-surface-yellow)] text-[var(--miro-yellow-dark)]';
     case 'rejected':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     case 'used_up':
-      return 'border-border-main bg-block-cream text-text-main';
+      return 'border-border-subtle bg-block-cream text-text-main';
     case 'revoked':
-      return 'border-border-main bg-block-pink text-text-main';
+      return 'border-border-subtle bg-block-pink text-text-main';
     case 'expired':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     default:
-      return 'border-border-main bg-bg-subtle text-text-muted';
+      return 'border-border-subtle bg-bg-subtle text-text-muted';
   }
 };
 
@@ -115,13 +115,13 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
   return (
     <main className="min-h-screen bg-bg-canvas px-4 py-10 sm:px-6">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
-        <Card className="overflow-hidden border-border-main bg-bg-canvas">
-          <CardHeader className="gap-4 border-b border-border-main bg-block-cream">
+        <Card className="overflow-hidden rounded-xl border-border-subtle bg-bg-canvas">
+          <CardHeader className="gap-4 border-b border-border-subtle bg-block-lime">
             <div className="flex flex-wrap items-center gap-3">
               <Badge variant="outline" className={getStatusBadgeClassName(invitation?.status)}>
                 {getInvitationStatusLabel(invitation?.status)}
               </Badge>
-              <Badge variant="outline" className="gap-1">
+              <Badge variant="outline" className="gap-1 border-border-strong bg-bg-canvas">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 {getRoleLabel(invitation?.role)}
               </Badge>
@@ -137,10 +137,10 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
             {invitationQuery.isLoading || (!isSystemReady && isLoadingAuth) ? (
               <div className="space-y-4">
                 <div className="h-6 w-48 animate-pulse rounded bg-bg-subtle" />
-                <div className="h-24 animate-pulse rounded-md bg-bg-surface" />
+                <div className="h-24 animate-pulse rounded-md bg-bg-soft" />
                 <div className="grid gap-3 md:grid-cols-3">
                   {Array.from({ length: 3 }).map((_, index) => (
-                    <div key={index} className="h-24 animate-pulse rounded-md bg-bg-surface" />
+                    <div key={index} className="h-24 animate-pulse rounded-md bg-bg-soft" />
                   ))}
                 </div>
               </div>
@@ -154,11 +154,11 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
               </Alert>
             ) : (
               <>
-                <div className="rounded-md border border-border-main bg-bg-canvas p-5">
+                <div className="rounded-xl border border-border-subtle bg-bg-canvas p-5">
                   <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                     <div className="space-y-1">
                       <p className="figma-caption text-muted-foreground">{t('invitation.projectLabel')}</p>
-                      <h1 className="text-2xl font-semibold tracking-tight">
+                      <h1 className="text-2xl font-medium tracking-normal">
                         {invitation.project_name}
                       </h1>
                       <p className="font-mono text-sm text-muted-foreground">
@@ -172,32 +172,32 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-md border border-border-main bg-bg-canvas p-5">
+                  <div className="rounded-xl border border-border-subtle bg-bg-canvas p-5">
                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <ShieldCheck className="h-4 w-4" />
                       {t('invitation.roleLabel')}
                     </div>
-                    <p className="mt-3 text-lg font-semibold">
+                    <p className="mt-3 text-lg font-medium">
                       {getRoleLabel(invitation.role)}
                     </p>
                   </div>
-                  <div className="rounded-md border border-border-main bg-bg-canvas p-5">
+                  <div className="rounded-xl border border-border-subtle bg-bg-canvas p-5">
                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <Clock3 className="h-4 w-4" />
                       {t('invitation.expiresLabel')}
                     </div>
-                    <p className="mt-3 text-lg font-semibold">
+                    <p className="mt-3 text-lg font-medium">
                       {invitation.expires_at
                         ? formatDate(invitation.expires_at, 'YYYY-MM-DD HH:mm')
                         : t('invitation.never')}
                     </p>
                   </div>
-                  <div className="rounded-md border border-border-main bg-bg-canvas p-5">
+                  <div className="rounded-xl border border-border-subtle bg-bg-canvas p-5">
                     <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <MailPlus className="h-4 w-4" />
                       {t('invitation.remainingUsesLabel')}
                     </div>
-                    <p className="mt-3 text-lg font-semibold">
+                    <p className="mt-3 text-lg font-medium">
                       {invitation.remaining_uses === null ? t('invitation.unlimited') : invitation.remaining_uses}
                     </p>
                   </div>

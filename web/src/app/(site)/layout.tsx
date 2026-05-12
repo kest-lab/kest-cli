@@ -17,6 +17,7 @@ export default async function SiteLayout({ children }: PropsWithChildren) {
         navItems={content.navItems}
         loginLabel={content.loginLabel}
         signUpLabel={content.signUpLabel}
+        contactSalesLabel={content.contactSalesLabel}
         docsSoonLabel={content.docsSoonLabel}
         openMenuLabel={t('nav.mobileMenu')}
         closeMenuLabel={t('nav.closeMenu')}

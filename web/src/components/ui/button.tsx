@@ -17,32 +17,32 @@ import { Loader2 } from "lucide-react"
 import { cn } from "@/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-pill text-sm font-medium tracking-[-0.01em] focus-ring shrink-0 disabled:cursor-not-allowed disabled:opacity-50 [&>svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium leading-[1.3] tracking-normal focus-ring shrink-0 disabled:cursor-not-allowed disabled:opacity-100 disabled:bg-border-main disabled:text-text-muted [&>svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-button-primary hover:bg-primary/90 active:brightness-95",
+          "bg-primary text-primary-foreground shadow-none hover:bg-primary active:bg-primary-strong",
         destructive:
-          "bg-destructive text-white shadow-button-destructive hover:bg-destructive/90 focus-visible:ring-destructive/30",
+          "bg-error-subtle text-destructive shadow-none hover:bg-error-subtle focus-visible:ring-destructive/30",
         outline:
-          "border border-border-main bg-background text-foreground shadow-button hover:border-border-strong hover:bg-bg-subtle",
+          "border border-border-strong bg-transparent text-foreground shadow-none hover:bg-transparent active:bg-bg-subtle",
         secondary:
-          "border border-transparent bg-secondary text-secondary-foreground shadow-button hover:bg-secondary-deeper",
+          "border border-border-main bg-secondary text-secondary-foreground shadow-none hover:bg-secondary active:bg-secondary-deeper",
         ghost:
-          "text-foreground hover:bg-secondary/80",
-        link: "text-foreground underline-offset-4 hover:underline",
+          "rounded-md text-foreground hover:bg-transparent active:bg-secondary",
+        link: "text-brand underline-offset-4 hover:underline",
       },
       size: {
-        xs: "h-7 px-3 text-xs",
-        sm: "h-8 px-4 text-xs",
-        default: "h-9 px-5",
-        lg: "h-10 px-6",
-        xl: "h-11 px-8 text-base",
-        "2xl": "h-12 px-10 text-lg",
+        xs: "h-8 px-3 text-xs",
+        sm: "h-9 px-4 text-sm",
+        default: "h-10 px-6 py-3",
+        lg: "h-11 px-6 py-3",
+        xl: "h-11 px-6 py-3",
+        "2xl": "h-11 px-6 py-3",
       },
       isIcon: {
-        true: "aspect-square rounded-full p-0",
+        true: "size-9 rounded-full border border-border-main bg-bg-canvas p-0 text-text-main",
       },
     },
     defaultVariants: {

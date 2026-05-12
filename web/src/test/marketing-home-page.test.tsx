@@ -108,6 +108,61 @@ const mockContent: MarketingPageContent = {
       { value: '100%', label: 'readable workflow files', detail: 'detail' },
     ],
   },
+  pricing: {
+    eyebrow: 'Plans and pricing',
+    title: 'Start open, then scale governance',
+    description: 'Pricing description',
+    monthlyLabel: 'Monthly',
+    annualLabel: 'Annual',
+    discountLabel: 'Save 15%',
+    tiers: [
+      {
+        name: 'Free',
+        description: 'Free description',
+        price: '$0',
+        cadence: 'per user / month',
+        cta: 'Start free',
+        features: ['Local projects', 'Basic flows', 'Seven-day history'],
+      },
+      {
+        name: 'Starter',
+        description: 'Starter description',
+        price: '$8',
+        cadence: 'per user / month',
+        cta: 'Choose Starter',
+        features: ['Shared projects', 'Variables', 'Thirty-day history'],
+      },
+      {
+        name: 'Business',
+        description: 'Business description',
+        price: '$16',
+        cadence: 'per user / month',
+        badge: 'Popular',
+        cta: 'Choose Business',
+        featured: true,
+        features: ['AI diagnosis', 'Roles', 'Unlimited history'],
+      },
+      {
+        name: 'Enterprise',
+        description: 'Enterprise description',
+        price: 'Custom',
+        cadence: 'annual contract',
+        cta: 'Contact sales',
+        enterprise: true,
+        features: ['SSO', 'Audit', 'Governance'],
+      },
+    ],
+    comparisonTitle: 'Compare the essentials',
+    comparisonRows: [
+      {
+        feature: 'Visual test flows',
+        free: 'Basic',
+        starter: 'Standard',
+        business: 'Advanced',
+        enterprise: 'Custom',
+      },
+    ],
+  },
   finalCta: {
     eyebrow: 'Start building',
     title: 'Build smarter API test workflows with your team',
@@ -129,6 +184,9 @@ describe('MarketingHomePage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Built for modern API teams')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Feature title' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Start open, then scale governance' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Business' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Designed for execution-heavy API teams' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Build smarter API test workflows with your team' })).toBeInTheDocument();
     expect(screen.getAllByText('View API Docs').length).toBeGreaterThan(0);

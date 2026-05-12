@@ -55,7 +55,7 @@ const TimeColumn = ({
 
   return (
     <div className="flex flex-col items-center bg-bg-surface last:border-0 border-r border-border-main w-14 shrink-0 overflow-hidden">
-      <div className="text-xs font-bold text-muted-foreground/60 py-3 uppercase tracking-widest">{label}</div>
+      <div className="py-3 text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground/60">{label}</div>
       <div 
         ref={scrollRef}
         className="h-[260px] w-full overflow-y-auto no-scrollbar flex flex-col items-center relative overscroll-contain"
@@ -67,9 +67,9 @@ const TimeColumn = ({
             key={i}
             onClick={() => onChange(i)}
             className={cn(
-              "size-8 shrink-0 flex items-center justify-center text-sm font-medium transition-all rounded-lg mb-2 last:mb-0 cursor-pointer",
+              "size-8 shrink-0 flex items-center justify-center text-sm font-medium transition-colors duration-200 rounded-lg mb-2 last:mb-0 cursor-pointer",
               value === i 
-                ? "bg-primary text-primary-foreground font-bold ring-2 ring-primary/12 z-10" 
+                ? "bg-primary text-primary-foreground ring-2 ring-primary/12 z-10" 
                 : "text-foreground/80 hover:bg-primary/10 hover:text-foreground"
             )}
           >
@@ -129,7 +129,7 @@ export function DatePicker({
       <PopoverTrigger asChild>
         <button
           className={cn(
-            "flex h-9 w-full rounded-lg border border-border bg-background px-3 py-1 text-sm shadow-xs transition-all hover:border-border-strong focus:outline-hidden focus:border-primary items-center justify-between text-left font-normal input-depth cursor-pointer",
+            "flex h-11 w-full items-center justify-between rounded-md border border-border-strong bg-background px-4 py-2 text-left text-sm font-normal shadow-none transition-all hover:border-primary focus:outline-hidden focus:border-primary input-depth cursor-pointer",
             !date && "text-muted-foreground",
             isError && "border-destructive focus:border-destructive text-destructive",
             className
@@ -170,14 +170,14 @@ export function DatePicker({
                 const now = new Date()
                 setDate?.(now)
               }}
-              className="hover:text-primary transition-colors text-xs font-bold px-3 py-1.5 rounded-md hover:bg-primary/5 cursor-pointer text-foreground/90 active:scale-95"
+              className="hover:text-primary transition-colors duration-200 text-xs font-medium px-3 py-1.5 rounded-md hover:bg-primary/5 cursor-pointer text-foreground/90 active:text-primary-strong"
             >
               {t.common('now')}
             </button>
           </div>
           <button 
             onClick={() => setOpen(false)}
-            className="px-6 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-lg shadow-button-primary hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+            className="cursor-pointer rounded-full bg-primary px-6 py-1.5 text-xs font-medium text-primary-foreground shadow-none transition-colors duration-200 hover:bg-primary active:bg-primary-strong"
           >
             {t.common('confirm')}
           </button>

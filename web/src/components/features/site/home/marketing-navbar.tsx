@@ -23,6 +23,7 @@ export interface MarketingNavbarProps {
   navItems: MarketingNavItem[];
   loginLabel: string;
   signUpLabel: string;
+  contactSalesLabel: string;
   docsSoonLabel: string;
   openMenuLabel: string;
   closeMenuLabel: string;
@@ -56,8 +57,8 @@ function NavItem({
         target={external ? '_blank' : undefined}
         rel={external ? 'noreferrer' : undefined}
         className={cn(
-          'text-sm font-medium text-text-main transition-colors duration-200 hover:text-text-subtle',
-          mobile ? 'rounded-pill border border-border-main bg-bg-canvas px-4 py-3' : ''
+          'text-sm font-medium text-text-main transition-colors duration-200 hover:text-brand',
+          mobile ? 'rounded-full border border-border-main bg-bg-canvas px-4 py-2.5' : ''
         )}
       >
         {item.label}
@@ -69,12 +70,12 @@ function NavItem({
     <span
       className={cn(
         'inline-flex items-center gap-2 text-sm font-medium text-text-muted',
-        mobile ? 'rounded-pill border border-dashed border-border-main px-4 py-3' : ''
+        mobile ? 'rounded-full border border-dashed border-border-main px-4 py-2.5' : ''
       )}
     >
       {item.label}
       {item.placeholder ? (
-        <span className="figma-caption rounded-pill border border-border-main px-2 py-0.5">
+        <span className="figma-caption rounded-full bg-highlight px-2 py-0.5 text-text-main">
           {docsSoonLabel}
         </span>
       ) : null}
@@ -87,12 +88,14 @@ export function MarketingNavbar({
   navItems,
   loginLabel,
   signUpLabel,
+  contactSalesLabel,
   docsSoonLabel,
   openMenuLabel,
   closeMenuLabel,
 }: MarketingNavbarProps) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const pricingLabel = navItems.find((item) => item.href === '#pricing')?.label ?? 'Pricing';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -106,7 +109,7 @@ export function MarketingNavbar({
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 border-b transition-all duration-300',
+        'sticky top-0 z-50 border-b transition-colors duration-200',
         scrolled
           ? 'border-border-main bg-bg-canvas'
           : 'border-transparent bg-bg-canvas'
@@ -126,10 +129,16 @@ export function MarketingNavbar({
 
           <div className="hidden items-center gap-2 lg:flex">
             <LanguageSwitcher />
-            <Button asChild variant="ghost" size="lg">
+            <Button asChild variant="ghost" size="lg" className="text-text-subtle hover:text-text-main">
               <Link href="/login">{loginLabel}</Link>
             </Button>
-            <Button asChild size="lg">
+            <Button asChild variant="ghost" size="lg" className="text-text-subtle hover:text-text-main">
+              <Link href="#pricing">{pricingLabel}</Link>
+            </Button>
+            <Button asChild variant="ghost" size="lg" className="text-text-subtle hover:text-text-main">
+              <Link href="#pricing">{contactSalesLabel}</Link>
+            </Button>
+            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary">
               <Link href="/register">{signUpLabel}</Link>
             </Button>
           </div>
@@ -153,11 +162,11 @@ export function MarketingNavbar({
 
         <div
           className={cn(
-            'overflow-hidden transition-all duration-300 lg:hidden',
+            'overflow-hidden transition-all duration-200 lg:hidden',
             open ? 'max-h-[28rem] pb-5' : 'max-h-0'
           )}
         >
-          <div className="rounded-lg border border-border-main bg-bg-canvas p-4 shadow-none">
+          <div className="rounded-xl border border-border-main bg-bg-canvas p-4 shadow-modal">
             <div className="grid gap-3">
               {navItems.map((item) => (
                 <NavItem
@@ -170,12 +179,12 @@ export function MarketingNavbar({
               ))}
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <Button asChild variant="outline" size="lg">
+              <Button asChild variant="outline" size="lg" className="border-border-strong">
                 <Link href="/login" onClick={() => setOpen(false)}>
                   {loginLabel}
                 </Link>
               </Button>
-              <Button asChild size="lg">
+              <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary">
                 <Link href="/register" onClick={() => setOpen(false)}>
                   {signUpLabel}
                 </Link>

@@ -16,15 +16,15 @@ import { DatePicker } from "./date-picker"
 import { cn } from "@/utils"
 
 const inputVariants = cva(
-  "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground flex h-9 w-full min-w-0 rounded-md px-3.5 py-1 text-base shadow-none transition-all file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:cursor-not-allowed disabled:opacity-50 md:text-sm input-depth focus-border",
+  "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground flex h-11 w-full min-w-0 rounded-md px-4 py-3 text-base shadow-none transition-colors file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:cursor-not-allowed disabled:opacity-50 md:text-sm input-depth outline-hidden focus-visible:border-2 focus-visible:border-brand",
   {
     variants: {
       variant: {
-        outline: "border border-border-main bg-background hover:border-border-strong focus-visible:border-primary",
-        filled: "border border-transparent bg-bg-subtle hover:bg-secondary focus-visible:bg-background focus-visible:border-primary",
+        outline: "border border-border-strong bg-bg-canvas hover:border-border-strong",
+        filled: "border border-border-main bg-bg-surface hover:border-border-strong focus-visible:bg-bg-canvas",
       },
       error: {
-        true: "border-destructive focus-visible:border-destructive text-destructive placeholder:text-destructive/50",
+        true: "border-destructive bg-error-subtle focus-visible:border-destructive text-destructive placeholder:text-destructive/60",
       }
     },
     defaultVariants: {
@@ -166,7 +166,7 @@ function SearchInput({ className, ...props }: InputProps) {
     <Input
       type="search"
       leftIcon={<SearchIcon className="size-4" />}
-      className={cn("rounded-pill", className)}
+      className={cn("h-10 rounded-md border-border-main bg-bg-surface text-sm text-text-muted", className)}
       {...props}
     />
   )
@@ -210,18 +210,18 @@ function ColorPicker({ className, value, onChange, disabled, error, errorText, .
     <div className="flex flex-col gap-1 w-full">
       <div 
         onClick={handleTrigger}
-        className={cn(
-          "flex h-9 w-full items-center gap-3 rounded-md border border-border-main bg-background px-3.5 py-1 shadow-none transition-all hover:border-border-strong cursor-pointer input-depth focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/12",
+          className={cn(
+          "flex h-11 w-full items-center gap-3 rounded-md border border-border-strong bg-background px-4 py-2 shadow-none transition-all hover:border-primary cursor-pointer input-depth focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/12",
           disabled && "opacity-50 cursor-not-allowed",
           isError && "border-destructive focus-within:border-destructive",
           className
         )}
       >
         <div 
-          className="size-5 rounded-full border border-border-strong/20 shadow-sm shrink-0" 
+          className="size-5 rounded-full border border-border-strong/20 shadow-none shrink-0" 
           style={{ backgroundColor: color }}
         />
-        <span className="text-sm font-medium font-mono uppercase tracking-wider text-foreground/80 first-letter:uppercase">
+        <span className="font-mono text-sm font-medium uppercase tracking-normal text-foreground/80 first-letter:uppercase">
           {color}
         </span>
         <input 

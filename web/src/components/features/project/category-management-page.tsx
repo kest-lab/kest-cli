@@ -114,7 +114,7 @@ function RoleBadge({ role }: { role?: ProjectMemberRole }) {
   const t = useT('project');
 
   return (
-    <Badge variant="outline" className="border-border-main bg-bg-subtle text-text-main">
+    <Badge variant="outline" className="border-border-subtle bg-bg-subtle text-text-main">
       {t('roles.badge', { role: getRoleLabel(t, role) })}
     </Badge>
   );
@@ -455,7 +455,7 @@ export function CategoryManagementPage({
     <>
       <main className="h-full min-h-0 overflow-y-auto">
         <div className="space-y-8 p-6 pt-6">
-          <div className="rounded-lg border border-border-main bg-block-cream p-6">
+          <div className="rounded-lg border border-border-subtle bg-block-cream p-6">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="space-y-3">
                 <Button asChild variant="link" className="h-auto px-0 text-sm text-muted-foreground">
@@ -467,7 +467,7 @@ export function CategoryManagementPage({
 
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-3xl font-bold tracking-tight">{t('categoriesPage.title')}</h1>
+                    <h1 className="text-3xl font-medium tracking-normal">{t('categoriesPage.title')}</h1>
                     <Tags className="h-6 w-6 text-text-main" />
                     <RoleBadge role={currentRole} />
                   </div>
@@ -582,8 +582,8 @@ export function CategoryManagementPage({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-        <Card className="border-border-main bg-bg-canvas">
-          <CardHeader className="flex flex-col gap-3 border-b border-border-main bg-bg-canvas lg:flex-row lg:items-center lg:justify-between">
+        <Card className="border-border-subtle bg-bg-canvas">
+          <CardHeader className="flex flex-col gap-3 border-b border-border-subtle bg-bg-canvas lg:flex-row lg:items-center lg:justify-between">
             <div>
               <CardTitle>{t('categoriesPage.registryTitle')}</CardTitle>
               <CardDescription>
@@ -630,9 +630,9 @@ export function CategoryManagementPage({
               </div>
             ) : (
               <>
-                <div className="overflow-hidden rounded-md border border-border-main">
+                <div className="overflow-hidden rounded-md border border-border-subtle">
                   <Table>
-                    <TableHeader className="bg-bg-surface">
+                    <TableHeader className="bg-bg-soft">
                     <TableRow className="hover:bg-transparent">
                         <TableHead>{t('categoriesPage.tableName')}</TableHead>
                         <TableHead>{t('categoriesPage.tableParent')}</TableHead>
@@ -651,7 +651,7 @@ export function CategoryManagementPage({
                         return (
                           <TableRow
                             key={category.id}
-                            className="transition-colors hover:bg-bg-surface"
+                            className="transition-colors hover:bg-bg-soft"
                             data-state={activeCategoryId === category.id ? 'selected' : undefined}
                           >
                             <TableCell className="min-w-[260px]">
@@ -796,8 +796,8 @@ export function CategoryManagementPage({
           </CardContent>
         </Card>
 
-        <Card className="border-border-main bg-bg-canvas">
-          <CardHeader className="border-b border-border-main bg-bg-canvas">
+        <Card className="border-border-subtle bg-bg-canvas">
+          <CardHeader className="border-b border-border-subtle bg-bg-canvas">
             <CardTitle>{t('categoriesPage.detailTitle')}</CardTitle>
             <CardDescription>
               {t('categoriesPage.detailDescription', {
@@ -836,11 +836,11 @@ export function CategoryManagementPage({
               </Alert>
             ) : (
               <>
-                <div className="rounded-md border border-border-main bg-bg-surface p-4">
+                <div className="rounded-md border border-border-subtle bg-bg-soft p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-xl font-semibold">{selectedCategory.name}</h2>
+                        <h2 className="text-xl font-medium">{selectedCategory.name}</h2>
                         <Badge variant="outline">
                           {selectedCategory.parent_id
                             ? t('categoriesPage.childCategory')
@@ -876,28 +876,28 @@ export function CategoryManagementPage({
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                    <div className="text-xs uppercase tracking-normal text-muted-foreground">
                       {t('categoriesPage.categoryId')}
                     </div>
                     <div className="mt-2 font-mono text-sm">{selectedCategory.id}</div>
                   </div>
-                  <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                    <div className="text-xs uppercase tracking-normal text-muted-foreground">
                       {t('categoriesPage.parent')}
                     </div>
                     <div className="mt-2 text-sm">
                       {selectedParent?.name || t('categoriesPage.noParentCategory')}
                     </div>
                   </div>
-                  <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                    <div className="text-xs uppercase tracking-normal text-muted-foreground">
                       {t('categoriesPage.updatedAt')}
                     </div>
                     <div className="mt-2 text-sm">{formatDate(selectedCategory.updated_at, 'YYYY-MM-DD HH:mm')}</div>
                   </div>
-                  <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                    <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                    <div className="text-xs uppercase tracking-normal text-muted-foreground">
                       {t('categoriesPage.testCaseCount')}
                     </div>
                     <div className="mt-2 text-sm">
@@ -906,7 +906,7 @@ export function CategoryManagementPage({
                   </div>
                 </div>
 
-                <div className="rounded-md border border-border-main bg-bg-surface p-4">
+                <div className="rounded-md border border-border-subtle bg-bg-soft p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-medium">{t('categoriesPage.children')}</div>
@@ -957,8 +957,8 @@ export function CategoryManagementPage({
         </Card>
       </div>
 
-      <Card className="border-border-main bg-bg-canvas">
-        <CardHeader className="border-b border-border-main bg-bg-canvas">
+      <Card className="border-border-subtle bg-bg-canvas">
+        <CardHeader className="border-b border-border-subtle bg-bg-canvas">
           <CardTitle>{t('categoriesPage.connectedEndpointsTitle')}</CardTitle>
           <CardDescription>
             {t('categoriesPage.connectedEndpointsDescription')}

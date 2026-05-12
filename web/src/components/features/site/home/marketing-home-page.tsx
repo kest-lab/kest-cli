@@ -2,6 +2,7 @@ import { FeatureCards } from './feature-cards';
 import { FinalCta } from './final-cta';
 import { HeroSection } from './hero-section';
 import { LogoCloud } from './logo-cloud';
+import { PricingSection } from './pricing-section';
 import { ProductStorySection } from './product-story-section';
 import { StatsSection } from './stats-section';
 import type { MarketingPageContent } from './types';
@@ -28,6 +29,7 @@ export function MarketingHomePage({ content }: MarketingHomePageProps) {
       {content.sections.map((section, index) => (
         <ProductStorySection key={section.id} content={section} reverse={index % 2 === 1} />
       ))}
+      <PricingSection content={content.pricing} />
       <StatsSection content={content.stats} />
       <FinalCta content={content.finalCta} />
     </>

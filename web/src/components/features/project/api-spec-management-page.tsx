@@ -249,17 +249,17 @@ const getDocSourceLabel = (t: ProjectT, value?: ApiSpecDocSource | null) => {
 const getMethodBadgeClassName = (method: HttpMethod) => {
   switch (method) {
     case 'GET':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     case 'POST':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     case 'PUT':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     case 'PATCH':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     case 'DELETE':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     default:
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
   }
 };
 
@@ -428,7 +428,7 @@ function MethodBadge({ method }: { method: HttpMethod }) {
 function RoleBadge({ role }: { role?: ProjectMemberRole }) {
   const t = useT('project');
   return (
-    <Badge variant="outline" className="border-border-main bg-bg-subtle text-text-main">
+    <Badge variant="outline" className="border-border-subtle bg-bg-subtle text-text-main">
       {t('roles.badge', { role: getRoleLabel(t, role) })}
     </Badge>
   );
@@ -439,14 +439,14 @@ function RoleBadge({ role }: { role?: ProjectMemberRole }) {
 function CodeBlock({ value, emptyLabel }: { value?: string; emptyLabel: string }) {
   if (!value?.trim()) {
     return (
-      <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-4 text-sm text-muted-foreground">
+      <div className="rounded-md border border-dashed border-border-subtle bg-bg-soft p-4 text-sm text-muted-foreground">
         {emptyLabel}
       </div>
     );
   }
 
   return (
-    <pre className="overflow-x-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
+    <pre className="overflow-x-auto rounded-md border border-border-subtle bg-bg-soft p-4 text-xs leading-6 text-text-muted">
       <code>{value}</code>
     </pre>
   );
@@ -747,7 +747,7 @@ export function SpecFormDialog({
                   </Select>
                 </div>
 
-                <div className="flex items-center justify-between rounded-md border border-border-main bg-bg-surface px-3 py-2">
+                <div className="flex items-center justify-between rounded-md border border-border-subtle bg-bg-soft px-3 py-2">
                   <div className="space-y-1">
                     <Label htmlFor="spec-is-public">{t('apiSpecs.publicSpec')}</Label>
                     <div className="text-xs text-muted-foreground">
@@ -763,7 +763,7 @@ export function SpecFormDialog({
               </div>
 
               {mode === 'edit' ? (
-                <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-3 text-xs text-muted-foreground">
+                <div className="rounded-md border border-dashed border-border-subtle bg-bg-soft p-3 text-xs text-muted-foreground">
                   {t('apiSpecsPage.editReadonlyNotice')}
                 </div>
               ) : null}
@@ -1153,7 +1153,7 @@ export function BatchGenDocDialog({
               </Select>
             </div>
 
-            <div className="flex items-center justify-between rounded-md border border-border-main bg-bg-surface px-3 py-2">
+            <div className="flex items-center justify-between rounded-md border border-border-subtle bg-bg-soft px-3 py-2">
               <div className="space-y-1">
                 <Label htmlFor="batch-gen-force">{t('apiSpecsPage.batchForceLabel')}</Label>
                 <div className="text-xs text-muted-foreground">
@@ -1978,7 +1978,7 @@ export function ApiSpecManagementPage({
     <>
       <main className="h-full min-h-0 overflow-y-auto">
         <div className="space-y-8 p-6 pt-6">
-          <div className="rounded-lg border border-border-main bg-block-cream p-6">
+          <div className="rounded-lg border border-border-subtle bg-block-cream p-6">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="space-y-3">
                 <Button
@@ -1994,7 +1994,7 @@ export function ApiSpecManagementPage({
 
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-3xl font-bold tracking-tight">{t('apiSpecsPage.title')}</h1>
+                    <h1 className="text-3xl font-medium tracking-normal">{t('apiSpecsPage.title')}</h1>
                     <Braces className="h-6 w-6 text-text-main" />
                     <RoleBadge role={currentRole} />
                   </div>
@@ -2099,8 +2099,8 @@ export function ApiSpecManagementPage({
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-            <Card className="overflow-hidden border-border-main bg-bg-canvas">
-              <CardHeader className="gap-4 border-b border-border-main bg-bg-canvas">
+            <Card className="overflow-hidden border-border-subtle bg-bg-canvas">
+              <CardHeader className="gap-4 border-b border-border-subtle bg-bg-canvas">
                 <div>
                   <CardTitle>{t('apiSpecsPage.listTitle')}</CardTitle>
                   <CardDescription>
@@ -2174,9 +2174,9 @@ export function ApiSpecManagementPage({
                   </div>
                 ) : (
                   <>
-                    <div className="overflow-hidden rounded-md border border-border-main">
+                    <div className="overflow-hidden rounded-md border border-border-subtle">
                       <Table>
-                        <TableHeader className="bg-bg-surface">
+                        <TableHeader className="bg-bg-soft">
                           <TableRow className="hover:bg-transparent">
                             <TableHead>{t('common.method')}</TableHead>
                             <TableHead>{t('common.path')}</TableHead>
@@ -2194,7 +2194,7 @@ export function ApiSpecManagementPage({
                               data-state={spec.id === activeSpecId ? 'selected' : undefined}
                               className={cn(
                                 'cursor-pointer transition-colors',
-                                spec.id === activeSpecId ? 'bg-bg-surface' : ''
+                                spec.id === activeSpecId ? 'bg-bg-soft' : ''
                               )}
                               onClick={() => {
                                 setSelectedSpecId(spec.id);
@@ -2343,8 +2343,8 @@ export function ApiSpecManagementPage({
               </CardContent>
             </Card>
 
-            <Card className="border-border-main bg-bg-canvas">
-              <CardHeader className="gap-4 border-b border-border-main bg-bg-canvas">
+            <Card className="border-border-subtle bg-bg-canvas">
+              <CardHeader className="gap-4 border-b border-border-subtle bg-bg-canvas">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <CardTitle>{t('apiSpecsPage.selectedSpecTitle')}</CardTitle>
@@ -2386,12 +2386,12 @@ export function ApiSpecManagementPage({
                   </Alert>
                 ) : (
                   <>
-                    <div className="rounded-md border border-border-main bg-bg-surface p-4">
+                    <div className="rounded-md border border-border-subtle bg-bg-soft p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <MethodBadge method={selectedSpec.method} />
-                            <h2 className="font-mono text-base font-semibold">
+                            <h2 className="font-mono text-base font-medium">
                               {selectedSpec.path}
                             </h2>
                             <Badge variant="outline">v{selectedSpec.version}</Badge>
@@ -2434,30 +2434,30 @@ export function ApiSpecManagementPage({
 
                       <TabsContent value="overview" className="space-y-4">
                         <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                            <div className="text-xs uppercase tracking-normal text-muted-foreground">
                               {t('common.projectId')}
                             </div>
                             <div className="mt-2 font-mono text-sm">{selectedSpec.project_id}</div>
                           </div>
-                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                            <div className="text-xs uppercase tracking-normal text-muted-foreground">
                               {t('apiSpecsPage.categoryId')}
                             </div>
                             <div className="mt-2 font-mono text-sm">
                               {selectedSpec.category_id ?? t('common.notSet')}
                             </div>
                           </div>
-                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                            <div className="text-xs uppercase tracking-normal text-muted-foreground">
                               {t('common.created')}
                             </div>
                             <div className="mt-2 text-sm">
                               {formatDate(selectedSpec.created_at, 'YYYY-MM-DD HH:mm')}
                             </div>
                           </div>
-                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                            <div className="text-xs uppercase tracking-normal text-muted-foreground">
                               {t('common.updated')}
                             </div>
                             <div className="mt-2 text-sm">
@@ -2466,7 +2466,7 @@ export function ApiSpecManagementPage({
                           </div>
                         </div>
 
-                        <div className="rounded-md border border-border-main bg-bg-canvas p-4">
+                        <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
                           <div className="mb-2 text-sm font-medium">{t('common.description')}</div>
                           <div className="text-sm text-muted-foreground">
                             {selectedSpec.description || t('common.noDescriptionProvided')}
@@ -2494,16 +2494,16 @@ export function ApiSpecManagementPage({
 
                       <TabsContent value="docs" className="space-y-4">
                         <div className="grid gap-3 sm:grid-cols-3">
-                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                            <div className="text-xs uppercase tracking-normal text-muted-foreground">
                               {t('common.docSource')}
                             </div>
                             <div className="mt-2 text-sm">
                               {getDocSourceLabel(t, selectedSpec.doc_source)}
                             </div>
                           </div>
-                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                            <div className="text-xs uppercase tracking-normal text-muted-foreground">
                               {t('apiSpecsPage.updatedDefault')}
                             </div>
                             <div className="mt-2 text-sm">
@@ -2512,8 +2512,8 @@ export function ApiSpecManagementPage({
                                 : t('apiSpecs.documentationNotGenerated')}
                             </div>
                           </div>
-                          <div className="rounded-md border border-border-main bg-bg-canvas p-4">
-                            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                          <div className="rounded-md border border-border-subtle bg-bg-canvas p-4">
+                            <div className="text-xs uppercase tracking-normal text-muted-foreground">
                               {t('apiSpecsPage.updatedLocalized')}
                             </div>
                             <div className="mt-2 text-sm">
@@ -2600,7 +2600,7 @@ export function ApiSpecManagementPage({
                             {specExamplesQuery.data.items.map((example: ApiSpecExample) => (
                               <div
                                 key={example.id}
-                                className="space-y-3 rounded-md border border-border-main bg-bg-canvas p-4"
+                                className="space-y-3 rounded-md border border-border-subtle bg-bg-canvas p-4"
                               >
                                 <div className="flex flex-wrap items-center gap-2">
                                   <div className="font-medium">{example.name}</div>
@@ -2688,7 +2688,7 @@ export function ApiSpecManagementPage({
                       </TabsContent>
                     </Tabs>
 
-                    <div className="rounded-md border border-border-main bg-bg-surface p-4">
+                    <div className="rounded-md border border-border-subtle bg-bg-soft p-4">
                       <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                         <FileJson2 className="h-4 w-4" />
                         {t('apiSpecsPage.connectedEndpointsTitle')}

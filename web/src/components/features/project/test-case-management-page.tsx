@@ -250,32 +250,32 @@ const getRunStatusLabel = (t: ProjectT, status?: string) => {
 const getRunStatusBadgeClassName = (status?: string) => {
   switch (normalizeRunStatus(status)) {
     case 'pass':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     case 'fail':
-      return 'border-border-main bg-block-pink text-text-main';
+      return 'border-border-subtle bg-block-pink text-text-main';
     case 'error':
-      return 'border-border-main bg-block-cream text-text-main';
+      return 'border-border-subtle bg-block-cream text-text-main';
     case 'running':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     default:
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
   }
 };
 
 const getMethodBadgeClassName = (method?: string) => {
   switch (method) {
     case 'GET':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     case 'POST':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     case 'PUT':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     case 'PATCH':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     case 'DELETE':
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
     default:
-      return 'border-border-main bg-bg-subtle text-text-main';
+      return 'border-border-subtle bg-bg-subtle text-text-main';
   }
 };
 
@@ -329,7 +329,7 @@ function RoleBadge({ role }: { role?: ProjectMemberRole }) {
   const t = useT('project');
 
   return (
-    <Badge variant="outline" className="border-border-main bg-bg-subtle text-text-main">
+    <Badge variant="outline" className="border-border-subtle bg-bg-subtle text-text-main">
       {t('roles.badge', { role: getRoleLabel(t, role) })}
     </Badge>
   );
@@ -364,14 +364,14 @@ function CodeBlock({
 }) {
   if (!value?.trim()) {
     return (
-      <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-4 text-sm text-muted-foreground">
+      <div className="rounded-md border border-dashed border-border-subtle bg-bg-soft p-4 text-sm text-muted-foreground">
         {emptyLabel}
       </div>
     );
   }
 
   return (
-    <pre className="overflow-x-auto rounded-md border border-border-main bg-bg-surface p-4 text-xs leading-6 text-text-muted">
+    <pre className="overflow-x-auto rounded-md border border-border-subtle bg-bg-soft p-4 text-xs leading-6 text-text-muted">
       <code>{value}</code>
     </pre>
   );
@@ -386,14 +386,14 @@ function MarkdownPreview({
 }) {
   if (!value?.trim()) {
     return (
-      <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-4 text-sm text-muted-foreground">
+      <div className="rounded-md border border-dashed border-border-subtle bg-bg-soft p-4 text-sm text-muted-foreground">
         {emptyLabel}
       </div>
     );
   }
 
   return (
-    <div className="markdown-content rounded-md border border-border-main bg-bg-surface p-5">
+    <div className="markdown-content rounded-md border border-border-subtle bg-bg-soft p-5">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -428,7 +428,7 @@ function MarkdownPreview({
           },
           pre: ({ children, ...props }) => (
             <pre
-              className="overflow-x-auto rounded-md border border-border-main bg-bg-canvas p-4 text-xs leading-6 text-text-muted"
+              className="overflow-x-auto rounded-md border border-border-subtle bg-bg-canvas p-4 text-xs leading-6 text-text-muted"
               {...props}
             >
               {children}
@@ -445,7 +445,7 @@ function MarkdownPreview({
           th: ({ className, ...props }) => (
             <th
               className={cn(
-                'border border-border-main bg-bg-surface px-3 py-2 text-left font-semibold',
+                'border border-border-subtle bg-bg-soft px-3 py-2 text-left font-medium',
                 className
               )}
               {...props}
@@ -453,7 +453,7 @@ function MarkdownPreview({
           ),
           td: ({ className, ...props }) => (
             <td
-              className={cn('border border-border-main px-3 py-2 align-top', className)}
+              className={cn('border border-border-subtle px-3 py-2 align-top', className)}
               {...props}
             />
           ),
@@ -496,8 +496,8 @@ function SummaryField({
     !(typeof value === 'string' && value.trim().length === 0);
 
   return (
-    <div className="space-y-1 rounded-md border border-border-main bg-bg-canvas p-3">
-      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+    <div className="space-y-1 rounded-md border border-border-subtle bg-bg-canvas p-3">
+      <div className="text-xs uppercase tracking-normal text-muted-foreground">{label}</div>
       <div className="text-sm font-medium text-foreground">
         {hasValue ? value : t('common.notSet')}
       </div>
@@ -922,7 +922,7 @@ function DuplicateTestCaseDialog({
 
         <DialogBody>
           <form id="duplicate-test-case-form" onSubmit={handleSubmit} className="space-y-4 py-1">
-            <div className="rounded-md border border-border-main bg-bg-surface p-4 text-sm text-muted-foreground">
+            <div className="rounded-md border border-border-subtle bg-bg-soft p-4 text-sm text-muted-foreground">
               {t('testCasesPage.duplicateSourceLabel')}
               {' '}
               <span className="font-medium text-foreground">
@@ -1090,7 +1090,7 @@ function CreateFromSpecDialog({
             </div>
 
             {selectedSpec ? (
-              <div className="rounded-md border border-border-main bg-bg-surface p-4 text-sm">
+              <div className="rounded-md border border-border-subtle bg-bg-soft p-4 text-sm">
                 <div className="font-medium text-foreground">{selectedSpec.method} {selectedSpec.path}</div>
                 <div className="mt-1 text-muted-foreground">
                   {selectedSpec.summary || selectedSpec.description || t('common.noSummaryProvided')}
@@ -1123,7 +1123,7 @@ function CreateFromSpecDialog({
               </div>
             </div>
 
-            <div className="rounded-md border border-border-main p-4">
+            <div className="rounded-md border border-border-subtle p-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   <Label htmlFor="from-spec-use-example" className="text-sm font-medium">
@@ -1269,7 +1269,7 @@ function RunTestCaseDialog({
 
         <DialogBody>
           <form id="run-test-case-form" onSubmit={handleSubmit} className="space-y-5 py-1">
-            <div className="rounded-md border border-border-main bg-bg-surface p-4 text-sm">
+            <div className="rounded-md border border-border-subtle bg-bg-soft p-4 text-sm">
               <div className="font-medium text-foreground">
                 {testCase?.name || t('testCasesPage.unknownTestCase')}
               </div>
@@ -1372,7 +1372,7 @@ function DeleteTestCaseDialog({
         </DialogHeader>
 
         <DialogBody>
-          <div className="rounded-md border border-border-main bg-block-pink p-4">
+          <div className="rounded-md border border-border-subtle bg-block-pink p-4">
             <div className="text-sm text-muted-foreground">
               {t('testCasesPage.deleteTargetDescription', {
                 name: testCase?.name || t('testCasesPage.deleteFallbackTarget'),
@@ -1522,7 +1522,7 @@ function RunDetailDialog({
                     run.assertions.map((assertion, index) => (
                       <div
                         key={`${assertion.type}-${index}`}
-                        className="rounded-md border border-border-main bg-bg-canvas p-4"
+                        className="rounded-md border border-border-subtle bg-bg-canvas p-4"
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <RunStatusBadge status={assertion.passed ? 'pass' : 'fail'} />
@@ -1944,7 +1944,7 @@ export function TestCaseManagementPage({
     <>
       <main className="h-full min-h-0 overflow-y-auto">
         <div className="space-y-8 p-6 pt-6">
-          <div className="rounded-lg border border-border-main bg-block-cream p-6">
+          <div className="rounded-lg border border-border-subtle bg-block-cream p-6">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="space-y-3">
                 <Button asChild variant="link" className="h-auto px-0 text-sm text-muted-foreground">
@@ -1956,7 +1956,7 @@ export function TestCaseManagementPage({
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <h1 className="text-3xl font-bold tracking-tight">{t('testCasesPage.title')}</h1>
+                    <h1 className="text-3xl font-medium tracking-normal">{t('testCasesPage.title')}</h1>
                     <FlaskConical className="h-6 w-6 text-text-main" />
                   </div>
                   <p className="max-w-3xl text-sm text-text-muted">
@@ -2076,8 +2076,8 @@ export function TestCaseManagementPage({
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <Card className="border-border-main bg-bg-canvas">
-            <CardHeader className="border-b border-border-main bg-bg-canvas">
+          <Card className="border-border-subtle bg-bg-canvas">
+            <CardHeader className="border-b border-border-subtle bg-bg-canvas">
               <CardTitle>{t('testCasesPage.listTitle')}</CardTitle>
               <CardDescription>
                 {t('testCasesPage.listDescription', {
@@ -2148,11 +2148,11 @@ export function TestCaseManagementPage({
                   </AlertDescription>
                 </Alert>
               ) : testCases.length === 0 ? (
-                <div className="rounded-md border border-dashed border-border-main bg-bg-surface p-8 text-center">
+                <div className="rounded-md border border-dashed border-border-subtle bg-bg-soft p-8 text-center">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
                     <FlaskConical className="h-6 w-6" />
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold">{t('testCasesPage.emptyTitle')}</h3>
+                  <h3 className="mt-4 text-lg font-medium">{t('testCasesPage.emptyTitle')}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {deferredKeyword || apiSpecFilter !== 'all' || envFilter !== 'all'
                       ? t('testCasesPage.emptyFilteredDescription')
@@ -2173,7 +2173,7 @@ export function TestCaseManagementPage({
                 </div>
               ) : (
                 <>
-                  <div className="overflow-hidden rounded-md border border-border-main">
+                  <div className="overflow-hidden rounded-md border border-border-subtle">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -2194,7 +2194,7 @@ export function TestCaseManagementPage({
                             <TableRow
                               key={testCase.id}
                               className={cn(
-                                'cursor-pointer transition-colors hover:bg-bg-surface',
+                                'cursor-pointer transition-colors hover:bg-bg-soft',
                                 isActive && 'bg-bg-subtle'
                               )}
                               onClick={() => selectTestCase(testCase.id)}
@@ -2315,8 +2315,8 @@ export function TestCaseManagementPage({
             </CardContent>
           </Card>
 
-          <Card className="border-border-main bg-bg-canvas">
-            <CardHeader className="border-b border-border-main bg-bg-canvas">
+          <Card className="border-border-subtle bg-bg-canvas">
+            <CardHeader className="border-b border-border-subtle bg-bg-canvas">
               <CardTitle>{t('testCasesPage.detailTitle')}</CardTitle>
               <CardDescription>
                 {t('testCasesPage.detailDescription', {
@@ -2341,11 +2341,11 @@ export function TestCaseManagementPage({
                 </Alert>
               ) : (
                 <>
-                  <div className="rounded-md border border-border-main bg-bg-surface p-5">
+                  <div className="rounded-md border border-border-subtle bg-bg-soft p-5">
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold">{activeTestCase.name}</h2>
+                          <h2 className="text-xl font-medium">{activeTestCase.name}</h2>
                           <MethodBadge method={activeTestCase.method} />
                           {effectiveLatestRunResult ? <RunStatusBadge status={effectiveLatestRunResult.status} /> : null}
                         </div>
@@ -2483,10 +2483,10 @@ export function TestCaseManagementPage({
 
                     <TabsContent value="runs" className="space-y-4">
                       {effectiveLatestRunResult ? (
-                        <div className="rounded-md border border-border-main bg-bg-surface p-4">
+                        <div className="rounded-md border border-border-subtle bg-bg-soft p-4">
                           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div className="space-y-1">
-                              <div className="text-sm font-semibold">{t('testCasesPage.latestAdHocRun')}</div>
+                              <div className="text-sm font-medium">{t('testCasesPage.latestAdHocRun')}</div>
                               <div className="text-sm text-muted-foreground">
                                 {t('testCasesPage.latestAdHocRunDescription')}
                               </div>
@@ -2573,7 +2573,7 @@ export function TestCaseManagementPage({
                         </Alert>
                       ) : (
                         <>
-                          <div className="overflow-hidden rounded-md border border-border-main">
+                          <div className="overflow-hidden rounded-md border border-border-subtle">
                             <Table>
                               <TableHeader>
                                 <TableRow>

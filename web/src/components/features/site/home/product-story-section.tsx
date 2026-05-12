@@ -33,7 +33,7 @@ export function ProductStorySection({ content, reverse = false }: ProductStorySe
   const inverse = content.blockTone === 'navy';
 
   return (
-    <section id={content.id} className="bg-bg-canvas py-12 sm:py-16">
+    <section id={content.id} className="bg-bg-canvas py-12 sm:py-16 lg:py-[4.5rem]">
       <div className="container">
         <div className={cn('figma-color-block flex flex-col gap-10 lg:gap-12', blockToneClass[content.blockTone])}>
           <div className={cn('max-w-3xl', reverse ? 'xl:self-end' : '')}>
@@ -52,14 +52,14 @@ export function ProductStorySection({ content, reverse = false }: ProductStorySe
                 <div
                   key={point}
                   className={cn(
-                    'flex items-start gap-3 rounded-md border px-4 py-3.5',
-                    inverse ? 'border-text-inverse/20 bg-text-inverse/10' : 'border-border-main bg-bg-canvas'
+                    'flex items-start gap-3 rounded-xl border px-4 py-3.5',
+                    inverse ? 'border-text-inverse/24 bg-text-inverse/12' : 'border-border-subtle bg-bg-canvas'
                   )}
                 >
                   <span
                     className={cn(
                       'mt-0.5 flex size-6 items-center justify-center rounded-full',
-                      inverse ? 'bg-text-inverse/15 text-text-inverse' : 'bg-primary text-primary-foreground'
+                      inverse ? 'bg-text-inverse/18 text-text-inverse' : 'bg-primary text-primary-foreground'
                     )}
                   >
                     <Check className="size-3.5" />
@@ -76,7 +76,7 @@ export function ProductStorySection({ content, reverse = false }: ProductStorySe
                 asChild
                 size="xl"
                 variant={inverse ? 'secondary' : 'default'}
-                className={inverse ? 'bg-bg-canvas text-text-main hover:bg-bg-canvas/90' : ''}
+                className={inverse ? 'bg-bg-canvas text-text-main hover:bg-bg-canvas/90' : 'bg-primary text-primary-foreground hover:bg-primary/95'}
               >
                 <Link href={content.ctaHref} className="inline-flex items-center gap-2 whitespace-nowrap">
                   <span>{content.cta}</span>

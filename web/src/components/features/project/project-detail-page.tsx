@@ -376,11 +376,11 @@ function ProjectModuleCardTile({
   const Icon = module.icon;
 
   return (
-    <Card className="border-border-main bg-bg-canvas shadow-none transition-colors hover:bg-bg-subtle">
+    <Card className="rounded-2xl border-border-subtle bg-bg-canvas transition-colors hover:bg-bg-subtle">
       <CardContent className="flex h-full flex-col p-5">
         <div className="flex items-start justify-between gap-3">
           <div
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md ${getProjectHomeStatusAccentClassName(module.status)}`}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${getProjectHomeStatusAccentClassName(module.status)}`}
           >
             <Icon className="h-5 w-5" />
           </div>
@@ -388,16 +388,16 @@ function ProjectModuleCardTile({
         </div>
 
         <div className="mt-5">
-          <p className="text-3xl font-semibold tracking-tight text-text-main">
+          <p className="text-3xl font-medium tracking-normal text-text-main">
             {formatModuleMetricValue(module.metricValue, isMetricLoading)}
           </p>
-          <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+          <p className="mt-1 text-xs font-medium uppercase tracking-normal text-text-muted">
             {module.metricLabel}
           </p>
         </div>
 
         <div className="mt-4 space-y-2">
-          <h3 className="text-base font-semibold tracking-tight text-text-main">{module.title}</h3>
+          <h3 className="text-base font-medium tracking-normal text-text-main">{module.title}</h3>
           <p className="text-sm leading-6 text-text-muted">{module.description}</p>
         </div>
 
@@ -590,7 +590,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
     <>
       <main className="h-full min-h-0 overflow-y-auto">
         <div className="space-y-6 p-4 md:p-6">
-          <section className="rounded-lg border border-border-main bg-block-cream p-5 md:p-6">
+          <section className="rounded-[1.75rem] border border-border-subtle bg-block-lime p-5 md:p-6">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
               <div className="min-w-0 space-y-4">
                 <Button asChild variant="link" className="h-auto px-0 text-sm text-text-muted">
@@ -602,7 +602,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
 
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                    <h1 className="text-2xl font-medium tracking-normal md:text-3xl">
                       {project?.name || `Project #${projectId}`}
                     </h1>
                     <FolderKanban className="h-6 w-6 text-text-main" />
@@ -643,7 +643,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
                     variant="outline"
                     isIcon
                     aria-label={t('projectForm.editTitle')}
-                    className="h-10 w-10 rounded-lg"
+                    className="h-10 w-10 rounded-full"
                     onClick={openEditDialog}
                     disabled={!project}
                   >
@@ -654,7 +654,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
                     ariaLabel={t('projectDetail.openProjectActions')}
                     triggerVariant="ghost"
                     triggerSize="default"
-                    triggerClassName="h-10 w-10 rounded-full border border-border-main bg-bg-canvas"
+                    triggerClassName="h-10 w-10 rounded-full border border-border-strong bg-bg-canvas"
                   />
                 </div>
               ) : null}
@@ -670,17 +670,17 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
 
           {shouldShowOverview ? (
             <>
-              <section className="rounded-lg border border-border-main bg-block-lilac p-5 md:p-6">
+              <section className="rounded-[1.75rem] border border-border-subtle bg-block-lilac p-5 md:p-6">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div className="space-y-3">
                     <Badge
                       variant="outline"
-                      className="border-border-main bg-bg-canvas text-text-main"
+                      className="border-border-subtle bg-bg-canvas text-text-main"
                     >
                       {t('projectDetail.nextStep')}
                     </Badge>
                     <div>
-                      <h2 className="text-xl font-semibold tracking-tight">{nextAction.title}</h2>
+                      <h2 className="text-xl font-medium tracking-normal">{nextAction.title}</h2>
                       <p className="mt-2 max-w-3xl text-sm leading-6 text-text-muted">
                         {nextAction.description}
                       </p>
@@ -702,7 +702,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-md border border-border-main bg-bg-canvas p-4">
+                <div className="mt-5 rounded-2xl border border-border-subtle bg-bg-canvas p-4">
                   <p className="text-sm font-medium text-text-main">
                     {t('projectDetail.whyThisAction')}
                   </p>
@@ -710,10 +710,10 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
                 </div>
               </section>
 
-              <section className="rounded-lg border border-border-main bg-bg-canvas p-5">
+              <section className="rounded-[1.75rem] border border-border-subtle bg-bg-canvas p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold tracking-tight">
+                    <h2 className="text-lg font-medium tracking-normal">
                       {t('projectDetail.workspaceModules')}
                     </h2>
                     <p className="mt-1 max-w-3xl text-sm text-text-muted">
@@ -722,7 +722,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {shouldShowWorkflowProgress ? (
-                      <div className="rounded-full border border-border-main bg-bg-subtle px-3 py-1 text-sm font-medium text-text-main">
+                      <div className="rounded-full border border-border-subtle bg-highlight-subtle px-3 py-1 text-sm font-medium text-text-main">
                         {t('projectDetail.projectFlowProgress', {
                           percent: workflowCompletionPercent,
                           completed: completedWorkflowSteps,
@@ -777,22 +777,22 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
           ) : null}
 
           <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-            <Card className="border-border-main bg-bg-canvas shadow-none">
+            <Card className="rounded-2xl border-border-subtle bg-bg-canvas">
               <CardHeader>
                 <CardTitle>{t('projectDetail.projectDetails')}</CardTitle>
                 <CardDescription>{t('projectDetail.projectDetailsDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 md:grid-cols-3">
-                <div className="rounded-md border border-border-main bg-bg-surface p-4">
-                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+                <div className="rounded-2xl border border-border-subtle bg-bg-soft p-4">
+                  <p className="text-xs font-medium uppercase tracking-normal text-text-muted">
                     {t('common.projectId')}
                   </p>
                   <p className="mt-2 font-mono text-sm text-text-main">
                     {project?.id ?? projectId}
                   </p>
                 </div>
-                <div className="rounded-md border border-border-main bg-bg-surface p-4">
-                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+                <div className="rounded-2xl border border-border-subtle bg-bg-soft p-4">
+                  <p className="text-xs font-medium uppercase tracking-normal text-text-muted">
                     {t('projectDetail.platform')}
                   </p>
                   <p className="mt-2 text-sm text-text-main">
@@ -801,8 +801,8 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
                       : i18n.common('loading')}
                   </p>
                 </div>
-                <div className="rounded-md border border-border-main bg-bg-surface p-4">
-                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+                <div className="rounded-2xl border border-border-subtle bg-bg-soft p-4">
+                  <p className="text-xs font-medium uppercase tracking-normal text-text-muted">
                     {t('common.created')}
                   </p>
                   <p className="mt-2 text-sm text-text-main">
@@ -814,7 +814,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
               </CardContent>
             </Card>
 
-            <Card id="cli-sync" className="border-border-main bg-bg-canvas shadow-none">
+            <Card id="cli-sync" className="rounded-2xl border-border-subtle bg-bg-canvas">
               <CardHeader>
                 <CardTitle>{t('projectDetail.cliSync')}</CardTitle>
                 <CardDescription>{t('projectDetail.cliSyncDescription')}</CardDescription>
@@ -822,16 +822,16 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
 
               <CardContent className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-md border border-border-main bg-bg-surface p-4">
-                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+                  <div className="rounded-2xl border border-border-subtle bg-bg-soft p-4">
+                    <p className="text-xs font-medium uppercase tracking-normal text-text-muted">
                       {t('projectDetail.platformUrl')}
                     </p>
                     <p className="mt-2 break-all font-mono text-xs text-text-main">
                       {cliPlatformUrl}
                     </p>
                   </div>
-                  <div className="rounded-md border border-border-main bg-bg-surface p-4">
-                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+                  <div className="rounded-2xl border border-border-subtle bg-bg-soft p-4">
+                    <p className="text-xs font-medium uppercase tracking-normal text-text-muted">
                       {t('projectDetail.projectScope')}
                     </p>
                     <p className="mt-2 font-mono text-sm text-text-main">
@@ -870,9 +870,9 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
                     <ShieldCheck className="h-4 w-4" />
                     <AlertTitle>{t('projectDetail.copyTokenTitle')}</AlertTitle>
                     <AlertDescription className="space-y-4">
-                      <div className="rounded-md border border-border-main bg-bg-canvas p-4">
+                      <div className="rounded-2xl border border-border-subtle bg-bg-canvas p-4">
                         <div className="mb-2 flex items-center justify-between gap-3">
-                          <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
+                          <p className="text-xs font-medium uppercase tracking-normal text-text-muted">
                             {t('projectDetail.cliToken')}
                           </p>
                           <Button
@@ -893,7 +893,7 @@ export function ProjectDetailPage({ projectId }: { projectId: number | string })
                         <code className="block break-all text-xs">{generatedCliToken.token}</code>
                       </div>
 
-                      <pre className="overflow-x-auto whitespace-pre-wrap rounded-md border border-border-main bg-bg-canvas p-4 text-xs">
+                      <pre className="overflow-x-auto whitespace-pre-wrap rounded-2xl border border-border-subtle bg-bg-canvas p-4 text-xs">
                         {cliConfigCommand}
                       </pre>
                     </AlertDescription>

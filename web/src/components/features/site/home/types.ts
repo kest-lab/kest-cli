@@ -106,6 +106,38 @@ export interface MarketingStatsContent {
   items: MarketingStatItem[];
 }
 
+export interface MarketingPricingTier {
+  name: string;
+  description: string;
+  price: string;
+  cadence: string;
+  badge?: string;
+  cta: string;
+  features: string[];
+  featured?: boolean;
+  enterprise?: boolean;
+}
+
+export interface MarketingPricingFeatureRow {
+  feature: string;
+  free: string;
+  starter: string;
+  business: string;
+  enterprise: string;
+}
+
+export interface MarketingPricingContent {
+  eyebrow: string;
+  title: string;
+  description: string;
+  monthlyLabel: string;
+  annualLabel: string;
+  discountLabel: string;
+  tiers: MarketingPricingTier[];
+  comparisonTitle: string;
+  comparisonRows: MarketingPricingFeatureRow[];
+}
+
 export interface MarketingFinalCtaContent {
   eyebrow: string;
   title: string;
@@ -131,6 +163,9 @@ export interface MarketingFooterContent {
   columns: MarketingFooterColumn[];
   socialsTitle: string;
   socials: MarketingFooterLink[];
+  appStoreLabel: string;
+  googlePlayLabel: string;
+  reviewBadgeLabel: string;
 }
 
 export interface MarketingChromeContent {
@@ -138,6 +173,7 @@ export interface MarketingChromeContent {
   navItems: MarketingNavItem[];
   loginLabel: string;
   signUpLabel: string;
+  contactSalesLabel: string;
   docsSoonLabel: string;
   footer: MarketingFooterContent;
 }
@@ -148,6 +184,7 @@ export interface MarketingPageContent {
   logos: MarketingLogoItem[];
   features: MarketingFeatureSectionContent;
   sections: MarketingStorySectionContent[];
+  pricing: MarketingPricingContent;
   stats: MarketingStatsContent;
   finalCta: MarketingFinalCtaContent;
 }

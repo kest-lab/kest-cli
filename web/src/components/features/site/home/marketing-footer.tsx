@@ -39,7 +39,7 @@ function FooterLink({ label, href, placeholder = false }: { label: string; href?
         href={href}
         target={external ? '_blank' : undefined}
         rel={external ? 'noreferrer' : undefined}
-        className="text-sm text-text-main transition-colors duration-200 hover:text-text-subtle"
+        className="text-sm text-text-inverse/70 transition-colors duration-200 hover:text-text-inverse"
       >
         {label}
       </Link>
@@ -47,25 +47,25 @@ function FooterLink({ label, href, placeholder = false }: { label: string; href?
   }
 
   return (
-    <span className="inline-flex items-center gap-2 text-sm text-text-muted">
+    <span className="inline-flex items-center gap-2 text-sm text-text-inverse/45">
       {label}
-      {placeholder ? <span className="size-1.5 rounded-full bg-text-muted/60" /> : null}
+      {placeholder ? <span className="size-1.5 rounded-full bg-text-inverse/45" /> : null}
     </span>
   );
 }
 
 export function MarketingFooter({ brandName, content }: MarketingFooterProps) {
   return (
-    <footer className="border-t border-border-main bg-bg-canvas">
+    <footer className="bg-bg-inverse text-text-inverse">
       <div className="container py-16 sm:py-20">
         <div className="grid gap-10 lg:grid-cols-[1.05fr_1.95fr]">
           <div className="max-w-sm">
             <div>
-              <Logo className="h-9 w-[111px] text-black" role="img" aria-label={brandName} />
-              <p className="mt-4 text-base leading-7 text-text-subtle">{content.tagline}</p>
+              <Logo className="h-9 w-[111px] text-white" role="img" aria-label={brandName} />
+              <p className="mt-4 text-base leading-7 text-text-inverse/70">{content.tagline}</p>
             </div>
             <div className="mt-6">
-              <p className="figma-caption text-text-muted">{content.socialsTitle}</p>
+              <p className="figma-caption text-text-inverse/60">{content.socialsTitle}</p>
               <div className="mt-3 flex flex-wrap gap-3">
                 {content.socials.map((social) => {
                   const Icon = socialIcons[social.label as keyof typeof socialIcons];
@@ -73,7 +73,7 @@ export function MarketingFooter({ brandName, content }: MarketingFooterProps) {
                   return (
                     <span
                       key={social.label}
-                      className="inline-flex items-center gap-2 rounded-pill border border-border-main bg-bg-canvas px-3 py-1.5 text-sm text-text-main"
+                      className="inline-flex items-center gap-2 rounded-full border border-text-inverse/25 bg-transparent px-3 py-1.5 text-sm text-text-inverse/80"
                     >
                       {Icon ? <Icon className="size-4 shrink-0" /> : null}
                       <span>{social.label}</span>
@@ -82,12 +82,23 @@ export function MarketingFooter({ brandName, content }: MarketingFooterProps) {
                 })}
               </div>
             </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <span className="rounded-md bg-bg-canvas px-4 py-2 text-sm font-medium text-text-main">
+                {content.appStoreLabel}
+              </span>
+              <span className="rounded-md bg-bg-canvas px-4 py-2 text-sm font-medium text-text-main">
+                {content.googlePlayLabel}
+              </span>
+              <span className="rounded-md border border-text-inverse/20 px-4 py-2 text-sm text-text-inverse/80">
+                {content.reviewBadgeLabel}
+              </span>
+            </div>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-6">
             {content.columns.map((column) => (
               <div key={column.title}>
-                <p className="figma-caption text-text-muted">{column.title}</p>
+                <p className="figma-caption text-text-inverse/60">{column.title}</p>
                 <div className="mt-4 space-y-3">
                   {column.links.map((link) => (
                     <FooterLink
@@ -103,7 +114,7 @@ export function MarketingFooter({ brandName, content }: MarketingFooterProps) {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-border-main pt-6 text-sm text-text-muted sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-12 flex flex-col gap-3 border-t border-text-inverse/20 pt-6 text-sm text-text-inverse/60 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} {brandName}.</p>
           <p>{content.tagline}</p>
         </div>

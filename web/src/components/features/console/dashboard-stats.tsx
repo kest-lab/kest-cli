@@ -27,23 +27,23 @@ export function StatCard({
   className,
 }: StatCardProps) {
   const variantStyles = {
-    default: "bg-bg-canvas border-border-main",
-    primary: "bg-bg-canvas border-border-main",
-    success: "bg-bg-canvas border-border-main",
-    warning: "bg-bg-canvas border-border-main",
+    default: "bg-bg-canvas border-border-subtle",
+    primary: "bg-block-lime border-border-subtle",
+    success: "bg-block-mint border-border-subtle",
+    warning: "bg-block-cream border-border-subtle",
   }
 
   const iconStyles = {
-    default: "bg-bg-subtle text-text-muted",
+    default: "bg-bg-subtle text-text-main",
     primary: "bg-primary text-primary-foreground",
-    success: "bg-bg-subtle text-success",
-    warning: "bg-bg-subtle text-warning",
+    success: "bg-bg-canvas text-success",
+    warning: "bg-bg-canvas text-warning",
   }
 
   return (
     <div
       className={cn(
-        "rounded-md border p-6 transition-colors",
+        "rounded-xl border p-6 transition-colors",
         variantStyles[variant],
         className
       )}
@@ -52,7 +52,7 @@ export function StatCard({
         <div className="space-y-2">
           <p className="text-sm font-medium text-text-muted">{title}</p>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold tracking-tight text-text-main">
+            <span className="text-3xl font-medium tracking-normal text-text-main">
               {value}
             </span>
             {trend && (
@@ -92,7 +92,7 @@ export function StatCard({
 // Skeleton for loading states
 export function StatCardSkeleton() {
   return (
-    <div className="rounded-md border border-border-main bg-bg-canvas p-6">
+    <div className="rounded-xl border border-border-subtle bg-bg-canvas p-6">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <div className="h-4 w-24 animate-pulse rounded bg-muted" />

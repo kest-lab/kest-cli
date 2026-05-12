@@ -52,11 +52,11 @@ function TooltipTrigger({
 }
 
 const tooltipVariants = cva(
-  "z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-md border px-4 py-2 text-xs font-medium shadow-soft transition-all duration-500 " +
-  "data-[state=delayed-open]:data-[side=top]:animate-[float-in-top_0.4s_ease-out] " +
-  "data-[state=delayed-open]:data-[side=bottom]:animate-[float-in-bottom_0.4s_ease-out] " +
-  "data-[state=delayed-open]:data-[side=left]:animate-[float-in-left_0.4s_ease-out] " +
-  "data-[state=delayed-open]:data-[side=right]:animate-[float-in-right_0.4s_ease-out] " +
+  "z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-md border px-4 py-2 text-xs font-medium shadow-modal transition-all duration-200 " +
+  "data-[state=delayed-open]:data-[side=top]:animate-[float-in-top_0.2s_ease-out] " +
+  "data-[state=delayed-open]:data-[side=bottom]:animate-[float-in-bottom_0.2s_ease-out] " +
+  "data-[state=delayed-open]:data-[side=left]:animate-[float-in-left_0.2s_ease-out] " +
+  "data-[state=delayed-open]:data-[side=right]:animate-[float-in-right_0.2s_ease-out] " +
   "data-[state=closed]:data-[side=top]:animate-[float-out-top_0.2s_ease-in] " +
   "data-[state=closed]:data-[side=bottom]:animate-[float-out-bottom_0.2s_ease-in] " +
   "data-[state=closed]:data-[side=left]:animate-[float-out-left_0.2s_ease-in] " +
