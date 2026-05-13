@@ -19,7 +19,7 @@ import {
   PROJECT_WORKSPACE_MODULES,
   buildProjectWorkspaceRoute,
 } from '@/components/features/project/project-navigation';
-import { buildProjectCategoriesRoute, ROUTES } from '@/constants/routes';
+import { buildProjectApiSpecsRoute, ROUTES } from '@/constants/routes';
 import { useLocale } from '@/hooks/use-locale';
 import { useProjects } from '@/hooks/use-projects';
 import { useT } from '@/i18n/client';
@@ -215,7 +215,7 @@ export function ProjectOnboardingShell() {
     subtitle: project.slug,
     icon: <Search className="h-4 w-4" />,
     onSelect: () => {
-      router.push(buildProjectCategoriesRoute(project.id));
+      router.push(buildProjectApiSpecsRoute(project.id));
       setIsCommandOpen(false);
     },
   }));

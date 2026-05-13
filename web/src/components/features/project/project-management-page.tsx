@@ -15,7 +15,6 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
-  Tags,
   Trash2,
   Users,
 } from 'lucide-react';
@@ -43,7 +42,6 @@ import {
 import { buildApiPath } from '@/config/api';
 import {
   buildProjectApiSpecsRoute,
-  buildProjectCategoriesRoute,
   buildProjectEnvironmentsRoute,
   buildProjectMembersRoute,
   buildProjectTestCasesRoute,
@@ -315,7 +313,7 @@ export function ProjectManagementPage() {
                       <TableRow key={project.id} className="transition-colors hover:bg-bg-subtle">
                         <TableCell className="min-w-[220px]">
                           <Link
-                            href={buildProjectCategoriesRoute(project.id)}
+                            href={buildProjectApiSpecsRoute(project.id)}
                             className="block rounded-xl px-2 py-1 transition-colors hover:bg-bg-subtle"
                           >
                             <div className="space-y-1">
@@ -345,7 +343,7 @@ export function ProjectManagementPage() {
                                 key: `overview-${project.id}`,
                                 label: t('projectsPage.overview'),
                                 icon: BarChart3,
-                                href: buildProjectCategoriesRoute(project.id),
+                                href: buildProjectApiSpecsRoute(project.id),
                               },
                               {
                                 key: `api-specs-${project.id}`,
@@ -358,12 +356,6 @@ export function ProjectManagementPage() {
                                 label: t('modules.environments.label'),
                                 icon: Globe,
                                 href: buildProjectEnvironmentsRoute(project.id),
-                              },
-                              {
-                                key: `categories-${project.id}`,
-                                label: t('modules.categories.label'),
-                                icon: Tags,
-                                href: buildProjectCategoriesRoute(project.id),
                               },
                               {
                                 key: `members-${project.id}`,

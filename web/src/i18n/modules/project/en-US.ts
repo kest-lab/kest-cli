@@ -255,6 +255,9 @@ const messages: ProjectMessages = {
     createDialogDescription:
       'Add a new API spec directly from the workspace sidebar without leaving the current layout.',
     selectCategory: 'Select category',
+    uncategorized: 'Uncategorized',
+    sidebarSummary: '{categories} categories · {specs} specs',
+    addSpecToCategory: 'Add spec to {category}',
     publicSpec: 'Public spec',
     publicSpecDescription: 'Control whether this spec is exposed as a public-facing definition.',
     shortSummaryPlaceholder: 'Short summary of the endpoint',

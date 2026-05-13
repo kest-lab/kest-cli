@@ -79,6 +79,7 @@ import {
   findProjectCategory,
   flattenProjectCategories,
 } from '@/components/features/project/category-helpers';
+import { CategoryFormDialog } from '@/components/features/project/category-shared';
 import { ProjectFlowManagementPage } from '@/components/features/project/flow-management-page';
 import { getProjectModuleCopy } from '@/components/features/project/project-i18n';
 import {
@@ -117,7 +118,11 @@ import {
   useRefineApiSpecAIDraft,
   useUpdateApiSpec,
 } from '@/hooks/use-api-specs';
-import { useProjectCategories, useProjectCategory } from '@/hooks/use-categories';
+import {
+  useCreateCategory,
+  useProjectCategories,
+  useProjectCategory,
+} from '@/hooks/use-categories';
 import { useProjectMemberRole } from '@/hooks/use-members';
 import {
   useCreateEnvironment,
@@ -139,6 +144,7 @@ import type {
   HttpMethod,
   UpdateApiSpecRequest,
 } from '@/types/api-spec';
+import type { CreateCategoryRequest, ProjectCategory } from '@/types/category';
 import type {
   CreateEnvironmentRequest,
   DuplicateEnvironmentRequest,
@@ -152,6 +158,7 @@ import { cn, formatDate } from '@/utils';
 
 const MAX_MODULE_ITEMS = 500;
 const EMPTY_SPECS: ApiSpec[] = [];
+const EMPTY_CATEGORIES: ProjectCategory[] = [];
 const EMPTY_ENVIRONMENTS: ProjectEnvironment[] = [];
 const EMPTY_HISTORIES: ProjectHistory[] = [];
 const SPEC_METHOD_OPTIONS: HttpMethod[] = [
@@ -164,6 +171,14 @@ const SPEC_METHOD_OPTIONS: HttpMethod[] = [
   'OPTIONS',
 ];
 const WRITE_ROLES = PROJECT_MEMBER_WRITE_ROLES;
+
+interface ApiSpecSidebarGroup {
+  key: string;
+  label: string;
+  depth: number;
+  categoryId?: string;
+  specs: ApiSpec[];
+}
 
 const buildModuleHref = (
   projectId: number | string,
@@ -866,7 +881,9 @@ function ApiSpecsWorkspaceSection({
   const t = useT('project');
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [createSpecCategoryId, setCreateSpecCategoryId] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCategoryCreateOpen, setIsCategoryCreateOpen] = useState(false);
   const [isAICreateOpen, setIsAICreateOpen] = useState(autoOpenAICreate ?? false);
   const [editingSpecId, setEditingSpecId] = useState<string | number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ApiSpec | null>(null);
@@ -897,6 +914,7 @@ function ApiSpecsWorkspaceSection({
   const editingSpecQuery = useApiSpec(projectId, editingSpecId ?? undefined);
   const memberRoleQuery = useProjectMemberRole(projectId);
   const categoriesQuery = useProjectApiCategories(projectId);
+  const createCategoryMutation = useCreateCategory(projectId);
   const createSpecMutation = useCreateApiSpec(projectId);
   const updateSpecMutation = useUpdateApiSpec(projectId);
   const createAIDraftStream = useCreateApiSpecAIDraftStream(projectId);
@@ -911,9 +929,12 @@ function ApiSpecsWorkspaceSection({
   const createExampleMutation = useCreateApiExample(projectId);
 
   const specs = specsQuery.data?.items ?? EMPTY_SPECS;
-  const categoryOptions = useMemo(
-    () => buildCategoryOptions(categoriesQuery.data?.items),
-    [categoriesQuery.data?.items]
+  const categories = categoriesQuery.data?.items ?? EMPTY_CATEGORIES;
+  const flatCategories = useMemo(() => flattenProjectCategories(categories), [categories]);
+  const categoryOptions = useMemo(() => buildCategoryOptions(categories), [categories]);
+  const categoryNameById = useMemo(
+    () => new Map(flatCategories.map(category => [String(category.id), category.name])),
+    [flatCategories]
   );
   const filteredSpecs = useMemo(() => {
     const normalizedQuery = deferredSearch.trim().toLowerCase();
@@ -923,11 +944,55 @@ function ApiSpecsWorkspaceSection({
     }
 
     return specs.filter(spec =>
-      [spec.method, spec.path, spec.summary, spec.description, spec.version]
-        .filter(Boolean)
+      [
+        spec.method,
+        spec.path,
+        spec.summary,
+        spec.description,
+        spec.version,
+        spec.category_id ? categoryNameById.get(String(spec.category_id)) : undefined,
+      ]
+        .filter((value): value is string => Boolean(value))
         .some(value => value.toLowerCase().includes(normalizedQuery))
     );
-  }, [deferredSearch, specs]);
+  }, [categoryNameById, deferredSearch, specs]);
+  const sidebarGroups = useMemo<ApiSpecSidebarGroup[]>(() => {
+    const specsByCategory = new Map<string, ApiSpec[]>();
+    const uncategorizedSpecs: ApiSpec[] = [];
+
+    filteredSpecs.forEach(spec => {
+      if (!spec.category_id) {
+        uncategorizedSpecs.push(spec);
+        return;
+      }
+
+      const categoryId = String(spec.category_id);
+      const categorySpecs = specsByCategory.get(categoryId) ?? [];
+      categorySpecs.push(spec);
+      specsByCategory.set(categoryId, categorySpecs);
+    });
+
+    const groups: ApiSpecSidebarGroup[] = flatCategories
+      .map(category => ({
+        key: `category-${category.id}`,
+        label: category.name,
+        depth: category.depth,
+        categoryId: String(category.id),
+        specs: specsByCategory.get(String(category.id)) ?? [],
+      }))
+      .filter(group => group.specs.length > 0 || !deferredSearch.trim());
+
+    if (uncategorizedSpecs.length > 0 || !deferredSearch.trim()) {
+      groups.push({
+        key: 'uncategorized',
+        label: t('apiSpecs.uncategorized'),
+        depth: 0,
+        specs: uncategorizedSpecs,
+      });
+    }
+
+    return groups;
+  }, [deferredSearch, filteredSpecs, flatCategories, t]);
 
   const selectedSpecFromList =
     effectiveSelectedItemId === undefined || effectiveSelectedItemId === null
@@ -985,12 +1050,28 @@ function ApiSpecsWorkspaceSection({
     try {
       const createdSpec = await createSpecMutation.mutateAsync(payload);
       setIsCreateOpen(false);
+      setCreateSpecCategoryId('');
       setSearchQuery('');
       await specsQuery.refetch();
       router.replace(buildModuleHref(projectId, 'api-specs', createdSpec.id));
     } catch {
       // Global HTTP error handling already surfaces failure feedback.
     }
+  };
+
+  const handleCreateCategory = async (payload: CreateCategoryRequest) => {
+    try {
+      await createCategoryMutation.mutateAsync(payload);
+      setIsCategoryCreateOpen(false);
+      await categoriesQuery.refetch();
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  const openCreateSpecDialog = (categoryId = '') => {
+    setCreateSpecCategoryId(categoryId);
+    setIsCreateOpen(true);
   };
 
   const openEditDialog = (specId: string | number) => {
@@ -1313,11 +1394,18 @@ function ApiSpecsWorkspaceSection({
       label: t('apiSpecs.addSpec'),
       icon: Plus,
       disabled: !canWrite,
-      onSelect: () => setIsCreateOpen(true),
+      onSelect: () => openCreateSpecDialog(),
+    },
+    {
+      key: 'api-specs-create-category',
+      label: t('categoriesPage.createCategory'),
+      icon: Tags,
+      disabled: !canWrite,
+      onSelect: () => setIsCategoryCreateOpen(true),
     },
     {
       key: 'api-specs-categories',
-      label: t('categories.title'),
+      label: t('categories.manageCategories'),
       icon: Tags,
       href: buildProjectCategoriesRoute(projectId),
       separatorBefore: true,
@@ -1347,7 +1435,7 @@ function ApiSpecsWorkspaceSection({
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
             searchPlaceholder={t('apiSpecs.filterPlaceholder')}
-            count={filteredSpecs.length}
+            count={sidebarGroups.length}
             loading={specsQuery.isLoading}
             error={specsQuery.error}
             emptyState={
@@ -1357,67 +1445,50 @@ function ApiSpecsWorkspaceSection({
                 description={t('apiSpecs.emptyDescription')}
               />
             }
+            headerActions={
+              <div className="w-full space-y-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="outline"
+                    className="h-7 flex-1 rounded-md px-2 text-xs"
+                    onClick={() => setIsCategoryCreateOpen(true)}
+                    disabled={!canWrite}
+                  >
+                    <Tags className="h-3.5 w-3.5" />
+                    {t('categoriesPage.createCategory')}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="xs"
+                    className="h-7 flex-1 rounded-md px-2 text-xs"
+                    onClick={() => openCreateSpecDialog()}
+                    disabled={!canWrite}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {t('apiSpecs.addSpec')}
+                  </Button>
+                </div>
+                <div className="truncate text-[11px] leading-4 text-text-muted">
+                  {t('apiSpecs.sidebarSummary', {
+                    categories: flatCategories.length,
+                    specs: filteredSpecs.length,
+                  })}
+                </div>
+              </div>
+            }
           >
-            {filteredSpecs.map(spec => (
-              <ResourceListItem
-                key={spec.id}
-                href={buildModuleHref(projectId, 'api-specs', spec.id)}
-                active={spec.id === selectedSpec?.id}
-                title={`${spec.method} ${spec.path}`}
-                description={spec.summary || spec.description || t('common.noSummaryProvided')}
-                meta={
-                  <>
-                    <Badge variant="outline">{spec.version}</Badge>
-                    <span>
-                      {t('common.examples')}: {spec.examples?.length ?? 0}
-                    </span>
-                  </>
-                }
-                actionsMenu={
-                  <ActionMenu
-                    items={[
-                      {
-                        key: `spec-open-${spec.id}`,
-                        label: t('common.open'),
-                        href: buildModuleHref(projectId, 'api-specs', spec.id),
-                      },
-                      {
-                        key: `spec-edit-${spec.id}`,
-                        label: t('common.edit'),
-                        icon: Pencil,
-                        disabled: !canWrite,
-                        onSelect: () => openEditDialog(spec.id),
-                      },
-                      {
-                        key: `spec-gen-doc-${spec.id}`,
-                        label: t('apiSpecsPage.genDoc'),
-                        icon: Bot,
-                        disabled: !canWrite,
-                        onSelect: () => queueSpecAiAction(spec, 'doc'),
-                      },
-                      {
-                        key: `spec-gen-test-${spec.id}`,
-                        label: t('apiSpecsPage.genTest'),
-                        icon: FileCode2,
-                        disabled: !canWrite,
-                        onSelect: () => queueSpecAiAction(spec, 'test'),
-                      },
-                      {
-                        key: `spec-delete-${spec.id}`,
-                        label: t('common.delete'),
-                        icon: Trash2,
-                        destructive: true,
-                        disabled: !canWrite,
-                        onSelect: () => setDeleteTarget(spec),
-                      },
-                    ]}
-                    ariaLabel={t('common.openActions')}
-                    stopPropagation
-                    triggerClassName="h-6 w-6 rounded-md opacity-0 transition-opacity group-hover/resource:opacity-100 focus-within:opacity-100 data-[state=open]:opacity-100 [&>svg]:h-3.5 [&>svg]:w-3.5"
-                  />
-                }
-              />
-            ))}
+            <ApiSpecDirectoryList
+              groups={sidebarGroups}
+              projectId={projectId}
+              selectedSpecId={selectedSpec?.id}
+              canWrite={canWrite}
+              onOpenCreate={openCreateSpecDialog}
+              onOpenEdit={openEditDialog}
+              onQueueAiAction={queueSpecAiAction}
+              onDelete={setDeleteTarget}
+            />
           </ResourceSidebar>
         }
         content={
@@ -1446,7 +1517,7 @@ function ApiSpecsWorkspaceSection({
                     {t('common.edit')}
                   </Button>
                 ) : null}
-                <Button type="button" onClick={() => setIsCreateOpen(true)} disabled={!canWrite}>
+                <Button type="button" onClick={() => openCreateSpecDialog()} disabled={!canWrite}>
                   <Plus className="h-4 w-4" />
                   {t('apiSpecs.addSpec')}
                 </Button>
@@ -1468,7 +1539,7 @@ function ApiSpecsWorkspaceSection({
             ) : !selectedSpec ? (
               <ApiSpecsGuideState
                 onOpenAICreate={() => setIsAICreateOpen(true)}
-                onOpenManualCreate={() => setIsCreateOpen(true)}
+                onOpenManualCreate={() => openCreateSpecDialog()}
                 testCasesHref={buildProjectTestCasesRoute(projectId)}
               />
             ) : (
@@ -1665,10 +1736,19 @@ function ApiSpecsWorkspaceSection({
 
       <CreateApiSpecDialog
         open={isCreateOpen}
+        initialCategoryId={createSpecCategoryId}
         categories={categoryOptions}
         isSubmitting={createSpecMutation.isPending}
         onOpenChange={setIsCreateOpen}
         onSubmit={handleCreateSpec}
+      />
+      <CategoryFormDialog
+        open={isCategoryCreateOpen}
+        mode="create"
+        categories={categories}
+        isSubmitting={createCategoryMutation.isPending}
+        onOpenChange={setIsCategoryCreateOpen}
+        onSubmit={payload => handleCreateCategory(payload as CreateCategoryRequest)}
       />
       <ApiSpecAICreateDialog
         open={isAICreateOpen}
@@ -1778,6 +1858,117 @@ function ApiSpecsWorkspaceSection({
 
 function CollectionsWorkspaceSection({ projectId }: { projectId: number | string }) {
   return <ApiRequestWorkbench projectId={projectId} />;
+}
+
+function ApiSpecDirectoryList({
+  groups,
+  projectId,
+  selectedSpecId,
+  canWrite,
+  onOpenCreate,
+  onOpenEdit,
+  onQueueAiAction,
+  onDelete,
+}: {
+  groups: ApiSpecSidebarGroup[];
+  projectId: number | string;
+  selectedSpecId?: string | number | null;
+  canWrite: boolean;
+  onOpenCreate: (categoryId?: string) => void;
+  onOpenEdit: (specId: string | number) => void;
+  onQueueAiAction: (spec: ApiSpec, mode: 'doc' | 'test') => void;
+  onDelete: (spec: ApiSpec) => void;
+}) {
+  const t = useT('project');
+
+  return (
+    <div className="space-y-2">
+      {groups.map(group => (
+        <div key={group.key} className="space-y-1">
+          <div
+            className="group/category flex h-7 items-center gap-1.5 rounded-md px-2 text-[11px] font-medium uppercase leading-4 text-text-muted"
+            style={{ paddingLeft: `${8 + group.depth * 10}px` }}
+          >
+            <Tags className="h-3.5 w-3.5 shrink-0" />
+            <span className="min-w-0 flex-1 truncate">{group.label}</span>
+            <span className="shrink-0 tabular-nums">{group.specs.length}</span>
+            {group.categoryId ? (
+              <button
+                type="button"
+                className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted opacity-0 transition-opacity hover:bg-bg-subtle hover:text-text-main group-hover/category:opacity-100 focus:opacity-100"
+                onClick={() => onOpenCreate(group.categoryId)}
+                aria-label={t('apiSpecs.addSpecToCategory', { category: group.label })}
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+          </div>
+
+          {group.specs.map(spec => (
+            <ResourceListItem
+              key={spec.id}
+              href={buildModuleHref(projectId, 'api-specs', spec.id)}
+              active={String(spec.id) === String(selectedSpecId ?? '')}
+              title={`${spec.method} ${spec.path}`}
+              description={spec.summary || spec.description || t('common.noSummaryProvided')}
+              indentLevel={Math.min(group.depth + 1, 5)}
+              meta={
+                <>
+                  <Badge variant="outline">{spec.version}</Badge>
+                  <span>
+                    {t('common.examples')}: {spec.examples?.length ?? 0}
+                  </span>
+                </>
+              }
+              actionsMenu={
+                <ActionMenu
+                  items={[
+                    {
+                      key: `spec-open-${spec.id}`,
+                      label: t('common.open'),
+                      href: buildModuleHref(projectId, 'api-specs', spec.id),
+                    },
+                    {
+                      key: `spec-edit-${spec.id}`,
+                      label: t('common.edit'),
+                      icon: Pencil,
+                      disabled: !canWrite,
+                      onSelect: () => onOpenEdit(spec.id),
+                    },
+                    {
+                      key: `spec-gen-doc-${spec.id}`,
+                      label: t('apiSpecsPage.genDoc'),
+                      icon: Bot,
+                      disabled: !canWrite,
+                      onSelect: () => onQueueAiAction(spec, 'doc'),
+                    },
+                    {
+                      key: `spec-gen-test-${spec.id}`,
+                      label: t('apiSpecsPage.genTest'),
+                      icon: FileCode2,
+                      disabled: !canWrite,
+                      onSelect: () => onQueueAiAction(spec, 'test'),
+                    },
+                    {
+                      key: `spec-delete-${spec.id}`,
+                      label: t('common.delete'),
+                      icon: Trash2,
+                      destructive: true,
+                      disabled: !canWrite,
+                      onSelect: () => onDelete(spec),
+                    },
+                  ]}
+                  ariaLabel={t('common.openActions')}
+                  stopPropagation
+                  triggerClassName="h-6 w-6 rounded-md opacity-0 transition-opacity group-hover/resource:opacity-100 focus-within:opacity-100 data-[state=open]:opacity-100 [&>svg]:h-3.5 [&>svg]:w-3.5"
+                />
+              }
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function EnvironmentsWorkspaceSection({
@@ -3675,23 +3866,26 @@ const normalizeTags = (value: string) =>
 
 function CreateApiSpecDialog({
   open,
+  initialCategoryId = '',
   categories,
   isSubmitting,
   onOpenChange,
   onSubmit,
 }: {
   open: boolean;
+  initialCategoryId?: string;
   categories: Array<{ value: string; label: string }>;
   isSubmitting: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: CreateApiSpecRequest) => Promise<void>;
 }) {
-  const dialogKey = `create-api-spec-${open ? 'open' : 'closed'}`;
+  const dialogKey = `create-api-spec-${initialCategoryId || 'none'}-${open ? 'open' : 'closed'}`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <CreateApiSpecDialogBody
         key={dialogKey}
+        initialCategoryId={initialCategoryId}
         categories={categories}
         isSubmitting={isSubmitting}
         onOpenChange={onOpenChange}
@@ -3702,18 +3896,23 @@ function CreateApiSpecDialog({
 }
 
 function CreateApiSpecDialogBody({
+  initialCategoryId = '',
   categories,
   isSubmitting,
   onOpenChange,
   onSubmit,
 }: {
+  initialCategoryId?: string;
   categories: Array<{ value: string; label: string }>;
   isSubmitting: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (payload: CreateApiSpecRequest) => Promise<void>;
 }) {
   const t = useT('project');
-  const [draft, setDraft] = useState<CreateApiSpecDraft>(() => getCreateApiSpecDraft());
+  const [draft, setDraft] = useState<CreateApiSpecDraft>(() => ({
+    ...getCreateApiSpecDraft(),
+    categoryId: initialCategoryId,
+  }));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const updateDraft = <K extends keyof CreateApiSpecDraft>(

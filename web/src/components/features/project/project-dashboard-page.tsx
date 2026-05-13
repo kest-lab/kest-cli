@@ -28,7 +28,7 @@ import {
   resolvePlatformLabel,
   type ProjectFormMode,
 } from '@/components/features/project/project-shared';
-import { buildProjectCategoriesRoute, buildProjectInviteRoute } from '@/constants/routes';
+import { buildProjectApiSpecsRoute, buildProjectInviteRoute } from '@/constants/routes';
 import { useCreateDemoProject } from '@/hooks/use-create-demo-project';
 import { useApiSpecs } from '@/hooks/use-api-specs';
 import {
@@ -161,7 +161,7 @@ export function ProjectDashboardPage() {
       if (formMode === 'create') {
         const project = await createProjectMutation.mutateAsync(payload as CreateProjectRequest);
         markFirstProjectCreated();
-        router.push(buildProjectCategoriesRoute(project.id));
+        router.push(buildProjectApiSpecsRoute(project.id));
       } else if (editingProject) {
         await updateProjectMutation.mutateAsync({
           id: editingProject.id,
@@ -324,7 +324,7 @@ export function ProjectDashboardPage() {
                   onCreateDemoProject={async () => {
                     const result = await createDemoProjectMutation.mutateAsync();
                     markFirstProjectCreated();
-                    router.push(buildProjectCategoriesRoute(result.project.id));
+                    router.push(buildProjectApiSpecsRoute(result.project.id));
                   }}
                   isCreatingDemoProject={createDemoProjectMutation.isPending}
                 />
@@ -357,7 +357,7 @@ export function ProjectDashboardPage() {
               onCreateDemoProject={async () => {
                 const result = await createDemoProjectMutation.mutateAsync();
                 markFirstProjectCreated();
-                router.push(buildProjectCategoriesRoute(result.project.id));
+                router.push(buildProjectApiSpecsRoute(result.project.id));
               }}
               isCreatingDemoProject={createDemoProjectMutation.isPending}
             />
@@ -419,7 +419,7 @@ function PendingInvitationsPanel({
     setActingOn({ action: 'accept', slug: invitation.slug });
     try {
       const result = await acceptInvitationMutation.mutateAsync(invitation.slug);
-      router.push(result.redirect_to || buildProjectCategoriesRoute(result.project_id));
+      router.push(result.redirect_to || buildProjectApiSpecsRoute(result.project_id));
     } catch {
       // Global HTTP error handling already surfaces failure feedback.
     } finally {
@@ -597,7 +597,7 @@ function ProjectCard({
     return (
       <div className="group relative rounded-lg border border-border-subtle bg-bg-canvas transition-colors hover:border-border-strong hover:bg-bg-soft">
         <Link
-          href={buildProjectCategoriesRoute(project.id)}
+          href={buildProjectApiSpecsRoute(project.id)}
           className="grid gap-3 p-3 pr-20 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto] md:items-center"
         >
           <div className="flex min-w-0 items-center gap-3">
@@ -660,7 +660,7 @@ function ProjectCard({
 
   return (
     <div className="group relative min-h-[180px] rounded-lg border border-border-subtle bg-bg-canvas transition-colors hover:border-border-strong hover:bg-bg-soft">
-      <Link href={buildProjectCategoriesRoute(project.id)} className="flex h-full flex-col p-4">
+      <Link href={buildProjectApiSpecsRoute(project.id)} className="flex h-full flex-col p-4">
         <div className="flex min-w-0 items-start gap-3 pr-6">
           <ProjectAvatar name={project.name} />
           <div className="min-w-0 flex-1">
