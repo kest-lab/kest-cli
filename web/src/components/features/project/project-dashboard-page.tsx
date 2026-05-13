@@ -85,6 +85,21 @@ const getReceivedInvitationRoleLabel = (t: ProjectT, role: ReceivedProjectInvita
   }
 };
 
+const getProjectRoleLabel = (t: ProjectT, role: ApiProject['role']) => {
+  switch (role) {
+    case 'owner':
+      return t('roles.owner');
+    case 'admin':
+      return t('roles.admin');
+    case 'write':
+      return t('roles.write');
+    case 'read':
+      return t('roles.read');
+    default:
+      return t('roles.unknown');
+  }
+};
+
 export function ProjectDashboardPage() {
   const i18n = useT();
   const t = i18n.project;
@@ -619,6 +634,14 @@ function ProjectCard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 md:justify-end">
+            {project.role ? (
+              <Badge
+                variant="outline"
+                className={cn('bg-bg-canvas text-text-main', COMPACT_BADGE_CLASS_NAME)}
+              >
+                {getProjectRoleLabel(t, project.role)}
+              </Badge>
+            ) : null}
             <Badge variant="outline" className={cn('bg-bg-canvas', COMPACT_BADGE_CLASS_NAME)}>
               {resolvePlatformLabel(project.platform)}
             </Badge>
@@ -675,9 +698,19 @@ function ProjectCard({
 
         <div className="mt-auto flex flex-wrap items-end gap-2 pt-3">
           <div className="min-w-0 space-y-1">
-            <Badge variant="outline" className={cn('bg-bg-canvas', COMPACT_BADGE_CLASS_NAME)}>
-              {resolvePlatformLabel(project.platform)}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {project.role ? (
+                <Badge
+                  variant="outline"
+                  className={cn('bg-bg-canvas text-text-main', COMPACT_BADGE_CLASS_NAME)}
+                >
+                  {getProjectRoleLabel(t, project.role)}
+                </Badge>
+              ) : null}
+              <Badge variant="outline" className={cn('bg-bg-canvas', COMPACT_BADGE_CLASS_NAME)}>
+                {resolvePlatformLabel(project.platform)}
+              </Badge>
+            </div>
             {createdAtLabel ? (
               <p className="text-xs text-text-muted">
                 {t('dashboardPage.createdAt', { value: createdAtLabel })}

@@ -99,7 +99,10 @@ func (r *repository) Delete(ctx context.Context, id string) error {
 }
 
 func (r *repository) List(ctx context.Context, userID string, offset, limit int) ([]*Project, int64, error) {
-	var poList []*ProjectPO
+	var rows []struct {
+		ProjectPO
+		Role string
+	}
 	var total int64
 
 	base := r.db.WithContext(ctx).
@@ -113,16 +116,23 @@ func (r *repository) List(ctx context.Context, userID string, offset, limit int)
 	}
 
 	if err := base.
-		Select("projects.*").
+		Select("projects.*, project_members.role AS role").
 		Distinct().
 		Offset(offset).
 		Limit(limit).
 		Order("projects.created_at DESC").
-		Find(&poList).Error; err != nil {
+		Find(&rows).Error; err != nil {
 		return nil, 0, err
 	}
 
-	return toDomainList(poList), total, nil
+	projects := make([]*Project, len(rows))
+	for index, row := range rows {
+		project := row.ProjectPO.toDomain()
+		project.Role = row.Role
+		projects[index] = project
+	}
+
+	return projects, total, nil
 }
 
 func (r *repository) GetStats(ctx context.Context, projectID string) (*ProjectStats, error) {

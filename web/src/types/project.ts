@@ -1,3 +1,5 @@
+import type { ProjectMemberRole } from '@/types/member';
+
 // 项目模块类型定义。
 // 作用：统一约束项目列表、详情、统计和表单请求的数据结构。
 export type ProjectPlatform = 'go' | 'javascript' | 'python' | 'java' | 'ruby' | 'php' | 'csharp';
@@ -8,6 +10,7 @@ export interface ApiProject {
   name: string;
   slug: string;
   platform: ProjectPlatform | '';
+  role?: ProjectMemberRole;
   status: ProjectStatus;
   created_at: string;
 }

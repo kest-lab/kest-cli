@@ -30,6 +30,7 @@ type ProjectListResponse struct {
 	Name     string `json:"name"`
 	Slug     string `json:"slug"`
 	Platform string `json:"platform"`
+	Role     string `json:"role"`
 	Status   int    `json:"status"`
 }
 
@@ -58,6 +59,7 @@ func toListResponse(p *Project) *ProjectListResponse {
 		Name:     p.Name,
 		Slug:     p.Slug,
 		Platform: p.Platform,
+		Role:     p.Role,
 		Status:   p.Status,
 	}
 }
