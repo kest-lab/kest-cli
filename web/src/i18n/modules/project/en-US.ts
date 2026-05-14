@@ -426,6 +426,15 @@ const messages: ProjectMessages = {
     tableMode: 'Table',
     jsonMode: 'JSON',
     addRow: 'Add row',
+    variableColumn: 'Variable',
+    headerColumn: 'Header',
+    valueColumn: 'Value',
+    addVariablePlaceholder: 'Add variable',
+    addHeaderPlaceholder: 'Add header',
+    importJson: 'Import JSON',
+    importJsonTitle: 'Import {label} JSON',
+    importJsonDescription:
+      'Paste a JSON object. Existing keys will be replaced, and new keys will be appended to the table.',
     fieldTableKey: 'Key',
     fieldTableType: 'Type',
     fieldTableValue: 'Value',
@@ -438,7 +447,7 @@ const messages: ProjectMessages = {
     variableKeyPlaceholder: 'API_URL',
     variableValuePlaceholder: 'https://api.example.com',
     headerKeyPlaceholder: 'Authorization',
-    headerValuePlaceholder: 'Bearer {{token}}',
+    headerValuePlaceholder: "Bearer '{{token}}'",
     variablesEditorHint:
       'Default to table mode for safer editing. Switch to JSON only when you need raw control.',
     headersEditorHint:
@@ -1676,7 +1685,7 @@ const messages: ProjectMessages = {
     namePlaceholder: 'Create user happy path',
     descriptionPlaceholder: 'Optional short summary',
     headersJsonLabel: 'Headers JSON',
-    headersJsonPlaceholder: '{"Authorization":"Bearer {{token}}"}',
+    headersJsonPlaceholder: "'{'\"Authorization\":\"Bearer '{{token}}'\"'}'",
     queryParamsJsonLabel: 'Query Params JSON',
     queryParamsJsonPlaceholder: '{"page":"1"}',
     pathParamsJsonLabel: 'Path Params JSON',

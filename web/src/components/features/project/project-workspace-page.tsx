@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bot,
   Boxes,
   Clock3,
   Copy,
   Download,
+  Eye,
+  EyeOff,
   ExternalLink,
   FileClock,
   FileCode2,
@@ -153,6 +155,7 @@ import type {
 import type { ProjectHistory } from '@/types/history';
 import { PROJECT_MEMBER_WRITE_ROLES, type ProjectMemberRole } from '@/types/member';
 import { useT } from '@/i18n/client';
+import type { ScopedTranslations } from '@/i18n/shared';
 import { cn, formatDate } from '@/utils';
 
 const MAX_MODULE_ITEMS = 500;
@@ -353,13 +356,23 @@ interface EnvironmentFormDraft {
   name: string;
   displayName: string;
   baseUrl: string;
-  variables: string;
-  headers: string;
+  variables: EnvironmentFieldRow[];
+  headers: EnvironmentFieldRow[];
 }
 
 interface DuplicateEnvironmentDraft {
   name: string;
   overrideVars: string;
+}
+
+type EnvironmentFieldKind = 'variables' | 'headers';
+type EnvironmentFieldValueType = 'string' | 'secret' | 'number' | 'boolean';
+
+interface EnvironmentFieldRow {
+  id: string;
+  key: string;
+  value: string;
+  type: EnvironmentFieldValueType;
 }
 
 const getRoleLabel = (role?: ProjectMemberRole) => {
@@ -405,15 +418,205 @@ const toStringRecord = (value: Record<string, unknown>) =>
     string
   >;
 
+const createEnvironmentFieldRow = (
+  overrides: Partial<EnvironmentFieldRow> = {}
+): EnvironmentFieldRow => ({
+  id:
+    overrides.id ??
+    `env-field-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`,
+  key: overrides.key ?? '',
+  value: overrides.value ?? '',
+  type: overrides.type ?? 'string',
+});
+
+const isLikelySecretKey = (key: string) => {
+  const normalizedKey = key.trim().toLowerCase();
+
+  if (!normalizedKey) {
+    return false;
+  }
+
+  return [
+    'secret',
+    'token',
+    'password',
+    'authorization',
+    'api_key',
+    'apikey',
+    'client_secret',
+    'access_key',
+    'private_key',
+  ].some(fragment => normalizedKey.includes(fragment));
+};
+
+const inferEnvironmentFieldType = (
+  key: string,
+  value: unknown
+): EnvironmentFieldValueType => {
+  if (isLikelySecretKey(key)) {
+    return 'secret';
+  }
+
+  if (typeof value === 'boolean') {
+    return 'boolean';
+  }
+
+  if (typeof value === 'number') {
+    return 'number';
+  }
+
+  return 'string';
+};
+
+const isEnvironmentFieldRowBlank = (row: EnvironmentFieldRow) =>
+  !row.key.trim() && !row.value.trim();
+
+const normalizeEnvironmentFieldRows = (
+  rows: EnvironmentFieldRow[],
+  kind: EnvironmentFieldKind
+) => {
+  const fallbackType = kind === 'headers' ? 'string' : 'string';
+  const nextRows =
+    rows.length > 0 ? [...rows] : [createEnvironmentFieldRow({ type: fallbackType })];
+
+  const compactRows = nextRows.filter((row, index) => {
+    if (!isEnvironmentFieldRowBlank(row)) {
+      return true;
+    }
+
+    return index === nextRows.length - 1;
+  });
+
+  const normalizedRows =
+    compactRows.length > 0 ? compactRows : [createEnvironmentFieldRow({ type: fallbackType })];
+  const lastRow = normalizedRows[normalizedRows.length - 1];
+
+  if (!isEnvironmentFieldRowBlank(lastRow)) {
+    normalizedRows.push(createEnvironmentFieldRow({ type: fallbackType }));
+  }
+
+  return normalizedRows;
+};
+
+const recordToEnvironmentFieldRows = (
+  value: Record<string, unknown> | Record<string, string> | undefined,
+  kind: EnvironmentFieldKind
+) => {
+  if (!value || Object.keys(value).length === 0) {
+    return [createEnvironmentFieldRow()];
+  }
+
+  return normalizeEnvironmentFieldRows(
+    Object.entries(value).map(([key, item]) =>
+      createEnvironmentFieldRow({
+        key,
+        value: typeof item === 'string' ? item : JSON.stringify(item),
+        type: inferEnvironmentFieldType(key, item),
+      })
+    ),
+    kind
+  );
+};
+
+const parseEnvironmentFieldValue = (
+  row: EnvironmentFieldRow
+): string | number | boolean => {
+  switch (row.type) {
+    case 'number':
+      return Number(row.value.trim());
+    case 'boolean':
+      return row.value === 'true';
+    default:
+      return row.value;
+  }
+};
+
+const buildVariablesRecordFromRows = (
+  rows: EnvironmentFieldRow[],
+  t: ScopedTranslations<'project'>
+) => {
+  const entries: Array<[string, string | number | boolean]> = [];
+
+  rows.forEach((row, index) => {
+    const trimmedKey = row.key.trim();
+
+    if (!trimmedKey) {
+      if (row.value.trim()) {
+        throw new Error(t('environments.keyRequiredForRow', { row: index + 1 }));
+      }
+      return;
+    }
+
+    if (row.type === 'number') {
+      const trimmedValue = row.value.trim();
+
+      if (!trimmedValue || Number.isNaN(Number(trimmedValue))) {
+        throw new Error(t('environments.invalidNumberValue', { key: trimmedKey }));
+      }
+    }
+
+    entries.push([trimmedKey, parseEnvironmentFieldValue(row)]);
+  });
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+};
+
+const buildHeadersRecordFromRows = (
+  rows: EnvironmentFieldRow[],
+  t: ScopedTranslations<'project'>
+) => {
+  const entries: Array<[string, string]> = [];
+
+  rows.forEach((row, index) => {
+    const trimmedKey = row.key.trim();
+
+    if (!trimmedKey) {
+      if (row.value.trim()) {
+        throw new Error(t('environments.keyRequiredForRow', { row: index + 1 }));
+      }
+      return;
+    }
+
+    entries.push([trimmedKey, row.value]);
+  });
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+};
+
+const mergeEnvironmentFieldRows = (
+  currentRows: EnvironmentFieldRow[],
+  importedRows: EnvironmentFieldRow[],
+  kind: EnvironmentFieldKind
+) => {
+  const rowsByKey = new Map<string, EnvironmentFieldRow>();
+
+  currentRows.forEach(row => {
+    const key = row.key.trim();
+
+    if (key) {
+      rowsByKey.set(key, row);
+    }
+  });
+
+  importedRows.forEach(row => {
+    const key = row.key.trim();
+
+    if (key) {
+      rowsByKey.set(key, row);
+    }
+  });
+
+  return normalizeEnvironmentFieldRows([...rowsByKey.values()], kind);
+};
+
 const getEnvironmentFormDraft = (
   environment?: ProjectEnvironment | null
 ): EnvironmentFormDraft => ({
   name: environment?.name ?? '',
   displayName: environment?.display_name ?? '',
   baseUrl: environment?.base_url ?? '',
-  variables:
-    environment?.variables === undefined ? '' : JSON.stringify(environment.variables, null, 2),
-  headers: environment?.headers === undefined ? '' : JSON.stringify(environment.headers, null, 2),
+  variables: recordToEnvironmentFieldRows(environment?.variables, 'variables'),
+  headers: recordToEnvironmentFieldRows(environment?.headers, 'headers'),
 });
 
 const getDuplicateEnvironmentDraft = (
@@ -424,27 +627,34 @@ const getDuplicateEnvironmentDraft = (
 });
 
 function EnvironmentFormDialog({
-  open,
   mode,
   environment,
   isLoadingEnvironment,
   isSubmitting,
-  onOpenChange,
+  onCancel,
   onSubmit,
+  onAutoSaveFields,
 }: {
-  open: boolean;
   mode: EnvironmentFormMode;
   environment?: ProjectEnvironment | null;
   isLoadingEnvironment: boolean;
   isSubmitting: boolean;
-  onOpenChange: (open: boolean) => void;
+  onCancel: () => void;
   onSubmit: (payload: CreateEnvironmentRequest | UpdateEnvironmentRequest) => Promise<void>;
+  onAutoSaveFields?: (payload: Pick<UpdateEnvironmentRequest, 'variables' | 'headers'>) => void;
 }) {
   const t = useT('project');
   const [draft, setDraft] = useState<EnvironmentFormDraft>(() =>
     getEnvironmentFormDraft(environment)
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [importTarget, setImportTarget] = useState<EnvironmentFieldKind | null>(null);
+  const [dirtyFieldKinds, setDirtyFieldKinds] = useState<Record<EnvironmentFieldKind, boolean>>({
+    variables: false,
+    headers: false,
+  });
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formId = `environment-workspace-${mode}-form`;
 
   const updateDraft = <K extends keyof EnvironmentFormDraft>(
     key: K,
@@ -466,14 +676,7 @@ function EnvironmentFormDialog({
     }
 
     try {
-      variables = parseObjectJsonInput<Record<string, unknown>>(
-        draft.variables,
-        t('common.variablesJson'),
-        {
-          invalidJson: t('common.jsonMustBeValidObject', { label: t('common.variablesJson') }),
-          invalidObject: t('common.jsonMustBeObject', { label: t('common.variablesJson') }),
-        }
-      );
+      variables = buildVariablesRecordFromRows(draft.variables, t);
     } catch (error) {
       nextErrors.variables =
         error instanceof Error
@@ -482,15 +685,7 @@ function EnvironmentFormDialog({
     }
 
     try {
-      const parsedHeaders = parseObjectJsonInput<Record<string, unknown>>(
-        draft.headers,
-        t('common.headersJson'),
-        {
-          invalidJson: t('common.jsonMustBeValidObject', { label: t('common.headersJson') }),
-          invalidObject: t('common.jsonMustBeObject', { label: t('common.headersJson') }),
-        }
-      );
-      headers = parsedHeaders ? toStringRecord(parsedHeaders) : undefined;
+      headers = buildHeadersRecordFromRows(draft.headers, t);
     } catch (error) {
       nextErrors.headers =
         error instanceof Error
@@ -512,44 +707,172 @@ function EnvironmentFormDialog({
     });
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        size="lg"
-        style={{
-          width: 'min(42rem, calc(100vw - 3rem))',
-          maxWidth: '42rem',
-        }}
-      >
-        <DialogHeader>
-          <DialogTitle>
-            {mode === 'create'
-              ? t('environments.createDialogTitle')
-              : t('environments.editDialogTitle')}
-          </DialogTitle>
-          <DialogDescription>
-            {mode === 'create'
-              ? t('environments.createDialogDescription')
-              : t('environments.editDialogDescription')}
-          </DialogDescription>
-        </DialogHeader>
+  const updateRows = (kind: EnvironmentFieldKind, rows: EnvironmentFieldRow[]) => {
+    setDraft(current => ({
+      ...current,
+      [kind]: normalizeEnvironmentFieldRows(rows, kind),
+    }));
+    setDirtyFieldKinds(current => ({
+      ...current,
+      [kind]: true,
+    }));
+    setErrors(current => ({
+      ...current,
+      [kind]: '',
+    }));
+  };
 
-        <DialogBody>
+  const handleImportRows = (kind: EnvironmentFieldKind, rows: EnvironmentFieldRow[]) => {
+    setDraft(current => ({
+      ...current,
+      [kind]: mergeEnvironmentFieldRows(current[kind], rows, kind),
+    }));
+    setErrors(current => ({
+      ...current,
+      [kind]: '',
+    }));
+    setDirtyFieldKinds(current => ({
+      ...current,
+      [kind]: true,
+    }));
+    setImportTarget(null);
+  };
+
+  useEffect(() => {
+    if (mode !== 'edit' || !environment || !onAutoSaveFields) {
+      return undefined;
+    }
+
+    const dirtyKinds = Object.entries(dirtyFieldKinds)
+      .filter(([, dirty]) => dirty)
+      .map(([kind]) => kind as EnvironmentFieldKind);
+
+    if (dirtyKinds.length === 0) {
+      return undefined;
+    }
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      const nextErrors: Record<string, string> = {};
+      const payload: Pick<UpdateEnvironmentRequest, 'variables' | 'headers'> = {};
+
+      try {
+        if (dirtyFieldKinds.variables) {
+          payload.variables = buildVariablesRecordFromRows(draft.variables, t);
+        }
+      } catch (error) {
+        nextErrors.variables =
+          error instanceof Error
+            ? error.message
+            : t('common.parseFailed', { label: t('common.variablesJson') });
+      }
+
+      try {
+        if (dirtyFieldKinds.headers) {
+          payload.headers = buildHeadersRecordFromRows(draft.headers, t);
+        }
+      } catch (error) {
+        nextErrors.headers =
+          error instanceof Error
+            ? error.message
+            : t('common.parseFailed', { label: t('common.headersJson') });
+      }
+
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors(current => ({ ...current, ...nextErrors }));
+        return;
+      }
+
+      onAutoSaveFields(payload);
+      setDirtyFieldKinds({ variables: false, headers: false });
+    }, 900);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [
+    dirtyFieldKinds,
+    draft.headers,
+    draft.variables,
+    environment,
+    mode,
+    onAutoSaveFields,
+    t,
+  ]);
+
+  return (
+    <div className="mx-auto flex min-h-full max-w-[1600px] flex-col gap-4">
+      <Card className="gap-0 rounded-xl border-border-subtle bg-bg-canvas py-0">
+        <CardHeader className="gap-4 border-b border-border-subtle py-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className="border-border-subtle bg-bg-soft text-text-main"
+                >
+                  {t('modules.environments.label')}
+                </Badge>
+                <Badge variant="secondary">
+                  {mode === 'create' ? t('common.create') : t('common.edit')}
+                </Badge>
+              </div>
+              <div>
+                <CardTitle className="text-xl tracking-normal">
+                  {mode === 'create'
+                    ? t('environments.createDialogTitle')
+                    : t('environments.editDialogTitle')}
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  {mode === 'create'
+                    ? t('environments.createDialogDescription')
+                    : t('environments.editDialogDescription')}
+                </CardDescription>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={onCancel}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                type="submit"
+                form={formId}
+                loading={isSubmitting}
+                disabled={
+                  (mode === 'edit' && (isLoadingEnvironment || !environment)) || isSubmitting
+                }
+              >
+                {mode === 'create' ? t('environments.createButton') : t('environments.saveButton')}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-5 px-4 py-5 md:px-6">
           {mode === 'edit' && isLoadingEnvironment ? (
-            <div className="space-y-3 py-2">
-              <div className="h-10 animate-pulse rounded-md bg-muted" />
-              <div className="h-10 animate-pulse rounded-md bg-muted" />
-              <div className="h-40 animate-pulse rounded-md bg-muted" />
+            <div className="space-y-4">
+              <div className="h-11 animate-pulse rounded-md bg-muted" />
+              <div className="h-11 animate-pulse rounded-md bg-muted" />
+              <div className="grid gap-4 xl:grid-cols-2">
+                <div className="h-80 animate-pulse rounded-md bg-muted" />
+                <div className="h-80 animate-pulse rounded-md bg-muted" />
+              </div>
             </div>
           ) : mode === 'edit' && !environment ? (
-            <Alert className="mt-2">
+            <Alert>
               <AlertTitle>{t('environments.unableToLoadDetails')}</AlertTitle>
               <AlertDescription>
                 {t('environments.unableToLoadDetailsDescription')}
               </AlertDescription>
             </Alert>
           ) : (
-            <form id="environment-form" className="space-y-4 py-1" onSubmit={handleSubmit}>
+            <form id={formId} className="space-y-5" onSubmit={handleSubmit}>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="environment-name">{t('common.name')}</Label>
@@ -587,47 +910,273 @@ function EnvironmentFormDialog({
               </div>
 
               <div className="grid gap-4 xl:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="environment-variables">{t('common.variablesJson')}</Label>
-                  <Textarea
-                    id="environment-variables"
-                    value={draft.variables}
-                    onChange={event => updateDraft('variables', event.target.value)}
-                    rows={14}
-                    placeholder='{"API_URL":"https://api.example.com"}'
-                    errorText={errors.variables}
-                    root
-                  />
-                </div>
+                <EnvironmentKeyValueEditor
+                  label={t('common.variables')}
+                  kind="variables"
+                  rows={draft.variables}
+                  errorText={errors.variables}
+                  onRowsChange={rows => updateRows('variables', rows)}
+                  onOpenImport={() => setImportTarget('variables')}
+                />
 
-                <div className="space-y-2">
-                  <Label htmlFor="environment-headers">{t('common.headersJson')}</Label>
-                  <Textarea
-                    id="environment-headers"
-                    value={draft.headers}
-                    onChange={event => updateDraft('headers', event.target.value)}
-                    rows={14}
-                    placeholder='{"Authorization":"Bearer {{token}}"}'
-                    errorText={errors.headers}
-                    root
-                  />
-                </div>
+                <EnvironmentKeyValueEditor
+                  label={t('common.headers')}
+                  kind="headers"
+                  rows={draft.headers}
+                  errorText={errors.headers}
+                  onRowsChange={rows => updateRows('headers', rows)}
+                  onOpenImport={() => setImportTarget('headers')}
+                />
               </div>
             </form>
           )}
-        </DialogBody>
+        </CardContent>
+      </Card>
 
+      <EnvironmentJsonImportDialog
+        key={`${importTarget ?? 'none'}-${importTarget ? 'open' : 'closed'}`}
+        open={Boolean(importTarget)}
+        kind={importTarget ?? 'variables'}
+        onOpenChange={open => {
+          if (!open) {
+            setImportTarget(null);
+          }
+        }}
+        onImport={rows => {
+          if (importTarget) {
+            handleImportRows(importTarget, rows);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+function EnvironmentKeyValueEditor({
+  label,
+  kind,
+  rows,
+  errorText,
+  onRowsChange,
+  onOpenImport,
+}: {
+  label: string;
+  kind: EnvironmentFieldKind;
+  rows: EnvironmentFieldRow[];
+  errorText?: string;
+  onRowsChange: (rows: EnvironmentFieldRow[]) => void;
+  onOpenImport: () => void;
+}) {
+  const t = useT('project');
+  const [visibleSecrets, setVisibleSecrets] = useState<Record<string, boolean>>({});
+
+  const updateRow = (rowId: string, updater: (row: EnvironmentFieldRow) => EnvironmentFieldRow) => {
+    onRowsChange(rows.map(row => (row.id === rowId ? updater(row) : row)));
+  };
+
+  const removeRow = (rowId: string) => {
+    onRowsChange(rows.filter(row => row.id !== rowId));
+    setVisibleSecrets(current => {
+      const nextVisible = { ...current };
+      delete nextVisible[rowId];
+      return nextVisible;
+    });
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <Label>{label}</Label>
+        <Button type="button" size="sm" variant="outline" onClick={onOpenImport}>
+          <Upload className="h-3.5 w-3.5" />
+          {t('environments.importJson')}
+        </Button>
+      </div>
+
+      <div className="overflow-hidden rounded-md border border-border-subtle bg-bg-canvas">
+        <div className="grid min-h-10 grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_2.5rem] border-b border-border-subtle bg-bg-soft text-sm font-medium text-text-muted">
+          <div className="flex items-center border-r border-border-subtle px-3">
+            {kind === 'variables'
+              ? t('environments.variableColumn')
+              : t('environments.headerColumn')}
+          </div>
+          <div className="flex items-center border-r border-border-subtle px-3">
+            {t('environments.valueColumn')}
+          </div>
+          <div />
+        </div>
+
+        <div>
+          {rows.map(row => {
+            const blank = isEnvironmentFieldRowBlank(row);
+            const secret = row.type === 'secret';
+            const visible = visibleSecrets[row.id] ?? false;
+
+            return (
+              <div
+                key={row.id}
+                className="grid min-h-11 grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_2.5rem] border-b border-border-subtle last:border-b-0"
+              >
+                <div className="border-r border-border-subtle">
+                  <Input
+                    value={row.key}
+                    onChange={event =>
+                      updateRow(row.id, current => ({
+                        ...current,
+                        key: event.target.value,
+                        type:
+                          isLikelySecretKey(event.target.value) && current.type === 'string'
+                            ? 'secret'
+                            : current.type,
+                      }))
+                    }
+                    placeholder={
+                      blank
+                        ? kind === 'variables'
+                          ? t('environments.addVariablePlaceholder')
+                          : t('environments.addHeaderPlaceholder')
+                        : kind === 'variables'
+                          ? t('environments.variableKeyPlaceholder')
+                          : t('environments.headerKeyPlaceholder')
+                    }
+                    className="h-11 rounded-none border-0 bg-transparent px-3 shadow-none input-depth-none focus-visible:ring-0"
+                  />
+                </div>
+
+                <div className="border-r border-border-subtle">
+                  <Input
+                    type={secret && !visible ? 'password' : 'text'}
+                    value={row.value}
+                    onChange={event =>
+                      updateRow(row.id, current => ({
+                        ...current,
+                        value: event.target.value,
+                      }))
+                    }
+                    placeholder={
+                      blank
+                        ? ''
+                        : kind === 'variables'
+                          ? t('environments.variableValuePlaceholder')
+                          : t('environments.headerValuePlaceholder')
+                    }
+                    className="h-11 rounded-none border-0 bg-transparent px-3 shadow-none input-depth-none focus-visible:ring-0"
+                    rightIcon={
+                      secret && !blank ? (
+                        <button
+                          type="button"
+                          className="pointer-events-auto rounded-sm text-muted-foreground transition-colors hover:text-foreground"
+                          onClick={() =>
+                            setVisibleSecrets(current => ({
+                              ...current,
+                              [row.id]: !visible,
+                            }))
+                          }
+                        >
+                          {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                        </button>
+                      ) : undefined
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-center">
+                  {!blank ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      isIcon
+                      className="h-8 w-8"
+                      onClick={() => removeRow(row.id)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {errorText ? <p className="text-xs font-medium text-destructive">{errorText}</p> : null}
+    </div>
+  );
+}
+
+function EnvironmentJsonImportDialog({
+  open,
+  kind,
+  onOpenChange,
+  onImport,
+}: {
+  open: boolean;
+  kind: EnvironmentFieldKind;
+  onOpenChange: (open: boolean) => void;
+  onImport: (rows: EnvironmentFieldRow[]) => void;
+}) {
+  const t = useT('project');
+  const [jsonValue, setJsonValue] = useState('');
+  const [errorText, setErrorText] = useState('');
+  const label = kind === 'variables' ? t('common.variables') : t('common.headers');
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    try {
+      const parsed = parseObjectJsonInput<Record<string, unknown>>(
+        jsonValue,
+        label,
+        {
+          invalidJson: t('common.jsonMustBeValidObject', { label }),
+          invalidObject: t('common.jsonMustBeObject', { label }),
+        }
+      );
+
+      const importedRecord = kind === 'headers' ? toStringRecord(parsed ?? {}) : parsed;
+      onImport(recordToEnvironmentFieldRows(importedRecord, kind));
+      setJsonValue('');
+      setErrorText('');
+    } catch (error) {
+      setErrorText(
+        error instanceof Error ? error.message : t('common.parseFailed', { label })
+      );
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="default">
+        <DialogHeader>
+          <DialogTitle>{t('environments.importJsonTitle', { label })}</DialogTitle>
+          <DialogDescription>{t('environments.importJsonDescription')}</DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <form id="environment-json-import-form" className="space-y-3" onSubmit={handleSubmit}>
+            <Textarea
+              value={jsonValue}
+              onChange={event => {
+                setJsonValue(event.target.value);
+                setErrorText('');
+              }}
+              rows={12}
+              placeholder={
+                kind === 'variables'
+                  ? '{\n  "API_URL": "https://api.example.com",\n  "DEBUG": false\n}'
+                  : '{\n  "Authorization": "Bearer {{token}}"\n}'
+              }
+              errorText={errorText}
+              root
+            />
+          </form>
+        </DialogBody>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button
-            type="submit"
-            form="environment-form"
-            loading={isSubmitting}
-            disabled={(mode === 'edit' && (isLoadingEnvironment || !environment)) || isSubmitting}
-          >
-            {mode === 'create' ? t('environments.createButton') : t('environments.saveButton')}
+          <Button type="submit" form="environment-json-import-form">
+            {t('environments.importJson')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -2032,13 +2581,18 @@ function EnvironmentsWorkspaceSection({
     ? `/projects/${projectId}/environments/${selectedEnvironment.id}`
     : `/projects/${projectId}/environments/:eid`;
 
-  const openCreateDialog = () => {
+  const closeEnvironmentForm = () => {
+    setIsFormOpen(false);
+    setEditingEnvironmentId(null);
+  };
+
+  const openCreateEnvironment = () => {
     setFormMode('create');
     setEditingEnvironmentId(null);
     setIsFormOpen(true);
   };
 
-  const openEditDialog = (environmentId: number | string) => {
+  const openEditEnvironment = (environmentId: number | string) => {
     setFormMode('edit');
     setEditingEnvironmentId(environmentId);
     setIsFormOpen(true);
@@ -2216,6 +2770,7 @@ function EnvironmentsWorkspaceSection({
                 active={environment.id === selectedEnvironment?.id}
                 title={environment.display_name || environment.name}
                 description={environment.base_url || t('environments.baseUrlNotConfigured')}
+                onOpen={closeEnvironmentForm}
                 meta={
                   <>
                     <span>
@@ -2237,13 +2792,14 @@ function EnvironmentsWorkspaceSection({
                         key: `environment-open-${environment.id}`,
                         label: t('common.open'),
                         href: buildModuleHref(projectId, 'environments', environment.id),
+                        onSelect: closeEnvironmentForm,
                       },
                       {
                         key: `environment-edit-${environment.id}`,
                         label: t('common.edit'),
                         icon: Pencil,
                         disabled: !canWrite,
-                        onSelect: () => openEditDialog(environment.id),
+                        onSelect: () => openEditEnvironment(environment.id),
                       },
                       {
                         key: `environment-duplicate-${environment.id}`,
@@ -2291,14 +2847,14 @@ function EnvironmentsWorkspaceSection({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => openEditDialog(selectedEnvironment.id)}
+                    onClick={() => openEditEnvironment(selectedEnvironment.id)}
                     disabled={!canWrite}
                   >
                     <Pencil className="h-4 w-4" />
                     {t('common.edit')}
                   </Button>
                 ) : null}
-                <Button type="button" onClick={openCreateDialog} disabled={!canWrite}>
+                <Button type="button" onClick={openCreateEnvironment} disabled={!canWrite}>
                   <Plus className="h-4 w-4" />
                   {t('environments.createButton')}
                 </Button>
@@ -2321,7 +2877,29 @@ function EnvironmentsWorkspaceSection({
                 </Alert>
               ) : null}
 
-              {effectiveSelectedItemId && selectedEnvironmentQuery.isLoading ? (
+              {isFormOpen ? (
+                <EnvironmentFormDialog
+                  key={`${formMode}-${editingEnvironmentQuery.data?.id ?? editingEnvironmentId ?? 'new'}`}
+                  mode={formMode}
+                  environment={formMode === 'edit' ? (editingEnvironmentQuery.data ?? null) : null}
+                  isLoadingEnvironment={formMode === 'edit' && editingEnvironmentQuery.isLoading}
+                  isSubmitting={
+                    createEnvironmentMutation.isPending || updateEnvironmentMutation.isPending
+                  }
+                  onCancel={closeEnvironmentForm}
+                  onSubmit={handleEnvironmentSubmit}
+                  onAutoSaveFields={payload => {
+                    if (formMode !== 'edit' || !editingEnvironmentId) {
+                      return;
+                    }
+
+                    updateEnvironmentMutation.mutate({
+                      environmentId: editingEnvironmentId,
+                      data: payload,
+                    });
+                  }}
+                />
+              ) : effectiveSelectedItemId && selectedEnvironmentQuery.isLoading ? (
                 <DetailSkeleton />
               ) : effectiveSelectedItemId && !selectedEnvironment ? (
                 <MissingDetailState
@@ -2346,7 +2924,7 @@ function EnvironmentsWorkspaceSection({
                         </p>
                       </div>
                       <div className="flex flex-wrap justify-center gap-3">
-                        <Button type="button" onClick={openCreateDialog} disabled={!canWrite}>
+                        <Button type="button" onClick={openCreateEnvironment} disabled={!canWrite}>
                           <Plus className="h-4 w-4" />
                           {t('environments.createButton')}
                         </Button>
@@ -2366,7 +2944,7 @@ function EnvironmentsWorkspaceSection({
                         <CardDescription>{t('environments.overviewDescription')}</CardDescription>
                       </CardHeader>
                       <CardContent className="flex flex-wrap gap-3">
-                        <Button type="button" onClick={openCreateDialog} disabled={!canWrite}>
+                        <Button type="button" onClick={openCreateEnvironment} disabled={!canWrite}>
                           <Plus className="h-4 w-4" />
                           {t('environments.createButton')}
                         </Button>
@@ -2529,22 +3107,6 @@ POST ${activeEnvironmentPath}/duplicate`}</code>
             </div>
           </ResourceContent>
         }
-      />
-
-      <EnvironmentFormDialog
-        key={`${formMode}-${editingEnvironmentQuery.data?.id ?? 'new'}-${isFormOpen ? 'open' : 'closed'}`}
-        open={isFormOpen}
-        mode={formMode}
-        environment={formMode === 'edit' ? (editingEnvironmentQuery.data ?? null) : null}
-        isLoadingEnvironment={formMode === 'edit' && editingEnvironmentQuery.isLoading}
-        isSubmitting={createEnvironmentMutation.isPending || updateEnvironmentMutation.isPending}
-        onOpenChange={open => {
-          setIsFormOpen(open);
-          if (!open) {
-            setEditingEnvironmentId(null);
-          }
-        }}
-        onSubmit={handleEnvironmentSubmit}
       />
 
       <DeleteEnvironmentDialog
@@ -3474,6 +4036,7 @@ function ResourceListItem({
   description,
   meta,
   actionsMenu,
+  onOpen,
   indentLevel = 0,
 }: {
   href: string;
@@ -3482,6 +4045,7 @@ function ResourceListItem({
   description: string;
   meta?: React.ReactNode;
   actionsMenu?: React.ReactNode;
+  onOpen?: () => void;
   indentLevel?: number;
 }) {
   return (
@@ -3495,7 +4059,7 @@ function ResourceListItem({
       style={{ marginLeft: indentLevel > 0 ? `${indentLevel * 12}px` : undefined }}
     >
       <div className="flex items-start justify-between gap-3">
-        <Link href={href} className="min-w-0 flex-1">
+        <Link href={href} className="min-w-0 flex-1" onClick={onOpen}>
           <p
             className={cn(
               'truncate text-[13px] font-medium leading-5',
