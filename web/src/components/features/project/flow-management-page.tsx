@@ -3900,7 +3900,7 @@ export function ProjectFlowManagementPage({
         </div>
 
         {isDesktopInspectorCollapsed ? (
-          <aside className="hidden w-[72px] shrink-0 border-l border-border-subtle bg-bg-soft xl:flex xl:flex-col xl:items-center xl:justify-start xl:py-4">
+          <aside className="hidden w-[72px] shrink-0 border-l border-border-subtle bg-bg-soft xl:flex xl:flex-col xl:items-center xl:justify-start xl:pt-3 xl:pb-4">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -3908,10 +3908,11 @@ export function ProjectFlowManagementPage({
                   variant="outline"
                   size="sm"
                   isIcon
+                  className="!size-8 rounded-full"
                   aria-label={t('flowPage.openFlowSettings')}
                   onClick={() => setIsDesktopInspectorCollapsed(false)}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="left">{t('flowPage.openFlowSettings')}</TooltipContent>
@@ -3927,10 +3928,11 @@ export function ProjectFlowManagementPage({
                     variant="ghost"
                     size="sm"
                     isIcon
+                    className="!size-8 rounded-full"
                     aria-label={t('flowPage.closeFlowSettings')}
                     onClick={() => setIsDesktopInspectorCollapsed(true)}
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">{t('flowPage.closeFlowSettings')}</TooltipContent>
