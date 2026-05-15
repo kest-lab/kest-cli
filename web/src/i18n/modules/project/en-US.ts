@@ -19,8 +19,8 @@ const messages: ProjectMessages = {
       description: 'Generate and manage validation suites derived from API specs.',
     },
     collections: {
-      label: 'Collections',
-      shortLabel: 'Collections',
+      label: 'Requests',
+      shortLabel: 'Requests',
       description:
         'Use scratchpads and reusable request groups for manual debugging and local execution.',
     },
@@ -255,6 +255,9 @@ const messages: ProjectMessages = {
     createDialogDescription:
       'Add a new API spec directly from the workspace sidebar without leaving the current layout.',
     selectCategory: 'Select category',
+    uncategorized: 'Uncategorized',
+    sidebarSummary: '{categories} categories · {specs} specs',
+    addSpecToCategory: 'Add spec to {category}',
     publicSpec: 'Public spec',
     publicSpecDescription: 'Control whether this spec is exposed as a public-facing definition.',
     shortSummaryPlaceholder: 'Short summary of the endpoint',
@@ -423,6 +426,15 @@ const messages: ProjectMessages = {
     tableMode: 'Table',
     jsonMode: 'JSON',
     addRow: 'Add row',
+    variableColumn: 'Variable',
+    headerColumn: 'Header',
+    valueColumn: 'Value',
+    addVariablePlaceholder: 'Add variable',
+    addHeaderPlaceholder: 'Add header',
+    importJson: 'Import JSON',
+    importJsonTitle: 'Import {label} JSON',
+    importJsonDescription:
+      'Paste a JSON object. Existing keys will be replaced, and new keys will be appended to the table.',
     fieldTableKey: 'Key',
     fieldTableType: 'Type',
     fieldTableValue: 'Value',
@@ -435,7 +447,7 @@ const messages: ProjectMessages = {
     variableKeyPlaceholder: 'API_URL',
     variableValuePlaceholder: 'https://api.example.com',
     headerKeyPlaceholder: 'Authorization',
-    headerValuePlaceholder: 'Bearer {{token}}',
+    headerValuePlaceholder: "Bearer '{{token}}'",
     variablesEditorHint:
       'Default to table mode for safer editing. Switch to JSON only when you need raw control.',
     headersEditorHint:
@@ -705,12 +717,26 @@ const messages: ProjectMessages = {
         label: 'Collection name',
         placeholder: 'Enter collection name',
       },
+      deleteCollectionDialog: {
+        title: 'Delete Collection',
+        description: 'This will permanently remove "{name}" and its requests.',
+        warning: 'This action cannot be undone. Click confirm to delete this collection.',
+        confirm: 'Confirm',
+        fallbackName: 'this collection',
+      },
       renameRequestDialog: {
         title: 'Rename Request',
         description:
           'Update the request name and sync it to the backend when this request already has a persisted ID.',
         label: 'Request name',
         placeholder: 'Enter request name',
+      },
+      deleteRequestDialog: {
+        title: 'Delete Request',
+        description: 'This will permanently remove "{name}".',
+        warning: 'This action cannot be undone. Click confirm to delete this request.',
+        confirm: 'Confirm',
+        fallbackName: 'this request',
       },
       editors: {
         defaultHeaderDescription: 'Default header',
@@ -1659,7 +1685,7 @@ const messages: ProjectMessages = {
     namePlaceholder: 'Create user happy path',
     descriptionPlaceholder: 'Optional short summary',
     headersJsonLabel: 'Headers JSON',
-    headersJsonPlaceholder: '{"Authorization":"Bearer {{token}}"}',
+    headersJsonPlaceholder: "'{'\"Authorization\":\"Bearer '{{token}}'\"'}'",
     queryParamsJsonLabel: 'Query Params JSON',
     queryParamsJsonPlaceholder: '{"page":"1"}',
     pathParamsJsonLabel: 'Path Params JSON',

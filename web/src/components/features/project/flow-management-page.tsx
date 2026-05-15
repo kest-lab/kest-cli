@@ -2413,8 +2413,13 @@ export function ProjectFlowManagementPage({
       return;
     }
 
+    const rawKey = typeof event.key === 'string' ? event.key : '';
+    const key = rawKey.toLowerCase();
+    if (!key) {
+      return;
+    }
+
     const metaOrCtrl = event.metaKey || event.ctrlKey;
-    const key = event.key.toLowerCase();
     const editableTarget = isEditableShortcutTarget(event.target);
 
     if (key === '?' && !metaOrCtrl && !event.altKey) {
@@ -2449,7 +2454,7 @@ export function ProjectFlowManagementPage({
       return;
     }
 
-    if ((event.key === 'Delete' || event.key === 'Backspace') && !metaOrCtrl) {
+    if ((rawKey === 'Delete' || rawKey === 'Backspace') && !metaOrCtrl) {
       event.preventDefault();
       handleDeleteSelection();
     }
@@ -3357,11 +3362,10 @@ export function ProjectFlowManagementPage({
 
   const flowSidebar = (
     <aside className="flex w-full shrink-0 flex-col border-b border-border-subtle bg-bg-soft lg:h-full lg:w-[320px] lg:border-r lg:border-b-0">
-      <div className="space-y-4 border-b border-border-subtle px-4 py-4">
+      <div className="space-y-4 border-b border-border-subtle px-4 pt-3 pb-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-text-main">{t('modules.flows.label')}</p>
-            <p className="text-sm leading-6 text-text-muted">{t('flowPage.sidebarDescription')}</p>
           </div>
           <div className="flex items-center gap-2">
             {!isMobile ? (
@@ -3370,20 +3374,22 @@ export function ProjectFlowManagementPage({
                 variant="outline"
                 size="sm"
                 isIcon
+                className="!size-8 rounded-full"
                 aria-label={t('flowPage.collapseFlowItems')}
                 title={t('flowPage.collapseFlowItems')}
                 onClick={() => setIsSidebarCollapsed(true)}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
             ) : null}
             <Button
               type="button"
               size="sm"
+              className="h-8 rounded-full px-4"
               onClick={() => setIsCreateOpen(true)}
               disabled={!canEdit}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               {t('flowPage.create')}
             </Button>
           </div>
@@ -3894,7 +3900,7 @@ export function ProjectFlowManagementPage({
         </div>
 
         {isDesktopInspectorCollapsed ? (
-          <aside className="hidden w-[72px] shrink-0 border-l border-border-subtle bg-bg-soft xl:flex xl:flex-col xl:items-center xl:justify-start xl:py-4">
+          <aside className="hidden w-[72px] shrink-0 border-l border-border-subtle bg-bg-soft xl:flex xl:flex-col xl:items-center xl:justify-start xl:pt-3 xl:pb-4">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -3902,10 +3908,11 @@ export function ProjectFlowManagementPage({
                   variant="outline"
                   size="sm"
                   isIcon
+                  className="!size-8 rounded-full"
                   aria-label={t('flowPage.openFlowSettings')}
                   onClick={() => setIsDesktopInspectorCollapsed(false)}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="left">{t('flowPage.openFlowSettings')}</TooltipContent>
@@ -3921,10 +3928,11 @@ export function ProjectFlowManagementPage({
                     variant="ghost"
                     size="sm"
                     isIcon
+                    className="!size-8 rounded-full"
                     aria-label={t('flowPage.closeFlowSettings')}
                     onClick={() => setIsDesktopInspectorCollapsed(true)}
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">{t('flowPage.closeFlowSettings')}</TooltipContent>
@@ -3968,7 +3976,7 @@ export function ProjectFlowManagementPage({
         {showFlowSidebar ? (
           flowSidebar
         ) : !isMobile ? (
-          <aside className="hidden w-[72px] shrink-0 border-r border-border-subtle bg-bg-soft lg:flex lg:flex-col lg:items-center lg:justify-start lg:py-4">
+          <aside className="hidden w-[72px] shrink-0 border-r border-border-subtle bg-bg-soft lg:flex lg:flex-col lg:items-center lg:justify-start lg:pt-3 lg:pb-4">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -3976,10 +3984,11 @@ export function ProjectFlowManagementPage({
                   variant="outline"
                   size="sm"
                   isIcon
+                  className="!size-8 rounded-full"
                   aria-label={t('flowPage.expandFlowItems')}
                   onClick={() => setIsSidebarCollapsed(false)}
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">{t('flowPage.expandFlowItems')}</TooltipContent>

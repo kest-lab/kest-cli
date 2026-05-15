@@ -82,6 +82,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   collectionKeys,
   useCreateCollection,
@@ -298,11 +299,11 @@ const DEFAULT_JSON_PLACEHOLDER = '{\n  \n}';
 const DEFAULT_GRAPHQL_QUERY = 'query Example {\n  \n}';
 const DEFAULT_GRAPHQL_VARIABLES = '{\n  \n}';
 const METHOD_BADGE_STYLES: Record<RequestMethod, string> = {
-  GET: 'border-border-subtle bg-bg-surface text-text-main',
-  POST: 'border-border-subtle bg-bg-surface text-text-main',
-  PUT: 'border-border-subtle bg-bg-surface text-text-main',
-  PATCH: 'border-border-subtle bg-bg-surface text-text-main',
-  DELETE: 'border-border-subtle bg-bg-surface text-text-main',
+  GET: 'border-[var(--miro-brand-teal)]/30 bg-[var(--miro-teal-light)] text-[var(--miro-moss-dark)]',
+  POST: 'border-[var(--miro-brand-blue)]/25 bg-[var(--miro-surface-featured)] text-[var(--miro-blue-pressed)]',
+  PUT: 'border-[var(--miro-brand-yellow-deep)]/35 bg-[var(--miro-surface-yellow)] text-[var(--miro-yellow-dark)]',
+  PATCH: 'border-[var(--miro-brand-coral)]/35 bg-[var(--miro-orange-light)] text-[var(--miro-coral-dark)]',
+  DELETE: 'border-[var(--miro-brand-coral)]/40 bg-[var(--miro-brand-red)] text-[var(--miro-coral-dark)]',
 };
 
 const createLocalId = (prefix: string) =>
@@ -1779,14 +1780,13 @@ const buildWorkbenchStateFromServer = (
   const tabs = flattenedCollections.flatMap(collection =>
     (requestsByCollectionId[String(collection.id)] ?? []).map(request => toRequestPageTab(request))
   );
-  const firstTab = tabs[0] ?? null;
 
   return {
     tabs,
     collections,
-    activeTabId: firstTab?.id ?? null,
-    openTabIds: firstTab ? [firstTab.id] : [],
-    activeCollectionId: firstTab?.collectionId ?? collections[0]?.id ?? null,
+    activeTabId: null,
+    openTabIds: [],
+    activeCollectionId: collections[0]?.id ?? null,
     expandedCollectionIds: collections.map(collection => collection.id),
     nextTabIndex: tabs.length + 1,
   };
@@ -1944,11 +1944,13 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
   const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<string>('');
   const [sidebarQuery, setSidebarQuery] = useState('');
   const [deletingCollectionId, setDeletingCollectionId] = useState<string | null>(null);
+  const [deleteCollectionTarget, setDeleteCollectionTarget] = useState<CollectionNode | null>(null);
   const [renamingCollectionId, setRenamingCollectionId] = useState<string | null>(null);
   const [creatingRequestCollectionId, setCreatingRequestCollectionId] = useState<string | null>(
     null
   );
   const [deletingRequestTabId, setDeletingRequestTabId] = useState<string | null>(null);
+  const [deleteRequestTarget, setDeleteRequestTarget] = useState<RequestPageTab | null>(null);
   const [renamingRequestTabId, setRenamingRequestTabId] = useState<string | null>(null);
   const [renameDialogCollectionId, setRenameDialogCollectionId] = useState<string | null>(null);
   const [renameDraftName, setRenameDraftName] = useState('');
@@ -2854,8 +2856,16 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
     });
   };
 
-  const handleDeleteCollection = async (collection: CollectionNode) => {
-    if (deletingCollectionId) {
+  const closeDeleteCollectionDialog = (open: boolean) => {
+    if (!open && !deletingCollectionId) {
+      setDeleteCollectionTarget(null);
+    }
+  };
+
+  const handleDeleteCollection = async () => {
+    const collection = deleteCollectionTarget;
+
+    if (!collection || deletingCollectionId) {
       return;
     }
 
@@ -2867,6 +2877,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       }
 
       removeCollectionFromWorkbench(collection.id);
+      setDeleteCollectionTarget(null);
     } catch {
     } finally {
       setDeletingCollectionId(null);
@@ -2894,6 +2905,12 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
     if (!open) {
       setRenameDialogRequestTabId(null);
       setRenameRequestDraftName('');
+    }
+  };
+
+  const closeDeleteRequestDialog = (open: boolean) => {
+    if (!open && !deletingRequestTabId) {
+      setDeleteRequestTarget(null);
     }
   };
 
@@ -3374,8 +3391,10 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
     }
   };
 
-  const handleDeleteRequest = async (request: RequestPageTab) => {
-    if (deletingRequestTabId) {
+  const handleDeleteRequest = async () => {
+    const request = deleteRequestTarget;
+
+    if (!request || deletingRequestTabId) {
       return;
     }
 
@@ -3396,6 +3415,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       }
 
       removeRequestFromWorkbench(request.id);
+      setDeleteRequestTarget(null);
     } catch {
     } finally {
       setDeletingRequestTabId(null);
@@ -3508,14 +3528,14 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
             onImportRootPostman={() => openRootImportDialog('postman')}
             onImportRootMarkdown={() => openRootImportDialog('markdown')}
             onCreateRequest={handleCreateRequest}
-            onDeleteCollection={handleDeleteCollection}
+            onDeleteCollection={setDeleteCollectionTarget}
             onImportCollectionPostman={collection =>
               openCollectionImportDialog(collection, 'postman')
             }
             onImportCollectionMarkdown={collection =>
               openCollectionImportDialog(collection, 'markdown')
             }
-            onDeleteRequest={handleDeleteRequest}
+            onDeleteRequest={setDeleteRequestTarget}
             onRenameCollection={openRenameCollectionDialog}
             onRenameRequest={openRenameRequestDialog}
             onToggleCollection={toggleCollection}
@@ -3707,6 +3727,20 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
         onOpenChange={closeDeleteExampleDialog}
         onConfirm={handleDeleteExample}
       />
+      <DeleteCollectionDialog
+        open={deleteCollectionTarget !== null}
+        collection={deleteCollectionTarget}
+        isSubmitting={deletingCollectionId !== null}
+        onOpenChange={closeDeleteCollectionDialog}
+        onConfirm={handleDeleteCollection}
+      />
+      <DeleteRequestDialog
+        open={deleteRequestTarget !== null}
+        request={deleteRequestTarget}
+        isSubmitting={deletingRequestTabId !== null}
+        onOpenChange={closeDeleteRequestDialog}
+        onConfirm={handleDeleteRequest}
+      />
       <RenameCollectionDialog
         open={renameDialogCollectionId !== null}
         value={renameDraftName}
@@ -3797,7 +3831,7 @@ function CollectionsSidebar({
   onDeleteCollection: (collection: CollectionNode) => void;
   onImportCollectionPostman: (collection: CollectionNode) => void;
   onImportCollectionMarkdown: (collection: CollectionNode) => void;
-  onDeleteRequest: (request: RequestPageTab) => Promise<void>;
+  onDeleteRequest: (request: RequestPageTab) => void;
   onRenameCollection: (collection: CollectionNode) => void;
   onRenameRequest: (request: RequestPageTab) => void;
   onToggleCollection: (collectionId: string) => void;
@@ -3885,40 +3919,64 @@ function CollectionsSidebar({
               className="pl-9"
             />
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            isIcon
-            onClick={() => {
-              setPage(1);
-              onCreateCollection();
-            }}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            isIcon
-            loading={isImportingRootPostman}
-            disabled={isImportingAny}
-            onClick={onImportRootPostman}
-          >
-            <Upload className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            isIcon
-            loading={isImportingRootMarkdown}
-            disabled={isImportingAny}
-            onClick={onImportRootMarkdown}
-          >
-            <FileText className="h-4 w-4" />
-          </Button>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isIcon
+                aria-label={t('collections.workbench.actions.newCollection')}
+                onClick={() => {
+                  setPage(1);
+                  onCreateCollection();
+                }}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {t('collections.workbench.actions.newCollection')}
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isIcon
+                loading={isImportingRootPostman}
+                disabled={isImportingAny}
+                aria-label={t('collections.workbench.actions.importPostman')}
+                onClick={onImportRootPostman}
+              >
+                <Upload className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {t('collections.workbench.actions.importPostman')}
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isIcon
+                loading={isImportingRootMarkdown}
+                disabled={isImportingAny}
+                aria-label={t('collections.workbench.actions.importMarkdown')}
+                onClick={onImportRootMarkdown}
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {t('collections.workbench.actions.importMarkdown')}
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
@@ -4446,6 +4504,117 @@ function RenameRequestDialog({
             onClick={() => void onConfirm()}
           >
             {t('collections.workbench.actions.save')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteCollectionDialog({
+  open,
+  collection,
+  isSubmitting,
+  onOpenChange,
+  onConfirm,
+}: {
+  open: boolean;
+  collection: CollectionNode | null;
+  isSubmitting: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => Promise<void>;
+}) {
+  const t = useT('project');
+  const collectionName =
+    collection?.name || t('collections.workbench.deleteCollectionDialog.fallbackName');
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="sm">
+        <DialogHeader>
+          <DialogTitle>{t('collections.workbench.deleteCollectionDialog.title')}</DialogTitle>
+          <DialogDescription>
+            {t('collections.workbench.deleteCollectionDialog.description', {
+              name: collectionName,
+            })}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <div className="rounded-xl border border-border-subtle bg-bg-surface p-4 text-sm leading-6 text-text-main">
+            {t('collections.workbench.deleteCollectionDialog.warning')}
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSubmitting}
+            onClick={() => onOpenChange(false)}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            loading={isSubmitting}
+            onClick={() => void onConfirm()}
+          >
+            {t('collections.workbench.deleteCollectionDialog.confirm')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteRequestDialog({
+  open,
+  request,
+  isSubmitting,
+  onOpenChange,
+  onConfirm,
+}: {
+  open: boolean;
+  request: RequestPageTab | null;
+  isSubmitting: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => Promise<void>;
+}) {
+  const t = useT('project');
+  const requestName = request?.title || t('collections.workbench.deleteRequestDialog.fallbackName');
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="sm">
+        <DialogHeader>
+          <DialogTitle>{t('collections.workbench.deleteRequestDialog.title')}</DialogTitle>
+          <DialogDescription>
+            {t('collections.workbench.deleteRequestDialog.description', {
+              name: requestName,
+            })}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <div className="rounded-xl border border-border-subtle bg-bg-surface p-4 text-sm leading-6 text-text-main">
+            {t('collections.workbench.deleteRequestDialog.warning')}
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSubmitting}
+            onClick={() => onOpenChange(false)}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            loading={isSubmitting}
+            onClick={() => void onConfirm()}
+          >
+            {t('collections.workbench.deleteRequestDialog.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -49,11 +49,11 @@ export interface ProjectWorkspaceModuleMeta {
   status?: 'ready' | 'planned';
 }
 
-export const PROJECT_WORKSPACE_MODULES: ProjectWorkspaceModuleMeta[] = [
+const PROJECT_WORKSPACE_MODULE_META: ProjectWorkspaceModuleMeta[] = [
   {
-    value: 'categories',
-    i18nKey: 'categories',
-    icon: Tags,
+    value: 'collections',
+    i18nKey: 'collections',
+    icon: FolderOpen,
     status: 'ready',
   },
   {
@@ -75,12 +75,6 @@ export const PROJECT_WORKSPACE_MODULES: ProjectWorkspaceModuleMeta[] = [
     status: 'ready',
   },
   {
-    value: 'collections',
-    i18nKey: 'collections',
-    icon: FolderOpen,
-    status: 'ready',
-  },
-  {
     value: 'members',
     i18nKey: 'members',
     icon: Users,
@@ -98,10 +92,21 @@ export const PROJECT_WORKSPACE_MODULES: ProjectWorkspaceModuleMeta[] = [
     icon: FolderGit2,
     status: 'ready',
   },
+  {
+    value: 'categories',
+    i18nKey: 'categories',
+    icon: Tags,
+    status: 'ready',
+  },
 ];
 
+export const PROJECT_WORKSPACE_MODULES = PROJECT_WORKSPACE_MODULE_META.filter(
+  item => item.value !== 'categories'
+);
+
 export const getProjectWorkspaceModuleMeta = (module: ProjectWorkspaceModule) =>
-  PROJECT_WORKSPACE_MODULES.find(item => item.value === module) ?? PROJECT_WORKSPACE_MODULES[0];
+  PROJECT_WORKSPACE_MODULE_META.find(item => item.value === module) ??
+  PROJECT_WORKSPACE_MODULE_META[0];
 
 export const buildProjectWorkspaceRoute = (
   projectId: string | number,
@@ -125,6 +130,6 @@ export const buildProjectWorkspaceRoute = (
     case 'flows':
       return buildProjectFlowsRoute(projectId);
     default:
-      return buildProjectCategoriesRoute(projectId);
+      return buildProjectApiSpecsRoute(projectId);
   }
 };

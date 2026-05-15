@@ -31,6 +31,7 @@ type Project struct {
 	Slug      string    `json:"slug"`
 	Platform  string    `json:"platform"`
 	PublicKey string    `json:"public_key,omitempty"`
+	Role      string    `json:"role,omitempty"`
 	Status    int       `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

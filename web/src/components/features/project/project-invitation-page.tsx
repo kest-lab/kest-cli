@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ROUTES, buildProjectCategoriesRoute, buildProjectInviteRoute } from '@/constants/routes';
+import { ROUTES, buildProjectApiSpecsRoute, buildProjectInviteRoute } from '@/constants/routes';
 import {
   useAcceptProjectInvitation,
   useProjectInvitationDetail,
@@ -58,7 +58,7 @@ export function ProjectInvitationPage({ slug }: { slug: string }) {
   const handleAcceptInvitation = async () => {
     try {
       const result = await acceptInvitationMutation.mutateAsync(undefined);
-      router.replace(result.redirect_to || buildProjectCategoriesRoute(result.project_id));
+      router.replace(result.redirect_to || buildProjectApiSpecsRoute(result.project_id));
     } catch {
       // Global HTTP error handling already surfaces failure feedback.
     }
