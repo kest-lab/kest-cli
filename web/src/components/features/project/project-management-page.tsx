@@ -42,7 +42,6 @@ import {
 import { buildApiPath } from '@/config/api';
 import {
   buildProjectApiSpecsRoute,
-  buildProjectDetailRoute,
   buildProjectEnvironmentsRoute,
   buildProjectMembersRoute,
   buildProjectTestCasesRoute,
@@ -314,7 +313,7 @@ export function ProjectManagementPage() {
                       <TableRow key={project.id} className="transition-colors hover:bg-bg-subtle">
                         <TableCell className="min-w-[220px]">
                           <Link
-                            href={buildProjectDetailRoute(project.id)}
+                            href={buildProjectApiSpecsRoute(project.id)}
                             className="block rounded-xl px-2 py-1 transition-colors hover:bg-bg-subtle"
                           >
                             <div className="space-y-1">
@@ -344,7 +343,7 @@ export function ProjectManagementPage() {
                                 key: `overview-${project.id}`,
                                 label: t('projectsPage.overview'),
                                 icon: BarChart3,
-                                href: buildProjectDetailRoute(project.id),
+                                href: buildProjectApiSpecsRoute(project.id),
                               },
                               {
                                 key: `api-specs-${project.id}`,

@@ -1,4 +1,5 @@
-import { ProjectDetailPage } from '@/components/features/project/project-detail-page';
+import { redirect } from 'next/navigation';
+import { buildProjectApiSpecsRoute } from '@/constants/routes';
 
 interface ProjectDetailRoutePageProps {
   params: Promise<{
@@ -6,9 +7,9 @@ interface ProjectDetailRoutePageProps {
   }>;
 }
 
-// 项目概览入口。
-// 作用：展示项目详情、工作区入口和 CLI Sync 配置，让 `/project/:projectId` 保持为项目级入口。
+// 项目工作区默认入口。
+// 作用：把 `/project/:projectId` 直接收敛到 API Specs 工作区，避免再展示旧的 overview 内容区。
 export default async function ProjectDetailRoutePage({ params }: ProjectDetailRoutePageProps) {
   const { projectId } = await params;
-  return <ProjectDetailPage projectId={projectId} />;
+  redirect(buildProjectApiSpecsRoute(projectId));
 }
