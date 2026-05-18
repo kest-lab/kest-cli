@@ -3,7 +3,6 @@ package project
 import (
 	"context"
 	"errors"
-	"time"
 
 	"gorm.io/gorm"
 
@@ -28,9 +27,6 @@ type Repository interface {
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, userID string, offset, limit int) ([]*Project, int64, error)
 	GetStats(ctx context.Context, projectID string) (*ProjectStats, error)
-	CreateCLIToken(ctx context.Context, token *ProjectCLIToken, tokenHash string) error
-	GetCLITokenByHash(ctx context.Context, tokenHash string) (*ProjectCLIToken, error)
-	TouchCLIToken(ctx context.Context, id string, usedAt time.Time) error
 }
 
 // repository implements Repository interface
@@ -184,11 +180,6 @@ func projectDeleteStatements(projectID string) []projectDeleteStatement {
 		{
 			table: "audit_logs",
 			sql:   "DELETE FROM audit_logs WHERE project_id = ?",
-			args:  []any{projectID},
-		},
-		{
-			table: "project_cli_tokens",
-			sql:   "DELETE FROM project_cli_tokens WHERE project_id = ?",
 			args:  []any{projectID},
 		},
 		{

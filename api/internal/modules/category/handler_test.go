@@ -206,6 +206,18 @@ func (s *stubWorkspaceService) ListMembers(string, string, bool) ([]*workspace.W
 	return nil, nil
 }
 
+func (s *stubWorkspaceService) GenerateCLIToken(context.Context, string, string, *workspace.GenerateWorkspaceCLITokenRequest) (*workspace.GenerateWorkspaceCLITokenResponse, error) {
+	return nil, nil
+}
+
+func (s *stubWorkspaceService) ListCLITokens(context.Context, string) ([]*workspace.WorkspaceCLIToken, error) {
+	return nil, nil
+}
+
+func (s *stubWorkspaceService) ValidateCLIToken(context.Context, string, string, []string) (string, string, error) {
+	return "", "", nil
+}
+
 func (s *stubWorkspaceService) CheckUserRole(string, string, bool) (string, error) {
 	return "", nil
 }

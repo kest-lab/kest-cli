@@ -18,10 +18,12 @@ func provideAPISpecHandler(service apispec.Service, workspaceService workspace.S
 func provideProjectHandler(
 	service project.Service,
 	memberService member.Service,
+	workspaceService workspace.Service,
 	apiSpecHandler *apispec.Handler,
 	historyHandler *history.Handler,
 ) *project.Handler {
 	handler := project.NewHandler(service, memberService)
+	handler.SetWorkspaceTokenValidator(workspaceService)
 	handler.SetSpecSyncer(apiSpecHandler)
 	handler.SetHistorySyncer(historyHandler)
 	return handler

@@ -1,6 +1,9 @@
 package workspace
 
 import (
+	"errors"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/kest-labs/kest/api/internal/contracts"
@@ -22,6 +25,10 @@ func (h *Handler) Name() string {
 // NewHandler creates a new workspace handler
 func NewHandler(service Service) *Handler {
 	return &Handler{service: service}
+}
+
+func (h *Handler) Service() Service {
+	return h.service
 }
 
 // CreateWorkspace handles workspace creation
@@ -291,4 +298,67 @@ func (h *Handler) RemoveMember(c *gin.Context) {
 	}
 
 	response.NoContent(c)
+}
+
+// GenerateCLIToken handles POST /workspaces/:id/cli-tokens
+func (h *Handler) GenerateCLIToken(c *gin.Context) {
+	workspaceID, ok := handler.ParseID(c, "id")
+	if !ok {
+		return
+	}
+
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		return
+	}
+
+	var req GenerateWorkspaceCLITokenRequest
+	if !handler.BindJSON(c, &req) {
+		return
+	}
+
+	allowed, err := h.service.HasPermission(workspaceID, userID, RoleAdmin, false)
+	if err != nil || !allowed {
+		response.Error(c, http.StatusForbidden, "workspace not found or access denied")
+		return
+	}
+
+	token, err := h.service.GenerateCLIToken(c.Request.Context(), workspaceID, userID, &req)
+	if err != nil {
+		if errors.Is(err, ErrUnsupportedCLITokenScope) {
+			response.BadRequest(c, err.Error(), err)
+			return
+		}
+		response.InternalServerError(c, err.Error(), err)
+		return
+	}
+
+	response.Created(c, token)
+}
+
+// ListCLITokens handles GET /workspaces/:id/cli-tokens
+func (h *Handler) ListCLITokens(c *gin.Context) {
+	workspaceID, ok := handler.ParseID(c, "id")
+	if !ok {
+		return
+	}
+
+	userID, ok := handler.GetUserID(c)
+	if !ok {
+		return
+	}
+
+	allowed, err := h.service.HasPermission(workspaceID, userID, RoleAdmin, false)
+	if err != nil || !allowed {
+		response.Error(c, http.StatusForbidden, "workspace not found or access denied")
+		return
+	}
+
+	tokens, err := h.service.ListCLITokens(c.Request.Context(), workspaceID)
+	if err != nil {
+		response.InternalServerError(c, err.Error(), err)
+		return
+	}
+
+	response.Success(c, FromCLITokenList(tokens))
 }

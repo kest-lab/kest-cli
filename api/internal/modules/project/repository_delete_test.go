@@ -18,7 +18,7 @@ func TestRepositoryDeleteCascadesProjectData(t *testing.T) {
 	statements := []string{
 		`CREATE TABLE projects (id TEXT PRIMARY KEY)`,
 		`CREATE TABLE project_members (project_id TEXT)`,
-		`CREATE TABLE project_cli_tokens (project_id TEXT)`,
+		`CREATE TABLE workspace_cli_tokens (workspace_id TEXT)`,
 		`CREATE TABLE project_invitations (project_id TEXT)`,
 		`CREATE TABLE api_specs (id TEXT PRIMARY KEY, workspace_id TEXT)`,
 		`CREATE TABLE api_examples (api_spec_id TEXT)`,
@@ -50,7 +50,7 @@ func TestRepositoryDeleteCascadesProjectData(t *testing.T) {
 	inserts := []string{
 		fmt.Sprintf(`INSERT INTO projects (id) VALUES ('%s')`, projectID),
 		fmt.Sprintf(`INSERT INTO project_members (project_id) VALUES ('%s')`, projectID),
-		fmt.Sprintf(`INSERT INTO project_cli_tokens (project_id) VALUES ('%s')`, projectID),
+		fmt.Sprintf(`INSERT INTO workspace_cli_tokens (workspace_id) VALUES ('%s')`, workspaceID),
 		fmt.Sprintf(`INSERT INTO project_invitations (project_id) VALUES ('%s')`, projectID),
 		fmt.Sprintf(`INSERT INTO api_specs (id, workspace_id) VALUES ('%s', '%s')`, specID, workspaceID),
 		fmt.Sprintf(`INSERT INTO api_examples (api_spec_id) VALUES ('%s')`, specID),
@@ -96,7 +96,6 @@ func TestRepositoryDeleteCascadesProjectData(t *testing.T) {
 	for _, table := range []string{
 		"projects",
 		"project_members",
-		"project_cli_tokens",
 		"project_invitations",
 		"api_flows",
 		"api_flow_steps",
@@ -113,6 +112,7 @@ func TestRepositoryDeleteCascadesProjectData(t *testing.T) {
 		"api_examples",
 		"api_spec_shares",
 		"api_spec_ai_drafts",
+		"workspace_cli_tokens",
 		"test_cases",
 		"test_runs",
 	} {
