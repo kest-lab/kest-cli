@@ -29,7 +29,7 @@ Total endpoints: **133**
 - [Example](#example) (7 endpoints)
 - [Export](#export) (1 endpoints)
 - [Flow](#flow) (15 endpoints)
-- [History](#history) (2 endpoints)
+- [History](#history) (3 endpoints)
 - [Importer](#importer) (1 endpoints)
 - [Member](#member) (11 endpoints)
 - [Permission](#permission) (9 endpoints)
@@ -759,15 +759,15 @@ curl -X DELETE 'http://localhost:8025/api/v1/projects/1/categories/1' \
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/v1/projects/:id/collections` | Create collection | 🔒 |
-| `GET` | `/v1/projects/:id/collections` | List collections | 🔒 |
-| `GET` | `/v1/projects/:id/collections/tree` | Get Tree collection | 🔒 |
-| `GET` | `/v1/projects/:id/collections/:cid` | Get collection details | 🔒 |
-| `PUT` | `/v1/projects/:id/collections/:cid` | Update collection | 🔒 |
-| `DELETE` | `/v1/projects/:id/collections/:cid` | Delete collection | 🔒 |
-| `PATCH` | `/v1/projects/:id/collections/:cid/move` | Move collection | 🔒 |
+| `POST` | `/v1/workspaces/:id/collections` | Create collection | 🔒 |
+| `GET` | `/v1/workspaces/:id/collections` | List collections | 🔒 |
+| `GET` | `/v1/workspaces/:id/collections/tree` | Get Tree collection | 🔒 |
+| `GET` | `/v1/workspaces/:id/collections/:cid` | Get collection details | 🔒 |
+| `PUT` | `/v1/workspaces/:id/collections/:cid` | Update collection | 🔒 |
+| `DELETE` | `/v1/workspaces/:id/collections/:cid` | Delete collection | 🔒 |
+| `PATCH` | `/v1/workspaces/:id/collections/:cid/move` | Move collection | 🔒 |
 
-### POST `/v1/projects/:id/collections`
+### POST `/v1/workspaces/:id/collections`
 
 **Create collection**
 
@@ -791,7 +791,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/projects/1/categories/1' \
   "is_folder": true,
   "name": "John Doe",
   "parent_id": null,
-  "project_id": 1,
+  "workspace_id": 1,
   "settings": "object",
   "sort_order": 1,
   "updated_at": "2024-01-01T00:00:00Z"
@@ -801,13 +801,13 @@ curl -X DELETE 'http://localhost:8025/api/v1/projects/1/categories/1' \
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/projects/1/collections' \
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/collections' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### GET `/v1/projects/:id/collections`
+### GET `/v1/workspaces/:id/collections`
 
 **List collections**
 
@@ -831,7 +831,7 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/collections' \
   "is_folder": true,
   "name": "John Doe",
   "parent_id": null,
-  "project_id": 1,
+  "workspace_id": 1,
   "settings": "object",
   "sort_order": 1,
   "updated_at": "2024-01-01T00:00:00Z"
@@ -841,13 +841,13 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/collections' \
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/collections' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/collections' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### GET `/v1/projects/:id/collections/tree`
+### GET `/v1/workspaces/:id/collections/tree`
 
 **Get Tree collection**
 
@@ -871,7 +871,7 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/collections' \
   "is_folder": true,
   "name": "John Doe",
   "parent_id": null,
-  "project_id": 1,
+  "workspace_id": 1,
   "settings": "object",
   "sort_order": 1,
   "updated_at": "2024-01-01T00:00:00Z"
@@ -881,13 +881,13 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/collections' \
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/tree' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/collections/tree' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### GET `/v1/projects/:id/collections/:cid`
+### GET `/v1/workspaces/:id/collections/:cid`
 
 **Get collection details**
 
@@ -912,7 +912,7 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/tree' \
   "is_folder": true,
   "name": "John Doe",
   "parent_id": null,
-  "project_id": 1,
+  "workspace_id": 1,
   "settings": "object",
   "sort_order": 1,
   "updated_at": "2024-01-01T00:00:00Z"
@@ -922,13 +922,13 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/tree' \
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/collections/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### PUT `/v1/projects/:id/collections/:cid`
+### PUT `/v1/workspaces/:id/collections/:cid`
 
 **Update collection**
 
@@ -953,7 +953,7 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1' \
   "is_folder": true,
   "name": "John Doe",
   "parent_id": null,
-  "project_id": 1,
+  "workspace_id": 1,
   "settings": "object",
   "sort_order": 1,
   "updated_at": "2024-01-01T00:00:00Z"
@@ -963,13 +963,13 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1' \
 #### Example
 
 ```bash
-curl -X PUT 'http://localhost:8025/api/v1/projects/1/collections/1' \
+curl -X PUT 'http://localhost:8025/api/v1/workspaces/1/collections/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### DELETE `/v1/projects/:id/collections/:cid`
+### DELETE `/v1/workspaces/:id/collections/:cid`
 
 **Delete collection**
 
@@ -994,7 +994,7 @@ curl -X PUT 'http://localhost:8025/api/v1/projects/1/collections/1' \
   "is_folder": true,
   "name": "John Doe",
   "parent_id": null,
-  "project_id": 1,
+  "workspace_id": 1,
   "settings": "object",
   "sort_order": 1,
   "updated_at": "2024-01-01T00:00:00Z"
@@ -1004,13 +1004,13 @@ curl -X PUT 'http://localhost:8025/api/v1/projects/1/collections/1' \
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/projects/1/collections/1' \
+curl -X DELETE 'http://localhost:8025/api/v1/workspaces/1/collections/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### PATCH `/v1/projects/:id/collections/:cid/move`
+### PATCH `/v1/workspaces/:id/collections/:cid/move`
 
 **Move collection**
 
@@ -1035,7 +1035,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/projects/1/collections/1' \
   "is_folder": true,
   "name": "John Doe",
   "parent_id": null,
-  "project_id": 1,
+  "workspace_id": 1,
   "settings": "object",
   "sort_order": 1,
   "updated_at": "2024-01-01T00:00:00Z"
@@ -1045,7 +1045,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/projects/1/collections/1' \
 #### Example
 
 ```bash
-curl -X PATCH 'http://localhost:8025/api/v1/projects/1/collections/1/move' \
+curl -X PATCH 'http://localhost:8025/api/v1/workspaces/1/collections/1/move' \
   -H 'Authorization: Bearer <token>'
 ```
 
@@ -1055,39 +1055,16 @@ curl -X PATCH 'http://localhost:8025/api/v1/projects/1/collections/1/move' \
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `GET` | `/v1/projects/:id/environments` | Require Project Role environment | 🔒 |
-| `POST` | `/v1/projects/:id/environments` | Require Project Role environment | 🔒 |
-| `GET` | `/v1/projects/:id/environments/:eid` | Require Project Role environment | 🔒 |
-| `PATCH` | `/v1/projects/:id/environments/:eid` | Require Project Role environment | 🔒 |
-| `DELETE` | `/v1/projects/:id/environments/:eid` | Require Project Role environment | 🔒 |
-| `POST` | `/v1/projects/:id/environments/:eid/duplicate` | Require Project Role environment | 🔒 |
+| `GET` | `/v1/workspaces/:id/environments` | Require Workspace Role environment | 🔒 |
+| `POST` | `/v1/workspaces/:id/environments` | Require Workspace Role environment | 🔒 |
+| `GET` | `/v1/workspaces/:id/environments/:eid` | Require Workspace Role environment | 🔒 |
+| `PATCH` | `/v1/workspaces/:id/environments/:eid` | Require Workspace Role environment | 🔒 |
+| `DELETE` | `/v1/workspaces/:id/environments/:eid` | Require Workspace Role environment | 🔒 |
+| `POST` | `/v1/workspaces/:id/environments/:eid/duplicate` | Require Workspace Role environment | 🔒 |
 
-### GET `/v1/projects/:id/environments`
+### GET `/v1/workspaces/:id/environments`
 
-**Require Project Role environment**
-
-| Property | Value |
-|----------|-------|
-| Auth | 🔒 JWT Required |
-
-#### Path Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | `integer` | Resource identifier |
-
-#### Example
-
-```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/environments' \
-  -H 'Authorization: Bearer <token>'
-```
-
----
-
-### POST `/v1/projects/:id/environments`
-
-**Require Project Role environment**
+**Require Workspace Role environment**
 
 | Property | Value |
 |----------|-------|
@@ -1102,15 +1079,38 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/environments' \
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/projects/1/environments' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/environments' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### GET `/v1/projects/:id/environments/:eid`
+### POST `/v1/workspaces/:id/environments`
 
-**Require Project Role environment**
+**Require Workspace Role environment**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔒 JWT Required |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/environments' \
+  -H 'Authorization: Bearer <token>'
+```
+
+---
+
+### GET `/v1/workspaces/:id/environments/:eid`
+
+**Require Workspace Role environment**
 
 | Property | Value |
 |----------|-------|
@@ -1126,15 +1126,15 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/environments' \
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/environments/1' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/environments/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### PATCH `/v1/projects/:id/environments/:eid`
+### PATCH `/v1/workspaces/:id/environments/:eid`
 
-**Require Project Role environment**
+**Require Workspace Role environment**
 
 | Property | Value |
 |----------|-------|
@@ -1150,15 +1150,15 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/environments/1' \
 #### Example
 
 ```bash
-curl -X PATCH 'http://localhost:8025/api/v1/projects/1/environments/1' \
+curl -X PATCH 'http://localhost:8025/api/v1/workspaces/1/environments/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### DELETE `/v1/projects/:id/environments/:eid`
+### DELETE `/v1/workspaces/:id/environments/:eid`
 
-**Require Project Role environment**
+**Require Workspace Role environment**
 
 | Property | Value |
 |----------|-------|
@@ -1174,15 +1174,15 @@ curl -X PATCH 'http://localhost:8025/api/v1/projects/1/environments/1' \
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/projects/1/environments/1' \
+curl -X DELETE 'http://localhost:8025/api/v1/workspaces/1/environments/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### POST `/v1/projects/:id/environments/:eid/duplicate`
+### POST `/v1/workspaces/:id/environments/:eid/duplicate`
 
-**Require Project Role environment**
+**Require Workspace Role environment**
 
 | Property | Value |
 |----------|-------|
@@ -1198,7 +1198,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/projects/1/environments/1' \
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/projects/1/environments/1/duplicate' \
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/environments/1/duplicate' \
   -H 'Authorization: Bearer <token>'
 ```
 
@@ -1208,15 +1208,15 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/environments/1/duplicate' 
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/examples` | Create example | 🔒 |
-| `GET` | `/v1/projects/:id/collections/:cid/requests/:rid/examples` | List examples | 🔒 |
-| `GET` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid` | Get example details | 🔒 |
-| `PUT` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid` | Update example | 🔒 |
-| `DELETE` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid` | Delete example | 🔒 |
-| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid/response` | Save Response example | 🔒 |
-| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid/default` | Set Default example | 🔒 |
+| `POST` | `/v1/workspaces/:id/collections/:cid/requests/:rid/examples` | Create example | 🔒 |
+| `GET` | `/v1/workspaces/:id/collections/:cid/requests/:rid/examples` | List examples | 🔒 |
+| `GET` | `/v1/workspaces/:id/collections/:cid/requests/:rid/examples/:eid` | Get example details | 🔒 |
+| `PUT` | `/v1/workspaces/:id/collections/:cid/requests/:rid/examples/:eid` | Update example | 🔒 |
+| `DELETE` | `/v1/workspaces/:id/collections/:cid/requests/:rid/examples/:eid` | Delete example | 🔒 |
+| `POST` | `/v1/workspaces/:id/collections/:cid/requests/:rid/examples/:eid/response` | Save Response example | 🔒 |
+| `POST` | `/v1/workspaces/:id/collections/:cid/requests/:rid/examples/:eid/default` | Set Default example | 🔒 |
 
-### POST `/v1/projects/:id/collections/:cid/requests/:rid/examples`
+### POST `/v1/workspaces/:id/collections/:cid/requests/:rid/examples`
 
 **Create example**
 
@@ -1262,13 +1262,13 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/environments/1/duplicate' 
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples' \
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1/examples' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### GET `/v1/projects/:id/collections/:cid/requests/:rid/examples`
+### GET `/v1/workspaces/:id/collections/:cid/requests/:rid/examples`
 
 **List examples**
 
@@ -1314,13 +1314,13 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/e
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1/examples' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### GET `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid`
+### GET `/v1/workspaces/:id/collections/:cid/requests/:rid/examples/:eid`
 
 **Get example details**
 
@@ -1367,13 +1367,13 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/ex
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples/1' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1/examples/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### PUT `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid`
+### PUT `/v1/workspaces/:id/collections/:cid/requests/:rid/examples/:eid`
 
 **Update example**
 
@@ -1420,13 +1420,13 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/ex
 #### Example
 
 ```bash
-curl -X PUT 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples/1' \
+curl -X PUT 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1/examples/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### DELETE `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid`
+### DELETE `/v1/workspaces/:id/collections/:cid/requests/:rid/examples/:eid`
 
 **Delete example**
 
@@ -1473,13 +1473,13 @@ curl -X PUT 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/ex
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples/1' \
+curl -X DELETE 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1/examples/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### POST `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid/response`
+### POST `/v1/workspaces/:id/collections/:cid/requests/:rid/examples/:eid/response`
 
 **Save Response example**
 
@@ -1544,7 +1544,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples/1/response' \
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1/examples/1/response' \
   -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"response_body": "string","response_headers": "object","response_status": 1,"response_time": 1}'
@@ -1552,7 +1552,7 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/e
 
 ---
 
-### POST `/v1/projects/:id/collections/:cid/requests/:rid/examples/:eid/default`
+### POST `/v1/workspaces/:id/collections/:cid/requests/:rid/examples/:eid/default`
 
 **Set Default example**
 
@@ -1599,7 +1599,7 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/e
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/examples/1/default' \
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1/examples/1/default' \
   -H 'Authorization: Bearer <token>'
 ```
 
@@ -1609,9 +1609,9 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/e
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `GET` | `/v1/projects/:id/collections/:cid/export/postman` | Export Postman export | 🔒 |
+| `GET` | `/v1/workspaces/:id/collections/:cid/export/postman` | Export Postman export | 🔒 |
 
-### GET `/v1/projects/:id/collections/:cid/export/postman`
+### GET `/v1/workspaces/:id/collections/:cid/export/postman`
 
 **Export Postman export**
 
@@ -1630,7 +1630,7 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/e
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1/export/postman' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/collections/1/export/postman' \
   -H 'Authorization: Bearer <token>'
 ```
 
@@ -2163,10 +2163,54 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/flows/1/runs/1/events?base_
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `GET` | `/v1/projects/:id/history` | List historys | 🔒 |
-| `GET` | `/v1/projects/:id/history/:hid` | Get history details | 🔒 |
+| `POST` | `/v1/workspaces/:id/history` | Create history | 🔒 |
+| `GET` | `/v1/workspaces/:id/history` | List historys | 🔒 |
+| `GET` | `/v1/workspaces/:id/history/:hid` | Get history details | 🔒 |
 
-### GET `/v1/projects/:id/history`
+### POST `/v1/workspaces/:id/history`
+
+**Create history**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔒 JWT Required |
+| Route Name | `history.create` |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+
+#### Response
+
+```json
+{
+  "action": "string",
+  "created_at": "2024-01-01T00:00:00Z",
+  "data": "object",
+  "diff": "object",
+  "entity_id": "string",
+  "entity_type": "string",
+  "id": "string",
+  "message": "string",
+  "source": "string",
+  "source_event_id": "string",
+  "user_id": "string",
+  "workspace_id": "string"
+}
+```
+
+#### Example
+
+```bash
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/history' \
+  -H 'Authorization: Bearer <token>'
+```
+
+---
+
+### GET `/v1/workspaces/:id/history`
 
 **List historys**
 
@@ -2189,25 +2233,27 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/flows/1/runs/1/events?base_
   "created_at": "2024-01-01T00:00:00Z",
   "data": "object",
   "diff": "object",
-  "entity_id": 1,
+  "entity_id": "string",
   "entity_type": "string",
-  "id": 1,
+  "id": "string",
   "message": "string",
-  "project_id": 1,
-  "user_id": 1
+  "source": "string",
+  "source_event_id": "string",
+  "user_id": "string",
+  "workspace_id": "string"
 }
 ```
 
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/history' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/history' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### GET `/v1/projects/:id/history/:hid`
+### GET `/v1/workspaces/:id/history/:hid`
 
 **Get history details**
 
@@ -2231,19 +2277,21 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/history' \
   "created_at": "2024-01-01T00:00:00Z",
   "data": "object",
   "diff": "object",
-  "entity_id": 1,
+  "entity_id": "string",
   "entity_type": "string",
-  "id": 1,
+  "id": "string",
   "message": "string",
-  "project_id": 1,
-  "user_id": 1
+  "source": "string",
+  "source_event_id": "string",
+  "user_id": "string",
+  "workspace_id": "string"
 }
 ```
 
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/history/1' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/history/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
@@ -2253,9 +2301,9 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/history/1' \
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/v1/projects/:id/collections/import/postman` | Import Postman importer | 🔒 |
+| `POST` | `/v1/workspaces/:id/collections/import/postman` | Import Postman importer | 🔒 |
 
-### POST `/v1/projects/:id/collections/import/postman`
+### POST `/v1/workspaces/:id/collections/import/postman`
 
 **Import Postman importer**
 
@@ -2273,7 +2321,7 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/history/1' \
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/import/postman' \
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/collections/import/postman' \
   -H 'Authorization: Bearer <token>'
 ```
 
@@ -3315,15 +3363,15 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/cli/spec-sync'
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/v1/projects/:id/collections/:cid/requests` | Create request | 🔒 |
-| `GET` | `/v1/projects/:id/collections/:cid/requests` | List requests | 🔒 |
-| `GET` | `/v1/projects/:id/collections/:cid/requests/:rid` | Get request details | 🔒 |
-| `PUT` | `/v1/projects/:id/collections/:cid/requests/:rid` | Update request | 🔒 |
-| `DELETE` | `/v1/projects/:id/collections/:cid/requests/:rid` | Delete request | 🔒 |
-| `PATCH` | `/v1/projects/:id/collections/:cid/requests/:rid/move` | Move request | 🔒 |
-| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/rollback` | Rollback request | 🔒 |
+| `POST` | `/v1/workspaces/:id/collections/:cid/requests` | Create request | 🔒 |
+| `GET` | `/v1/workspaces/:id/collections/:cid/requests` | List requests | 🔒 |
+| `GET` | `/v1/workspaces/:id/collections/:cid/requests/:rid` | Get request details | 🔒 |
+| `PUT` | `/v1/workspaces/:id/collections/:cid/requests/:rid` | Update request | 🔒 |
+| `DELETE` | `/v1/workspaces/:id/collections/:cid/requests/:rid` | Delete request | 🔒 |
+| `PATCH` | `/v1/workspaces/:id/collections/:cid/requests/:rid/move` | Move request | 🔒 |
+| `POST` | `/v1/workspaces/:id/collections/:cid/requests/:rid/rollback` | Rollback request | 🔒 |
 
-### POST `/v1/projects/:id/collections/:cid/requests`
+### POST `/v1/workspaces/:id/collections/:cid/requests`
 
 **Create request**
 
@@ -3365,13 +3413,13 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/cli/spec-sync'
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests' \
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### GET `/v1/projects/:id/collections/:cid/requests`
+### GET `/v1/workspaces/:id/collections/:cid/requests`
 
 **List requests**
 
@@ -3413,13 +3461,13 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests' \
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1/requests' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### GET `/v1/projects/:id/collections/:cid/requests/:rid`
+### GET `/v1/workspaces/:id/collections/:cid/requests/:rid`
 
 **Get request details**
 
@@ -3462,13 +3510,13 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1/requests' \
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### PUT `/v1/projects/:id/collections/:cid/requests/:rid`
+### PUT `/v1/workspaces/:id/collections/:cid/requests/:rid`
 
 **Update request**
 
@@ -3511,13 +3559,13 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1' \
 #### Example
 
 ```bash
-curl -X PUT 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1' \
+curl -X PUT 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### DELETE `/v1/projects/:id/collections/:cid/requests/:rid`
+### DELETE `/v1/workspaces/:id/collections/:cid/requests/:rid`
 
 **Delete request**
 
@@ -3560,13 +3608,13 @@ curl -X PUT 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1' \
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1' \
+curl -X DELETE 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### PATCH `/v1/projects/:id/collections/:cid/requests/:rid/move`
+### PATCH `/v1/workspaces/:id/collections/:cid/requests/:rid/move`
 
 **Move request**
 
@@ -3609,13 +3657,13 @@ curl -X DELETE 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1
 #### Example
 
 ```bash
-curl -X PATCH 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/move' \
+curl -X PATCH 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1/move' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### POST `/v1/projects/:id/collections/:cid/requests/:rid/rollback`
+### POST `/v1/workspaces/:id/collections/:cid/requests/:rid/rollback`
 
 **Rollback request**
 
@@ -3670,7 +3718,7 @@ curl -X PATCH 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/rollback' \
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1/rollback' \
   -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"version_id": 1}'
@@ -3682,9 +3730,9 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/r
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/v1/projects/:id/collections/:cid/requests/:rid/run` | Run run | 🔒 |
+| `POST` | `/v1/workspaces/:id/collections/:cid/requests/:rid/run` | Run run | 🔒 |
 
-### POST `/v1/projects/:id/collections/:cid/requests/:rid/run`
+### POST `/v1/workspaces/:id/collections/:cid/requests/:rid/run`
 
 **Run run**
 
@@ -3717,7 +3765,7 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/r
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/projects/1/collections/1/requests/1/run' \
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/collections/1/requests/1/run' \
   -H 'Authorization: Bearer <token>' \
   -H 'Content-Type: application/json' \
   -d '{"environment_id": null,"variables": "object"}'
@@ -4556,7 +4604,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/workspaces/1' \
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `user_id` | `uint` | ✅ | Required |
-| `role` | `string` | ✅ | Required, One of: owner admin editor viewer |
+| `role` | `string` | ✅ | Required, One of: owner admin write read |
 
 #### Path Parameters
 
@@ -4652,7 +4700,7 @@ curl -X GET 'http://localhost:8025/api/v1/workspaces/1/members' \
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `role` | `string` | ✅ | Required, One of: owner admin editor viewer |
+| `role` | `string` | ✅ | Required, One of: owner admin write read |
 
 #### Path Parameters
 

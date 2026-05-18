@@ -156,8 +156,6 @@ type projectDeleteStatement struct {
 
 func projectDeleteStatements(projectID string) []projectDeleteStatement {
 	specIDsSubquery := "SELECT id FROM api_specs WHERE project_id = ?"
-	collectionIDsSubquery := "SELECT id FROM collections WHERE project_id = ?"
-	requestIDsSubquery := "SELECT id FROM requests WHERE collection_id IN (" + collectionIDsSubquery + ")"
 	flowIDsSubquery := "SELECT id FROM api_flows WHERE project_id = ?"
 	flowRunIDsSubquery := "SELECT id FROM api_flow_runs WHERE flow_id IN (" + flowIDsSubquery + ")"
 	testCaseIDsSubquery := "SELECT id FROM test_cases WHERE api_spec_id IN (" + specIDsSubquery + ")"
@@ -194,21 +192,6 @@ func projectDeleteStatements(projectID string) []projectDeleteStatement {
 			args:  []any{projectID},
 		},
 		{
-			table: "examples",
-			sql:   "DELETE FROM examples WHERE request_id IN (" + requestIDsSubquery + ")",
-			args:  []any{projectID},
-		},
-		{
-			table: "requests",
-			sql:   "DELETE FROM requests WHERE collection_id IN (" + collectionIDsSubquery + ")",
-			args:  []any{projectID},
-		},
-		{
-			table: "collections",
-			sql:   "DELETE FROM collections WHERE project_id = ?",
-			args:  []any{projectID},
-		},
-		{
 			table: "api_flow_step_results",
 			sql:   "DELETE FROM api_flow_step_results WHERE run_id IN (" + flowRunIDsSubquery + ")",
 			args:  []any{projectID},
@@ -239,18 +222,8 @@ func projectDeleteStatements(projectID string) []projectDeleteStatement {
 			args:  []any{projectID},
 		},
 		{
-			table: "environments",
-			sql:   "DELETE FROM environments WHERE project_id = ?",
-			args:  []any{projectID},
-		},
-		{
 			table: "api_environments",
 			sql:   "DELETE FROM api_environments WHERE project_id = ?",
-			args:  []any{projectID},
-		},
-		{
-			table: "history",
-			sql:   "DELETE FROM history WHERE project_id = ?",
 			args:  []any{projectID},
 		},
 		{

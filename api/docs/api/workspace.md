@@ -278,7 +278,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/workspaces/1' \
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `user_id` | `uint` | ✅ | Required |
-| `role` | `string` | ✅ | Required, One of: owner admin editor viewer |
+| `role` | `string` | ✅ | Required, One of: owner admin write read |
 
 #### Path Parameters
 
@@ -374,7 +374,7 @@ curl -X GET 'http://localhost:8025/api/v1/workspaces/1/members' \
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `role` | `string` | ✅ | Required, One of: owner admin editor viewer |
+| `role` | `string` | ✅ | Required, One of: owner admin write read |
 
 #### Path Parameters
 
@@ -452,4 +452,3 @@ curl -X DELETE 'http://localhost:8025/api/v1/workspaces/1/members/1' \
 ```
 
 ---
-

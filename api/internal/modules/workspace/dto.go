@@ -23,12 +23,12 @@ type UpdateWorkspaceRequest struct {
 // AddMemberRequest represents the request to add a member
 type AddMemberRequest struct {
 	UserID idpkg.Compatible `json:"user_id" binding:"required" swaggertype:"string"`
-	Role   string           `json:"role" binding:"required,oneof=owner admin editor viewer"`
+	Role   string           `json:"role" binding:"required,oneof=owner admin write read"`
 }
 
 // UpdateMemberRoleRequest represents the request to update member role
 type UpdateMemberRoleRequest struct {
-	Role string `json:"role" binding:"required,oneof=owner admin editor viewer"`
+	Role string `json:"role" binding:"required,oneof=owner admin write read"`
 }
 
 // WorkspaceResponse represents the workspace response

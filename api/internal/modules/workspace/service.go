@@ -149,7 +149,7 @@ func (s *service) DeleteWorkspace(id string, userID string, isSuperAdmin bool) e
 // GetWorkspace gets a workspace by ID
 func (s *service) GetWorkspace(id string, userID string, isSuperAdmin bool) (*Workspace, error) {
 	// Check if user has access
-	hasPermission, err := s.repo.HasPermission(id, userID, RoleViewer, isSuperAdmin)
+	hasPermission, err := s.repo.HasPermission(id, userID, RoleRead, isSuperAdmin)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +266,7 @@ func (s *service) UpdateMemberRole(workspaceID, targetUserID string, role string
 // ListMembers lists all members of a workspace
 func (s *service) ListMembers(workspaceID, userID string, isSuperAdmin bool) ([]*WorkspaceMember, error) {
 	// Check if user has access to workspace
-	hasPermission, err := s.repo.HasPermission(workspaceID, userID, RoleViewer, isSuperAdmin)
+	hasPermission, err := s.repo.HasPermission(workspaceID, userID, RoleRead, isSuperAdmin)
 	if err != nil {
 		return nil, err
 	}

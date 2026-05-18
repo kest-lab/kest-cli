@@ -46,7 +46,7 @@ type WorkspaceMemberPO struct {
 	ID          string `gorm:"primaryKey"`
 	WorkspaceID string `gorm:"index;uniqueIndex:idx_workspace_user;not null"`
 	UserID      string `gorm:"index;uniqueIndex:idx_workspace_user;not null"`
-	Role        string `gorm:"size:20;not null"` // owner|admin|editor|viewer
+	Role        string `gorm:"size:20;not null"` // owner|admin|write|read
 	InvitedBy   string `gorm:"index"`            // Inviter user ID
 	JoinedAt    time.Time
 	CreatedAt   time.Time
@@ -61,18 +61,18 @@ func (WorkspaceMemberPO) TableName() string {
 
 // Role constants
 const (
-	RoleOwner  = "owner"
-	RoleAdmin  = "admin"
-	RoleEditor = "editor"
-	RoleViewer = "viewer"
+	RoleOwner = "owner"
+	RoleAdmin = "admin"
+	RoleWrite = "write"
+	RoleRead  = "read"
 )
 
 // RoleLevel defines the hierarchy of roles
 var RoleLevel = map[string]int{
-	RoleOwner:  40,
-	RoleAdmin:  30,
-	RoleEditor: 20,
-	RoleViewer: 10,
+	RoleOwner: 40,
+	RoleAdmin: 30,
+	RoleWrite: 20,
+	RoleRead:  10,
 }
 
 // Workspace is the domain entity
