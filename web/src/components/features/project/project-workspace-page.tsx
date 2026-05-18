@@ -31,6 +31,7 @@ import {
   FileJson2,
   FlaskConical,
   Globe,
+  KeyRound,
   Layers3,
   Pencil,
   Plus,
@@ -77,6 +78,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { apiExternalBaseUrl, buildApiPath } from '@/config/api';
 import { ApiRequestWorkbench } from '@/components/features/project/api-request-workbench';
 import { ApiSpecAICreateDialog } from '@/components/features/project/api-spec-ai-create-dialog';
 import {
@@ -148,7 +150,7 @@ import {
   useUpdateEnvironment,
 } from '@/hooks/use-environments';
 import { useProjectHistories, useProjectHistory } from '@/hooks/use-histories';
-import { useProject } from '@/hooks/use-projects';
+import { useGenerateProjectCliToken, useProject } from '@/hooks/use-projects';
 import type {
   ApiSpec,
   ApiSpecExportFormat,
@@ -168,8 +170,10 @@ import type {
 } from '@/types/environment';
 import type { ProjectHistory } from '@/types/history';
 import { PROJECT_MEMBER_WRITE_ROLES, type ProjectMemberRole } from '@/types/member';
+import type { GenerateProjectCliTokenResponse } from '@/types/project';
 import { useT } from '@/i18n/client';
 import type { ScopedTranslations } from '@/i18n/shared';
+import { buildKestConnectionKey } from '@/utils/kest-connection-key';
 import { cn, formatDate } from '@/utils';
 import { toast } from 'sonner';
 
@@ -464,10 +468,7 @@ const isLikelySecretKey = (key: string) => {
   ].some(fragment => normalizedKey.includes(fragment));
 };
 
-const inferEnvironmentFieldType = (
-  key: string,
-  value: unknown
-): EnvironmentFieldValueType => {
+const inferEnvironmentFieldType = (key: string, value: unknown): EnvironmentFieldValueType => {
   if (isLikelySecretKey(key)) {
     return 'secret';
   }
@@ -486,10 +487,7 @@ const inferEnvironmentFieldType = (
 const isEnvironmentFieldRowBlank = (row: EnvironmentFieldRow) =>
   !row.key.trim() && !row.value.trim();
 
-const normalizeEnvironmentFieldRows = (
-  rows: EnvironmentFieldRow[],
-  kind: EnvironmentFieldKind
-) => {
+const normalizeEnvironmentFieldRows = (rows: EnvironmentFieldRow[], kind: EnvironmentFieldKind) => {
   const fallbackType = kind === 'headers' ? 'string' : 'string';
   const nextRows =
     rows.length > 0 ? [...rows] : [createEnvironmentFieldRow({ type: fallbackType })];
@@ -533,9 +531,7 @@ const recordToEnvironmentFieldRows = (
   );
 };
 
-const parseEnvironmentFieldValue = (
-  row: EnvironmentFieldRow
-): string | number | boolean => {
+const parseEnvironmentFieldValue = (row: EnvironmentFieldRow): string | number | boolean => {
   switch (row.type) {
     case 'number':
       return Number(row.value.trim());
@@ -810,15 +806,7 @@ function EnvironmentFormDialog({
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [
-    dirtyFieldKinds,
-    draft.headers,
-    draft.variables,
-    environment,
-    mode,
-    onAutoSaveFields,
-    t,
-  ]);
+  }, [dirtyFieldKinds, draft.headers, draft.variables, environment, mode, onAutoSaveFields, t]);
 
   return (
     <div className="mx-auto flex min-h-full max-w-[1600px] flex-col gap-4">
@@ -827,10 +815,7 @@ function EnvironmentFormDialog({
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge
-                  variant="outline"
-                  className="border-border-subtle bg-bg-soft text-text-main"
-                >
+                <Badge variant="outline" className="border-border-subtle bg-bg-soft text-text-main">
                   {t('modules.environments.label')}
                 </Badge>
                 <Badge variant="secondary">
@@ -1140,23 +1125,17 @@ function EnvironmentJsonImportDialog({
     event.preventDefault();
 
     try {
-      const parsed = parseObjectJsonInput<Record<string, unknown>>(
-        jsonValue,
-        label,
-        {
-          invalidJson: t('common.jsonMustBeValidObject', { label }),
-          invalidObject: t('common.jsonMustBeObject', { label }),
-        }
-      );
+      const parsed = parseObjectJsonInput<Record<string, unknown>>(jsonValue, label, {
+        invalidJson: t('common.jsonMustBeValidObject', { label }),
+        invalidObject: t('common.jsonMustBeObject', { label }),
+      });
 
       const importedRecord = kind === 'headers' ? toStringRecord(parsed ?? {}) : parsed;
       onImport(recordToEnvironmentFieldRows(importedRecord, kind));
       setJsonValue('');
       setErrorText('');
     } catch (error) {
-      setErrorText(
-        error instanceof Error ? error.message : t('common.parseFailed', { label })
-      );
+      setErrorText(error instanceof Error ? error.message : t('common.parseFailed', { label }));
     }
   };
 
@@ -1407,6 +1386,8 @@ export function ProjectWorkspacePage({
           selectedItemId={selectedItemId}
         />
       );
+    case 'keys':
+      return <ProjectKeysWorkspaceSection projectId={projectId} projectName={projectName} />;
     case 'histories':
       return (
         <HistoryWorkspaceSection
@@ -1428,6 +1409,226 @@ export function ProjectWorkspacePage({
         />
       );
   }
+}
+
+function ProjectKeysWorkspaceSection({
+  projectId,
+  projectName,
+}: {
+  projectId: number | string;
+  projectName: string;
+}) {
+  const t = useT('project');
+  const projectQuery = useProject(projectId);
+  const generateCliTokenMutation = useGenerateProjectCliToken();
+  const [generatedCliToken, setGeneratedCliToken] =
+    useState<GenerateProjectCliTokenResponse | null>(null);
+
+  const project = projectQuery.data;
+  const scopedProjectId = String(project?.id ?? projectId);
+  const cliPlatformUrl = (apiExternalBaseUrl || buildApiPath('/')).replace(/\/$/, '');
+  const cliConnectionKey =
+    generatedCliToken && project
+      ? buildKestConnectionKey({
+          version: 1,
+          platform_url: cliPlatformUrl,
+          platform_token: generatedCliToken.token,
+          platform_project_id: String(project.id),
+          platform_auto_sync_history: true,
+        })
+      : '';
+  const cliConfigCommand = cliConnectionKey ? `kest key '${cliConnectionKey}'` : '';
+
+  const handleCopyText = async (value: string, successMessage: string) => {
+    if (!value) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(successMessage);
+    } catch {
+      toast.error(t('toasts.copyFailed'));
+    }
+  };
+
+  const handleGenerateCliToken = async () => {
+    if (!project) {
+      return;
+    }
+
+    try {
+      const token = await generateCliTokenMutation.mutateAsync({
+        id: project.id,
+        data: {
+          name: `${project.name} CLI sync`,
+          scopes: ['spec:write', 'run:write'],
+        },
+      });
+      setGeneratedCliToken(token);
+    } catch {
+      // Global HTTP error handling already surfaces failure feedback.
+    }
+  };
+
+  return (
+    <WorkspaceFrame
+      sidebar={
+        <ResourceSidebar
+          module="keys"
+          title={t('keysPage.sidebarTitle')}
+          description={t('keysPage.sidebarDescription')}
+          count={1}
+          loading={projectQuery.isLoading}
+          error={projectQuery.error}
+          emptyState={
+            <SidebarEmptyState
+              icon={KeyRound}
+              title={t('keysPage.emptyTitle')}
+              description={t('keysPage.emptyDescription')}
+            />
+          }
+        >
+          <ResourceListItem
+            href={buildProjectWorkspaceRoute(projectId, 'keys')}
+            active
+            title={t('keysPage.sidebarItemTitle')}
+            description={t('keysPage.sidebarItemDescription')}
+            meta={<Badge variant="outline">{t('keysPage.sidebarBadge')}</Badge>}
+          />
+        </ResourceSidebar>
+      }
+      content={
+        <ResourceContent
+          projectId={projectId}
+          projectName={projectName}
+          module="keys"
+          actions={
+            <Button
+              type="button"
+              onClick={() => void handleGenerateCliToken()}
+              disabled={!project || generateCliTokenMutation.isPending}
+            >
+              <KeyRound className="h-4 w-4" />
+              {generateCliTokenMutation.isPending
+                ? t('keysPage.generating')
+                : t('keysPage.generateKey')}
+            </Button>
+          }
+        >
+          <div className="space-y-6">
+            {projectQuery.isError ? (
+              <Alert>
+                <AlertTitle>{t('keysPage.projectUnavailableTitle')}</AlertTitle>
+                <AlertDescription>{t('keysPage.projectUnavailableDescription')}</AlertDescription>
+              </Alert>
+            ) : null}
+
+            <Card className="border-border-subtle">
+              <CardHeader>
+                <CardTitle>{t('keysPage.title')}</CardTitle>
+                <CardDescription>{t('keysPage.description')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <DetailField label={t('keysPage.platformUrl')}>
+                    <span className="break-all font-mono text-xs">{cliPlatformUrl}</span>
+                  </DetailField>
+                  <DetailField label={t('keysPage.projectScope')}>
+                    <span className="font-mono">{scopedProjectId}</span>
+                  </DetailField>
+                  <DetailField label={t('keysPage.scopes')}>
+                    <span className="font-mono text-xs">spec:write, run:write</span>
+                  </DetailField>
+                  <DetailField label={t('keysPage.autoSyncHistory')}>
+                    {t('keysPage.autoSyncHistoryEnabled')}
+                  </DetailField>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border-subtle">
+              <CardHeader>
+                <CardTitle>{t('keysPage.generatedTitle')}</CardTitle>
+                <CardDescription>{t('keysPage.generatedDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {generatedCliToken ? (
+                  <>
+                    <Alert>
+                      <ShieldCheck className="h-4 w-4" />
+                      <AlertTitle>{t('keysPage.connectionCommand')}</AlertTitle>
+                      <AlertDescription>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              void handleCopyText(cliConfigCommand, t('keysPage.commandCopied'))
+                            }
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                            {t('keysPage.copyCommand')}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              void handleCopyText(
+                                generatedCliToken.token,
+                                t('keysPage.rawTokenCopied')
+                              )
+                            }
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                            {t('keysPage.copyRawToken')}
+                          </Button>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium uppercase tracking-[0.03125rem] text-text-muted">
+                        {t('keysPage.connectionCommand')}
+                      </p>
+                      <pre className="max-h-[220px] overflow-auto whitespace-pre-wrap break-all rounded-md border border-border-subtle bg-bg-soft p-4 text-xs leading-6 text-text-main">
+                        {cliConfigCommand}
+                      </pre>
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-3">
+                      <DetailField label={t('keysPage.tokenPrefix')}>
+                        <span className="font-mono text-xs">
+                          {generatedCliToken.token_info.token_prefix}
+                        </span>
+                      </DetailField>
+                      <DetailField label={t('keysPage.rawToken')}>
+                        <span className="break-all font-mono text-xs">
+                          {generatedCliToken.token}
+                        </span>
+                      </DetailField>
+                      <DetailField label={t('common.created')}>
+                        {formatDate(generatedCliToken.token_info.created_at, 'YYYY-MM-DD HH:mm')}
+                      </DetailField>
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-md border border-dashed border-border-subtle bg-bg-soft p-6">
+                    <p className="text-sm font-medium text-text-main">{t('keysPage.emptyTitle')}</p>
+                    <p className="mt-2 text-sm leading-6 text-text-muted">
+                      {t('keysPage.emptyDescription')}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </ResourceContent>
+      }
+    />
+  );
 }
 
 function ApiSpecsWorkspaceSection({
@@ -1564,27 +1765,6 @@ function ApiSpecsWorkspaceSection({
 
     return groups;
   }, [deferredSearch, filteredSpecs, flatCategories, t]);
-
-  const moveTargetGroups = useMemo<ApiSpecSidebarGroup[]>(
-    () => [
-      ...flatCategories.map(category => ({
-        key: `move-category-${category.id}`,
-        label: category.name,
-        depth: category.depth,
-        categoryId: String(category.id),
-        specs: [],
-      })),
-      {
-        key: 'move-uncategorized',
-        label: t('apiSpecs.uncategorized'),
-        depth: 0,
-        categoryId: null,
-        specs: [],
-      },
-    ],
-    [flatCategories, t]
-  );
-
   const selectedSpecFromList =
     effectiveSelectedItemId === undefined || effectiveSelectedItemId === null
       ? null
@@ -2140,10 +2320,8 @@ function ApiSpecsWorkspaceSection({
                 movingSpecId={
                   updateSpecMutation.isPending ? updateSpecMutation.variables?.specId ?? null : null
                 }
-                moveTargetGroups={moveTargetGroups}
                 onOpenCreate={openCreateSpecDialog}
                 onOpenEdit={openEditDialog}
-                onMoveSpec={moveSpecToCategory}
                 onQueueAiAction={queueSpecAiAction}
                 onDelete={setDeleteTarget}
               />
@@ -2528,10 +2706,8 @@ function ApiSpecDirectoryList({
   selectedSpecId,
   canWrite,
   movingSpecId,
-  moveTargetGroups,
   onOpenCreate,
   onOpenEdit,
-  onMoveSpec,
   onQueueAiAction,
   onDelete,
 }: {
@@ -2540,10 +2716,8 @@ function ApiSpecDirectoryList({
   selectedSpecId?: string | number | null;
   canWrite: boolean;
   movingSpecId?: string | number | null;
-  moveTargetGroups: ApiSpecSidebarGroup[];
   onOpenCreate: (categoryId?: string) => void;
   onOpenEdit: (specId: string | number) => void;
-  onMoveSpec: (spec: ApiSpec, categoryId: string | null) => void;
   onQueueAiAction: (spec: ApiSpec, mode: 'doc' | 'test') => void;
   onDelete: (spec: ApiSpec) => void;
 }) {
@@ -2566,9 +2740,7 @@ function ApiSpecDirectoryList({
               canWrite={canWrite}
               indentLevel={Math.min(group.depth + 1, 5)}
               isMoving={String(spec.id) === String(movingSpecId ?? '')}
-              moveTargetGroups={moveTargetGroups}
               onOpenEdit={onOpenEdit}
-              onMoveSpec={onMoveSpec}
               onQueueAiAction={onQueueAiAction}
               onDelete={onDelete}
             />
@@ -2633,9 +2805,7 @@ function DraggableApiSpecListItem({
   canWrite,
   indentLevel,
   isMoving,
-  moveTargetGroups,
   onOpenEdit,
-  onMoveSpec,
   onQueueAiAction,
   onDelete,
 }: {
@@ -2645,14 +2815,11 @@ function DraggableApiSpecListItem({
   canWrite: boolean;
   indentLevel: number;
   isMoving: boolean;
-  moveTargetGroups: ApiSpecSidebarGroup[];
   onOpenEdit: (specId: string | number) => void;
-  onMoveSpec: (spec: ApiSpec, categoryId: string | null) => void;
   onQueueAiAction: (spec: ApiSpec, mode: 'doc' | 'test') => void;
   onDelete: (spec: ApiSpec) => void;
 }) {
   const t = useT('project');
-  const currentCategoryId = spec.category_id ? String(spec.category_id) : null;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `api-spec-${spec.id}`,
     data: {
@@ -2662,18 +2829,11 @@ function DraggableApiSpecListItem({
     disabled: !canWrite,
   });
 
-  const moveItems: ActionMenuItem[] = moveTargetGroups
-    .filter(group => (group.categoryId ?? null) !== currentCategoryId)
-    .map(group => ({
-      key: `spec-move-${spec.id}-${group.categoryId ?? 'uncategorized'}`,
-      label: t('apiSpecs.moveToCategory', { category: group.label }),
-      icon: Tags,
-      disabled: !canWrite,
-      onSelect: () => onMoveSpec(spec, group.categoryId ?? null),
-    }));
-
   return (
-    <div ref={setNodeRef} className={cn((isDragging || isMoving) && 'opacity-55')}>
+    <div
+      ref={setNodeRef}
+      className={cn((isDragging || isMoving) && 'opacity-55')}
+    >
       <ResourceListItem
         href={buildModuleHref(projectId, 'api-specs', spec.id)}
         active={active}
@@ -2719,15 +2879,10 @@ function DraggableApiSpecListItem({
                 disabled: !canWrite,
                 onSelect: () => onOpenEdit(spec.id),
               },
-              ...moveItems.map((item, index) => ({
-                ...item,
-                separatorBefore: index === 0,
-              })),
               {
                 key: `spec-gen-doc-${spec.id}`,
                 label: t('apiSpecsPage.genDoc'),
                 icon: Bot,
-                separatorBefore: moveItems.length === 0,
                 disabled: !canWrite,
                 onSelect: () => onQueueAiAction(spec, 'doc'),
               },
@@ -2935,10 +3090,7 @@ function EnvironmentsWorkspaceSection({
   };
 
   const handleRefresh = async () => {
-    const tasks: Array<Promise<unknown>> = [
-      memberRoleQuery.refetch(),
-      environmentsQuery.refetch(),
-    ];
+    const tasks: Array<Promise<unknown>> = [memberRoleQuery.refetch(), environmentsQuery.refetch()];
 
     if (effectiveSelectedItemId) {
       tasks.push(selectedEnvironmentQuery.refetch());

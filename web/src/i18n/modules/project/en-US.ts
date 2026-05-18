@@ -36,6 +36,11 @@ const messages: ProjectMessages = {
       description:
         'Manage project access, operational roles, and who can change project resources.',
     },
+    keys: {
+      label: 'Keys',
+      shortLabel: 'Keys',
+      description: 'Generate project-scoped CLI keys for local sync.',
+    },
     histories: {
       label: 'History',
       shortLabel: 'History',
@@ -259,7 +264,6 @@ const messages: ProjectMessages = {
     uncategorized: 'Uncategorized',
     sidebarSummary: '{categories} categories · {specs} specs',
     addSpecToCategory: 'Add spec to {category}',
-    moveToCategory: 'Move to {category}',
     dragSpecHandle: 'Drag API spec',
     publicSpec: 'Public spec',
     publicSpecDescription: 'Control whether this spec is exposed as a public-facing definition.',
@@ -536,6 +540,38 @@ const messages: ProjectMessages = {
     children: 'Children',
     sortOrder: 'Sort order',
     tests: 'Tests',
+  },
+  keysPage: {
+    sidebarTitle: 'Keys',
+    sidebarDescription: 'Generate one-time CLI connection keys for this project.',
+    sidebarItemTitle: 'CLI connection key',
+    sidebarItemDescription: 'Create the kest key command for local sync.',
+    sidebarBadge: 'CLI sync',
+    title: 'Generate Key',
+    description:
+      'Create a project-scoped connection key, then run one command in your terminal to connect this CLI to the web project.',
+    generateKey: 'Generate Key',
+    generating: 'Generating...',
+    projectUnavailableTitle: 'Project unavailable',
+    projectUnavailableDescription:
+      'The project could not be loaded, so a key cannot be generated yet.',
+    platformUrl: 'Platform URL',
+    projectScope: 'Project Scope',
+    scopes: 'Scopes',
+    autoSyncHistory: 'History sync',
+    autoSyncHistoryEnabled: 'Enabled',
+    generatedTitle: 'Connection command',
+    generatedDescription:
+      'The raw token and connection key are only shown after generation. Copy them before leaving this page.',
+    connectionCommand: 'Command',
+    emptyTitle: 'No key generated',
+    emptyDescription: 'Click Generate Key to create a one-time visible CLI connection command.',
+    copyCommand: 'Copy Command',
+    copyRawToken: 'Copy Raw Token',
+    commandCopied: 'Copied key command',
+    rawTokenCopied: 'Copied raw token',
+    tokenPrefix: 'Token Prefix',
+    rawToken: 'Raw Token',
   },
   history: {
     title: 'History',

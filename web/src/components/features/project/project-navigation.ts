@@ -8,6 +8,7 @@ import {
   FolderOpen,
   Globe,
   History,
+  KeyRound,
   Tags,
   Users,
 } from 'lucide-react';
@@ -18,6 +19,7 @@ import {
   buildProjectEnvironmentsRoute,
   buildProjectFlowsRoute,
   buildProjectHistoriesRoute,
+  buildProjectKeysRoute,
   buildProjectMembersRoute,
   buildProjectTestCasesRoute,
 } from '@/constants/routes';
@@ -28,6 +30,7 @@ export type ProjectWorkspaceModule =
   | 'environments'
   | 'collections'
   | 'categories'
+  | 'keys'
   | 'members'
   | 'histories'
   | 'flows';
@@ -38,6 +41,7 @@ export type ProjectWorkspaceModuleI18nKey =
   | 'environments'
   | 'collections'
   | 'categories'
+  | 'keys'
   | 'members'
   | 'histories'
   | 'flows';
@@ -78,6 +82,12 @@ const PROJECT_WORKSPACE_MODULE_META: ProjectWorkspaceModuleMeta[] = [
     value: 'members',
     i18nKey: 'members',
     icon: Users,
+    status: 'ready',
+  },
+  {
+    value: 'keys',
+    i18nKey: 'keys',
+    icon: KeyRound,
     status: 'ready',
   },
   {
@@ -125,6 +135,8 @@ export const buildProjectWorkspaceRoute = (
       return buildProjectCategoriesRoute(projectId);
     case 'members':
       return buildProjectMembersRoute(projectId);
+    case 'keys':
+      return buildProjectKeysRoute(projectId);
     case 'histories':
       return buildProjectHistoriesRoute(projectId);
     case 'flows':
