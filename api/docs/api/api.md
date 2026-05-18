@@ -1055,39 +1055,16 @@ curl -X PATCH 'http://localhost:8025/api/v1/projects/1/collections/1/move' \
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `GET` | `/v1/projects/:id/environments` | Require Project Role environment | 🔒 |
-| `POST` | `/v1/projects/:id/environments` | Require Project Role environment | 🔒 |
-| `GET` | `/v1/projects/:id/environments/:eid` | Require Project Role environment | 🔒 |
-| `PATCH` | `/v1/projects/:id/environments/:eid` | Require Project Role environment | 🔒 |
-| `DELETE` | `/v1/projects/:id/environments/:eid` | Require Project Role environment | 🔒 |
-| `POST` | `/v1/projects/:id/environments/:eid/duplicate` | Require Project Role environment | 🔒 |
+| `GET` | `/v1/workspaces/:id/environments` | Require Workspace Role environment | 🔒 |
+| `POST` | `/v1/workspaces/:id/environments` | Require Workspace Role environment | 🔒 |
+| `GET` | `/v1/workspaces/:id/environments/:eid` | Require Workspace Role environment | 🔒 |
+| `PATCH` | `/v1/workspaces/:id/environments/:eid` | Require Workspace Role environment | 🔒 |
+| `DELETE` | `/v1/workspaces/:id/environments/:eid` | Require Workspace Role environment | 🔒 |
+| `POST` | `/v1/workspaces/:id/environments/:eid/duplicate` | Require Workspace Role environment | 🔒 |
 
-### GET `/v1/projects/:id/environments`
+### GET `/v1/workspaces/:id/environments`
 
-**Require Project Role environment**
-
-| Property | Value |
-|----------|-------|
-| Auth | 🔒 JWT Required |
-
-#### Path Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | `integer` | Resource identifier |
-
-#### Example
-
-```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/environments' \
-  -H 'Authorization: Bearer <token>'
-```
-
----
-
-### POST `/v1/projects/:id/environments`
-
-**Require Project Role environment**
+**Require Workspace Role environment**
 
 | Property | Value |
 |----------|-------|
@@ -1102,15 +1079,38 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/environments' \
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/projects/1/environments' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/environments' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### GET `/v1/projects/:id/environments/:eid`
+### POST `/v1/workspaces/:id/environments`
 
-**Require Project Role environment**
+**Require Workspace Role environment**
+
+| Property | Value |
+|----------|-------|
+| Auth | 🔒 JWT Required |
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `integer` | Resource identifier |
+
+#### Example
+
+```bash
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/environments' \
+  -H 'Authorization: Bearer <token>'
+```
+
+---
+
+### GET `/v1/workspaces/:id/environments/:eid`
+
+**Require Workspace Role environment**
 
 | Property | Value |
 |----------|-------|
@@ -1126,15 +1126,15 @@ curl -X POST 'http://localhost:8025/api/v1/projects/1/environments' \
 #### Example
 
 ```bash
-curl -X GET 'http://localhost:8025/api/v1/projects/1/environments/1' \
+curl -X GET 'http://localhost:8025/api/v1/workspaces/1/environments/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### PATCH `/v1/projects/:id/environments/:eid`
+### PATCH `/v1/workspaces/:id/environments/:eid`
 
-**Require Project Role environment**
+**Require Workspace Role environment**
 
 | Property | Value |
 |----------|-------|
@@ -1150,15 +1150,15 @@ curl -X GET 'http://localhost:8025/api/v1/projects/1/environments/1' \
 #### Example
 
 ```bash
-curl -X PATCH 'http://localhost:8025/api/v1/projects/1/environments/1' \
+curl -X PATCH 'http://localhost:8025/api/v1/workspaces/1/environments/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### DELETE `/v1/projects/:id/environments/:eid`
+### DELETE `/v1/workspaces/:id/environments/:eid`
 
-**Require Project Role environment**
+**Require Workspace Role environment**
 
 | Property | Value |
 |----------|-------|
@@ -1174,15 +1174,15 @@ curl -X PATCH 'http://localhost:8025/api/v1/projects/1/environments/1' \
 #### Example
 
 ```bash
-curl -X DELETE 'http://localhost:8025/api/v1/projects/1/environments/1' \
+curl -X DELETE 'http://localhost:8025/api/v1/workspaces/1/environments/1' \
   -H 'Authorization: Bearer <token>'
 ```
 
 ---
 
-### POST `/v1/projects/:id/environments/:eid/duplicate`
+### POST `/v1/workspaces/:id/environments/:eid/duplicate`
 
-**Require Project Role environment**
+**Require Workspace Role environment**
 
 | Property | Value |
 |----------|-------|
@@ -1198,7 +1198,7 @@ curl -X DELETE 'http://localhost:8025/api/v1/projects/1/environments/1' \
 #### Example
 
 ```bash
-curl -X POST 'http://localhost:8025/api/v1/projects/1/environments/1/duplicate' \
+curl -X POST 'http://localhost:8025/api/v1/workspaces/1/environments/1/duplicate' \
   -H 'Authorization: Bearer <token>'
 ```
 

@@ -35,6 +35,7 @@ import (
 	"github.com/kest-labs/kest/api/internal/modules/testcase"
 	"github.com/kest-labs/kest/api/internal/modules/testrunner"
 	"github.com/kest-labs/kest/api/internal/modules/user"
+	"github.com/kest-labs/kest/api/internal/modules/workspace"
 )
 
 // Injectors from wire.go:
@@ -66,6 +67,9 @@ func InitApplication() (*app.Application, error) {
 	permissionHandler := permission.NewHandler(permissionService)
 	auditRepository := audit.NewRepository(db)
 	auditHandler := audit.NewHandler(auditRepository)
+	workspaceRepository := workspace.NewRepository(db)
+	workspaceService := workspace.NewService(workspaceRepository)
+	workspaceHandler := workspace.NewHandler(workspaceService)
 	projectRepository := project.NewRepository(db)
 	projectService := project.NewService(projectRepository, memberService)
 	projectinviteRepository := projectinvite.NewRepository(db)
@@ -99,7 +103,7 @@ func InitApplication() (*app.Application, error) {
 	categoryHandler := category.NewHandler(categoryService, memberService)
 	environmentRepository := environment.NewRepository(db)
 	environmentService := environment.NewService(environmentRepository)
-	environmentHandler := environment.NewHandler(environmentService, memberService)
+	environmentHandler := environment.NewHandler(environmentService, workspaceService)
 	flowRepository := flow.NewRepository(db)
 	flowService := flow.NewService(flowRepository)
 	flowHandler := flow.NewHandler(flowService, memberService)
@@ -112,6 +116,7 @@ func InitApplication() (*app.Application, error) {
 		Member:        memberHandler,
 		Permission:    permissionHandler,
 		Audit:         auditHandler,
+		Workspace:     workspaceHandler,
 		Project:       projectHandler,
 		ProjectInvite: projectinviteHandler,
 		Collection:    collectionHandler,

@@ -35,7 +35,6 @@ func TestRepositoryDeleteCascadesProjectData(t *testing.T) {
 		`CREATE TABLE api_flow_step_results (run_id TEXT)`,
 		`CREATE TABLE test_cases (id TEXT PRIMARY KEY, api_spec_id TEXT)`,
 		`CREATE TABLE test_runs (test_case_id TEXT)`,
-		`CREATE TABLE environments (project_id TEXT)`,
 		`CREATE TABLE history (project_id TEXT)`,
 		`CREATE TABLE audit_logs (project_id TEXT)`,
 	}
@@ -74,7 +73,6 @@ func TestRepositoryDeleteCascadesProjectData(t *testing.T) {
 		fmt.Sprintf(`INSERT INTO api_flow_step_results (run_id) VALUES ('%s')`, runID),
 		fmt.Sprintf(`INSERT INTO test_cases (id, api_spec_id) VALUES ('%s', '%s')`, testCaseID, specID),
 		fmt.Sprintf(`INSERT INTO test_runs (test_case_id) VALUES ('%s')`, testCaseID),
-		fmt.Sprintf(`INSERT INTO environments (project_id) VALUES ('%s')`, projectID),
 		fmt.Sprintf(`INSERT INTO history (project_id) VALUES ('%s')`, projectID),
 		fmt.Sprintf(`INSERT INTO audit_logs (project_id) VALUES ('%s')`, projectID),
 	}
@@ -126,7 +124,6 @@ func TestRepositoryDeleteCascadesProjectData(t *testing.T) {
 		"api_flow_step_results",
 		"test_cases",
 		"test_runs",
-		"environments",
 		"history",
 		"audit_logs",
 	} {
