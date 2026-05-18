@@ -25,9 +25,6 @@ func TestRepositoryDeleteCascadesProjectData(t *testing.T) {
 		`CREATE TABLE api_examples (api_spec_id TEXT)`,
 		`CREATE TABLE api_spec_shares (project_id TEXT)`,
 		`CREATE TABLE api_spec_ai_drafts (project_id TEXT)`,
-		`CREATE TABLE collections (id TEXT PRIMARY KEY, project_id TEXT)`,
-		`CREATE TABLE requests (id TEXT PRIMARY KEY, collection_id TEXT)`,
-		`CREATE TABLE examples (request_id TEXT)`,
 		`CREATE TABLE api_flows (id TEXT PRIMARY KEY, project_id TEXT)`,
 		`CREATE TABLE api_flow_steps (flow_id TEXT)`,
 		`CREATE TABLE api_flow_edges (flow_id TEXT)`,
@@ -47,8 +44,6 @@ func TestRepositoryDeleteCascadesProjectData(t *testing.T) {
 
 	projectID := "project-1"
 	specID := "spec-1"
-	collectionID := "collection-1"
-	requestID := "request-1"
 	flowID := "flow-1"
 	runID := "run-1"
 	testCaseID := "tc-1"
@@ -63,9 +58,6 @@ func TestRepositoryDeleteCascadesProjectData(t *testing.T) {
 		fmt.Sprintf(`INSERT INTO api_examples (api_spec_id) VALUES ('%s')`, specID),
 		fmt.Sprintf(`INSERT INTO api_spec_shares (project_id) VALUES ('%s')`, projectID),
 		fmt.Sprintf(`INSERT INTO api_spec_ai_drafts (project_id) VALUES ('%s')`, projectID),
-		fmt.Sprintf(`INSERT INTO collections (id, project_id) VALUES ('%s', '%s')`, collectionID, projectID),
-		fmt.Sprintf(`INSERT INTO requests (id, collection_id) VALUES ('%s', '%s')`, requestID, collectionID),
-		fmt.Sprintf(`INSERT INTO examples (request_id) VALUES ('%s')`, requestID),
 		fmt.Sprintf(`INSERT INTO api_flows (id, project_id) VALUES ('%s', '%s')`, flowID, projectID),
 		fmt.Sprintf(`INSERT INTO api_flow_steps (flow_id) VALUES ('%s')`, flowID),
 		fmt.Sprintf(`INSERT INTO api_flow_edges (flow_id) VALUES ('%s')`, flowID),
@@ -114,9 +106,6 @@ func TestRepositoryDeleteCascadesProjectData(t *testing.T) {
 		"api_examples",
 		"api_spec_shares",
 		"api_spec_ai_drafts",
-		"collections",
-		"requests",
-		"examples",
 		"api_flows",
 		"api_flow_steps",
 		"api_flow_edges",
