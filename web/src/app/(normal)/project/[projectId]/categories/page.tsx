@@ -1,4 +1,4 @@
-import { buildProjectCategoriesRoute } from '@/constants/routes';
+import { buildWorkspaceDashboardRoute } from '@/constants/routes';
 import {
   redirectLegacyProjectRoute,
   type LegacySearchParams,
@@ -15,6 +15,6 @@ export default async function LegacyProjectCategoriesPage({
   params,
   searchParams,
 }: LegacyProjectCategoriesPageProps) {
-  const { projectId } = await params;
-  redirectLegacyProjectRoute(buildProjectCategoriesRoute(projectId), await searchParams);
+  await params;
+  redirectLegacyProjectRoute(buildWorkspaceDashboardRoute(), await searchParams);
 }

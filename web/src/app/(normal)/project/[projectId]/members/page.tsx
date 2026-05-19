@@ -1,4 +1,4 @@
-import { buildProjectMembersRoute } from '@/constants/routes';
+import { buildWorkspaceDashboardRoute } from '@/constants/routes';
 import { redirectLegacyProjectRoute } from '../_legacy/redirect';
 
 interface LegacyProjectMembersPageProps {
@@ -10,6 +10,6 @@ interface LegacyProjectMembersPageProps {
 export default async function LegacyProjectMembersPage({
   params,
 }: LegacyProjectMembersPageProps) {
-  const { projectId } = await params;
-  redirectLegacyProjectRoute(buildProjectMembersRoute(projectId));
+  await params;
+  redirectLegacyProjectRoute(buildWorkspaceDashboardRoute());
 }

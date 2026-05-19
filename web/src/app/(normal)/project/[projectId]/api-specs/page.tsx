@@ -1,4 +1,4 @@
-import { buildProjectApiSpecsRoute } from '@/constants/routes';
+import { buildWorkspaceDashboardRoute } from '@/constants/routes';
 import {
   redirectLegacyProjectRoute,
   type LegacySearchParams,
@@ -15,6 +15,6 @@ export default async function LegacyProjectApiSpecsPage({
   params,
   searchParams,
 }: LegacyProjectApiSpecsPageProps) {
-  const { projectId } = await params;
-  redirectLegacyProjectRoute(buildProjectApiSpecsRoute(projectId), await searchParams);
+  await params;
+  redirectLegacyProjectRoute(buildWorkspaceDashboardRoute(), await searchParams);
 }

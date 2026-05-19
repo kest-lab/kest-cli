@@ -1,4 +1,4 @@
-import { buildProjectDetailRoute } from '@/constants/routes';
+import { buildWorkspaceDashboardRoute } from '@/constants/routes';
 import { redirectLegacyProjectRoute } from './_legacy/redirect';
 
 interface LegacyProjectRoutePageProps {
@@ -8,6 +8,6 @@ interface LegacyProjectRoutePageProps {
 }
 
 export default async function LegacyProjectRoutePage({ params }: LegacyProjectRoutePageProps) {
-  const { projectId } = await params;
-  redirectLegacyProjectRoute(buildProjectDetailRoute(projectId));
+  await params;
+  redirectLegacyProjectRoute(buildWorkspaceDashboardRoute());
 }
