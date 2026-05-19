@@ -124,7 +124,7 @@ const messages: ProjectMessages = {
     openActions: 'Open actions',
     readOnlyAccess: 'Read-only access',
     irreversibleAction: 'Irreversible action',
-    backToProjectOverview: 'Back to Project Overview',
+    backToProjectOverview: 'Back to Workspace Overview',
     manage: 'Manage',
     soon: 'Soon',
     moduleGuide: 'Module guide',
@@ -1615,7 +1615,7 @@ const messages: ProjectMessages = {
   },
   testCasesPage: {
     title: 'Test Cases',
-    backToProjectOverview: 'Back to Project Overview',
+    backToProjectOverview: 'Back to Workspace Overview',
     description:
       'Manage project-scoped test cases through {listPath}, run them with {runPath}, and inspect history through {historyPath}.',
     totalCount: '{count} test cases',
@@ -1804,7 +1804,7 @@ const messages: ProjectMessages = {
     notApplicable: 'N/A',
   },
   categoriesPage: {
-    backToProjectOverview: 'Back to Project Overview',
+    backToProjectOverview: 'Back to Workspace Overview',
     title: 'Categories',
     description:
       'Manage the category hierarchy for {projectName} and reuse it across API specs and other modules. Backend entry: {path}.',

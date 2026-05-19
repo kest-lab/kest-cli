@@ -118,7 +118,7 @@ const messages = {
     openActions: '打开操作菜单',
     readOnlyAccess: '只读访问',
     irreversibleAction: '不可逆操作',
-    backToProjectOverview: '返回项目概览',
+    backToProjectOverview: '返回 Workspace 概览',
     manage: '管理',
     soon: '即将推出',
     moduleGuide: '模块指南',
@@ -1496,7 +1496,7 @@ const messages = {
   },
   testCasesPage: {
     title: '测试用例',
-    backToProjectOverview: '返回项目概览',
+    backToProjectOverview: '返回 Workspace 概览',
     description:
       '通过 {listPath} 管理项目级测试用例，使用 {runPath} 运行，并通过 {historyPath} 查看历史记录。',
     totalCount: '{count} 个测试用例',
@@ -1677,7 +1677,7 @@ const messages = {
     notApplicable: 'N/A',
   },
   categoriesPage: {
-    backToProjectOverview: '返回项目概览',
+    backToProjectOverview: '返回 Workspace 概览',
     title: '分类',
     description:
       '管理项目 {projectName} 的分类层级，并将其复用到 API 规格等模块中，对应后端入口为 {path}。',
