@@ -22,17 +22,28 @@ export const ROUTES = {
   CONSOLE: {
     HOME: '/console',
     ANALYTICS: '/console/analytics',
+    WORKSPACES: '/workspace',
+    WORKSPACE_DETAIL: '/workspace/:workspaceId',
+    WORKSPACE_COLLECTIONS: '/workspace/:workspaceId/collections',
+    WORKSPACE_CATEGORIES: '/workspace/:workspaceId/categories',
+    WORKSPACE_ENVIRONMENTS: '/workspace/:workspaceId/environments',
+    WORKSPACE_MEMBERS: '/workspace/:workspaceId/members',
+    WORKSPACE_KEYS: '/workspace/:workspaceId/keys',
+    WORKSPACE_API_SPECS: '/workspace/:workspaceId/api-specs',
+    WORKSPACE_HISTORIES: '/workspace/:workspaceId/histories',
+    WORKSPACE_FLOWS: '/workspace/:workspaceId/flows',
+    WORKSPACE_TEST_CASES: '/workspace/:workspaceId/test-cases',
     PROJECTS: '/workspace',
-    PROJECT_DETAIL: '/workspace/:workspaceId',
-    PROJECT_COLLECTIONS: '/workspace/:workspaceId/collections',
-    PROJECT_CATEGORIES: '/workspace/:workspaceId/categories',
-    PROJECT_ENVIRONMENTS: '/workspace/:workspaceId/environments',
-    PROJECT_MEMBERS: '/workspace/:workspaceId/members',
-    PROJECT_KEYS: '/workspace/:workspaceId/keys',
-    PROJECT_API_SPECS: '/workspace/:workspaceId/api-specs',
-    PROJECT_HISTORIES: '/workspace/:workspaceId/histories',
-    PROJECT_FLOWS: '/workspace/:workspaceId/flows',
-    PROJECT_TEST_CASES: '/workspace/:workspaceId/test-cases',
+    PROJECT_DETAIL: '/project/:projectId',
+    PROJECT_COLLECTIONS: '/project/:projectId/collections',
+    PROJECT_CATEGORIES: '/project/:projectId/categories',
+    PROJECT_ENVIRONMENTS: '/project/:projectId/environments',
+    PROJECT_MEMBERS: '/project/:projectId/members',
+    PROJECT_KEYS: '/project/:projectId/keys',
+    PROJECT_API_SPECS: '/project/:projectId/api-specs',
+    PROJECT_HISTORIES: '/project/:projectId/histories',
+    PROJECT_FLOWS: '/project/:projectId/flows',
+    PROJECT_TEST_CASES: '/project/:projectId/test-cases',
     PROFILE: '/console/profile',
     SETTINGS: '/console/settings',
   },
@@ -77,62 +88,89 @@ export function getConsoleRoute(route: ConsoleRoutes): string {
 
 // 项目详情动态路由 helper。
 // 作用：为 `/project/:projectId` 生成稳定地址，作为项目 stats 与详情页入口。
-export function buildProjectDetailRoute(workspaceId: string | number): string {
-  return buildRoute(ROUTES.CONSOLE.PROJECT_DETAIL, { workspaceId });
+export function buildWorkspaceDashboardRoute(): string {
+  return ROUTES.CONSOLE.WORKSPACES;
 }
 
-// 项目 collections 动态路由 helper。
-// 作用：为 `/project/:projectId/collections` 生成稳定地址，供工作区一级导航复用。
-export function buildProjectCollectionsRoute(workspaceId: string | number): string {
-  return buildRoute(ROUTES.CONSOLE.PROJECT_COLLECTIONS, { workspaceId });
+export function buildWorkspaceDetailRoute(workspaceId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.WORKSPACE_DETAIL, { workspaceId });
 }
 
-// 项目环境动态路由 helper。
-// 作用：为 `/project/:projectId/environments` 生成稳定地址，作为环境管理页入口。
-export function buildProjectEnvironmentsRoute(workspaceId: string | number): string {
-  return buildRoute(ROUTES.CONSOLE.PROJECT_ENVIRONMENTS, { workspaceId });
+export function buildWorkspaceCollectionsRoute(workspaceId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.WORKSPACE_COLLECTIONS, { workspaceId });
 }
 
-// 项目成员动态路由 helper。
-// 作用：为 `/project/:projectId/members` 生成稳定地址，作为成员管理页入口。
-export function buildProjectMembersRoute(workspaceId: string | number): string {
-  return buildRoute(ROUTES.CONSOLE.PROJECT_MEMBERS, { workspaceId });
+export function buildWorkspaceEnvironmentsRoute(workspaceId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.WORKSPACE_ENVIRONMENTS, { workspaceId });
 }
 
-// 项目 Keys 动态路由 helper。
-// 作用：为 `/project/:projectId/keys` 生成稳定地址，作为 CLI/Web 连接密钥管理入口。
-export function buildProjectKeysRoute(workspaceId: string | number): string {
-  return buildRoute(ROUTES.CONSOLE.PROJECT_KEYS, { workspaceId });
+export function buildWorkspaceMembersRoute(workspaceId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.WORKSPACE_MEMBERS, { workspaceId });
 }
 
-// 项目分类动态路由 helper。
-// 作用：为 `/project/:projectId/categories` 生成稳定地址，作为分类管理页入口。
-export function buildProjectCategoriesRoute(workspaceId: string | number): string {
-  return buildRoute(ROUTES.CONSOLE.PROJECT_CATEGORIES, { workspaceId });
+export function buildWorkspaceKeysRoute(workspaceId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.WORKSPACE_KEYS, { workspaceId });
 }
 
-// 项目 API 规格动态路由 helper。
-// 作用：为 `/project/:projectId/api-specs` 生成稳定地址，避免业务组件手写模板字符串。
-export function buildProjectApiSpecsRoute(workspaceId: string | number): string {
-  return buildRoute(ROUTES.CONSOLE.PROJECT_API_SPECS, { workspaceId });
+export function buildWorkspaceCategoriesRoute(workspaceId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.WORKSPACE_CATEGORIES, { workspaceId });
 }
 
-// 项目 Histories 动态路由 helper。
-// 作用：为 `/project/:projectId/histories` 生成稳定地址，供工作区一级导航复用。
-export function buildProjectHistoriesRoute(workspaceId: string | number): string {
-  return buildRoute(ROUTES.CONSOLE.PROJECT_HISTORIES, { workspaceId });
+export function buildWorkspaceApiSpecsRoute(workspaceId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.WORKSPACE_API_SPECS, { workspaceId });
 }
 
-// 项目 Flows 动态路由 helper。
-// 作用：为 `/project/:projectId/flows` 生成稳定地址，供工作区一级导航复用。
-export function buildProjectFlowsRoute(workspaceId: string | number): string {
-  return buildRoute(ROUTES.CONSOLE.PROJECT_FLOWS, { workspaceId });
+export function buildWorkspaceHistoriesRoute(workspaceId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.WORKSPACE_HISTORIES, { workspaceId });
 }
 
-// 项目 Test Cases 动态路由 helper。
-// 作用：为 `/project/:projectId/test-cases` 生成稳定地址，避免业务组件手写模板字符串。
-export function buildProjectTestCasesRoute(workspaceId: string | number): string {
-  return buildRoute(ROUTES.CONSOLE.PROJECT_TEST_CASES, { workspaceId });
+export function buildWorkspaceFlowsRoute(workspaceId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.WORKSPACE_FLOWS, { workspaceId });
+}
+
+export function buildWorkspaceTestCasesRoute(workspaceId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.WORKSPACE_TEST_CASES, { workspaceId });
+}
+
+// Legacy project route helpers kept for old public/internal callers.
+export function buildProjectDetailRoute(projectId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.PROJECT_DETAIL, { projectId });
+}
+
+export function buildProjectCollectionsRoute(projectId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.PROJECT_COLLECTIONS, { projectId });
+}
+
+export function buildProjectEnvironmentsRoute(projectId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.PROJECT_ENVIRONMENTS, { projectId });
+}
+
+export function buildProjectMembersRoute(projectId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.PROJECT_MEMBERS, { projectId });
+}
+
+export function buildProjectKeysRoute(projectId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.PROJECT_KEYS, { projectId });
+}
+
+export function buildProjectCategoriesRoute(projectId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.PROJECT_CATEGORIES, { projectId });
+}
+
+export function buildProjectApiSpecsRoute(projectId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.PROJECT_API_SPECS, { projectId });
+}
+
+export function buildProjectHistoriesRoute(projectId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.PROJECT_HISTORIES, { projectId });
+}
+
+export function buildProjectFlowsRoute(projectId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.PROJECT_FLOWS, { projectId });
+}
+
+export function buildProjectTestCasesRoute(projectId: string | number): string {
+  return buildRoute(ROUTES.CONSOLE.PROJECT_TEST_CASES, { projectId });
 }
 
 // API spec 分享页路由 helper。
