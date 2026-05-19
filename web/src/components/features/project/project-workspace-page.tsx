@@ -111,6 +111,12 @@ import {
   buildProjectEnvironmentsRoute,
   buildProjectHistoriesRoute,
   buildProjectTestCasesRoute,
+  buildWorkspaceApiSpecsRoute,
+  buildWorkspaceCategoriesRoute,
+  buildWorkspaceDetailRoute,
+  buildWorkspaceEnvironmentsRoute,
+  buildWorkspaceHistoriesRoute,
+  buildWorkspaceTestCasesRoute,
 } from '@/constants/routes';
 import {
   useAcceptApiSpecAIDraft,
@@ -206,6 +212,41 @@ const buildModuleHref = (
   itemId?: string | number | null
 ) => {
   const baseRoute = buildProjectWorkspaceRoute(projectId, module);
+
+  if (!itemId) {
+    return baseRoute;
+  }
+
+  return `${baseRoute}?item=${itemId}`;
+};
+
+const buildWorkspaceModuleHref = (
+  workspaceId: number | string,
+  module: ProjectWorkspaceModule,
+  itemId?: string | number | null
+) => {
+  let baseRoute: string;
+
+  switch (module) {
+    case 'api-specs':
+      baseRoute = buildWorkspaceApiSpecsRoute(workspaceId);
+      break;
+    case 'test-cases':
+      baseRoute = buildWorkspaceTestCasesRoute(workspaceId);
+      break;
+    case 'environments':
+      baseRoute = buildWorkspaceEnvironmentsRoute(workspaceId);
+      break;
+    case 'categories':
+      baseRoute = buildWorkspaceCategoriesRoute(workspaceId);
+      break;
+    case 'histories':
+      baseRoute = buildWorkspaceHistoriesRoute(workspaceId);
+      break;
+    default:
+      baseRoute = buildProjectWorkspaceRoute(workspaceId, module);
+      break;
+  }
 
   if (!itemId) {
     return baseRoute;
@@ -1346,12 +1387,14 @@ export function ProjectWorkspacePage({
   selectedItemId,
   autoOpenAICreate = false,
   initialHistoryEntityType,
+  routeScope = 'project',
 }: {
   projectId: number | string;
   module: ProjectWorkspaceModule;
   selectedItemId?: string | number | null;
   autoOpenAICreate?: boolean;
   initialHistoryEntityType?: string | null;
+  routeScope?: 'project' | 'workspace';
 }) {
   const t = useT('project');
   const projectQuery = useProject(projectId);
@@ -1367,6 +1410,7 @@ export function ProjectWorkspacePage({
           projectName={projectName}
           selectedItemId={selectedItemId}
           autoOpenAICreate={autoOpenAICreate}
+          routeScope={routeScope}
         />
       );
     case 'environments':
@@ -1375,6 +1419,7 @@ export function ProjectWorkspacePage({
           projectId={projectId}
           projectName={projectName}
           selectedItemId={selectedItemId}
+          routeScope={routeScope}
         />
       );
     case 'categories':
@@ -1383,6 +1428,7 @@ export function ProjectWorkspacePage({
           projectId={projectId}
           projectName={projectName}
           selectedItemId={selectedItemId}
+          routeScope={routeScope}
         />
       );
     case 'keys':
@@ -1395,6 +1441,7 @@ export function ProjectWorkspacePage({
           projectName={projectName}
           selectedItemId={selectedItemId}
           initialEntityTypeFilter={initialHistoryEntityType}
+          routeScope={routeScope}
         />
       );
     case 'flows':
@@ -1405,6 +1452,7 @@ export function ProjectWorkspacePage({
           projectId={projectId}
           projectName={projectName}
           module="api-specs"
+          routeScope={routeScope}
         />
       );
   }
@@ -1432,7 +1480,7 @@ function ProjectKeysWorkspaceSection({
           version: 1,
           platform_url: cliPlatformUrl,
           platform_token: generatedCliToken.token,
-          platform_project_id: String(project.id),
+          platform_workspace_id: String(project.id),
           platform_auto_sync_history: true,
         })
       : '';
@@ -1637,11 +1685,13 @@ function ApiSpecsWorkspaceSection({
   projectName,
   selectedItemId,
   autoOpenAICreate,
+  routeScope = 'project',
 }: {
   projectId: number | string;
   projectName: string;
   selectedItemId?: string | number | null;
   autoOpenAICreate?: boolean;
+  routeScope?: 'project' | 'workspace';
 }) {
   const t = useT('project');
   const router = useRouter();
@@ -1665,6 +1715,22 @@ function ApiSpecsWorkspaceSection({
   );
   const [draggingSpecId, setDraggingSpecId] = useState<string | number | null>(null);
   const deferredSearch = useDeferredValue(searchQuery);
+  const buildScopedModuleHref = (module: ProjectWorkspaceModule, itemId?: string | number | null) =>
+    routeScope === 'workspace'
+      ? buildWorkspaceModuleHref(projectId, module, itemId)
+      : buildModuleHref(projectId, module, itemId);
+  const apiSpecsIndexHref =
+    routeScope === 'workspace' ? buildWorkspaceApiSpecsRoute(projectId) : buildProjectApiSpecsRoute(projectId);
+  const categoriesIndexHref =
+    routeScope === 'workspace' ? buildWorkspaceCategoriesRoute(projectId) : buildProjectCategoriesRoute(projectId);
+  const environmentsIndexHref =
+    routeScope === 'workspace'
+      ? buildWorkspaceEnvironmentsRoute(projectId)
+      : buildProjectEnvironmentsRoute(projectId);
+  const testCasesHref =
+    routeScope === 'workspace'
+      ? buildWorkspaceTestCasesRoute(projectId)
+      : buildProjectTestCasesRoute(projectId);
   const dragSensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
@@ -1828,7 +1894,7 @@ function ApiSpecsWorkspaceSection({
       setCreateSpecCategoryId('');
       setSearchQuery('');
       await specsQuery.refetch();
-      router.replace(buildModuleHref(projectId, 'api-specs', createdSpec.id));
+      router.replace(buildScopedModuleHref('api-specs', createdSpec.id));
     } catch {
       // Global HTTP error handling already surfaces failure feedback.
     }
@@ -1853,7 +1919,7 @@ function ApiSpecsWorkspaceSection({
     setEditingSpecId(specId);
 
     if (String(selectedItemId ?? '') !== String(specId)) {
-      router.replace(buildModuleHref(projectId, 'api-specs', specId));
+      router.replace(buildScopedModuleHref('api-specs', specId));
     }
   };
 
@@ -1951,8 +2017,8 @@ function ApiSpecsWorkspaceSection({
       if (deletingActiveSpec) {
         router.replace(
           fallbackSpec
-            ? buildModuleHref(projectId, 'api-specs', fallbackSpec.id)
-            : buildProjectApiSpecsRoute(projectId)
+            ? buildScopedModuleHref('api-specs', fallbackSpec.id)
+            : apiSpecsIndexHref
         );
       }
     } catch {
@@ -2000,7 +2066,7 @@ function ApiSpecsWorkspaceSection({
 
   const queueSpecAiAction = (spec: ApiSpec, mode: 'doc' | 'test') => {
     if (String(selectedItemId ?? '') !== String(spec.id)) {
-      router.replace(buildModuleHref(projectId, 'api-specs', spec.id));
+      router.replace(buildScopedModuleHref('api-specs', spec.id));
     }
 
     setAiAction({ mode, spec });
@@ -2093,8 +2159,8 @@ function ApiSpecsWorkspaceSection({
     if (!open && autoOpenAICreate) {
       router.replace(
         selectedItemId
-          ? buildModuleHref(projectId, 'api-specs', selectedItemId)
-          : buildProjectApiSpecsRoute(projectId)
+          ? buildScopedModuleHref('api-specs', selectedItemId)
+          : apiSpecsIndexHref
       );
     }
   };
@@ -2234,20 +2300,20 @@ function ApiSpecsWorkspaceSection({
       key: 'api-specs-categories',
       label: t('categories.manageCategories'),
       icon: Tags,
-      href: buildProjectCategoriesRoute(projectId),
+      href: categoriesIndexHref,
       separatorBefore: true,
     },
     {
       key: 'api-specs-environments',
       label: t('environments.title'),
       icon: Globe,
-      href: buildProjectEnvironmentsRoute(projectId),
+      href: environmentsIndexHref,
     },
     {
       key: 'api-specs-test-cases',
       label: t('apiSpecs.openTestCases'),
       icon: FlaskConical,
-      href: buildProjectTestCasesRoute(projectId),
+      href: testCasesHref,
     },
   ];
 
@@ -2321,6 +2387,7 @@ function ApiSpecsWorkspaceSection({
                 movingSpecId={
                   updateSpecMutation.isPending ? updateSpecMutation.variables?.specId ?? null : null
                 }
+                routeScope={routeScope}
                 onOpenCreate={openCreateSpecDialog}
                 onOpenEdit={openEditDialog}
                 onQueueAiAction={queueSpecAiAction}
@@ -2375,13 +2442,13 @@ function ApiSpecsWorkspaceSection({
             ) : selectedItemId && !selectedSpec ? (
               <MissingDetailState
                 moduleLabel={t('apiSpecs.title')}
-                clearHref={buildProjectApiSpecsRoute(projectId)}
+                clearHref={apiSpecsIndexHref}
               />
             ) : !selectedSpec ? (
               <ApiSpecsGuideState
                 onOpenAICreate={() => setIsAICreateOpen(true)}
                 onOpenManualCreate={() => openCreateSpecDialog()}
-                testCasesHref={buildProjectTestCasesRoute(projectId)}
+                testCasesHref={testCasesHref}
               />
             ) : (
               <div className="space-y-6">
@@ -2615,11 +2682,11 @@ function ApiSpecsWorkspaceSection({
           void specsQuery.refetch();
 
           if (continueToTests) {
-            router.replace(`${buildProjectTestCasesRoute(projectId)}?fromSpec=${specId}&source=ai`);
+            router.replace(`${testCasesHref}?fromSpec=${specId}&source=ai`);
             return;
           }
 
-          router.replace(buildModuleHref(projectId, 'api-specs', specId));
+          router.replace(buildScopedModuleHref('api-specs', specId));
         }}
       />
 
@@ -2707,6 +2774,7 @@ function ApiSpecDirectoryList({
   selectedSpecId,
   canWrite,
   movingSpecId,
+  routeScope = 'project',
   onOpenCreate,
   onOpenEdit,
   onQueueAiAction,
@@ -2717,6 +2785,7 @@ function ApiSpecDirectoryList({
   selectedSpecId?: string | number | null;
   canWrite: boolean;
   movingSpecId?: string | number | null;
+  routeScope?: 'project' | 'workspace';
   onOpenCreate: (categoryId?: string) => void;
   onOpenEdit: (specId: string | number) => void;
   onQueueAiAction: (spec: ApiSpec, mode: 'doc' | 'test') => void;
@@ -2737,6 +2806,7 @@ function ApiSpecDirectoryList({
               key={spec.id}
               spec={spec}
               projectId={projectId}
+              routeScope={routeScope}
               active={String(spec.id) === String(selectedSpecId ?? '')}
               canWrite={canWrite}
               indentLevel={Math.min(group.depth + 1, 5)}
@@ -2802,6 +2872,7 @@ function ApiSpecCategoryDropZone({
 function DraggableApiSpecListItem({
   spec,
   projectId,
+  routeScope = 'project',
   active,
   canWrite,
   indentLevel,
@@ -2812,6 +2883,7 @@ function DraggableApiSpecListItem({
 }: {
   spec: ApiSpec;
   projectId: number | string;
+  routeScope?: 'project' | 'workspace';
   active: boolean;
   canWrite: boolean;
   indentLevel: number;
@@ -2821,6 +2893,10 @@ function DraggableApiSpecListItem({
   onDelete: (spec: ApiSpec) => void;
 }) {
   const t = useT('project');
+  const href =
+    routeScope === 'workspace'
+      ? buildWorkspaceModuleHref(projectId, 'api-specs', spec.id)
+      : buildModuleHref(projectId, 'api-specs', spec.id);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `api-spec-${spec.id}`,
     data: {
@@ -2836,7 +2912,7 @@ function DraggableApiSpecListItem({
       className={cn((isDragging || isMoving) && 'opacity-55')}
     >
       <ResourceListItem
-        href={buildModuleHref(projectId, 'api-specs', spec.id)}
+        href={href}
         active={active}
         title={`${spec.method} ${spec.path}`}
         description={spec.summary || spec.description || t('common.noSummaryProvided')}
@@ -2871,7 +2947,7 @@ function DraggableApiSpecListItem({
               {
                 key: `spec-open-${spec.id}`,
                 label: t('common.open'),
-                href: buildModuleHref(projectId, 'api-specs', spec.id),
+                href,
               },
               {
                 key: `spec-edit-${spec.id}`,
@@ -2936,10 +3012,12 @@ function EnvironmentsWorkspaceSection({
   projectId,
   projectName,
   selectedItemId,
+  routeScope = 'project',
 }: {
   projectId: number | string;
   projectName: string;
   selectedItemId?: string | number | null;
+  routeScope?: 'project' | 'workspace';
 }) {
   const t = useT('project');
   const router = useRouter();
@@ -2954,6 +3032,24 @@ function EnvironmentsWorkspaceSection({
   >(null);
   const deferredSearch = useDeferredValue(searchQuery);
   const normalizedSearch = deferredSearch.trim().toLowerCase();
+  const buildScopedModuleHref = (module: ProjectWorkspaceModule, itemId?: string | number | null) =>
+    routeScope === 'workspace'
+      ? buildWorkspaceModuleHref(projectId, module, itemId)
+      : buildModuleHref(projectId, module, itemId);
+  const apiSpecsHref =
+    routeScope === 'workspace' ? buildWorkspaceApiSpecsRoute(projectId) : buildProjectApiSpecsRoute(projectId);
+  const categoriesHref =
+    routeScope === 'workspace'
+      ? buildWorkspaceCategoriesRoute(projectId)
+      : buildProjectCategoriesRoute(projectId);
+  const testCasesHref =
+    routeScope === 'workspace'
+      ? buildWorkspaceTestCasesRoute(projectId)
+      : buildProjectTestCasesRoute(projectId);
+  const environmentsHref =
+    routeScope === 'workspace'
+      ? buildWorkspaceEnvironmentsRoute(projectId)
+      : buildProjectEnvironmentsRoute(projectId);
   const effectiveSelectedItemId =
     selectedItemId && String(selectedItemId) === String(suppressedSelectedEnvironmentId)
       ? null
@@ -3022,7 +3118,7 @@ function EnvironmentsWorkspaceSection({
         setIsFormOpen(false);
         setEditingEnvironmentId(null);
         setSearchQuery('');
-        router.replace(buildModuleHref(projectId, 'environments', createdEnvironment.id));
+        router.replace(buildScopedModuleHref('environments', createdEnvironment.id));
         return;
       }
 
@@ -3036,7 +3132,7 @@ function EnvironmentsWorkspaceSection({
       });
       setIsFormOpen(false);
       setEditingEnvironmentId(null);
-      router.replace(buildModuleHref(projectId, 'environments', updatedEnvironment.id));
+      router.replace(buildScopedModuleHref('environments', updatedEnvironment.id));
     } catch {
       // Global HTTP error handling already surfaces failure feedback.
     }
@@ -3062,7 +3158,7 @@ function EnvironmentsWorkspaceSection({
       setDeleteTarget(null);
 
       if (isDeletingSelectedEnvironment) {
-        router.replace(buildProjectEnvironmentsRoute(projectId));
+        router.replace(environmentsHref);
       }
     } catch {
       if (isDeletingSelectedEnvironment) {
@@ -3084,7 +3180,7 @@ function EnvironmentsWorkspaceSection({
       });
       setDuplicateTarget(null);
       setSearchQuery('');
-      router.replace(buildModuleHref(projectId, 'environments', duplicatedEnvironment.id));
+      router.replace(buildScopedModuleHref('environments', duplicatedEnvironment.id));
     } catch {
       // Global HTTP error handling already surfaces failure feedback.
     }
@@ -3116,20 +3212,20 @@ function EnvironmentsWorkspaceSection({
       key: 'environments-api-specs',
       label: t('apiSpecs.title'),
       icon: FileJson2,
-      href: buildProjectApiSpecsRoute(projectId),
+      href: apiSpecsHref,
       separatorBefore: selectedEnvironment ? true : undefined,
     },
     {
       key: 'environments-categories',
       label: t('categories.title'),
       icon: Tags,
-      href: buildProjectCategoriesRoute(projectId),
+      href: categoriesHref,
     },
     {
       key: 'environments-test-cases',
       label: t('apiSpecs.openTestCases'),
       icon: FlaskConical,
-      href: buildProjectTestCasesRoute(projectId),
+      href: testCasesHref,
     },
   ];
 
@@ -3176,7 +3272,7 @@ function EnvironmentsWorkspaceSection({
             {filteredEnvironments.map(environment => (
               <ResourceListItem
                 key={environment.id}
-                href={buildModuleHref(projectId, 'environments', environment.id)}
+                href={buildScopedModuleHref('environments', environment.id)}
                 active={environment.id === selectedEnvironment?.id}
                 title={environment.display_name || environment.name}
                 description={environment.base_url || t('environments.baseUrlNotConfigured')}
@@ -3201,7 +3297,7 @@ function EnvironmentsWorkspaceSection({
                       {
                         key: `environment-open-${environment.id}`,
                         label: t('common.open'),
-                        href: buildModuleHref(projectId, 'environments', environment.id),
+                        href: buildScopedModuleHref('environments', environment.id),
                         onSelect: closeEnvironmentForm,
                       },
                       {
@@ -3314,7 +3410,7 @@ function EnvironmentsWorkspaceSection({
               ) : effectiveSelectedItemId && !selectedEnvironment ? (
                 <MissingDetailState
                   moduleLabel={t('modules.environments.label').toLowerCase()}
-                  clearHref={buildProjectEnvironmentsRoute(projectId)}
+                  clearHref={environmentsHref}
                 />
               ) : !selectedEnvironment ? (
                 environmentsQuery.isLoading ? (
@@ -3339,7 +3435,7 @@ function EnvironmentsWorkspaceSection({
                           {t('environments.createButton')}
                         </Button>
                         <Button asChild variant="outline">
-                          <Link href={buildProjectApiSpecsRoute(projectId)}>
+                          <Link href={apiSpecsHref}>
                             {t('environments.openApiSpecs')}
                           </Link>
                         </Button>
@@ -3359,7 +3455,7 @@ function EnvironmentsWorkspaceSection({
                           {t('environments.createButton')}
                         </Button>
                         <Button asChild variant="outline">
-                          <Link href={buildProjectTestCasesRoute(projectId)}>
+                          <Link href={testCasesHref}>
                             {t('environments.openTestCases')}
                           </Link>
                         </Button>
@@ -3387,7 +3483,7 @@ function EnvironmentsWorkspaceSection({
                             listPreview.map(environment => (
                               <Link
                                 key={environment.id}
-                                href={buildModuleHref(projectId, 'environments', environment.id)}
+                                href={buildScopedModuleHref('environments', environment.id)}
                                 className="block rounded-md border border-border-subtle bg-bg-canvas p-4 transition-colors hover:bg-bg-subtle"
                               >
                                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -3551,14 +3647,24 @@ function CategoriesWorkspaceSection({
   projectId,
   projectName,
   selectedItemId,
+  routeScope = 'project',
 }: {
   projectId: number | string;
   projectName: string;
   selectedItemId?: string | number | null;
+  routeScope?: 'project' | 'workspace';
 }) {
   const t = useT('project');
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearch = useDeferredValue(searchQuery);
+  const buildScopedModuleHref = (module: ProjectWorkspaceModule, itemId?: string | number | null) =>
+    routeScope === 'workspace'
+      ? buildWorkspaceModuleHref(projectId, module, itemId)
+      : buildModuleHref(projectId, module, itemId);
+  const categoriesHref =
+    routeScope === 'workspace'
+      ? buildWorkspaceCategoriesRoute(projectId)
+      : buildProjectCategoriesRoute(projectId);
 
   const categoriesQuery = useProjectCategories({
     projectId,
@@ -3589,7 +3695,7 @@ function CategoriesWorkspaceSection({
     selectedCategory?.id
   );
   const childCategories = selectedCategoryTreeNode?.children ?? [];
-  const fullManagerHref = `${buildProjectCategoriesRoute(projectId)}?mode=manage`;
+  const fullManagerHref = `${categoriesHref}?mode=manage`;
   const refreshActionItems: ActionMenuItem[] = [
     {
       key: 'categories-refresh',
@@ -3632,7 +3738,7 @@ function CategoriesWorkspaceSection({
           {filteredCategories.map(category => (
             <ResourceListItem
               key={category.id}
-              href={buildModuleHref(projectId, 'categories', category.id)}
+              href={buildScopedModuleHref('categories', category.id)}
               active={category.id === selectedCategory?.id}
               title={category.name}
               description={category.description || t('common.noDescriptionProvided')}
@@ -3682,14 +3788,14 @@ function CategoriesWorkspaceSection({
           ) : selectedItemId && !selectedCategory ? (
             <MissingDetailState
               moduleLabel={t('modules.categories.label').toLowerCase()}
-              clearHref={buildProjectCategoriesRoute(projectId)}
+              clearHref={categoriesHref}
             />
           ) : !selectedCategory ? (
             <GuideState
               icon={Tags}
               title={t('categories.chooseCategory')}
               description={t('categories.chooseCategoryDescription')}
-              actionHref={`${buildProjectCategoriesRoute(projectId)}?mode=manage`}
+              actionHref={`${categoriesHref}?mode=manage`}
               actionLabel={t('categories.manageCategories')}
             />
           ) : (
@@ -3804,11 +3910,13 @@ function HistoryWorkspaceSection({
   projectName,
   selectedItemId,
   initialEntityTypeFilter,
+  routeScope = 'project',
 }: {
   projectId: number | string;
   projectName: string;
   selectedItemId?: string | number | null;
   initialEntityTypeFilter?: string | null;
+  routeScope?: 'project' | 'workspace';
 }) {
   const t = useT('project');
   const [searchQuery, setSearchQuery] = useState('');
@@ -3816,6 +3924,16 @@ function HistoryWorkspaceSection({
     initialEntityTypeFilter?.trim() || 'all'
   );
   const deferredSearch = useDeferredValue(searchQuery);
+  const buildScopedModuleHref = (module: ProjectWorkspaceModule, itemId?: string | number | null) =>
+    routeScope === 'workspace'
+      ? buildWorkspaceModuleHref(projectId, module, itemId)
+      : buildModuleHref(projectId, module, itemId);
+  const historiesHref =
+    routeScope === 'workspace' ? buildWorkspaceHistoriesRoute(projectId) : buildProjectHistoriesRoute(projectId);
+  const testCasesHref =
+    routeScope === 'workspace'
+      ? buildWorkspaceTestCasesRoute(projectId)
+      : buildProjectTestCasesRoute(projectId);
 
   const historiesQuery = useProjectHistories({
     projectId: String(projectId),
@@ -3920,7 +4038,7 @@ function HistoryWorkspaceSection({
           {filteredHistories.map(history => (
             <ResourceListItem
               key={history.id}
-              href={`${buildModuleHref(projectId, 'histories', history.id)}${
+              href={`${buildScopedModuleHref('histories', history.id)}${
                 entityTypeFilter !== 'all' ? `&entityType=${encodeURIComponent(entityTypeFilter)}` : ''
               }`}
               active={history.id === selectedHistory?.id}
@@ -3988,7 +4106,7 @@ function HistoryWorkspaceSection({
           ) : selectedItemId && !selectedHistory ? (
             <MissingDetailState
               moduleLabel={t('history.recordId').toLowerCase()}
-              clearHref={buildProjectHistoriesRoute(projectId)}
+              clearHref={historiesHref}
             />
           ) : historiesQuery.isLoading ? (
             <DetailSkeleton />
@@ -4282,10 +4400,12 @@ function PlaceholderWorkspaceSection({
   projectId,
   projectName,
   module,
+  routeScope = 'project',
 }: {
   projectId: number | string;
   projectName: string;
   module: ProjectWorkspaceModule;
+  routeScope?: 'project' | 'workspace';
 }) {
   const t = useT('project');
   const moduleMeta = getProjectWorkspaceModuleMeta(module);
@@ -4293,6 +4413,10 @@ function PlaceholderWorkspaceSection({
   const moduleDescription = getProjectModuleCopy(t, moduleMeta.i18nKey, 'description');
   const Icon = moduleMeta.icon;
   const isHistoryModule = module === 'histories';
+  const testCasesHref =
+    routeScope === 'workspace'
+      ? buildWorkspaceTestCasesRoute(projectId)
+      : buildProjectTestCasesRoute(projectId);
 
   return (
     <WorkspaceFrame
@@ -4327,7 +4451,7 @@ function PlaceholderWorkspaceSection({
           actions={
             isHistoryModule ? (
               <Button asChild variant="outline">
-                <Link href={buildProjectTestCasesRoute(projectId)}>
+                <Link href={testCasesHref}>
                   {t('common.openLegacyTestCases')}
                 </Link>
               </Button>
@@ -4342,7 +4466,7 @@ function PlaceholderWorkspaceSection({
                 ? t('workspace.historyPlaceholderDescription')
                 : t('workspace.placeholderDescription')
             }
-            actionHref={isHistoryModule ? buildProjectTestCasesRoute(projectId) : undefined}
+            actionHref={isHistoryModule ? testCasesHref : undefined}
             actionLabel={isHistoryModule ? t('common.openLegacyTestCases') : undefined}
           />
         </ResourceContent>

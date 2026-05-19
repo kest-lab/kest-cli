@@ -6,7 +6,7 @@ import { projectKeys } from '@/hooks/use-projects';
 import { useT } from '@/i18n/client';
 import { memberService } from '@/services/member';
 import { useCurrentUser } from '@/store/auth-store';
-import type { UpdateProjectMemberRequest } from '@/types/member';
+import type { AddProjectMemberRequest, UpdateProjectMemberRequest } from '@/types/member';
 
 // Members 域的 React Query key。
 // 作用：统一管理项目成员列表和当前用户成员角色缓存。
@@ -80,6 +80,19 @@ export function useDeleteProjectMember(projectId: number | string) {
     onSuccess: () => {
       invalidateMemberProjectData(queryClient, projectId);
       toast.success(t.project('toasts.memberRemoved'));
+    },
+  });
+}
+
+export function useMembers(projectId: number | string) {
+  const queryClient = useQueryClient();
+  const t = useT();
+
+  return useMutation({
+    mutationFn: (data: AddProjectMemberRequest) => memberService.create(projectId, data),
+    onSuccess: () => {
+      invalidateMemberProjectData(queryClient, projectId);
+      toast.success(t.project('toasts.memberInvitationSent'));
     },
   });
 }

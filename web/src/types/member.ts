@@ -21,6 +21,11 @@ export interface UpdateProjectMemberRequest {
   role: AssignableProjectMemberRole;
 }
 
+export interface AddProjectMemberRequest {
+  user_id: string;
+  role: AssignableProjectMemberRole;
+}
+
 export const PROJECT_MEMBER_ASSIGNABLE_ROLES: AssignableProjectMemberRole[] = [
   'admin',
   'write',

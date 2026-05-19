@@ -1,4 +1,4 @@
-import { ProjectMemberManagementPage } from '@/components/features/project/project-member-management-page';
+import { WorkspaceMemberManagementPage } from '@/components/features/workspace/workspace-member-management-page';
 
 interface WorkspaceMembersPageProps {
   params: Promise<{
@@ -12,5 +12,5 @@ export default async function WorkspaceMembersPage({
   params,
 }: WorkspaceMembersPageProps) {
   const { workspaceId } = await params;
-  return <ProjectMemberManagementPage projectId={workspaceId} />;
+  return <WorkspaceMemberManagementPage workspaceId={workspaceId} />;
 }

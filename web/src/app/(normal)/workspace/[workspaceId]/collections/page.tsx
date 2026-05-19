@@ -12,5 +12,5 @@ export default async function WorkspaceCollectionsPage({
   params,
 }: WorkspaceCollectionsPageProps) {
   const { workspaceId } = await params;
-  return <ProjectWorkspacePage projectId={workspaceId} module="collections" />;
+  return <ProjectWorkspacePage projectId={workspaceId} module="collections" routeScope="workspace" />;
 }

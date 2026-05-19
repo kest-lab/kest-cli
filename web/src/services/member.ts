@@ -1,5 +1,6 @@
 import request from '@/http';
 import type {
+  AddProjectMemberRequest,
   ProjectMember,
   UpdateProjectMemberRequest,
 } from '@/types/member';
@@ -14,6 +15,9 @@ const normalizePayload = <T extends object>(payload: T) =>
 // Members 服务层。
 // 作用：集中封装项目成员列表、当前角色和成员管理相关 HTTP 请求。
 export const memberService = {
+  create: (projectId: number | string, data: AddProjectMemberRequest) =>
+    request.post<ProjectMember>(`/workspaces/${projectId}/members`, normalizePayload(data)),
+
   list: (projectId: number | string) =>
     request.get<ProjectMember[]>(`/workspaces/${projectId}/members`),
 

@@ -25,6 +25,7 @@ export default async function WorkspaceEnvironmentsPage({
       projectId={workspaceId}
       module="environments"
       selectedItemId={selectedItemId}
+      routeScope="workspace"
     />
   );
 }

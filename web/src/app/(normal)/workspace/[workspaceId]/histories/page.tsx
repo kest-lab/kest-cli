@@ -27,6 +27,7 @@ export default async function WorkspaceHistoriesPage({
       module="histories"
       selectedItemId={selectedItemId}
       initialHistoryEntityType={initialHistoryEntityType}
+      routeScope="workspace"
     />
   );
 }

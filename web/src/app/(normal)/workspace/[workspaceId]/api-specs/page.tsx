@@ -27,6 +27,7 @@ export default async function WorkspaceApiSpecsPage({
       module="api-specs"
       selectedItemId={selectedItemId}
       autoOpenAICreate={ai === 'create'}
+      routeScope="workspace"
     />
   );
 }
