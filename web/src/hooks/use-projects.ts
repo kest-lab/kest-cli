@@ -103,8 +103,8 @@ export function useProjectStats(id?: number | string, options: ProjectQueryOptio
   });
 }
 
-// 创建项目 mutation。
-// 作用：调用创建接口后刷新列表，并把新项目详情提前写入缓存。
+// 创建 Workspace mutation。
+// 作用：调用创建接口后刷新列表，并把新 Workspace 详情提前写入缓存。
 export function useCreateProject() {
   const queryClient = useQueryClient();
   const t = useT();
