@@ -8,7 +8,7 @@ import type { CreateRequestRequest, UpdateRequestRequest } from '@/types/request
 
 export const requestKeys = {
   all: ['requests'] as const,
-  project: (projectId: number | string) => [...requestKeys.all, 'project', projectId] as const,
+  project: (projectId: number | string) => [...requestKeys.all, 'workspace', projectId] as const,
   collection: (projectId: number | string, collectionId: number | string) =>
     [...requestKeys.project(projectId), 'collection', collectionId] as const,
   list: (projectId: number | string, collectionId: number | string) =>
@@ -87,6 +87,32 @@ export function useDeleteRequest(projectId: number | string) {
         queryKey: requestKeys.detail(projectId, variables.collectionId, variables.requestId),
       });
       toast.success(t.project('toasts.requestDeleted'));
+    },
+  });
+}
+
+export function useGenRequestDoc(projectId: number | string) {
+  const queryClient = useQueryClient();
+  const t = useT();
+
+  return useMutation({
+    mutationFn: ({
+      collectionId,
+      requestId,
+      lang,
+    }: {
+      collectionId: number | string;
+      requestId: number | string;
+      lang: 'en' | 'zh';
+    }) => requestService.genDoc(projectId, collectionId, requestId, { lang }),
+    onSuccess: (updatedRequest, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: requestKeys.collection(projectId, variables.collectionId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: requestKeys.detail(projectId, variables.collectionId, variables.requestId),
+      });
+      toast.success(t.project('toasts.documentationGenerated', { path: updatedRequest.url }));
     },
   });
 }

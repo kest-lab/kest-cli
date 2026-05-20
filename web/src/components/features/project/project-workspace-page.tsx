@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
   closestCenter,
   DndContext,
@@ -151,6 +151,7 @@ import {
 } from '@/hooks/use-environments';
 import { useProjectHistories, useProjectHistory } from '@/hooks/use-histories';
 import { useGenerateProjectCliToken, useProject } from '@/hooks/use-projects';
+import { useRun, useRuns } from '@/hooks/use-runs';
 import type {
   ApiSpec,
   ApiSpecExportFormat,
@@ -171,17 +172,20 @@ import type {
 import type { ProjectHistory } from '@/types/history';
 import { PROJECT_MEMBER_WRITE_ROLES, type ProjectMemberRole } from '@/types/member';
 import type { GenerateProjectCliTokenResponse } from '@/types/project';
+import type { UnifiedRun, UnifiedRunSourceType } from '@/types/run';
 import { useT } from '@/i18n/client';
 import type { ScopedTranslations } from '@/i18n/shared';
 import { buildKestConnectionKey } from '@/utils/kest-connection-key';
 import { cn, formatDate } from '@/utils';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const MAX_MODULE_ITEMS = 500;
 const EMPTY_SPECS: ApiSpec[] = [];
 const EMPTY_CATEGORIES: ProjectCategory[] = [];
 const EMPTY_ENVIRONMENTS: ProjectEnvironment[] = [];
 const EMPTY_HISTORIES: ProjectHistory[] = [];
+const EMPTY_UNIFIED_RUNS: UnifiedRun[] = [];
 const SPEC_METHOD_OPTIONS: HttpMethod[] = [
   'GET',
   'POST',
@@ -281,34 +285,40 @@ const formatHistoryDuration = (value: unknown) => {
   return duration === null ? null : `${duration}ms`;
 };
 
+const isRequestHistoryRecord = (history?: ProjectHistory | null) =>
+  history?.entity_type === 'cli_request' || history?.entity_type === 'request';
+
+const isRunHistoryRecord = (history?: ProjectHistory | null) =>
+  history?.entity_type === 'cli_run';
+
 const getCLIRequestRecord = (history?: ProjectHistory | null) => {
-  if (history?.entity_type !== 'cli_request') {
+  if (!isRequestHistoryRecord(history)) {
     return null;
   }
   return getHistoryNestedRecord(getHistoryDataRecord(history)?.request);
 };
 
 const getCLIRequestResponseRecord = (history?: ProjectHistory | null) => {
-  if (history?.entity_type !== 'cli_request') {
+  if (!isRequestHistoryRecord(history)) {
     return null;
   }
   return getHistoryNestedRecord(getHistoryDataRecord(history)?.response);
 };
 
 const getCLIRunRecord = (history?: ProjectHistory | null) => {
-  if (history?.entity_type !== 'cli_run') {
+  if (!isRunHistoryRecord(history)) {
     return null;
   }
   return getHistoryNestedRecord(getHistoryDataRecord(history)?.run);
 };
 
 const getCLIRunResults = (history?: ProjectHistory | null) =>
-  history?.entity_type === 'cli_run'
+  isRunHistoryRecord(history)
     ? getHistoryNestedList(getHistoryDataRecord(history)?.results)
     : [];
 
 const getCLIRunLogRecord = (history?: ProjectHistory | null) =>
-  history?.entity_type === 'cli_run'
+  isRunHistoryRecord(history)
     ? getHistoryNestedRecord(getHistoryDataRecord(history)?.log)
     : null;
 
@@ -363,11 +373,66 @@ const getHistoryPrimaryTitle = (history: ProjectHistory) =>
   `${history.entity_type} #${history.entity_id}`;
 
 const getHistoryFallbackDescription = (history: ProjectHistory) =>
-  history.entity_type === 'cli_request'
+  history.entity_type === 'cli_request' || history.entity_type === 'request'
     ? `${history.action} recorded for CLI request #${history.entity_id}`
     : history.entity_type === 'cli_run'
       ? `${history.action} recorded for CLI run ${getHistoryRunSourceName(history) ?? `#${history.entity_id}`}`
       : `${history.action} recorded for ${history.entity_type} #${history.entity_id}`;
+
+type HistoryView = 'activity' | 'runs';
+
+const HISTORY_RUN_SOURCE_TYPES: UnifiedRunSourceType[] = [
+  'request',
+  'collection',
+  'test_case',
+  'flow',
+];
+
+const getUnifiedRunStatusLabel = (t: ScopedTranslations<'project'>, status: string) => {
+  switch (status) {
+    case 'passed':
+      return t('history.runs.statusPassed');
+    case 'failed':
+      return t('history.runs.statusFailed');
+    case 'running':
+      return t('history.runs.statusRunning');
+    case 'canceled':
+      return t('history.runs.statusCanceled');
+    default:
+      return t('history.runs.statusPending');
+  }
+};
+
+const getUnifiedRunStatusClassName = (status: string) => {
+  switch (status) {
+    case 'passed':
+      return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    case 'failed':
+      return 'border-destructive/20 bg-destructive/10 text-destructive';
+    case 'running':
+      return 'border-sky-200 bg-sky-50 text-sky-700';
+    case 'canceled':
+      return 'border-amber-200 bg-amber-50 text-amber-700';
+    default:
+      return 'border-border-subtle bg-bg-soft text-text-muted';
+  }
+};
+
+const getUnifiedRunSourceLabel = (
+  t: ScopedTranslations<'project'>,
+  sourceType: string | null | undefined
+) => {
+  switch (sourceType) {
+    case 'collection':
+      return t('history.runs.sourceCollection');
+    case 'test_case':
+      return t('history.runs.sourceTestCase');
+    case 'flow':
+      return t('history.runs.sourceFlow');
+    default:
+      return t('history.runs.sourceRequest');
+  }
+};
 
 type EnvironmentFormMode = 'create' | 'edit';
 
@@ -1347,12 +1412,18 @@ export function ProjectWorkspacePage({
   selectedItemId,
   autoOpenAICreate = false,
   initialHistoryEntityType,
+  initialHistoryView,
+  initialRunSourceType,
+  initialRunStatus,
 }: {
   projectId: number | string;
   module: ProjectWorkspaceModule;
   selectedItemId?: string | number | null;
   autoOpenAICreate?: boolean;
   initialHistoryEntityType?: string | null;
+  initialHistoryView?: HistoryView | null;
+  initialRunSourceType?: UnifiedRunSourceType | null;
+  initialRunStatus?: string | null;
 }) {
   const t = useT('project');
   const projectQuery = useProject(projectId);
@@ -1391,11 +1462,14 @@ export function ProjectWorkspacePage({
     case 'histories':
       return (
         <HistoryWorkspaceSection
-          key={`histories:${initialHistoryEntityType?.trim() || 'all'}`}
+          key={`histories:${initialHistoryView ?? 'activity'}:${initialHistoryEntityType?.trim() || 'all'}:${initialRunSourceType ?? 'all'}:${initialRunStatus?.trim() || 'all'}`}
           projectId={projectId}
           projectName={projectName}
           selectedItemId={selectedItemId}
+          initialView={initialHistoryView}
           initialEntityTypeFilter={initialHistoryEntityType}
+          initialRunSourceType={initialRunSourceType}
+          initialRunStatus={initialRunStatus}
         />
       );
     case 'flows':
@@ -1462,7 +1536,7 @@ function ProjectKeysWorkspaceSection({
         id: project.id,
         data: {
           name: `${project.name} CLI sync`,
-          scopes: ['spec:write', 'run:write'],
+          scopes: ['collection:read', 'collection:run', 'environment:read'],
         },
       });
       setGeneratedCliToken(token);
@@ -1538,7 +1612,9 @@ function ProjectKeysWorkspaceSection({
                     <span className="font-mono">{scopedProjectId}</span>
                   </DetailField>
                   <DetailField label={t('keysPage.scopes')}>
-                    <span className="font-mono text-xs">spec:write, run:write</span>
+                    <span className="font-mono text-xs">
+                      collection:read, collection:run, environment:read
+                    </span>
                   </DetailField>
                   <DetailField label={t('keysPage.autoSyncHistory')}>
                     {t('keysPage.autoSyncHistoryEnabled')}
@@ -2988,10 +3064,10 @@ function EnvironmentsWorkspaceSection({
   const canWrite = currentRole ? WRITE_ROLES.includes(currentRole) : false;
   const listPreview =
     normalizedSearch.length > 0 ? filteredEnvironments.slice(0, 5) : environments.slice(0, 5);
-  const environmentsPath = `/projects/${projectId}/environments`;
+  const environmentsPath = `/workspaces/${projectId}/environments`;
   const activeEnvironmentPath = selectedEnvironment
-    ? `/projects/${projectId}/environments/${selectedEnvironment.id}`
-    : `/projects/${projectId}/environments/:eid`;
+    ? `/workspaces/${projectId}/environments/${selectedEnvironment.id}`
+    : `/workspaces/${projectId}/environments/:eid`;
 
   const closeEnvironmentForm = () => {
     setIsFormOpen(false);
@@ -3802,19 +3878,101 @@ function HistoryWorkspaceSection({
   projectId,
   projectName,
   selectedItemId,
+  initialView,
   initialEntityTypeFilter,
+  initialRunSourceType,
+  initialRunStatus,
 }: {
   projectId: number | string;
   projectName: string;
   selectedItemId?: string | number | null;
+  initialView?: HistoryView | null;
   initialEntityTypeFilter?: string | null;
+  initialRunSourceType?: UnifiedRunSourceType | null;
+  initialRunStatus?: string | null;
 }) {
   const t = useT('project');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [view, setView] = useState<HistoryView>(initialView ?? 'activity');
   const [searchQuery, setSearchQuery] = useState('');
   const [entityTypeFilter, setEntityTypeFilter] = useState(
     initialEntityTypeFilter?.trim() || 'all'
   );
+  const [runSourceTypeFilter, setRunSourceTypeFilter] = useState<UnifiedRunSourceType | 'all'>(
+    initialRunSourceType && HISTORY_RUN_SOURCE_TYPES.includes(initialRunSourceType)
+      ? initialRunSourceType
+      : 'all'
+  );
+  const [runStatusFilter, setRunStatusFilter] = useState(initialRunStatus?.trim() || 'all');
   const deferredSearch = useDeferredValue(searchQuery);
+
+  const pushHistoryUrl = useCallback(
+    (next: {
+      view?: HistoryView;
+      item?: string | null;
+      run?: string | null;
+      entityType?: string | null;
+      sourceType?: string | null;
+      status?: string | null;
+    }) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const nextView = next.view ?? view;
+
+      params.set('view', nextView);
+
+      if (nextView === 'runs') {
+        params.delete('item');
+        if (next.run) {
+          params.set('run', next.run);
+        } else {
+          params.delete('run');
+        }
+      } else {
+        params.delete('run');
+        if (next.item) {
+          params.set('item', next.item);
+        } else {
+          params.delete('item');
+        }
+      }
+
+      const nextEntityType = next.entityType ?? (entityTypeFilter !== 'all' ? entityTypeFilter : null);
+      if (nextEntityType) {
+        params.set('entityType', nextEntityType);
+      } else {
+        params.delete('entityType');
+      }
+
+      const nextSourceType =
+        next.sourceType ?? (runSourceTypeFilter !== 'all' ? runSourceTypeFilter : null);
+      if (nextSourceType) {
+        params.set('sourceType', nextSourceType);
+      } else {
+        params.delete('sourceType');
+      }
+
+      const nextStatus = next.status ?? (runStatusFilter !== 'all' ? runStatusFilter : null);
+      if (nextStatus) {
+        params.set('status', nextStatus);
+      } else {
+        params.delete('status');
+      }
+
+      const nextHref = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+      router.replace(nextHref, { scroll: false });
+    },
+    [
+      entityTypeFilter,
+      pathname,
+      router,
+      runSourceTypeFilter,
+      runStatusFilter,
+      searchParams,
+      view,
+    ]
+  );
 
   const historiesQuery = useProjectHistories({
     projectId: String(projectId),
@@ -3858,105 +4016,281 @@ function HistoryWorkspaceSection({
   const selectedCLIRun = getCLIRunRecord(selectedHistory);
   const selectedCLIRunResults = getCLIRunResults(selectedHistory);
   const selectedCLIRunLog = getCLIRunLogRecord(selectedHistory);
-  const isFiltered = entityTypeFilter !== 'all' || deferredSearch.trim().length > 0;
-  const refreshActionItems: ActionMenuItem[] = [
-    {
-      key: 'histories-refresh',
-      label:
-        historiesQuery.isFetching || selectedHistoryQuery.isFetching
-          ? t('common.refreshing')
-          : t('common.refresh'),
-      icon: RefreshCw,
-      disabled: historiesQuery.isFetching || selectedHistoryQuery.isFetching,
-      onSelect: () => {
-        void historiesQuery.refetch();
+  const runsQuery = useRuns({
+    workspaceId: String(projectId),
+    page: 1,
+    pageSize: MAX_MODULE_ITEMS,
+    sourceType: runSourceTypeFilter !== 'all' ? runSourceTypeFilter : undefined,
+  });
+  const selectedRunQuery = useRun(
+    String(projectId),
+    view === 'runs' && selectedItemId != null ? String(selectedItemId) : undefined
+  );
 
-        if (selectedItemId) {
-          void selectedHistoryQuery.refetch();
-        }
-      },
-    },
-  ];
+  const runs = runsQuery.data?.items ?? EMPTY_UNIFIED_RUNS;
+  const filteredRuns = useMemo(() => {
+    const normalizedQuery = deferredSearch.trim().toLowerCase();
+
+    return runs.filter(run => {
+      if (runStatusFilter !== 'all' && run.status !== runStatusFilter) {
+        return false;
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      return [
+        run.source_name,
+        run.source_type,
+        run.status,
+        run.execution_mode,
+        String(run.id),
+        run.error_message || '',
+      ].some(value => value.toLowerCase().includes(normalizedQuery));
+    });
+  }, [deferredSearch, runStatusFilter, runs]);
+
+  const selectedRunFromList =
+    view === 'runs'
+      ? runs.find(run => String(run.id) === String(selectedItemId ?? '')) ?? null
+      : null;
+  const selectedRun =
+    view === 'runs'
+      ? (selectedRunFromList?.steps?.length
+          ? selectedRunFromList
+          : (selectedRunQuery.data ?? selectedRunFromList))
+      : null;
+
+  const isActivityFiltered = entityTypeFilter !== 'all' || deferredSearch.trim().length > 0;
+  const isRunsFiltered =
+    runSourceTypeFilter !== 'all' ||
+    runStatusFilter !== 'all' ||
+    deferredSearch.trim().length > 0;
+
+  const refreshActionItems: ActionMenuItem[] =
+    view === 'runs'
+      ? [
+          {
+            key: 'runs-refresh',
+            label:
+              runsQuery.isFetching || selectedRunQuery.isFetching
+                ? t('common.refreshing')
+                : t('common.refresh'),
+            icon: RefreshCw,
+            disabled: runsQuery.isFetching || selectedRunQuery.isFetching,
+            onSelect: () => {
+              void runsQuery.refetch();
+
+              if (selectedItemId) {
+                void selectedRunQuery.refetch();
+              }
+            },
+          },
+        ]
+      : [
+          {
+            key: 'histories-refresh',
+            label:
+              historiesQuery.isFetching || selectedHistoryQuery.isFetching
+                ? t('common.refreshing')
+                : t('common.refresh'),
+            icon: RefreshCw,
+            disabled: historiesQuery.isFetching || selectedHistoryQuery.isFetching,
+            onSelect: () => {
+              void historiesQuery.refetch();
+
+              if (selectedItemId) {
+                void selectedHistoryQuery.refetch();
+              }
+            },
+          },
+        ];
+
+  const sidebarHeaderActions =
+    view === 'runs' ? (
+      <div className="grid gap-2">
+        <Select
+          value={runSourceTypeFilter}
+          onValueChange={value => {
+            const nextValue = (value as UnifiedRunSourceType | 'all') ?? 'all';
+            setRunSourceTypeFilter(nextValue);
+            pushHistoryUrl({
+              view: 'runs',
+              sourceType: nextValue !== 'all' ? nextValue : null,
+              run: null,
+            });
+          }}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={t('history.runs.filterBySourceType')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('history.runs.allSourceTypes')}</SelectItem>
+            {HISTORY_RUN_SOURCE_TYPES.map(sourceType => (
+              <SelectItem key={sourceType} value={sourceType}>
+                {getUnifiedRunSourceLabel(t, sourceType)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={runStatusFilter}
+          onValueChange={value => {
+            setRunStatusFilter(value);
+            pushHistoryUrl({
+              view: 'runs',
+              status: value !== 'all' ? value : null,
+              run: null,
+            });
+          }}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={t('history.runs.filterByStatus')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('history.runs.allStatuses')}</SelectItem>
+            <SelectItem value="pending">{t('history.runs.statusPending')}</SelectItem>
+            <SelectItem value="running">{t('history.runs.statusRunning')}</SelectItem>
+            <SelectItem value="passed">{t('history.runs.statusPassed')}</SelectItem>
+            <SelectItem value="failed">{t('history.runs.statusFailed')}</SelectItem>
+            <SelectItem value="canceled">{t('history.runs.statusCanceled')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    ) : (
+      <Select
+        value={entityTypeFilter}
+        onValueChange={value => {
+          setEntityTypeFilter(value);
+          pushHistoryUrl({
+            view: 'activity',
+            entityType: value !== 'all' ? value : null,
+            item: null,
+          });
+        }}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={t('history.filterByEntityType')} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{t('history.allEntityTypes')}</SelectItem>
+          {entityTypeOptions.map(entityType => (
+            <SelectItem key={entityType} value={entityType}>
+              {entityType}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
 
   return (
     <WorkspaceFrame
       sidebar={
         <ResourceSidebar
           module="histories"
-          title={t('history.title')}
-          description={t('history.description')}
+          title={view === 'runs' ? t('history.runs.title') : t('history.title')}
+          description={view === 'runs' ? t('history.runs.description') : t('history.description')}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder={t('history.searchPlaceholder')}
-          count={filteredHistories.length}
-          loading={historiesQuery.isLoading}
-          error={historiesQuery.error}
-          headerActions={
-            <Select value={entityTypeFilter} onValueChange={setEntityTypeFilter}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('history.filterByEntityType')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('history.allEntityTypes')}</SelectItem>
-                {entityTypeOptions.map(entityType => (
-                  <SelectItem key={entityType} value={entityType}>
-                    {entityType}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          searchPlaceholder={
+            view === 'runs' ? t('history.runs.searchPlaceholder') : t('history.searchPlaceholder')
           }
+          count={view === 'runs' ? filteredRuns.length : filteredHistories.length}
+          loading={view === 'runs' ? runsQuery.isLoading : historiesQuery.isLoading}
+          error={view === 'runs' ? runsQuery.error : historiesQuery.error}
+          headerActions={sidebarHeaderActions}
           emptyState={
             <SidebarEmptyState
               icon={FileClock}
-              title={isFiltered ? t('history.noMatchingHistory') : t('history.noHistoryYet')}
+              title={
+                view === 'runs'
+                  ? isRunsFiltered
+                    ? t('history.runs.noMatchingRuns')
+                    : t('history.runs.noRunsYet')
+                  : isActivityFiltered
+                    ? t('history.noMatchingHistory')
+                    : t('history.noHistoryYet')
+              }
               description={
-                isFiltered ? t('history.noMatchingDescription') : t('history.emptyDescription')
+                view === 'runs'
+                  ? isRunsFiltered
+                    ? t('history.runs.noMatchingDescription')
+                    : t('history.runs.emptyDescription')
+                  : isActivityFiltered
+                    ? t('history.noMatchingDescription')
+                    : t('history.emptyDescription')
               }
             />
           }
         >
-          {filteredHistories.map(history => (
-            <ResourceListItem
-              key={history.id}
-              href={buildModuleHref(projectId, 'histories', history.id)}
-              active={history.id === selectedHistory?.id}
-              title={getHistoryPrimaryTitle(history)}
-              description={history.message || getHistoryFallbackDescription(history)}
-              meta={
-                <>
-                  <Badge variant="outline">{history.action}</Badge>
-                  {history.entity_type === 'cli_request' &&
-                  getHistoryRequestStatus(history) !== null ? (
-                    <Badge variant="secondary">{getHistoryRequestStatus(history)}</Badge>
-                  ) : null}
-                  {history.entity_type === 'cli_run' && getHistoryRunStatus(history) ? (
-                    <Badge variant="secondary">{getHistoryRunStatus(history)}</Badge>
-                  ) : null}
-                  {history.entity_type !== 'cli_request' &&
-                  history.entity_type !== 'cli_run' &&
-                  getHistoryRunStatus(history) ? (
-                    <Badge variant="secondary">{getHistoryRunStatus(history)}</Badge>
-                  ) : null}
-                  {history.entity_type === 'cli_request' && getHistoryRequestDuration(history) ? (
-                    <span>{getHistoryRequestDuration(history)}</span>
-                  ) : null}
-                  {history.entity_type === 'cli_run' && getHistoryRunStepCount(history) !== null ? (
-                    <span>
-                      {getHistoryRunStepCount(history)} {t('history.totalSteps').toLowerCase()}
-                    </span>
-                  ) : null}
-                  {getHistoryExecutionMode(history) ? (
-                    <span>{getHistoryExecutionMode(history)}</span>
-                  ) : null}
-                  <span>
-                    {t('history.user')} #{history.user_id}
-                  </span>
-                  <span>{formatDate(history.created_at, 'YYYY-MM-DD HH:mm')}</span>
-                </>
-              }
-            />
-          ))}
+          {view === 'runs'
+            ? filteredRuns.map(run => (
+                <ResourceListItem
+                  key={run.id}
+                  href={`${buildProjectHistoriesRoute(projectId)}?view=runs&run=${run.id}${runSourceTypeFilter !== 'all' ? `&sourceType=${encodeURIComponent(runSourceTypeFilter)}` : ''}${runStatusFilter !== 'all' ? `&status=${encodeURIComponent(runStatusFilter)}` : ''}`}
+                  active={run.id === selectedRun?.id}
+                  title={run.source_name}
+                  description={t('history.runs.listDescription', {
+                    sourceType: getUnifiedRunSourceLabel(t, run.source_type),
+                    executionMode: run.execution_mode,
+                  })}
+                  meta={
+                    <>
+                      <Badge variant="outline">{getUnifiedRunSourceLabel(t, run.source_type)}</Badge>
+                      <Badge
+                        variant="outline"
+                        className={getUnifiedRunStatusClassName(run.status)}
+                      >
+                        {getUnifiedRunStatusLabel(t, run.status)}
+                      </Badge>
+                      <span>{run.total_steps} {t('history.runs.stepsUnit')}</span>
+                      <span>{run.duration_ms} ms</span>
+                      <span>{formatDate(run.created_at, 'YYYY-MM-DD HH:mm')}</span>
+                    </>
+                  }
+                />
+              ))
+            : filteredHistories.map(history => (
+                <ResourceListItem
+                  key={history.id}
+                  href={buildModuleHref(projectId, 'histories', history.id)}
+                  active={history.id === selectedHistory?.id}
+                  title={getHistoryPrimaryTitle(history)}
+                  description={history.message || getHistoryFallbackDescription(history)}
+                  meta={
+                    <>
+                      <Badge variant="outline">{history.action}</Badge>
+                      {isRequestHistoryRecord(history) && getHistoryRequestStatus(history) !== null ? (
+                        <Badge variant="secondary">{getHistoryRequestStatus(history)}</Badge>
+                      ) : null}
+                      {isRunHistoryRecord(history) && getHistoryRunStatus(history) ? (
+                        <Badge variant="secondary">{getHistoryRunStatus(history)}</Badge>
+                      ) : null}
+                      {!isRequestHistoryRecord(history) &&
+                      !isRunHistoryRecord(history) &&
+                      getHistoryRunStatus(history) ? (
+                        <Badge variant="secondary">{getHistoryRunStatus(history)}</Badge>
+                      ) : null}
+                      {isRequestHistoryRecord(history) && getHistoryRequestDuration(history) ? (
+                        <span>{getHistoryRequestDuration(history)}</span>
+                      ) : null}
+                      {isRunHistoryRecord(history) && getHistoryRunStepCount(history) !== null ? (
+                        <span>
+                          {getHistoryRunStepCount(history)} {t('history.totalSteps').toLowerCase()}
+                        </span>
+                      ) : null}
+                      {getHistoryExecutionMode(history) ? (
+                        <span>{getHistoryExecutionMode(history)}</span>
+                      ) : null}
+                      <span>
+                        {t('history.user')} #{history.user_id}
+                      </span>
+                      <span>{formatDate(history.created_at, 'YYYY-MM-DD HH:mm')}</span>
+                    </>
+                  }
+                />
+              ))}
         </ResourceSidebar>
       }
       content={
@@ -3965,22 +4299,267 @@ function HistoryWorkspaceSection({
           projectName={projectName}
           module="histories"
           currentTitle={
-            selectedHistory ? getHistoryPrimaryTitle(selectedHistory) : t('history.projectHistory')
+            view === 'runs'
+              ? selectedRun
+                ? selectedRun.source_name
+                : t('history.runs.projectRuns')
+              : selectedHistory
+                ? getHistoryPrimaryTitle(selectedHistory)
+                : t('history.projectHistory')
           }
           description={
-            selectedHistory
-              ? t('history.currentDescriptionWithSelection')
-              : t('history.currentDescriptionEmpty')
+            view === 'runs'
+              ? selectedRun
+                ? t('history.runs.currentDescriptionWithSelection')
+                : t('history.runs.currentDescriptionEmpty')
+              : selectedHistory
+                ? t('history.currentDescriptionWithSelection')
+                : t('history.currentDescriptionEmpty')
           }
           actions={
-            <ActionMenu
-              items={refreshActionItems}
-              ariaLabel={t('common.openActions')}
-              triggerVariant="outline"
-            />
+            <div className="flex items-center gap-2">
+              <Tabs
+                value={view}
+                onValueChange={value => {
+                  const nextView = value as HistoryView;
+                  setView(nextView);
+                  pushHistoryUrl({
+                    view: nextView,
+                    item: null,
+                    run: null,
+                  });
+                }}
+              >
+                <TabsList>
+                  <TabsTrigger value="activity">{t('history.activityTab')}</TabsTrigger>
+                  <TabsTrigger value="runs">{t('history.runsTab')}</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <ActionMenu
+                items={refreshActionItems}
+                ariaLabel={t('common.openActions')}
+                triggerVariant="outline"
+              />
+            </div>
           }
         >
-          {selectedItemId && selectedHistoryQuery.isLoading ? (
+          {view === 'runs' ? (
+            selectedItemId && selectedRunQuery.isLoading ? (
+              <DetailSkeleton />
+            ) : selectedItemId && !selectedRun ? (
+              <MissingDetailState
+                moduleLabel={t('history.runs.recordId').toLowerCase()}
+                clearHref={`${buildProjectHistoriesRoute(projectId)}?view=runs`}
+              />
+            ) : runsQuery.isLoading ? (
+              <DetailSkeleton />
+            ) : runs.length === 0 ? (
+              <GuideState
+                icon={FileClock}
+                title={isRunsFiltered ? t('history.runs.noMatchingRecord') : t('history.runs.noRunRecorded')}
+                description={
+                  isRunsFiltered
+                    ? t('history.runs.noMatchingRecordDescription')
+                    : t('history.runs.noRunRecordedDescription')
+                }
+              />
+            ) : !selectedRun ? (
+              <GuideState
+                icon={FileClock}
+                title={t('history.runs.chooseRecord')}
+                description={t('history.runs.chooseRecordDescription')}
+              />
+            ) : (
+              <div className="space-y-6">
+                <Card className="border-border-subtle">
+                  <CardHeader>
+                    <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className="border-border-subtle bg-bg-subtle text-text-main"
+                          >
+                            {getUnifiedRunSourceLabel(t, selectedRun.source_type)}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className={getUnifiedRunStatusClassName(selectedRun.status)}
+                          >
+                            {getUnifiedRunStatusLabel(t, selectedRun.status)}
+                          </Badge>
+                          <Badge variant="secondary">
+                            {t('history.runs.recordNumber', { id: selectedRun.id })}
+                          </Badge>
+                        </div>
+                        <div>
+                          <CardTitle className="text-2xl tracking-normal">
+                            {selectedRun.source_name}
+                          </CardTitle>
+                          <CardDescription className="mt-2 max-w-4xl leading-6">
+                            {t('history.runs.detailDescription', {
+                              sourceType: getUnifiedRunSourceLabel(t, selectedRun.source_type),
+                            })}
+                          </CardDescription>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <InfoBadge
+                          label={t('common.status')}
+                          value={getUnifiedRunStatusLabel(t, selectedRun.status)}
+                        />
+                        <InfoBadge
+                          label={t('common.duration')}
+                          value={`${selectedRun.duration_ms} ms`}
+                        />
+                        <InfoBadge
+                          label={t('common.created')}
+                          value={formatDate(selectedRun.created_at, 'YYYY-MM-DD HH:mm')}
+                        />
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+
+                <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+                  <Card className="border-border-subtle">
+                    <CardHeader>
+                      <CardTitle>{t('history.runs.metadata')}</CardTitle>
+                      <CardDescription>{t('history.runs.metadataDescription')}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 md:grid-cols-2">
+                      <DetailField label={t('history.runs.recordId')}>{selectedRun.id}</DetailField>
+                      <DetailField label={t('history.workspaceId')}>
+                        {selectedRun.workspace_id}
+                      </DetailField>
+                      <DetailField label={t('history.runs.sourceType')}>
+                        {getUnifiedRunSourceLabel(t, selectedRun.source_type)}
+                      </DetailField>
+                      <DetailField label={t('history.runs.sourceId')}>
+                        {selectedRun.source_id}
+                      </DetailField>
+                      <DetailField label={t('history.runs.executionMode')}>
+                        {selectedRun.execution_mode}
+                      </DetailField>
+                      <DetailField label={t('history.runs.triggeredBy')}>
+                        {selectedRun.triggered_by}
+                      </DetailField>
+                      <DetailField label={t('history.runs.startedAt')}>
+                        {selectedRun.started_at
+                          ? formatDate(selectedRun.started_at, 'YYYY-MM-DD HH:mm')
+                          : t('common.notSet')}
+                      </DetailField>
+                      <DetailField label={t('history.runs.finishedAt')}>
+                        {selectedRun.finished_at
+                          ? formatDate(selectedRun.finished_at, 'YYYY-MM-DD HH:mm')
+                          : t('common.notSet')}
+                      </DetailField>
+                      <DetailField label={t('common.environment')}>
+                        {selectedRun.environment_id ?? t('common.notSet')}
+                      </DetailField>
+                      <DetailField label={t('history.totalSteps')}>
+                        {selectedRun.total_steps}
+                      </DetailField>
+                      <DetailField label={t('history.passedSteps')}>
+                        {selectedRun.passed_steps}
+                      </DetailField>
+                      <DetailField label={t('history.failedSteps')}>
+                        {selectedRun.failed_steps}
+                      </DetailField>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-border-subtle">
+                    <CardHeader>
+                      <CardTitle>{t('history.runs.recordedNote')}</CardTitle>
+                      <CardDescription>{t('history.runs.recordedNoteDescription')}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="rounded-md border border-border-subtle bg-bg-canvas p-4 text-sm leading-6 text-text-muted">
+                        {selectedRun.error_message || t('history.runs.noErrorRecorded')}
+                      </div>
+                      <JsonCard title={t('history.runs.metadataJson')} value={selectedRun.metadata} />
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {selectedRun.steps?.length ? (
+                  <Card className="border-border-subtle">
+                    <CardHeader>
+                      <CardTitle>{t('history.runs.stepResults')}</CardTitle>
+                      <CardDescription>{t('history.runs.stepResultsDescription')}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {selectedRun.steps
+                        .slice()
+                        .sort((left, right) => left.step_index - right.step_index)
+                        .map(step => (
+                          <div
+                            key={step.id}
+                            className="rounded-md border border-border-subtle bg-bg-canvas p-4"
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge variant="outline">
+                                {step.source_name ||
+                                  t('history.runs.stepFallback', {
+                                    index: step.step_index + 1,
+                                  })}
+                              </Badge>
+                              <Badge
+                                variant="outline"
+                                className={getUnifiedRunStatusClassName(step.status)}
+                              >
+                                {getUnifiedRunStatusLabel(t, step.status)}
+                              </Badge>
+                              <span className="text-xs text-text-muted">{step.duration_ms} ms</span>
+                            </div>
+                            <p className="mt-2 text-xs text-text-muted">
+                              {t('history.runs.stepLabel', {
+                                index: step.step_index + 1,
+                                sourceType: getUnifiedRunSourceLabel(t, step.source_type),
+                              })}
+                            </p>
+                            {step.error_message ? (
+                              <p className="mt-2 text-sm leading-6 text-destructive">
+                                {step.error_message}
+                              </p>
+                            ) : null}
+                            <div className="mt-4 grid gap-4 xl:grid-cols-2">
+                              <JsonCard
+                                title={t('history.runs.requestSnapshot')}
+                                value={step.request_snapshot}
+                              />
+                              <JsonCard
+                                title={t('history.runs.responseSnapshot')}
+                                value={step.response_snapshot}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="border-border-subtle">
+                    <CardContent className="py-6 text-sm text-text-muted">
+                      {t('history.runs.noSteps')}
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="grid gap-6 xl:grid-cols-2">
+                  <JsonCard
+                    title={t('history.runs.requestSnapshot')}
+                    value={selectedRun.request_snapshot}
+                  />
+                  <JsonCard
+                    title={t('history.runs.responseSnapshot')}
+                    value={selectedRun.response_snapshot}
+                  />
+                </div>
+              </div>
+            )
+          ) : selectedItemId && selectedHistoryQuery.isLoading ? (
             <DetailSkeleton />
           ) : selectedItemId && !selectedHistory ? (
             <MissingDetailState
@@ -3992,9 +4571,11 @@ function HistoryWorkspaceSection({
           ) : histories.length === 0 ? (
             <GuideState
               icon={FileClock}
-              title={isFiltered ? t('history.noMatchingRecord') : t('history.noHistoryRecorded')}
+              title={
+                isActivityFiltered ? t('history.noMatchingRecord') : t('history.noHistoryRecorded')
+              }
               description={
-                isFiltered
+                isActivityFiltered
                   ? t('history.noMatchingRecordDescription')
                   : t('history.noHistoryRecordedDescription')
               }
@@ -4019,13 +4600,13 @@ function HistoryWorkspaceSection({
                           {selectedHistory.entity_type}
                         </Badge>
                         <Badge variant="outline">{selectedHistory.action}</Badge>
-                        {selectedHistory.entity_type === 'cli_request' &&
+                        {isRequestHistoryRecord(selectedHistory) &&
                         getHistoryRequestStatus(selectedHistory) !== null ? (
                           <Badge variant="secondary">
                             {getHistoryRequestStatus(selectedHistory)}
                           </Badge>
                         ) : null}
-                        {selectedHistory.entity_type !== 'cli_request' &&
+                        {!isRequestHistoryRecord(selectedHistory) &&
                         getHistoryRunStatus(selectedHistory) ? (
                           <Badge variant="secondary">{getHistoryRunStatus(selectedHistory)}</Badge>
                         ) : null}
@@ -4065,8 +4646,8 @@ function HistoryWorkspaceSection({
                   </CardHeader>
                   <CardContent className="grid gap-4 md:grid-cols-2">
                     <DetailField label={t('history.recordId')}>{selectedHistory.id}</DetailField>
-                    <DetailField label={t('common.projectId')}>
-                      {selectedHistory.project_id}
+                    <DetailField label={t('history.workspaceId')}>
+                      {selectedHistory.workspace_id}
                     </DetailField>
                     <DetailField label={t('history.entityType')}>
                       {selectedHistory.entity_type}
