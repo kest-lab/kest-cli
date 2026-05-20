@@ -83,6 +83,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 import {
   collectionKeys,
   useCreateCollection,
@@ -101,6 +102,8 @@ import {
 import { useEnvironments } from '@/hooks/use-environments';
 import { useCreateProjectHistory } from '@/hooks/use-histories';
 import { useImportMarkdownCollection, useImportPostmanCollection } from '@/hooks/use-importer';
+import { useProject, useUpdateProject } from '@/hooks/use-projects';
+import { useCreateRun, useRun, useRuns } from '@/hooks/use-runs';
 import { useT } from '@/i18n/client';
 import { collectionService } from '@/services/collection';
 import { localRunnerService } from '@/services/local-runner';
@@ -120,6 +123,7 @@ import type {
   ImportMarkdownCollectionRequest,
   ImportPostmanCollectionRequest,
 } from '@/types/importer';
+import type { CreateUnifiedRunRequest } from '@/types/run';
 import type {
   CreateRequestRequest,
   ProjectRequest,
@@ -128,7 +132,14 @@ import type {
   RunRequestResponse,
   UpdateRequestRequest,
 } from '@/types/request';
-import { cn } from '@/utils';
+import {
+  buildRuntimeVariableLayers,
+  cn,
+  findUnresolvedTemplateKeys,
+  formatDate,
+  resolveTemplateValue,
+  type RequestRuntimeVariableLayers,
+} from '@/utils';
 
 type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 type RequestSection =
@@ -190,6 +201,13 @@ interface DirectRequestExecutionPayload {
   historyBody?: string;
 }
 
+interface ExecutableRequestState {
+  variableLayers: RequestRuntimeVariableLayers;
+  executableUrl: string;
+  executableHeaders: Record<string, string>;
+  executablePayload: DirectRequestExecutionPayload;
+}
+
 interface ResponseDraft {
   status: number | null;
   statusLabel: string;
@@ -226,6 +244,7 @@ interface RequestPageTab {
     strictTls: boolean;
     persistCookies: boolean;
   };
+  runtimeVariables: KeyValueRow[];
   response: ResponseDraft;
   isSending: boolean;
 }
@@ -235,6 +254,7 @@ interface CollectionNode {
   name: string;
   colorTone: CollectionColorTone;
   isFolder: boolean;
+  settings?: Record<string, unknown>;
   requestIds: string[];
 }
 
@@ -258,6 +278,12 @@ interface ImportDialogTarget {
   kind: ImportDialogKind;
   parentCollectionId: string | null;
   parentCollectionName: string | null;
+}
+
+interface VariableDialogState {
+  scope: 'workspace' | 'collection';
+  collectionId?: string;
+  collectionName?: string;
 }
 
 type ImportDialogKind = 'postman' | 'markdown';
@@ -293,7 +319,6 @@ const COLLECTION_COLOR_DOT_CLASS_NAMES: Record<CollectionColorTone, string> = {
   pink: 'bg-bg-surface',
   coral: 'bg-bg-surface',
 };
-const REQUEST_TEMPLATE_PATTERN = /\{\{([^}]+)\}\}/g;
 const DEFAULT_JSON_BODY = '{\n  "ping": "hello"\n}';
 const DEFAULT_JSON_PLACEHOLDER = '{\n  \n}';
 const DEFAULT_GRAPHQL_QUERY = 'query Example {\n  \n}';
@@ -614,6 +639,7 @@ const createRequestPageTab = (
     strictTls: true,
     persistCookies: false,
   },
+  runtimeVariables: overrides.runtimeVariables ?? [createKeyValueRow()],
   response: overrides.response ?? createEmptyResponse(),
   isSending: overrides.isSending ?? false,
 });
@@ -999,7 +1025,10 @@ const toResponseDraft = (response: RunRequestResponse): ResponseDraft => ({
   sizeBytes: response.size || byteLength(response.body),
   headers: response.headers ?? {},
   body: formatResponseBody(response.body),
-  error: null,
+  error:
+    response.status >= 200 && response.status < 300
+      ? null
+      : `HTTP ${response.status}${response.status_text ? ` ${response.status_text}` : ''}`.trim(),
 });
 
 const canCaptureResponse = (response: ResponseDraft) => response.status !== null && !response.error;
@@ -1194,6 +1223,53 @@ const sanitizeHistoryAuth = (auth?: RequestAuthConfig | null) => {
   }
 };
 
+const isSuccessfulExecution = (response?: RunRequestResponse, errorMessage?: string) =>
+  !errorMessage && (response?.status ?? 0) >= 200 && (response?.status ?? 0) < 300;
+
+const getExecutionErrorMessage = (response?: RunRequestResponse, errorMessage?: string) =>
+  errorMessage ||
+  (response && !isSuccessfulExecution(response)
+    ? `HTTP ${response.status}${response.status_text ? ` ${response.status_text}` : ''}`.trim()
+    : undefined);
+const buildRunRequestSnapshot = ({
+  request,
+  executedUrl,
+  requestHeaders,
+  requestBody,
+}: {
+  request: ProjectRequest;
+  executedUrl: string;
+  requestHeaders: Record<string, string>;
+  requestBody?: string;
+}) => ({
+  id: request.id,
+  collection_id: request.collection_id,
+  name: request.name,
+  method: request.method,
+  url: request.url,
+  executed_url: executedUrl,
+  headers: sanitizeHistoryHeaders(request.headers),
+  executed_headers: sanitizeHistoryHeaderMap(requestHeaders),
+  query_params: request.query_params,
+  path_params: request.path_params,
+  body: requestBody ?? '',
+  body_type: request.body_type,
+  auth: sanitizeHistoryAuth(request.auth),
+});
+
+const buildRunResponseSnapshot = (response?: RunRequestResponse) =>
+  response
+    ? {
+        status: response.status,
+        status_text: response.status_text,
+        headers: sanitizeHistoryHeaderMap(response.headers ?? {}),
+        body: response.body,
+        time: response.time,
+        duration_ms: response.time,
+        size: response.size,
+      }
+    : undefined;
+
 const buildRequestRunHistoryPayload = ({
   request,
   executedUrl,
@@ -1220,7 +1296,8 @@ const buildRequestRunHistoryPayload = ({
     request.url === PERSISTED_DRAFT_URL_PLACEHOLDER
       ? request.name
       : `${request.method} ${request.url}`;
-  const succeeded = !errorMessage;
+  const succeeded = isSuccessfulExecution(response, errorMessage);
+  const effectiveErrorMessage = getExecutionErrorMessage(response, errorMessage);
 
   return {
     entity_type: 'request',
@@ -1228,7 +1305,7 @@ const buildRequestRunHistoryPayload = ({
     action: succeeded ? 'run' : 'run_failed',
     message: succeeded
       ? messages.executed(requestLabel, response?.status)
-      : messages.failed(requestLabel, errorMessage ?? ''),
+      : messages.failed(requestLabel, effectiveErrorMessage ?? ''),
     data: {
       request: {
         id: request.id,
@@ -1257,11 +1334,76 @@ const buildRequestRunHistoryPayload = ({
             headers: sanitizeHistoryHeaderMap(response.headers ?? {}),
             body: response.body,
             time: response.time,
+            duration_ms: response.time,
             size: response.size,
           }
         : undefined,
-      error: errorMessage || undefined,
+      error: effectiveErrorMessage || undefined,
     },
+  };
+};
+
+const buildRequestUnifiedRunPayload = ({
+  request,
+  executedUrl,
+  requestHeaders,
+  requestBody,
+  settings,
+  environmentId,
+  response,
+  errorMessage,
+}: {
+  request: ProjectRequest;
+  executedUrl: string;
+  requestHeaders: Record<string, string>;
+  requestBody?: string;
+  settings: RequestPageTab['settings'];
+  environmentId?: string | null;
+  response?: RunRequestResponse;
+  errorMessage?: string;
+}): CreateUnifiedRunRequest => {
+  const succeeded = isSuccessfulExecution(response, errorMessage);
+  const effectiveErrorMessage = getExecutionErrorMessage(response, errorMessage);
+  const requestSnapshot = buildRunRequestSnapshot({
+    request,
+    executedUrl,
+    requestHeaders,
+    requestBody,
+  });
+  const responseSnapshot = buildRunResponseSnapshot(response);
+
+  return {
+    source_type: 'request',
+    source_id: String(request.id),
+    source_name:
+      request.url === PERSISTED_DRAFT_URL_PLACEHOLDER ? request.name : `${request.method} ${request.url}`,
+    status: succeeded ? 'passed' : 'failed',
+    environment_id: environmentId ?? undefined,
+    execution_mode: 'local',
+    duration_ms: response?.time ?? 0,
+    request_snapshot: requestSnapshot,
+    response_snapshot: responseSnapshot,
+    error_message: effectiveErrorMessage,
+    metadata: {
+      runner: {
+        mode: 'local',
+        follow_redirects: settings.followRedirects,
+        strict_tls: settings.strictTls,
+      },
+    },
+    steps: [
+      {
+        source_type: 'request',
+        source_id: String(request.id),
+        source_name:
+          request.url === PERSISTED_DRAFT_URL_PLACEHOLDER ? request.name : `${request.method} ${request.url}`,
+        status: succeeded ? 'passed' : 'failed',
+        duration_ms: response?.time ?? 0,
+        request_snapshot: requestSnapshot,
+        response_snapshot: responseSnapshot,
+        error_message: effectiveErrorMessage,
+      },
+    ],
   };
 };
 
@@ -1294,48 +1436,6 @@ const isEnabledRequestKeyValue = (row: RequestKeyValue) =>
   row.enabled !== false && row.key.trim().length > 0;
 
 const headersToObject = (headers: Headers) => Object.fromEntries(Array.from(headers.entries()));
-
-const toEnvironmentVariableValue = (value: unknown) => {
-  if (value === null || value === undefined) {
-    return '';
-  }
-
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-
-  return JSON.stringify(value);
-};
-
-const buildExecutionVariables = (environment?: ProjectEnvironment | null) => {
-  const variables: Record<string, string> = {};
-
-  Object.entries(environment?.variables ?? {}).forEach(([key, value]) => {
-    variables[key] = toEnvironmentVariableValue(value);
-  });
-
-  const baseUrl = environment?.base_url?.trim();
-  if (baseUrl && !variables.base_url) {
-    variables.base_url = baseUrl;
-  }
-
-  return variables;
-};
-
-const resolveTemplateValue = (value: string, variables: Record<string, string>) =>
-  value.replace(REQUEST_TEMPLATE_PATTERN, (match, key: string) => {
-    const resolved = variables[key.trim()];
-    return resolved === undefined ? match : resolved;
-  });
-
-const findUnresolvedTemplateKeys = (value: string) =>
-  Array.from(
-    new Set(Array.from(value.matchAll(REQUEST_TEMPLATE_PATTERN)).map(match => match[1].trim()))
-  );
 
 const getMissingVariableMessage = (
   keys: string[],
@@ -1371,6 +1471,121 @@ const resolveExecutionPathParams = (
     Object.entries(pathParams).map(([key, value]) => [key, resolveTemplateValue(value, variables)])
   );
 
+const toRuntimeVariableRecord = (rows: KeyValueRow[]) =>
+  rows.reduce<Record<string, string>>((variables, row) => {
+    const key = row.key.trim();
+    if (!key) {
+      return variables;
+    }
+
+    variables[key] = row.value;
+    return variables;
+  }, {});
+
+const toVariableRows = (value: Record<string, unknown> | Record<string, string> | undefined) => {
+  if (!value || Object.keys(value).length === 0) {
+    return [createKeyValueRow()];
+  }
+
+  return [
+    ...Object.entries(value).map(([key, entryValue]) =>
+      createKeyValueRow(key, typeof entryValue === 'string' ? entryValue : JSON.stringify(entryValue))
+    ),
+    createKeyValueRow(),
+  ];
+};
+
+const getWorkspaceVariableSource = (projectSettings?: Record<string, unknown>) => {
+  if (!projectSettings) {
+    return undefined;
+  }
+
+  const runtime =
+    typeof projectSettings.runtime === 'object' && projectSettings.runtime
+      ? (projectSettings.runtime as Record<string, unknown>)
+      : null;
+
+  if (runtime && typeof runtime.variables === 'object' && runtime.variables) {
+    return runtime.variables;
+  }
+
+  if (typeof projectSettings.variables === 'object' && projectSettings.variables) {
+    return projectSettings.variables;
+  }
+
+  return undefined;
+};
+
+const getCollectionVariableSource = (collectionSettings?: Record<string, unknown>) => {
+  if (!collectionSettings) {
+    return undefined;
+  }
+
+  if (typeof collectionSettings.variables === 'object' && collectionSettings.variables) {
+    return collectionSettings.variables;
+  }
+
+  const runtime =
+    typeof collectionSettings.runtime === 'object' && collectionSettings.runtime
+      ? (collectionSettings.runtime as Record<string, unknown>)
+      : null;
+
+  if (runtime && typeof runtime.variables === 'object' && runtime.variables) {
+    return runtime.variables;
+  }
+
+  return undefined;
+};
+
+const collectMissingExecutionVariables = ({
+  request,
+  variables,
+  resolvedUrl,
+  resolvedHeaders,
+  resolvedBody,
+}: {
+  request: ProjectRequest;
+  variables: Record<string, string>;
+  resolvedUrl: string;
+  resolvedHeaders: Record<string, string>;
+  resolvedBody?: string;
+}) => {
+  const templateValues: string[] = [resolvedUrl];
+
+  request.query_params.filter(isEnabledRequestKeyValue).forEach(queryParam => {
+    templateValues.push(resolveTemplateValue(queryParam.key.trim(), variables));
+    templateValues.push(resolveTemplateValue(queryParam.value, variables));
+  });
+
+  Object.entries(resolvedHeaders).forEach(([key, value]) => {
+    templateValues.push(key, value);
+  });
+
+  if (request.auth?.type === 'basic' && request.auth.basic) {
+    templateValues.push(
+      resolveTemplateValue(request.auth.basic.username, variables),
+      resolveTemplateValue(request.auth.basic.password, variables)
+    );
+  }
+
+  if (request.auth?.type === 'bearer' && request.auth.bearer?.token) {
+    templateValues.push(resolveTemplateValue(request.auth.bearer.token, variables));
+  }
+
+  if (request.auth?.type === 'api-key' && request.auth.api_key) {
+    templateValues.push(
+      resolveTemplateValue(request.auth.api_key.key ?? '', variables),
+      resolveTemplateValue(request.auth.api_key.value ?? '', variables)
+    );
+  }
+
+  if (resolvedBody) {
+    templateValues.push(resolvedBody);
+  }
+
+  return findUnresolvedTemplateKeys(templateValues);
+};
+
 const applyPathParamsToUrl = (url: string, pathParams: Record<string, string>) => {
   let resolvedUrl = url;
 
@@ -1386,18 +1601,18 @@ const applyPathParamsToUrl = (url: string, pathParams: Record<string, string>) =
 
 const buildExecutableRequestUrl = (
   request: ProjectRequest,
-  environment: ProjectEnvironment | null | undefined,
+  variableLayers: RequestRuntimeVariableLayers,
   t: ProjectTranslationFn
 ) => {
-  const variables = buildExecutionVariables(environment);
+  const variables = variableLayers.merged;
   const resolvedPathParams = resolveExecutionPathParams(request.path_params ?? {}, variables);
   const resolvedUrl = resolveTemplateValue(
     applyPathParamsToUrl(request.url, resolvedPathParams),
     variables
   );
   const missingVariableMessage = getMissingVariableMessage(
-    findUnresolvedTemplateKeys(resolvedUrl),
-    environment,
+    findUnresolvedTemplateKeys([resolvedUrl]),
+    variableLayers.environment.base_url ? ({ name: '', base_url: variableLayers.environment.base_url } as ProjectEnvironment) : undefined,
     t
   );
   if (missingVariableMessage) {
@@ -1437,10 +1652,11 @@ const buildExecutableRequestUrl = (
 const buildDirectRequestHeaders = (
   request: ProjectRequest,
   environment: ProjectEnvironment | null | undefined,
+  variableLayers: RequestRuntimeVariableLayers,
   base64UnavailableMessage: string
 ) => {
   const headers = new Headers();
-  const variables = buildExecutionVariables(environment);
+  const variables = variableLayers.merged;
 
   Object.entries(environment?.headers ?? {}).forEach(([key, value]) => {
     headers.set(
@@ -1526,13 +1742,13 @@ const buildDirectRequestPayload = (
   request: ProjectRequest,
   tab: RequestPageTab,
   t: ProjectTranslationFn,
-  environment?: ProjectEnvironment | null
+  variableLayers: RequestRuntimeVariableLayers
 ): DirectRequestExecutionPayload => {
   if (request.method === 'GET' || request.method === 'HEAD') {
     return {};
   }
 
-  const variables = buildExecutionVariables(environment);
+  const variables = variableLayers.merged;
 
   switch (request.body_type) {
     case 'form-data': {
@@ -1647,6 +1863,63 @@ const buildDirectRequestPayload = (
   }
 };
 
+const buildExecutableRequestState = ({
+  request,
+  environment,
+  projectSettings,
+  collectionSettings,
+  runtimeVariables,
+  tab,
+  t,
+}: {
+  request: ProjectRequest;
+  environment: ProjectEnvironment | null | undefined;
+  projectSettings?: Record<string, unknown>;
+  collectionSettings?: Record<string, unknown>;
+  runtimeVariables: Record<string, string>;
+  tab: RequestPageTab;
+  t: ProjectTranslationFn;
+}): ExecutableRequestState => {
+  const variableLayers = buildRuntimeVariableLayers({
+    workspaceVariables: getWorkspaceVariableSource(projectSettings),
+    collectionVariables: getCollectionVariableSource(collectionSettings),
+    environment,
+    runtimeVariables,
+  });
+  const executableUrl = buildExecutableRequestUrl(request, variableLayers, t);
+  const executableHeaders = headersToObject(
+    buildDirectRequestHeaders(
+      request,
+      environment,
+      variableLayers,
+      t('collections.base64Unavailable')
+    )
+  );
+  const executablePayload = buildDirectRequestPayload(request, tab, t, variableLayers);
+  const missingVariableMessage = getMissingVariableMessage(
+    collectMissingExecutionVariables({
+      request,
+      variables: variableLayers.merged,
+      resolvedUrl: executableUrl,
+      resolvedHeaders: executableHeaders,
+      resolvedBody: executablePayload.body,
+    }),
+    environment,
+    t
+  );
+
+  if (missingVariableMessage) {
+    throw new Error(missingVariableMessage);
+  }
+
+  return {
+    variableLayers,
+    executableUrl,
+    executableHeaders,
+    executablePayload,
+  };
+};
+
 const flattenCollectionTree = (nodes: ProjectCollectionTreeNode[]): ProjectCollectionTreeNode[] =>
   nodes.flatMap(node => [node, ...flattenCollectionTree(node.children ?? [])]);
 
@@ -1681,6 +1954,7 @@ const buildCollectionTreeFromList = (
       name: collection.name,
       description: collection.description,
       project_id: collection.project_id,
+      settings: collection.settings,
       parent_id: collection.parent_id,
       is_folder: collection.is_folder,
       sort_order: collection.sort_order,
@@ -1763,6 +2037,40 @@ const fetchAllCollectionRequests = async (
   return items;
 };
 
+const sortRequestsForExecution = (items: ProjectRequest[]) =>
+  [...items].sort((left, right) => {
+    if (left.sort_order !== right.sort_order) {
+      return left.sort_order - right.sort_order;
+    }
+
+    return String(left.id).localeCompare(String(right.id));
+  });
+
+const findCollectionNodeById = (
+  nodes: ProjectCollectionTreeNode[],
+  collectionId: string
+): ProjectCollectionTreeNode | null => {
+  for (const node of nodes) {
+    if (String(node.id) === collectionId) {
+      return node;
+    }
+
+    const nestedMatch = findCollectionNodeById(node.children ?? [], collectionId);
+    if (nestedMatch) {
+      return nestedMatch;
+    }
+  }
+
+  return null;
+};
+
+const flattenRunnableCollectionSubtree = (
+  node: ProjectCollectionTreeNode
+): ProjectCollectionTreeNode[] => [
+  ...(node.is_folder ? [] : [node]),
+  ...(node.children ?? []).flatMap(child => flattenRunnableCollectionSubtree(child)),
+];
+
 const buildWorkbenchStateFromServer = (
   treeNodes: ProjectCollectionTreeNode[],
   requestsByCollectionId: Record<string, ProjectRequest[]>
@@ -1773,6 +2081,7 @@ const buildWorkbenchStateFromServer = (
     name: collection.name,
     colorTone: getCollectionColorTone(index),
     isFolder: collection.is_folder,
+    settings: collection.settings,
     requestIds: (requestsByCollectionId[String(collection.id)] ?? []).map(
       request => `request-${request.id}`
     ),
@@ -1958,6 +2267,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
   const [renameRequestDraftName, setRenameRequestDraftName] = useState('');
   const [importDialogTarget, setImportDialogTarget] = useState<ImportDialogTarget | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [variableDialogState, setVariableDialogState] = useState<VariableDialogState | null>(null);
   const [isExampleDialogOpen, setIsExampleDialogOpen] = useState(false);
   const [viewingExampleId, setViewingExampleId] = useState<number | string | null>(null);
   const [editingExampleId, setEditingExampleId] = useState<number | string | null>(null);
@@ -1967,9 +2277,15 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
   );
   const [defaultingExampleId, setDefaultingExampleId] = useState<number | string | null>(null);
   const [deletingExampleId, setDeletingExampleId] = useState<number | string | null>(null);
+  const [runningCollectionId, setRunningCollectionId] = useState<string | null>(null);
+  const [preferredRunSourceType, setPreferredRunSourceType] = useState<
+    'request' | 'collection' | null
+  >(null);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const createCollectionMutation = useCreateCollection(projectId);
   const deleteCollectionMutation = useDeleteCollection(projectId);
   const updateCollectionMutation = useUpdateCollection(projectId);
+  const updateProjectMutation = useUpdateProject();
   const importPostmanMutation = useImportPostmanCollection(projectId);
   const importMarkdownMutation = useImportMarkdownCollection(projectId);
   const environmentsQuery = useEnvironments(projectId);
@@ -1977,6 +2293,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
   const updateRequestMutation = useUpdateRequest(projectId);
   const deleteRequestMutation = useDeleteRequest(projectId);
   const createHistoryMutation = useCreateProjectHistory(projectId);
+  const createRunMutation = useCreateRun(projectId);
   const createExampleMutation = useCreateRequestExample(projectId);
   const updateExampleMutation = useUpdateRequestExample(projectId);
   const deleteExampleMutation = useDeleteRequestExample(projectId);
@@ -2078,6 +2395,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
     () => (activeTabId ? (tabMap.get(activeTabId) ?? null) : (openTabs[0] ?? null)),
     [activeTabId, openTabs, tabMap]
   );
+  const projectQuery = useProject(projectId);
   const persistedActiveCollectionId = useMemo(() => {
     if (!activeTab?.collectionId || !isPersistedCollectionId(activeTab.collectionId)) {
       return null;
@@ -2135,7 +2453,80 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       null
     );
   }, [exampleDetailQuery.data, requestExamples, selectedExampleId]);
+  const collectionSettingsById = useMemo(
+    () =>
+      new Map(
+        serverCollections.map(collection => [
+          String(collection.id),
+          collection.settings ?? undefined,
+        ])
+      ),
+    [serverCollections]
+  );
+  const projectSettings = projectQuery.data?.settings;
   const scratchpadTabs = useMemo(() => tabs.filter(tab => !tab.collectionId), [tabs]);
+  const availableRunSources = useMemo(() => {
+    const sources: Array<{
+      sourceType: 'request' | 'collection';
+      sourceId: string;
+      title: string;
+    }> = [];
+
+    if (persistedActiveRequestId) {
+      sources.push({
+        sourceType: 'request',
+        sourceId: persistedActiveRequestId,
+        title: activeTab?.title ?? t('collections.workbench.defaultRequestTitle'),
+      });
+    }
+
+    if (activeTab?.collectionId && isPersistedCollectionId(activeTab.collectionId)) {
+      sources.push({
+        sourceType: 'collection',
+        sourceId: activeTab.collectionId,
+        title:
+          collections.find(collection => collection.id === activeTab.collectionId)?.name ??
+          t('collections.workbench.badges.collectionFallback'),
+      });
+    }
+
+    return sources;
+  }, [activeTab, collections, persistedActiveRequestId, t]);
+  const currentRunSource = useMemo(() => {
+    if (availableRunSources.length === 0) {
+      return null;
+    }
+
+    if (preferredRunSourceType) {
+      const preferredSource = availableRunSources.find(
+        source => source.sourceType === preferredRunSourceType
+      );
+      if (preferredSource) {
+        return preferredSource;
+      }
+    }
+
+    return (
+      availableRunSources.find(source => source.sourceType === 'request') ?? availableRunSources[0]
+    );
+  }, [availableRunSources, preferredRunSourceType]);
+  const runsQuery = useRuns(
+    currentRunSource
+      ? {
+          workspaceId: projectId,
+          page: 1,
+          pageSize: 10,
+          sourceType: currentRunSource.sourceType,
+          sourceId: currentRunSource.sourceId,
+        }
+      : undefined
+  );
+  const runs = currentRunSource ? runsQuery.data?.items ?? [] : [];
+  const selectedRunFromList = runs.find(run => String(run.id) === String(selectedRunId)) ?? null;
+  const runDetailQuery = useRun(projectId, selectedRunId ?? undefined);
+  const selectedRunDetail = selectedRunFromList?.steps?.length
+    ? selectedRunFromList
+    : (runDetailQuery.data ?? selectedRunFromList);
 
   const collectionViews = useMemo(() => {
     const normalizedQuery = deferredSidebarQuery.trim().toLowerCase();
@@ -2303,6 +2694,45 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
     setDeleteExampleTarget(null);
     setDeletingExampleId(null);
   }, [persistedActiveCollectionId, persistedActiveRequestId]);
+
+  useEffect(() => {
+    if (availableRunSources.length === 0) {
+      if (preferredRunSourceType !== null) {
+        setPreferredRunSourceType(null);
+      }
+      return;
+    }
+
+    const nextPreferredSource =
+      availableRunSources.find(source => source.sourceType === preferredRunSourceType) ??
+      availableRunSources.find(source => source.sourceType === 'request') ??
+      availableRunSources[0];
+
+    if (nextPreferredSource && nextPreferredSource.sourceType !== preferredRunSourceType) {
+      setPreferredRunSourceType(nextPreferredSource.sourceType);
+    }
+  }, [availableRunSources, preferredRunSourceType]);
+
+  useEffect(() => {
+    if (!currentRunSource) {
+      if (selectedRunId !== null) {
+        setSelectedRunId(null);
+      }
+      return;
+    }
+
+    if (runs.length === 0) {
+      if (selectedRunId !== null) {
+        setSelectedRunId(null);
+      }
+      return;
+    }
+
+    const selectedExists = runs.some(run => String(run.id) === String(selectedRunId));
+    if (!selectedExists) {
+      setSelectedRunId(String(runs[0]?.id ?? ''));
+    }
+  }, [currentRunSource, runs, selectedRunId]);
 
   useEffect(() => {
     if (environments.length === 0) {
@@ -2727,6 +3157,9 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       const createdCollection = await createCollectionMutation.mutateAsync({
         name: getDefaultCollectionName(t, collectionNumber),
         description: '',
+        settings: {
+          variables: {},
+        },
         is_folder: false,
         sort_order: collections.length,
       });
@@ -2735,6 +3168,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
         name: createdCollection.name,
         colorTone: getCollectionColorTone(collectionNumber - 1),
         isFolder: createdCollection.is_folder,
+        settings: createdCollection.settings,
         requestIds: [],
       };
 
@@ -2767,6 +3201,75 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       parentCollectionName: null,
     });
     setImportFile(null);
+  };
+
+  const openWorkspaceVariablesDialog = () => {
+    setVariableDialogState({ scope: 'workspace' });
+  };
+
+  const openCollectionVariablesDialog = (collection: CollectionNode) => {
+    setVariableDialogState({
+      scope: 'collection',
+      collectionId: collection.id,
+      collectionName: collection.name,
+    });
+  };
+
+  const handleSaveScopedVariables = async (rows: KeyValueRow[]) => {
+    const variables = toRuntimeVariableRecord(rows);
+
+    if (variableDialogState?.scope === 'workspace') {
+      const currentRuntime =
+        typeof projectSettings?.runtime === 'object' && projectSettings?.runtime
+          ? (projectSettings.runtime as Record<string, unknown>)
+          : {};
+
+      await updateProjectMutation.mutateAsync({
+        id: projectId,
+        data: {
+          settings: {
+            ...(projectSettings ?? {}),
+            runtime: {
+              ...currentRuntime,
+              variables,
+            },
+          },
+        } as never,
+      });
+      setVariableDialogState(null);
+      return;
+    }
+
+    if (variableDialogState?.scope === 'collection' && variableDialogState.collectionId) {
+      const currentCollection = collections.find(
+        collection => collection.id === variableDialogState.collectionId
+      );
+
+      await updateCollectionMutation.mutateAsync({
+        collectionId: variableDialogState.collectionId,
+        data: {
+          settings: {
+            ...(currentCollection?.settings ?? {}),
+            variables,
+          },
+        },
+      });
+
+      updateCollections(current =>
+        current.map(collection =>
+          collection.id === variableDialogState.collectionId
+            ? {
+                ...collection,
+                settings: {
+                  ...(collection.settings ?? {}),
+                  variables,
+                },
+              }
+            : collection
+        )
+      );
+      setVariableDialogState(null);
+    }
   };
 
   const closeImportDialog = (open: boolean) => {
@@ -3095,6 +3598,8 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
     let executableHeaders: Record<string, string> = {};
     let executablePayload: DirectRequestExecutionPayload = {};
     let historyRequestBody: string | undefined;
+    const runtimeVariables = toRuntimeVariableRecord(tabSnapshot.runtimeVariables);
+    let collectionSettings: Record<string, unknown> | undefined;
 
     updateTab(tabId, tab => ({
       ...tab,
@@ -3110,6 +3615,10 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
         tabSnapshot.collectionId && isPersistedCollectionId(tabSnapshot.collectionId)
           ? tabSnapshot.collectionId
           : null;
+      collectionSettings =
+        persistedCollectionId != null
+          ? collectionSettingsById.get(String(persistedCollectionId))
+          : undefined;
 
       if (persistedCollectionId) {
         persistedRequest = await persistTabRequest(tabSnapshot, {
@@ -3131,20 +3640,19 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
         throw new Error(t('collections.workbench.persistCookiesUnavailable'));
       }
 
-      executableUrl = buildExecutableRequestUrl(runnableRequest, selectedEnvironment, t);
-      executableHeaders = headersToObject(
-        buildDirectRequestHeaders(
-          runnableRequest,
-          selectedEnvironment,
-          t('collections.base64Unavailable')
-        )
-      );
-      executablePayload = buildDirectRequestPayload(
-        runnableRequest,
-        tabSnapshot,
+      ({
+        executableUrl,
+        executableHeaders,
+        executablePayload,
+      } = buildExecutableRequestState({
+        request: runnableRequest,
+        environment: selectedEnvironment,
+        projectSettings,
+        collectionSettings,
+        runtimeVariables,
+        tab: tabSnapshot,
         t,
-        selectedEnvironment
-      );
+      }));
       const { historyBody: nextHistoryBody, ...runnerPayload } = executablePayload;
       historyRequestBody = nextHistoryBody;
       const response = await localRunnerService.execute({
@@ -3163,6 +3671,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       }));
 
       if (persistedRequest) {
+        setPreferredRunSourceType('request');
         void createHistoryMutation
           .mutateAsync(
             buildRequestRunHistoryPayload({
@@ -3189,6 +3698,23 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
             })
           )
           .catch(() => {});
+
+        void createRunMutation
+          .mutateAsync(
+            buildRequestUnifiedRunPayload({
+              request: persistedRequest,
+              executedUrl: executableUrl,
+              requestHeaders: executableHeaders,
+              requestBody: historyRequestBody,
+              settings: tabSnapshot.settings,
+              environmentId:
+                selectedEnvironment && selectedEnvironment.id !== undefined
+                  ? String(selectedEnvironment.id)
+                  : undefined,
+              response,
+            })
+          )
+          .catch(() => {});
       }
     } catch (error) {
       const message =
@@ -3204,21 +3730,21 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       }));
 
       if (persistedRequest) {
+        setPreferredRunSourceType('request');
         if (!executableUrl) {
-          executableUrl = buildExecutableRequestUrl(persistedRequest, selectedEnvironment, t);
-          executableHeaders = headersToObject(
-            buildDirectRequestHeaders(
-              persistedRequest,
-              selectedEnvironment,
-              t('collections.base64Unavailable')
-            )
-          );
-          executablePayload = buildDirectRequestPayload(
-            persistedRequest,
-            tabSnapshot,
+          ({
+            executableUrl,
+            executableHeaders,
+            executablePayload,
+          } = buildExecutableRequestState({
+            request: persistedRequest,
+            environment: selectedEnvironment,
+            projectSettings,
+            collectionSettings,
+            runtimeVariables,
+            tab: tabSnapshot,
             t,
-            selectedEnvironment
-          );
+          }));
           historyRequestBody = executablePayload.historyBody;
         }
 
@@ -3248,7 +3774,290 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
             })
           )
           .catch(() => {});
+
+        void createRunMutation
+          .mutateAsync(
+            buildRequestUnifiedRunPayload({
+              request: persistedRequest,
+              executedUrl: executableUrl,
+              requestHeaders: executableHeaders,
+              requestBody: historyRequestBody,
+              settings: tabSnapshot.settings,
+              environmentId:
+                selectedEnvironment && selectedEnvironment.id !== undefined
+                  ? String(selectedEnvironment.id)
+                  : undefined,
+              errorMessage: message,
+            })
+          )
+          .catch(() => {});
       }
+    }
+  };
+
+  const handleRunCollection = async (collectionId?: string) => {
+    const targetCollectionId = collectionId ?? activeCollectionId;
+
+    if (!targetCollectionId || !isPersistedCollectionId(targetCollectionId)) {
+      toast.error(t('collections.workbench.collectionRun.selectionRequired'));
+      return;
+    }
+
+    if (!collectionTreeQuery.data || !collectionRequestsQuery.data) {
+      toast.error(t('collections.workbench.collectionRun.loadingRequired'));
+      return;
+    }
+
+    const rootCollection = findCollectionNodeById(collectionTreeQuery.data, targetCollectionId);
+    if (!rootCollection) {
+      toast.error(t('collections.workbench.collectionRun.notFound'));
+      return;
+    }
+
+    const runnableCollections = flattenRunnableCollectionSubtree(rootCollection);
+    const executionQueue = runnableCollections.flatMap(collectionNode =>
+      sortRequestsForExecution(collectionRequestsQuery.data[String(collectionNode.id)] ?? []).map(
+        request => ({
+          collection: collectionNode,
+          request,
+          tab: tabMap.get(`request-${request.id}`) ?? toRequestPageTab(request),
+        })
+      )
+    );
+
+    if (executionQueue.length === 0) {
+      toast.error(
+        t('collections.workbench.collectionRun.noRequests', {
+          name: rootCollection.name,
+        })
+      );
+      return;
+    }
+
+    setPreferredRunSourceType('collection');
+    setRunningCollectionId(targetCollectionId);
+
+    const startedAt = new Date().toISOString();
+    const completedSteps: NonNullable<CreateUnifiedRunRequest['steps']> = [];
+    let passedSteps = 0;
+    let failedSteps = 0;
+    let totalDurationMs = 0;
+    let primaryErrorMessage: string | undefined;
+    let lastResponseSnapshot: Record<string, unknown> | undefined;
+
+    try {
+      for (const item of executionQueue) {
+        const requestTabId = `request-${item.request.id}`;
+        const requestTab = tabMap.get(requestTabId) ?? item.tab;
+        const runtimeVariables = toRuntimeVariableRecord(requestTab.runtimeVariables);
+        const stepStartedAt = new Date();
+        let executableUrl = item.request.url;
+        let executableHeaders: Record<string, string> = {};
+        let historyRequestBody: string | undefined;
+
+        updateTab(requestTabId, tab => ({
+          ...tab,
+          isSending: true,
+          response: {
+            ...tab.response,
+            error: null,
+          },
+        }));
+
+        try {
+          if (requestTab.settings.persistCookies) {
+            throw new Error(t('collections.workbench.persistCookiesUnavailable'));
+          }
+
+          const { executablePayload, executableHeaders: nextHeaders, executableUrl: nextUrl } =
+            buildExecutableRequestState({
+              request: item.request,
+              environment: selectedEnvironment,
+              projectSettings,
+              collectionSettings:
+                item.collection.settings ?? collectionSettingsById.get(String(item.collection.id)),
+              runtimeVariables,
+              tab: requestTab,
+              t,
+            });
+
+          executableUrl = nextUrl;
+          executableHeaders = nextHeaders;
+
+          const { historyBody: nextHistoryBody, ...runnerPayload } = executablePayload;
+          historyRequestBody = nextHistoryBody;
+
+          const response = await localRunnerService.execute({
+            method: item.request.method,
+            url: executableUrl,
+            headers: executableHeaders,
+            ...runnerPayload,
+            follow_redirects: requestTab.settings.followRedirects,
+            strict_tls: requestTab.settings.strictTls,
+          });
+
+          const stepFinishedAt = new Date();
+          const durationMs = response.time ?? stepFinishedAt.getTime() - stepStartedAt.getTime();
+          const succeeded = isSuccessfulExecution(response);
+          const effectiveErrorMessage = getExecutionErrorMessage(response);
+          const requestSnapshot = buildRunRequestSnapshot({
+            request: item.request,
+            executedUrl: executableUrl,
+            requestHeaders: executableHeaders,
+            requestBody: historyRequestBody,
+          });
+          const responseSnapshot = buildRunResponseSnapshot(response);
+
+          totalDurationMs += durationMs;
+          if (succeeded) {
+            passedSteps += 1;
+          } else {
+            failedSteps += 1;
+            primaryErrorMessage ||= effectiveErrorMessage;
+          }
+          lastResponseSnapshot = responseSnapshot;
+
+          updateTab(requestTabId, tab => ({
+            ...tab,
+            isSending: false,
+            response: toResponseDraft(response),
+          }));
+
+          completedSteps.push({
+            step_index: completedSteps.length,
+            source_type: 'request',
+            source_id: String(item.request.id),
+            source_name:
+              item.request.url === PERSISTED_DRAFT_URL_PLACEHOLDER
+                ? item.request.name
+                : `${item.request.method} ${item.request.url}`,
+            status: succeeded ? 'passed' : 'failed',
+            duration_ms: durationMs,
+            request_snapshot: requestSnapshot,
+            response_snapshot: responseSnapshot,
+            error_message: effectiveErrorMessage,
+            metadata: {
+              collection_id: String(item.collection.id),
+              collection_name: item.collection.name,
+              runner: {
+                mode: 'local',
+                follow_redirects: requestTab.settings.followRedirects,
+                strict_tls: requestTab.settings.strictTls,
+              },
+            },
+            started_at: stepStartedAt.toISOString(),
+            finished_at: stepFinishedAt.toISOString(),
+          });
+        } catch (error) {
+          const stepFinishedAt = new Date();
+          const durationMs = stepFinishedAt.getTime() - stepStartedAt.getTime();
+          const message =
+            error instanceof Error
+              ? error.message
+              : t('collections.workbench.collectionRun.stepFailedFallback');
+          const requestSnapshot = buildRunRequestSnapshot({
+            request: item.request,
+            executedUrl: executableUrl,
+            requestHeaders: executableHeaders,
+            requestBody: historyRequestBody ?? item.request.body,
+          });
+
+          totalDurationMs += durationMs;
+          failedSteps += 1;
+          primaryErrorMessage ||= message;
+
+          updateTab(requestTabId, tab => ({
+            ...tab,
+            isSending: false,
+            response: {
+              ...createEmptyResponse(),
+              error: message,
+            },
+          }));
+
+          completedSteps.push({
+            step_index: completedSteps.length,
+            source_type: 'request',
+            source_id: String(item.request.id),
+            source_name:
+              item.request.url === PERSISTED_DRAFT_URL_PLACEHOLDER
+                ? item.request.name
+                : `${item.request.method} ${item.request.url}`,
+            status: 'failed',
+            duration_ms: durationMs,
+            request_snapshot: requestSnapshot,
+            error_message: message,
+            metadata: {
+              collection_id: String(item.collection.id),
+              collection_name: item.collection.name,
+            },
+            started_at: stepStartedAt.toISOString(),
+            finished_at: stepFinishedAt.toISOString(),
+          });
+        }
+      }
+
+      await createRunMutation.mutateAsync({
+        source_type: 'collection',
+        source_id: String(rootCollection.id),
+        source_name: rootCollection.name,
+        status: failedSteps > 0 ? 'failed' : 'passed',
+        environment_id:
+          selectedEnvironment && selectedEnvironment.id !== undefined
+            ? String(selectedEnvironment.id)
+            : undefined,
+        execution_mode: 'local',
+        duration_ms: totalDurationMs,
+        request_snapshot: {
+          id: rootCollection.id,
+          name: rootCollection.name,
+          is_folder: rootCollection.is_folder,
+          collection_ids: runnableCollections.map(collection => String(collection.id)),
+          request_ids: executionQueue.map(item => String(item.request.id)),
+        },
+        response_snapshot: {
+          total_steps: completedSteps.length,
+          passed_steps: passedSteps,
+          failed_steps: failedSteps,
+          last_response: lastResponseSnapshot,
+        },
+        error_message: primaryErrorMessage,
+        metadata: {
+          runner: {
+            mode: 'local',
+          },
+          record_strategy: {
+            runs: 'execution',
+            history: 'audit',
+          },
+        },
+        started_at: startedAt,
+        finished_at: new Date().toISOString(),
+        steps: completedSteps,
+      });
+
+      if (failedSteps > 0) {
+        toast.error(
+          t('collections.workbench.collectionRun.completedWithFailures', {
+            name: rootCollection.name,
+            passed: passedSteps,
+            failed: failedSteps,
+          })
+        );
+      } else {
+        toast.success(
+          t('collections.workbench.collectionRun.completed', {
+            name: rootCollection.name,
+            count: passedSteps,
+          })
+        );
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('collections.workbench.collectionRun.persistFailed');
+      toast.error(message);
+    } finally {
+      setRunningCollectionId(null);
     }
   };
 
@@ -3497,6 +4306,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
               selectedEnvironmentId={selectedEnvironmentId}
               isLoading={environmentsQuery.isLoading}
               onEnvironmentChange={setSelectedEnvironmentId}
+              onEditWorkspaceVariables={openWorkspaceVariablesDialog}
             />
           </div>
         </div>
@@ -3535,9 +4345,12 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
             onImportCollectionMarkdown={collection =>
               openCollectionImportDialog(collection, 'markdown')
             }
+            onEditCollectionVariables={openCollectionVariablesDialog}
             onDeleteRequest={setDeleteRequestTarget}
             onRenameCollection={openRenameCollectionDialog}
             onRenameRequest={openRenameRequestDialog}
+            onRunCollection={collection => void handleRunCollection(collection.id)}
+            runningCollectionId={runningCollectionId}
             onToggleCollection={toggleCollection}
             onSelectRequest={selectRequest}
           />
@@ -3578,6 +4391,17 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      {activeCollectionId && isPersistedCollectionId(activeCollectionId) ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          loading={runningCollectionId === activeCollectionId}
+                          onClick={() => void handleRunCollection(activeCollectionId)}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          {t('collections.workbench.actions.runCollection')}
+                        </Button>
+                      ) : null}
                       <Button
                         type="button"
                         variant="outline"
@@ -3661,6 +4485,28 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
                 isSavingExample={
                   createExampleMutation.isPending || saveExampleResponseMutation.isPending
                 }
+              />
+
+              <UnifiedRunsPanel
+                source={currentRunSource}
+                availableSources={availableRunSources}
+                selectedSourceType={currentRunSource?.sourceType ?? null}
+                runs={runs}
+                selectedRunId={selectedRunId}
+                selectedRun={selectedRunDetail}
+                isListLoading={Boolean(currentRunSource) && runsQuery.isLoading}
+                isListError={Boolean(currentRunSource && runsQuery.error)}
+                isRefreshing={runsQuery.isFetching}
+                isDetailLoading={runDetailQuery.isLoading || runDetailQuery.isFetching}
+                isDetailError={Boolean(selectedRunId && runDetailQuery.error)}
+                onRefresh={() => {
+                  void runsQuery.refetch();
+                  if (selectedRunId) {
+                    void runDetailQuery.refetch();
+                  }
+                }}
+                onSelectSourceType={sourceType => setPreferredRunSourceType(sourceType)}
+                onSelectRun={runId => setSelectedRunId(String(runId))}
               />
             </div>
           ) : (
@@ -3768,6 +4614,39 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
         onFileChange={setImportFile}
         onSubmit={handleImportCollection}
       />
+      <VariableScopeDialog
+        open={variableDialogState !== null}
+        title={
+          variableDialogState?.scope === 'workspace'
+            ? t('collections.workbench.variables.workspaceDialogTitle')
+            : t('collections.workbench.variables.collectionDialogTitle', {
+                name: variableDialogState?.collectionName ?? '',
+              })
+        }
+        description={
+          variableDialogState?.scope === 'workspace'
+            ? t('collections.workbench.variables.workspaceDialogDescription')
+            : t('collections.workbench.variables.collectionDialogDescription')
+        }
+        initialRows={
+          variableDialogState?.scope === 'workspace'
+            ? toVariableRows(
+                getWorkspaceVariableSource(projectSettings) as Record<string, unknown> | undefined
+              )
+            : toVariableRows(
+                collections.find(
+                  collection => collection.id === variableDialogState?.collectionId
+                )?.settings?.variables as Record<string, unknown> | undefined
+              )
+        }
+        isSubmitting={updateProjectMutation.isPending || updateCollectionMutation.isPending}
+        onOpenChange={open => {
+          if (!open) {
+            setVariableDialogState(null);
+          }
+        }}
+        onSubmit={handleSaveScopedVariables}
+      />
     </main>
   );
 }
@@ -3799,9 +4678,12 @@ function CollectionsSidebar({
   onDeleteCollection,
   onImportCollectionPostman,
   onImportCollectionMarkdown,
+  onEditCollectionVariables,
   onDeleteRequest,
   onRenameCollection,
   onRenameRequest,
+  onRunCollection,
+  runningCollectionId,
   onToggleCollection,
   onSelectRequest,
 }: {
@@ -3831,9 +4713,12 @@ function CollectionsSidebar({
   onDeleteCollection: (collection: CollectionNode) => void;
   onImportCollectionPostman: (collection: CollectionNode) => void;
   onImportCollectionMarkdown: (collection: CollectionNode) => void;
+  onEditCollectionVariables: (collection: CollectionNode) => void;
   onDeleteRequest: (request: RequestPageTab) => void;
   onRenameCollection: (collection: CollectionNode) => void;
   onRenameRequest: (request: RequestPageTab) => void;
+  onRunCollection: (collection: CollectionNode) => void;
+  runningCollectionId: string | null;
   onToggleCollection: (collectionId: string) => void;
   onSelectRequest: (tabId: string, collectionId: string | null) => void;
 }) {
@@ -4045,10 +4930,13 @@ function CollectionsSidebar({
                       importingCollectionId === collection.id && importingKind === 'markdown'
                     }
                     isRenaming={renamingCollectionId === collection.id}
+                    isRunning={runningCollectionId === collection.id}
                     onCreateRequest={() => void onCreateRequest(collection)}
                     onImportPostman={() => onImportCollectionPostman(collection)}
                     onImportMarkdown={() => onImportCollectionMarkdown(collection)}
+                    onEditVariables={() => onEditCollectionVariables(collection)}
                     onRename={() => onRenameCollection(collection)}
+                    onRunCollection={() => onRunCollection(collection)}
                     onDelete={() => void onDeleteCollection(collection)}
                   />
                 </div>
@@ -4234,10 +5122,13 @@ function CollectionActionsMenu({
   isImportingPostman,
   isImportingMarkdown,
   isRenaming,
+  isRunning,
   onCreateRequest,
   onImportPostman,
   onImportMarkdown,
+  onEditVariables,
   onRename,
+  onRunCollection,
   onDelete,
 }: {
   isFolder: boolean;
@@ -4246,10 +5137,13 @@ function CollectionActionsMenu({
   isImportingPostman: boolean;
   isImportingMarkdown: boolean;
   isRenaming: boolean;
+  isRunning: boolean;
   onCreateRequest: () => void;
   onImportPostman: () => void;
   onImportMarkdown: () => void;
+  onEditVariables: () => void;
   onRename: () => void;
+  onRunCollection: () => void;
   onDelete: () => void;
 }) {
   const t = useT('project');
@@ -4287,6 +5181,14 @@ function CollectionActionsMenu({
         </DropdownMenuItem>
         <DropdownMenuItem>{t('collections.workbench.actions.export')}</DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem disabled={isRunning} onSelect={onRunCollection}>
+          {isRunning
+            ? t('collections.workbench.collectionRun.running')
+            : t('collections.workbench.actions.runCollection')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onEditVariables}>
+          {t('collections.workbench.variables.collectionAction')}
+        </DropdownMenuItem>
         <DropdownMenuItem disabled={isRenaming} onSelect={onRename}>
           {t('collections.workbench.actions.rename')}
         </DropdownMenuItem>
@@ -4295,6 +5197,66 @@ function CollectionActionsMenu({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function VariableScopeDialog({
+  open,
+  title,
+  description,
+  initialRows,
+  isSubmitting,
+  onOpenChange,
+  onSubmit,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+  initialRows: KeyValueRow[];
+  isSubmitting: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (rows: KeyValueRow[]) => Promise<void>;
+}) {
+  const t = useT('project');
+  const [rows, setRows] = useState<KeyValueRow[]>(initialRows);
+
+  useEffect(() => {
+    if (open) {
+      setRows(initialRows);
+    }
+  }, [initialRows, open]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+
+        <DialogBody>
+          <KeyValueEditor
+            title={t('common.variables')}
+            description={t('collections.workbench.variables.dialogEditorDescription')}
+            mode="table"
+            rows={rows}
+            bulkValue={rowsToBulkText(rows)}
+            onModeChange={() => {}}
+            onRowsChange={setRows}
+            onBulkChange={bulkValue => setRows(bulkTextToRows(bulkValue))}
+          />
+        </DialogBody>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="button" loading={isSubmitting} onClick={() => void onSubmit(rows)}>
+            {t('collections.workbench.actions.save')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -5580,11 +6542,13 @@ function EnvironmentSwitcher({
   selectedEnvironmentId,
   isLoading,
   onEnvironmentChange,
+  onEditWorkspaceVariables,
 }: {
   environments: ProjectEnvironment[];
   selectedEnvironmentId: string;
   isLoading: boolean;
   onEnvironmentChange: (value: string) => void;
+  onEditWorkspaceVariables: () => void;
 }) {
   const t = useT('project');
 
@@ -5621,6 +6585,15 @@ function EnvironmentSwitcher({
           ))}
         </SelectContent>
       </Select>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-7 rounded-full px-2"
+        onClick={onEditWorkspaceVariables}
+      >
+        {t('collections.workbench.variables.workspaceButton')}
+      </Button>
     </div>
   );
 }
@@ -5920,6 +6893,7 @@ function RequestSectionPanel({
       return (
         <SettingsPanel
           settings={tab.settings}
+          runtimeVariables={tab.runtimeVariables}
           onSettingChange={(key, value) =>
             onTabChange(current => ({
               ...current,
@@ -5927,6 +6901,12 @@ function RequestSectionPanel({
                 ...current.settings,
                 [key]: value,
               },
+            }))
+          }
+          onRuntimeVariablesChange={runtimeVariables =>
+            onTabChange(current => ({
+              ...current,
+              runtimeVariables,
             }))
           }
         />
@@ -6675,10 +7655,14 @@ function ScriptsPanel({
 
 function SettingsPanel({
   settings,
+  runtimeVariables,
   onSettingChange,
+  onRuntimeVariablesChange,
 }: {
   settings: RequestPageTab['settings'];
+  runtimeVariables: KeyValueRow[];
   onSettingChange: (key: keyof RequestPageTab['settings'], value: boolean) => void;
+  onRuntimeVariablesChange: (rows: KeyValueRow[]) => void;
 }) {
   const t = useT('project');
   const settingItems: Array<{
@@ -6704,24 +7688,337 @@ function SettingsPanel({
   ];
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      {settingItems.map(item => (
-        <Card key={item.key} className="rounded-xl border-border-subtle bg-bg-canvas py-0">
-          <CardHeader className="border-b border-border-subtle py-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle>{item.title}</CardTitle>
-                <CardDescription className="mt-1">{item.description}</CardDescription>
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-3">
+        {settingItems.map(item => (
+          <Card key={item.key} className="rounded-xl border-border-subtle bg-bg-canvas py-0">
+            <CardHeader className="border-b border-border-subtle py-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <CardTitle>{item.title}</CardTitle>
+                  <CardDescription className="mt-1">{item.description}</CardDescription>
+                </div>
+                <Switch
+                  checked={settings[item.key]}
+                  onCheckedChange={checked => onSettingChange(item.key, checked)}
+                />
               </div>
-              <Switch
-                checked={settings[item.key]}
-                onCheckedChange={checked => onSettingChange(item.key, checked)}
-              />
-            </div>
-          </CardHeader>
-        </Card>
-      ))}
+            </CardHeader>
+          </Card>
+        ))}
+      </div>
+
+      <KeyValueEditor
+        title={t('collections.workbench.settings.runtimeVariablesTitle')}
+        description={t('collections.workbench.settings.runtimeVariablesDescription')}
+        mode="table"
+        rows={runtimeVariables}
+        bulkValue={rowsToBulkText(runtimeVariables)}
+        onModeChange={() => {}}
+        onRowsChange={onRuntimeVariablesChange}
+        onBulkChange={bulkValue => onRuntimeVariablesChange(bulkTextToRows(bulkValue))}
+      />
     </div>
+  );
+}
+
+const getUnifiedRunStatusLabel = (t: ProjectTranslationFn, status: string) => {
+  switch (status) {
+    case 'passed':
+      return t('collections.workbench.runs.statusPassed');
+    case 'failed':
+      return t('collections.workbench.runs.statusFailed');
+    case 'running':
+      return t('collections.workbench.runs.statusRunning');
+    case 'canceled':
+      return t('collections.workbench.runs.statusCanceled');
+    case 'pending':
+    default:
+      return t('collections.workbench.runs.statusPending');
+  }
+};
+
+const getUnifiedRunStatusClassName = (status: string) => {
+  switch (status) {
+    case 'passed':
+      return 'border-border-strong bg-[var(--miro-surface-yellow)] text-[var(--miro-yellow-dark)]';
+    case 'failed':
+      return 'border-border-subtle bg-bg-surface text-text-main';
+    case 'running':
+      return 'border-border-subtle bg-bg-surface text-text-main';
+    case 'canceled':
+      return 'border-border-subtle bg-bg-surface text-text-main';
+    case 'pending':
+    default:
+      return 'border-border-subtle bg-bg-subtle text-text-main';
+  }
+};
+
+function UnifiedRunsPanel({
+  source,
+  availableSources,
+  selectedSourceType,
+  runs,
+  selectedRunId,
+  selectedRun,
+  isListLoading,
+  isListError,
+  isRefreshing,
+  isDetailLoading,
+  isDetailError,
+  onRefresh,
+  onSelectSourceType,
+  onSelectRun,
+}: {
+  source: { sourceType: 'request' | 'collection'; sourceId: string; title: string } | null;
+  availableSources: Array<{
+    sourceType: 'request' | 'collection';
+    sourceId: string;
+    title: string;
+  }>;
+  selectedSourceType: 'request' | 'collection' | null;
+  runs: Array<import('@/types/run').UnifiedRun>;
+  selectedRunId: string | null;
+  selectedRun: import('@/types/run').UnifiedRun | null | undefined;
+  isListLoading: boolean;
+  isListError: boolean;
+  isRefreshing: boolean;
+  isDetailLoading: boolean;
+  isDetailError: boolean;
+  onRefresh: () => void;
+  onSelectSourceType: (sourceType: 'request' | 'collection') => void;
+  onSelectRun: (runId: string) => void;
+}) {
+  const t = useT('project');
+
+  if (!source) {
+    return null;
+  }
+
+  return (
+    <Card className="rounded-xl border-border-subtle bg-bg-canvas">
+      <CardHeader className="gap-4 border-b border-border-subtle">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <CardTitle>{t('collections.workbench.runs.title')}</CardTitle>
+            <CardDescription>
+              {t('collections.workbench.runs.description', {
+                sourceType:
+                  source.sourceType === 'collection'
+                    ? t('collections.workbench.runs.sourceCollection')
+                    : t('collections.workbench.runs.sourceRequest'),
+                sourceName: source.title,
+              })}
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {availableSources.length > 1 ? (
+              <div className="inline-flex rounded-full border border-border-subtle bg-bg-soft p-1">
+                {availableSources.map(runSource => (
+                  <button
+                    key={`${runSource.sourceType}-${runSource.sourceId}`}
+                    type="button"
+                    onClick={() => onSelectSourceType(runSource.sourceType)}
+                    className={cn(
+                      'rounded-full px-3 py-1.5 text-sm transition-colors',
+                      selectedSourceType === runSource.sourceType
+                        ? 'bg-bg-canvas font-medium text-text-main'
+                        : 'text-text-muted hover:text-text-main'
+                    )}
+                  >
+                    {runSource.sourceType === 'collection'
+                      ? t('collections.workbench.runs.sourceCollection')
+                      : t('collections.workbench.runs.sourceRequest')}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <Button type="button" variant="outline" size="sm" onClick={onRefresh} loading={isRefreshing}>
+              <RefreshCw className="h-4 w-4" />
+              {t('common.refresh')}
+            </Button>
+            <MetricBadge
+              label={t('collections.workbench.runs.totalRuns')}
+              value={String(runs.length)}
+            />
+          </div>
+        </div>
+        <div className="rounded-xl border border-border-subtle bg-bg-soft px-4 py-3 text-sm text-text-muted">
+          {t('collections.workbench.runs.historyRelation')}
+        </div>
+      </CardHeader>
+      <CardContent className="grid gap-4 px-5 py-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="space-y-3">
+          {isListLoading ? (
+            <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-5 text-sm text-text-muted">
+              {t('collections.workbench.runs.loadingList')}
+            </div>
+          ) : isListError ? (
+            <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-5 text-sm text-text-muted">
+              {t('collections.workbench.runs.loadListFailed')}
+            </div>
+          ) : runs.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-5 text-sm text-text-muted">
+              {t('collections.workbench.runs.empty')}
+            </div>
+          ) : (
+            runs.map(run => (
+              <button
+                key={run.id}
+                type="button"
+                onClick={() => onSelectRun(String(run.id))}
+                className={cn(
+                  'w-full rounded-xl border px-4 py-3 text-left transition-colors',
+                  String(selectedRunId) === String(run.id)
+                    ? 'border-border-subtle bg-bg-surface'
+                    : 'border-border-subtle bg-bg-canvas hover:bg-bg-subtle'
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-text-main">{run.source_name}</p>
+                    <p className="mt-1 text-xs text-text-muted">{formatDate(run.created_at)}</p>
+                  </div>
+                  <Badge variant="outline" className={getUnifiedRunStatusClassName(run.status)}>
+                    {getUnifiedRunStatusLabel(t, run.status)}
+                  </Badge>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
+                  <span>{t('collections.workbench.runs.stepsSummary', { total: run.total_steps })}</span>
+                  <span>{t('collections.workbench.runs.passedSummary', { passed: run.passed_steps })}</span>
+                  <span>{t('collections.workbench.runs.failedSummary', { failed: run.failed_steps })}</span>
+                  <span>{t('collections.workbench.runs.durationSummary', { duration: run.duration_ms })}</span>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+
+        <div className="min-w-0 space-y-4">
+          {!selectedRun ? (
+            <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-6 text-sm text-text-muted">
+              {t('collections.workbench.runs.selectRun')}
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className={getUnifiedRunStatusClassName(selectedRun.status)}>
+                  {getUnifiedRunStatusLabel(t, selectedRun.status)}
+                </Badge>
+                <MetricBadge label={t('common.duration')} value={`${selectedRun.duration_ms} ms`} />
+                <MetricBadge
+                  label={t('collections.workbench.runs.totalSteps')}
+                  value={String(selectedRun.total_steps)}
+                />
+                <MetricBadge
+                  label={t('collections.workbench.runs.failedSteps')}
+                  value={String(selectedRun.failed_steps)}
+                />
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <MetricBadge label={t('common.created')} value={formatDate(selectedRun.created_at)} />
+                <MetricBadge
+                  label={t('collections.workbench.runs.startedAt')}
+                  value={selectedRun.started_at ? formatDate(selectedRun.started_at) : '-'}
+                />
+                <MetricBadge
+                  label={t('collections.workbench.runs.finishedAt')}
+                  value={selectedRun.finished_at ? formatDate(selectedRun.finished_at) : '-'}
+                />
+                <MetricBadge label={t('common.environment')} value={selectedRun.environment_id ?? '-'} />
+              </div>
+
+              {selectedRun.error_message ? (
+                <div className="rounded-xl border border-border-subtle bg-bg-surface p-4">
+                  <p className="text-sm font-medium text-text-main">
+                    {t('collections.workbench.runs.errorTitle')}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-text-main">{selectedRun.error_message}</p>
+                </div>
+              ) : null}
+
+              {isDetailLoading && !selectedRun.steps?.length ? (
+                <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-5 text-sm text-text-muted">
+                  {t('collections.workbench.runs.loadingDetail')}
+                </div>
+              ) : null}
+
+              {isDetailError ? (
+                <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-5 text-sm text-text-muted">
+                  {t('collections.workbench.runs.loadDetailFailed')}
+                </div>
+              ) : null}
+
+              {selectedRun.steps?.length ? (
+                <div className="space-y-3">
+                  <Separator />
+                  {selectedRun.steps
+                    .slice()
+                    .sort((left, right) => left.step_index - right.step_index)
+                    .map(step => (
+                      <div key={step.id} className="rounded-xl border border-border-subtle bg-bg-canvas p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium text-text-main">
+                              {step.source_name || t('collections.workbench.runs.stepFallback', { index: step.step_index + 1 })}
+                            </p>
+                            <p className="mt-1 text-xs text-text-muted">
+                              {t('collections.workbench.runs.stepLabel', {
+                                index: step.step_index + 1,
+                                sourceType:
+                                  step.source_type === 'collection'
+                                    ? t('collections.workbench.runs.sourceCollection')
+                                    : t('collections.workbench.runs.sourceRequest'),
+                              })}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-text-muted">{step.duration_ms} ms</span>
+                            <Badge variant="outline" className={getUnifiedRunStatusClassName(step.status)}>
+                              {getUnifiedRunStatusLabel(t, step.status)}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {step.error_message ? (
+                          <div className="mt-3 rounded-lg border border-border-subtle bg-bg-soft p-3 text-sm text-text-main">
+                            <span className="font-medium">{t('collections.workbench.runs.errorTitle')}: </span>
+                            {step.error_message}
+                          </div>
+                        ) : null}
+
+                        <div className="mt-4 grid gap-4 xl:grid-cols-2">
+                          <div className="rounded-xl border border-border-subtle bg-bg-soft p-4">
+                            <p className="mb-2 text-xs font-medium uppercase tracking-[0.03125rem] text-text-muted">
+                              {t('collections.workbench.runs.requestSnapshot')}
+                            </p>
+                            <pre className="max-h-[360px] overflow-auto text-xs leading-6 text-text-main">
+                              {JSON.stringify(step.request_snapshot ?? {}, null, 2)}
+                            </pre>
+                          </div>
+                          <div className="rounded-xl border border-border-subtle bg-bg-soft p-4">
+                            <p className="mb-2 text-xs font-medium uppercase tracking-[0.03125rem] text-text-muted">
+                              {t('collections.workbench.runs.responseSnapshot')}
+                            </p>
+                            <pre className="max-h-[360px] overflow-auto text-xs leading-6 text-text-main">
+                              {JSON.stringify(step.response_snapshot ?? {}, null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : !isDetailLoading ? (
+                <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-5 text-sm text-text-muted">
+                  {t('collections.workbench.runs.noSteps')}
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -6795,13 +8092,6 @@ function ResponsePanel({
               {t('collections.workbench.response.sendingDescription')}
             </p>
           </div>
-        ) : response.error ? (
-          <div className="flex flex-1 flex-col justify-center rounded-xl border border-border-subtle bg-bg-surface p-6">
-            <p className="text-sm font-medium text-text-main">
-              {t('collections.workbench.response.errorTitle')}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-text-main">{response.error}</p>
-          </div>
         ) : response.status === null ? (
           <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-border-subtle bg-bg-soft text-center">
             <p className="text-base font-medium text-text-main">
@@ -6813,6 +8103,14 @@ function ResponsePanel({
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col gap-4">
+            {response.error ? (
+              <div className="rounded-xl border border-border-subtle bg-bg-surface p-4">
+                <p className="text-sm font-medium text-text-main">
+                  {t('collections.workbench.response.errorTitle')}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-text-main">{response.error}</p>
+              </div>
+            ) : null}
             {responseHeaders ? (
               <div className="rounded-xl border border-border-subtle bg-bg-soft p-4">
                 <p className="mb-2 text-xs font-medium uppercase tracking-[0.03125rem] text-text-muted">
