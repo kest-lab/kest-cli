@@ -109,7 +109,7 @@ func InitApplication() (*app.Application, error) {
 	flowHandler := flow.NewHandler(flowService, memberService)
 	executor := testrunner.NewExecutor()
 	testcaseService := testcase.NewService(testcaseRepository, apispecRepository, environmentRepository, executor)
-	testcaseHandler := testcase.NewHandler(testcaseService, memberService)
+	testcaseHandler := testcase.NewHandler(testcaseService, workspaceService)
 	systemHandler := system.NewHandler()
 	handlers := &app.Handlers{
 		User:          handler,

@@ -1605,8 +1605,8 @@ const messages = {
     apiSpecBadge: 'API 规格：{spec}',
     createDialogTitle: '创建测试用例',
     editDialogTitle: '编辑测试用例',
-    createDialogDescription: '通过 POST /v1/projects/:id/test-cases 创建测试用例。',
-    editDialogDescription: '通过 PATCH /v1/projects/:id/test-cases/:tcid 更新当前测试用例。',
+    createDialogDescription: '通过 POST /v1/workspaces/:id/test-cases 创建测试用例。',
+    editDialogDescription: '通过 PATCH /v1/workspaces/:id/test-cases/:tcid 更新当前测试用例。',
     formLoadFailedTitle: '无法加载测试用例详情',
     formLoadFailedDescription: '当前测试用例仍在加载中。请先关闭对话框后重试。',
     apiSpecLabel: 'API 规格',
@@ -1628,7 +1628,7 @@ const messages = {
     extractVarsJsonPlaceholder: '[{"name":"user_id","source":"body","path":"$.id"}]',
     duplicateDialogTitle: '复制测试用例',
     duplicateDialogDescription:
-      '通过 POST /v1/projects/:id/test-cases/:tcid/duplicate 复制当前测试用例。',
+      '通过 POST /v1/workspaces/:id/test-cases/:tcid/duplicate 复制当前测试用例。',
     duplicateSourceLabel: '来源：',
     unknownTestCase: '未知测试用例',
     duplicateName: '{name} 副本',
@@ -1650,7 +1650,7 @@ const messages = {
     loadingExamples: '正在加载示例...',
     runDialogTitle: '运行测试用例',
     runDialogDescription:
-      '通过 POST /v1/projects/:id/test-cases/:tcid/run 运行当前测试用例，并按需覆盖环境或变量。',
+      '通过 POST /v1/workspaces/:id/test-cases/:tcid/run 运行当前测试用例，并按需覆盖环境或变量。',
     overrideEnvironment: '覆盖环境',
     useTestCaseEnv: '使用测试用例环境',
     globalVarsJsonLabel: 'Global Vars JSON',
@@ -1663,7 +1663,7 @@ const messages = {
     deleteFallbackTarget: '这个测试用例',
     runDetailDialogTitle: '运行详情',
     runDetailDialogDescription:
-      '查看 GET /v1/projects/:id/test-cases/:tcid/runs/:rid 返回的完整请求、响应和断言结果。',
+      '查看 GET /v1/workspaces/:id/test-cases/:tcid/runs/:rid 返回的完整请求、响应和断言结果。',
     runDetailLoadFailedTitle: '无法加载运行详情',
     runDetailLoadFailedDescription: '当前运行详情无法加载。请稍后重试。',
     durationMs: '{value} ms',

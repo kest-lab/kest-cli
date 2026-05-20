@@ -1728,9 +1728,9 @@ const messages: ProjectMessages = {
     apiSpecBadge: 'API Spec: {spec}',
     createDialogTitle: 'Create Test Case',
     editDialogTitle: 'Edit Test Case',
-    createDialogDescription: 'Create a project test case with POST /v1/projects/:id/test-cases.',
+    createDialogDescription: 'Create a workspace test case with POST /v1/workspaces/:id/test-cases.',
     editDialogDescription:
-      'Update the current test case with PATCH /v1/projects/:id/test-cases/:tcid.',
+      'Update the current test case with PATCH /v1/workspaces/:id/test-cases/:tcid.',
     formLoadFailedTitle: 'Unable to load test case details',
     formLoadFailedDescription:
       'The current test case is still loading. Close this dialog and try again.',
@@ -1753,7 +1753,7 @@ const messages: ProjectMessages = {
     extractVarsJsonPlaceholder: '[{"name":"user_id","source":"body","path":"$.id"}]',
     duplicateDialogTitle: 'Duplicate Test Case',
     duplicateDialogDescription:
-      'Duplicate the current test case with POST /v1/projects/:id/test-cases/:tcid/duplicate.',
+      'Duplicate the current test case with POST /v1/workspaces/:id/test-cases/:tcid/duplicate.',
     duplicateSourceLabel: 'Source:',
     unknownTestCase: 'Unknown test case',
     duplicateName: '{name} Copy',
@@ -1776,7 +1776,7 @@ const messages: ProjectMessages = {
     loadingExamples: 'Loading examples...',
     runDialogTitle: 'Run Test Case',
     runDialogDescription:
-      'Run the current test case with POST /v1/projects/:id/test-cases/:tcid/run and override the environment or variables if needed.',
+      'Run the current test case with POST /v1/workspaces/:id/test-cases/:tcid/run and override the environment or variables if needed.',
     overrideEnvironment: 'Override Environment',
     useTestCaseEnv: 'Use test case env',
     globalVarsJsonLabel: 'Global Vars JSON',
@@ -1790,7 +1790,7 @@ const messages: ProjectMessages = {
     deleteFallbackTarget: 'this test case',
     runDetailDialogTitle: 'Run Detail',
     runDetailDialogDescription:
-      'Inspect the full request, response, and assertions returned by GET /v1/projects/:id/test-cases/:tcid/runs/:rid.',
+      'Inspect the full request, response, and assertions returned by GET /v1/workspaces/:id/test-cases/:tcid/runs/:rid.',
     runDetailLoadFailedTitle: 'Unable to load run detail',
     runDetailLoadFailedDescription: 'The run detail could not be loaded. Try again in a moment.',
     durationMs: '{value} ms',

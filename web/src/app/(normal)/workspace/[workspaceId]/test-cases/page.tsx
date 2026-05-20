@@ -22,7 +22,7 @@ export default async function WorkspaceTestCasesPage({
 
   return (
     <TestCaseManagementPage
-      projectId={workspaceId}
+      workspaceId={workspaceId}
       autoOpenFromSpecSpecId={selectedSpecId}
       flowSource={source === 'ai' ? 'ai' : null}
     />
