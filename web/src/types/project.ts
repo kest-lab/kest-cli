@@ -28,6 +28,7 @@ export interface ApiProject {
   platform: ProjectPlatform | '';
   role?: ProjectMemberRole;
   status: ProjectStatus;
+  settings?: Record<string, unknown>;
   created_at: string;
 }
 

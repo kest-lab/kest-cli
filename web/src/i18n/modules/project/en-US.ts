@@ -600,6 +600,7 @@ const messages: ProjectMessages = {
     metadata: 'History metadata',
     metadataDescription: 'Core fields captured for the selected history record.',
     recordId: 'Record ID',
+    workspaceId: 'Workspace ID',
     entityType: 'Entity type',
     entityId: 'Entity ID',
     action: 'Action',
@@ -870,6 +871,9 @@ const messages: ProjectMessages = {
         persistCookiesTitle: 'Persist cookies',
         persistCookiesDescription:
           'Not supported by the local runner. Send Cookie headers explicitly when the target API requires them.',
+        runtimeVariablesTitle: 'Runtime variables',
+        runtimeVariablesDescription:
+          'Provide request-scoped overrides here. These values win over environment, collection, and workspace variables for the next send.',
       },
       examples: {
         nameRequired: 'Example name is required.',

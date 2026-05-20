@@ -29,6 +29,7 @@ const toApiProject = (workspace: ApiWorkspace): ApiProject => ({
   platform: '',
   role: workspace.role,
   status: 1,
+  settings: workspace.settings,
   created_at: workspace.created_at,
 });
 

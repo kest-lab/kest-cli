@@ -552,6 +552,7 @@ const messages = {
     metadata: '历史元数据',
     metadataDescription: '所选历史记录捕获的核心字段。',
     recordId: '记录 ID',
+    workspaceId: '工作区 ID',
     entityType: '实体类型',
     entityId: '实体 ID',
     action: '操作',
@@ -812,6 +813,9 @@ const messages = {
         persistCookiesTitle: '持久化 Cookies',
         persistCookiesDescription:
           '本地 runner 不支持。目标 API 需要 cookie 时，请显式发送 Cookie header。',
+        runtimeVariablesTitle: '运行时变量',
+        runtimeVariablesDescription:
+          '在这里填写请求级临时覆盖值。下一次发送时，它们的优先级高于 environment、collection 和 workspace 变量。',
       },
       examples: {
         nameRequired: '示例名称是必填项。',
