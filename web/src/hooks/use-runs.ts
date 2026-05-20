@@ -21,7 +21,7 @@ export function useRuns(params?: UnifiedRunListParams) {
       }
     ),
     queryFn: () => runService.list(params as UnifiedRunListParams),
-    enabled: Boolean(params?.workspaceId && params?.sourceType && params?.sourceId),
+    enabled: Boolean(params?.workspaceId),
     placeholderData: previousData => previousData,
   });
 }

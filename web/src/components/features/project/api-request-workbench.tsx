@@ -107,7 +107,7 @@ import { useEnvironments } from '@/hooks/use-environments';
 import { useCreateProjectHistory } from '@/hooks/use-histories';
 import { useImportMarkdownCollection, useImportPostmanCollection } from '@/hooks/use-importer';
 import { useProject, useUpdateProject } from '@/hooks/use-projects';
-import { useCreateRun, useRun, useRuns } from '@/hooks/use-runs';
+import { useCreateRun } from '@/hooks/use-runs';
 import { useT } from '@/i18n/client';
 import { collectionService } from '@/services/collection';
 import { localRunnerService } from '@/services/local-runner';
@@ -2322,10 +2322,6 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
   const [defaultingExampleId, setDefaultingExampleId] = useState<number | string | null>(null);
   const [deletingExampleId, setDeletingExampleId] = useState<number | string | null>(null);
   const [runningCollectionId, setRunningCollectionId] = useState<string | null>(null);
-  const [preferredRunSourceType, setPreferredRunSourceType] = useState<
-    'request' | 'collection' | null
-  >(null);
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [requestDocGenerationError, setRequestDocGenerationError] = useState<string | null>(null);
   const [generatingRequestDocLang, setGeneratingRequestDocLang] = useState<ApiSpecLanguage | null>(
     null
@@ -2514,71 +2510,6 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
   );
   const projectSettings = projectQuery.data?.settings;
   const scratchpadTabs = useMemo(() => tabs.filter(tab => !tab.collectionId), [tabs]);
-  const availableRunSources = useMemo(() => {
-    const sources: Array<{
-      sourceType: 'request' | 'collection';
-      sourceId: string;
-      title: string;
-    }> = [];
-
-    if (persistedActiveRequestId) {
-      sources.push({
-        sourceType: 'request',
-        sourceId: persistedActiveRequestId,
-        title: activeTab?.title ?? t('collections.workbench.defaultRequestTitle'),
-      });
-    }
-
-    if (activeTab?.collectionId && isPersistedCollectionId(activeTab.collectionId)) {
-      sources.push({
-        sourceType: 'collection',
-        sourceId: activeTab.collectionId,
-        title:
-          collections.find(collection => collection.id === activeTab.collectionId)?.name ??
-          t('collections.workbench.badges.collectionFallback'),
-      });
-    }
-
-    return sources;
-  }, [activeTab, collections, persistedActiveRequestId, t]);
-  const currentRunSource = useMemo(() => {
-    if (availableRunSources.length === 0) {
-      return null;
-    }
-
-    if (preferredRunSourceType) {
-      const preferredSource = availableRunSources.find(
-        source => source.sourceType === preferredRunSourceType
-      );
-      if (preferredSource) {
-        return preferredSource;
-      }
-    }
-
-    return (
-      availableRunSources.find(source => source.sourceType === 'request') ?? availableRunSources[0]
-    );
-  }, [availableRunSources, preferredRunSourceType]);
-  const runsQuery = useRuns(
-    currentRunSource
-      ? {
-          workspaceId: projectId,
-          page: 1,
-          pageSize: 10,
-          sourceType: currentRunSource.sourceType,
-          sourceId: currentRunSource.sourceId,
-        }
-      : undefined
-  );
-  const runs = useMemo(
-    () => (currentRunSource ? (runsQuery.data?.items ?? []) : []),
-    [currentRunSource, runsQuery.data?.items]
-  );
-  const selectedRunFromList = runs.find(run => String(run.id) === String(selectedRunId)) ?? null;
-  const runDetailQuery = useRun(projectId, selectedRunId ?? undefined);
-  const selectedRunDetail = selectedRunFromList?.steps?.length
-    ? selectedRunFromList
-    : (runDetailQuery.data ?? selectedRunFromList);
 
   const collectionViews = useMemo(() => {
     const normalizedQuery = deferredSidebarQuery.trim().toLowerCase();
@@ -2747,44 +2678,6 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
     setDeletingExampleId(null);
   }, [persistedActiveCollectionId, persistedActiveRequestId]);
 
-  useEffect(() => {
-    if (availableRunSources.length === 0) {
-      if (preferredRunSourceType !== null) {
-        setPreferredRunSourceType(null);
-      }
-      return;
-    }
-
-    const nextPreferredSource =
-      availableRunSources.find(source => source.sourceType === preferredRunSourceType) ??
-      availableRunSources.find(source => source.sourceType === 'request') ??
-      availableRunSources[0];
-
-    if (nextPreferredSource && nextPreferredSource.sourceType !== preferredRunSourceType) {
-      setPreferredRunSourceType(nextPreferredSource.sourceType);
-    }
-  }, [availableRunSources, preferredRunSourceType]);
-
-  useEffect(() => {
-    if (!currentRunSource) {
-      if (selectedRunId !== null) {
-        setSelectedRunId(null);
-      }
-      return;
-    }
-
-    if (runs.length === 0) {
-      if (selectedRunId !== null) {
-        setSelectedRunId(null);
-      }
-      return;
-    }
-
-    const selectedExists = runs.some(run => String(run.id) === String(selectedRunId));
-    if (!selectedExists) {
-      setSelectedRunId(String(runs[0]?.id ?? ''));
-    }
-  }, [currentRunSource, runs, selectedRunId]);
 
   useEffect(() => {
     if (environments.length === 0) {
@@ -3777,7 +3670,6 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       }));
 
       if (persistedRequest) {
-        setPreferredRunSourceType('request');
         void createHistoryMutation
           .mutateAsync(
             buildRequestRunHistoryPayload({
@@ -3836,7 +3728,6 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       }));
 
       if (persistedRequest) {
-        setPreferredRunSourceType('request');
         if (!executableUrl) {
           ({ executableUrl, executableHeaders, executablePayload } = buildExecutableRequestState({
             request: persistedRequest,
@@ -3936,7 +3827,6 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       return;
     }
 
-    setPreferredRunSourceType('collection');
     setRunningCollectionId(targetCollectionId);
 
     const startedAt = new Date().toISOString();
@@ -4599,28 +4489,6 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
                   }
                 />
               ) : null}
-
-              <UnifiedRunsPanel
-                source={currentRunSource}
-                availableSources={availableRunSources}
-                selectedSourceType={currentRunSource?.sourceType ?? null}
-                runs={runs}
-                selectedRunId={selectedRunId}
-                selectedRun={selectedRunDetail}
-                isListLoading={Boolean(currentRunSource) && runsQuery.isLoading}
-                isListError={Boolean(currentRunSource && runsQuery.error)}
-                isRefreshing={runsQuery.isFetching}
-                isDetailLoading={runDetailQuery.isLoading || runDetailQuery.isFetching}
-                isDetailError={Boolean(selectedRunId && runDetailQuery.error)}
-                onRefresh={() => {
-                  void runsQuery.refetch();
-                  if (selectedRunId) {
-                    void runDetailQuery.refetch();
-                  }
-                }}
-                onSelectSourceType={sourceType => setPreferredRunSourceType(sourceType)}
-                onSelectRun={runId => setSelectedRunId(String(runId))}
-              />
             </div>
           ) : (
             <div className="mx-auto flex min-h-full max-w-[960px] items-center justify-center">
@@ -8265,342 +8133,6 @@ function SettingsPanel({
         onBulkChange={bulkValue => onRuntimeVariablesChange(bulkTextToRows(bulkValue))}
       />
     </div>
-  );
-}
-
-const getUnifiedRunStatusLabel = (t: ProjectTranslationFn, status: string) => {
-  switch (status) {
-    case 'passed':
-      return t('collections.workbench.runs.statusPassed');
-    case 'failed':
-      return t('collections.workbench.runs.statusFailed');
-    case 'running':
-      return t('collections.workbench.runs.statusRunning');
-    case 'canceled':
-      return t('collections.workbench.runs.statusCanceled');
-    case 'pending':
-    default:
-      return t('collections.workbench.runs.statusPending');
-  }
-};
-
-const getUnifiedRunStatusClassName = (status: string) => {
-  switch (status) {
-    case 'passed':
-      return 'border-border-strong bg-[var(--miro-surface-yellow)] text-[var(--miro-yellow-dark)]';
-    case 'failed':
-      return 'border-border-subtle bg-bg-surface text-text-main';
-    case 'running':
-      return 'border-border-subtle bg-bg-surface text-text-main';
-    case 'canceled':
-      return 'border-border-subtle bg-bg-surface text-text-main';
-    case 'pending':
-    default:
-      return 'border-border-subtle bg-bg-subtle text-text-main';
-  }
-};
-
-function UnifiedRunsPanel({
-  source,
-  availableSources,
-  selectedSourceType,
-  runs,
-  selectedRunId,
-  selectedRun,
-  isListLoading,
-  isListError,
-  isRefreshing,
-  isDetailLoading,
-  isDetailError,
-  onRefresh,
-  onSelectSourceType,
-  onSelectRun,
-}: {
-  source: { sourceType: 'request' | 'collection'; sourceId: string; title: string } | null;
-  availableSources: Array<{
-    sourceType: 'request' | 'collection';
-    sourceId: string;
-    title: string;
-  }>;
-  selectedSourceType: 'request' | 'collection' | null;
-  runs: Array<import('@/types/run').UnifiedRun>;
-  selectedRunId: string | null;
-  selectedRun: import('@/types/run').UnifiedRun | null | undefined;
-  isListLoading: boolean;
-  isListError: boolean;
-  isRefreshing: boolean;
-  isDetailLoading: boolean;
-  isDetailError: boolean;
-  onRefresh: () => void;
-  onSelectSourceType: (sourceType: 'request' | 'collection') => void;
-  onSelectRun: (runId: string) => void;
-}) {
-  const t = useT('project');
-
-  if (!source) {
-    return null;
-  }
-
-  return (
-    <Card className="rounded-xl border-border-subtle bg-bg-canvas">
-      <CardHeader className="gap-4 border-b border-border-subtle">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <CardTitle>{t('collections.workbench.runs.title')}</CardTitle>
-            <CardDescription>
-              {t('collections.workbench.runs.description', {
-                sourceType:
-                  source.sourceType === 'collection'
-                    ? t('collections.workbench.runs.sourceCollection')
-                    : t('collections.workbench.runs.sourceRequest'),
-                sourceName: source.title,
-              })}
-            </CardDescription>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {availableSources.length > 1 ? (
-              <div className="inline-flex rounded-full border border-border-subtle bg-bg-soft p-1">
-                {availableSources.map(runSource => (
-                  <button
-                    key={`${runSource.sourceType}-${runSource.sourceId}`}
-                    type="button"
-                    onClick={() => onSelectSourceType(runSource.sourceType)}
-                    className={cn(
-                      'rounded-full px-3 py-1.5 text-sm transition-colors',
-                      selectedSourceType === runSource.sourceType
-                        ? 'bg-bg-canvas font-medium text-text-main'
-                        : 'text-text-muted hover:text-text-main'
-                    )}
-                  >
-                    {runSource.sourceType === 'collection'
-                      ? t('collections.workbench.runs.sourceCollection')
-                      : t('collections.workbench.runs.sourceRequest')}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onRefresh}
-              loading={isRefreshing}
-            >
-              <RefreshCw className="h-4 w-4" />
-              {t('common.refresh')}
-            </Button>
-            <MetricBadge
-              label={t('collections.workbench.runs.totalRuns')}
-              value={String(runs.length)}
-            />
-          </div>
-        </div>
-        <div className="rounded-xl border border-border-subtle bg-bg-soft px-4 py-3 text-sm text-text-muted">
-          {t('collections.workbench.runs.historyRelation')}
-        </div>
-      </CardHeader>
-      <CardContent className="grid gap-4 px-5 py-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <div className="space-y-3">
-          {isListLoading ? (
-            <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-5 text-sm text-text-muted">
-              {t('collections.workbench.runs.loadingList')}
-            </div>
-          ) : isListError ? (
-            <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-5 text-sm text-text-muted">
-              {t('collections.workbench.runs.loadListFailed')}
-            </div>
-          ) : runs.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-5 text-sm text-text-muted">
-              {t('collections.workbench.runs.empty')}
-            </div>
-          ) : (
-            runs.map(run => (
-              <button
-                key={run.id}
-                type="button"
-                onClick={() => onSelectRun(String(run.id))}
-                className={cn(
-                  'w-full rounded-xl border px-4 py-3 text-left transition-colors',
-                  String(selectedRunId) === String(run.id)
-                    ? 'border-border-subtle bg-bg-surface'
-                    : 'border-border-subtle bg-bg-canvas hover:bg-bg-subtle'
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-text-main">{run.source_name}</p>
-                    <p className="mt-1 text-xs text-text-muted">{formatDate(run.created_at)}</p>
-                  </div>
-                  <Badge variant="outline" className={getUnifiedRunStatusClassName(run.status)}>
-                    {getUnifiedRunStatusLabel(t, run.status)}
-                  </Badge>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
-                  <span>
-                    {t('collections.workbench.runs.stepsSummary', { total: run.total_steps })}
-                  </span>
-                  <span>
-                    {t('collections.workbench.runs.passedSummary', { passed: run.passed_steps })}
-                  </span>
-                  <span>
-                    {t('collections.workbench.runs.failedSummary', { failed: run.failed_steps })}
-                  </span>
-                  <span>
-                    {t('collections.workbench.runs.durationSummary', { duration: run.duration_ms })}
-                  </span>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-
-        <div className="min-w-0 space-y-4">
-          {!selectedRun ? (
-            <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-6 text-sm text-text-muted">
-              {t('collections.workbench.runs.selectRun')}
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge
-                  variant="outline"
-                  className={getUnifiedRunStatusClassName(selectedRun.status)}
-                >
-                  {getUnifiedRunStatusLabel(t, selectedRun.status)}
-                </Badge>
-                <MetricBadge label={t('common.duration')} value={`${selectedRun.duration_ms} ms`} />
-                <MetricBadge
-                  label={t('collections.workbench.runs.totalSteps')}
-                  value={String(selectedRun.total_steps)}
-                />
-                <MetricBadge
-                  label={t('collections.workbench.runs.failedSteps')}
-                  value={String(selectedRun.failed_steps)}
-                />
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <MetricBadge
-                  label={t('common.created')}
-                  value={formatDate(selectedRun.created_at)}
-                />
-                <MetricBadge
-                  label={t('collections.workbench.runs.startedAt')}
-                  value={selectedRun.started_at ? formatDate(selectedRun.started_at) : '-'}
-                />
-                <MetricBadge
-                  label={t('collections.workbench.runs.finishedAt')}
-                  value={selectedRun.finished_at ? formatDate(selectedRun.finished_at) : '-'}
-                />
-                <MetricBadge
-                  label={t('common.environment')}
-                  value={selectedRun.environment_id ?? '-'}
-                />
-              </div>
-
-              {selectedRun.error_message ? (
-                <div className="rounded-xl border border-border-subtle bg-bg-surface p-4">
-                  <p className="text-sm font-medium text-text-main">
-                    {t('collections.workbench.runs.errorTitle')}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-text-main">
-                    {selectedRun.error_message}
-                  </p>
-                </div>
-              ) : null}
-
-              {isDetailLoading && !selectedRun.steps?.length ? (
-                <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-5 text-sm text-text-muted">
-                  {t('collections.workbench.runs.loadingDetail')}
-                </div>
-              ) : null}
-
-              {isDetailError ? (
-                <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-5 text-sm text-text-muted">
-                  {t('collections.workbench.runs.loadDetailFailed')}
-                </div>
-              ) : null}
-
-              {selectedRun.steps?.length ? (
-                <div className="space-y-3">
-                  <Separator />
-                  {selectedRun.steps
-                    .slice()
-                    .sort((left, right) => left.step_index - right.step_index)
-                    .map(step => (
-                      <div
-                        key={step.id}
-                        className="rounded-xl border border-border-subtle bg-bg-canvas p-4"
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-medium text-text-main">
-                              {step.source_name ||
-                                t('collections.workbench.runs.stepFallback', {
-                                  index: step.step_index + 1,
-                                })}
-                            </p>
-                            <p className="mt-1 text-xs text-text-muted">
-                              {t('collections.workbench.runs.stepLabel', {
-                                index: step.step_index + 1,
-                                sourceType:
-                                  step.source_type === 'collection'
-                                    ? t('collections.workbench.runs.sourceCollection')
-                                    : t('collections.workbench.runs.sourceRequest'),
-                              })}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs text-text-muted">{step.duration_ms} ms</span>
-                            <Badge
-                              variant="outline"
-                              className={getUnifiedRunStatusClassName(step.status)}
-                            >
-                              {getUnifiedRunStatusLabel(t, step.status)}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        {step.error_message ? (
-                          <div className="mt-3 rounded-lg border border-border-subtle bg-bg-soft p-3 text-sm text-text-main">
-                            <span className="font-medium">
-                              {t('collections.workbench.runs.errorTitle')}:{' '}
-                            </span>
-                            {step.error_message}
-                          </div>
-                        ) : null}
-
-                        <div className="mt-4 grid gap-4 xl:grid-cols-2">
-                          <div className="rounded-xl border border-border-subtle bg-bg-soft p-4">
-                            <p className="mb-2 text-xs font-medium uppercase tracking-[0.03125rem] text-text-muted">
-                              {t('collections.workbench.runs.requestSnapshot')}
-                            </p>
-                            <pre className="max-h-[360px] overflow-auto text-xs leading-6 text-text-main">
-                              {JSON.stringify(step.request_snapshot ?? {}, null, 2)}
-                            </pre>
-                          </div>
-                          <div className="rounded-xl border border-border-subtle bg-bg-soft p-4">
-                            <p className="mb-2 text-xs font-medium uppercase tracking-[0.03125rem] text-text-muted">
-                              {t('collections.workbench.runs.responseSnapshot')}
-                            </p>
-                            <pre className="max-h-[360px] overflow-auto text-xs leading-6 text-text-main">
-                              {JSON.stringify(step.response_snapshot ?? {}, null, 2)}
-                            </pre>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              ) : !isDetailLoading ? (
-                <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-5 text-sm text-text-muted">
-                  {t('collections.workbench.runs.noSteps')}
-                </div>
-              ) : null}
-            </>
-          )}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 

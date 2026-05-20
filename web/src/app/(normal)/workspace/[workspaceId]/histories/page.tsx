@@ -7,6 +7,10 @@ interface WorkspaceHistoriesPageProps {
   searchParams: Promise<{
     item?: string;
     entityType?: string;
+    view?: string;
+    run?: string;
+    sourceType?: string;
+    status?: string;
   }>;
 }
 
@@ -17,9 +21,12 @@ export default async function WorkspaceHistoriesPage({
   searchParams,
 }: WorkspaceHistoriesPageProps) {
   const { workspaceId } = await params;
-  const { item, entityType } = await searchParams;
-  const selectedItemId = item?.trim() ? item : null;
+  const { item, entityType, run, view, sourceType, status } = await searchParams;
+  const normalizedView = view?.trim() === 'runs' ? 'runs' : 'activity';
+  const selectedItemId = normalizedView === 'runs' ? (run?.trim() ? run : null) : item?.trim() ? item : null;
   const initialHistoryEntityType = entityType?.trim() ? entityType : null;
+  const initialRunSourceType = sourceType?.trim() ? sourceType : null;
+  const initialRunStatus = status?.trim() ? status : null;
 
   return (
     <ProjectWorkspacePage
@@ -27,6 +34,14 @@ export default async function WorkspaceHistoriesPage({
       module="histories"
       selectedItemId={selectedItemId}
       initialHistoryEntityType={initialHistoryEntityType}
+      initialHistoryView={normalizedView}
+      initialRunSourceType={initialRunSourceType as
+        | 'request'
+        | 'collection'
+        | 'test_case'
+        | 'flow'
+        | null}
+      initialRunStatus={initialRunStatus}
     />
   );
 }
