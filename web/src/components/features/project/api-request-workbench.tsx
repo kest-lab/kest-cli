@@ -28,6 +28,8 @@ import {
   useState,
 } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
 import {
   AlertCircle,
@@ -48,6 +50,7 @@ import {
   Save,
   Search,
   SendHorizonal,
+  Sparkles,
   Star,
   Trash2,
   Upload,
@@ -160,14 +163,10 @@ type RequestSection =
   | 'examples';
 type BulkMode = 'table' | 'bulk';
 type AuthorizationMode = 'none' | 'bearer' | 'basic' | 'api-key';
-type BodyMode =
-  | 'json'
-  | 'raw'
-  | 'form-data'
-  | 'x-www-form-urlencoded'
-  | 'binary'
-  | 'graphql';
+type BodyMode = 'json' | 'raw' | 'form-data' | 'x-www-form-urlencoded' | 'binary' | 'graphql';
 type BodyValueType = 'text' | 'file';
+type RequestDocLanguage = 'default' | ApiSpecLanguage;
+type RequestDocMode = 'preview' | 'edit';
 
 interface KeyValueRow {
   id: string;
@@ -310,10 +309,7 @@ const PRIMARY_SECTION_ITEMS: RequestSection[] = [
   'body',
   'settings',
 ];
-const OVERFLOW_SECTION_ITEMS: RequestSection[] = [
-  'scripts',
-  'examples',
-];
+const OVERFLOW_SECTION_ITEMS: RequestSection[] = ['scripts', 'examples'];
 const BODY_MODE_OPTIONS: BodyMode[] = [
   'json',
   'raw',
@@ -323,7 +319,14 @@ const BODY_MODE_OPTIONS: BodyMode[] = [
   'graphql',
 ];
 const AUTHORIZATION_OPTIONS: AuthorizationMode[] = ['none', 'bearer', 'basic', 'api-key'];
-const COLLECTION_COLOR_TONES: CollectionColorTone[] = ['lime', 'mint', 'cream', 'lilac', 'pink', 'coral'];
+const COLLECTION_COLOR_TONES: CollectionColorTone[] = [
+  'lime',
+  'mint',
+  'cream',
+  'lilac',
+  'pink',
+  'coral',
+];
 const COLLECTION_COLOR_DOT_CLASS_NAMES: Record<CollectionColorTone, string> = {
   lime: 'bg-[var(--miro-surface-yellow)]',
   mint: 'bg-bg-surface',
@@ -340,8 +343,10 @@ const METHOD_BADGE_STYLES: Record<RequestMethod, string> = {
   GET: 'border-[var(--miro-brand-teal)]/30 bg-[var(--miro-teal-light)] text-[var(--miro-moss-dark)]',
   POST: 'border-[var(--miro-brand-blue)]/25 bg-[var(--miro-surface-featured)] text-[var(--miro-blue-pressed)]',
   PUT: 'border-[var(--miro-brand-yellow-deep)]/35 bg-[var(--miro-surface-yellow)] text-[var(--miro-yellow-dark)]',
-  PATCH: 'border-[var(--miro-brand-coral)]/35 bg-[var(--miro-orange-light)] text-[var(--miro-coral-dark)]',
-  DELETE: 'border-[var(--miro-brand-coral)]/40 bg-[var(--miro-brand-red)] text-[var(--miro-coral-dark)]',
+  PATCH:
+    'border-[var(--miro-brand-coral)]/35 bg-[var(--miro-orange-light)] text-[var(--miro-coral-dark)]',
+  DELETE:
+    'border-[var(--miro-brand-coral)]/40 bg-[var(--miro-brand-red)] text-[var(--miro-coral-dark)]',
 };
 
 const createLocalId = (prefix: string) =>
@@ -1398,7 +1403,9 @@ const buildRequestUnifiedRunPayload = ({
     source_type: 'request',
     source_id: String(request.id),
     source_name:
-      request.url === PERSISTED_DRAFT_URL_PLACEHOLDER ? request.name : `${request.method} ${request.url}`,
+      request.url === PERSISTED_DRAFT_URL_PLACEHOLDER
+        ? request.name
+        : `${request.method} ${request.url}`,
     status: succeeded ? 'passed' : 'failed',
     environment_id: environmentId ?? undefined,
     execution_mode: 'local',
@@ -1418,7 +1425,9 @@ const buildRequestUnifiedRunPayload = ({
         source_type: 'request',
         source_id: String(request.id),
         source_name:
-          request.url === PERSISTED_DRAFT_URL_PLACEHOLDER ? request.name : `${request.method} ${request.url}`,
+          request.url === PERSISTED_DRAFT_URL_PLACEHOLDER
+            ? request.name
+            : `${request.method} ${request.url}`,
         status: succeeded ? 'passed' : 'failed',
         duration_ms: response?.time ?? 0,
         request_snapshot: requestSnapshot,
@@ -1511,7 +1520,10 @@ const toVariableRows = (value: Record<string, unknown> | Record<string, string> 
 
   return [
     ...Object.entries(value).map(([key, entryValue]) =>
-      createKeyValueRow(key, typeof entryValue === 'string' ? entryValue : JSON.stringify(entryValue))
+      createKeyValueRow(
+        key,
+        typeof entryValue === 'string' ? entryValue : JSON.stringify(entryValue)
+      )
     ),
     createKeyValueRow(),
   ];
@@ -1634,7 +1646,9 @@ const buildExecutableRequestUrl = (
   );
   const missingVariableMessage = getMissingVariableMessage(
     findUnresolvedTemplateKeys([resolvedUrl]),
-    variableLayers.environment.base_url ? ({ name: '', base_url: variableLayers.environment.base_url } as ProjectEnvironment) : undefined,
+    variableLayers.environment.base_url
+      ? ({ name: '', base_url: variableLayers.environment.base_url } as ProjectEnvironment)
+      : undefined,
     t
   );
   if (missingVariableMessage) {
@@ -2305,8 +2319,9 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
   >(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [requestDocGenerationError, setRequestDocGenerationError] = useState<string | null>(null);
-  const [generatingRequestDocLang, setGeneratingRequestDocLang] =
-    useState<ApiSpecLanguage | null>(null);
+  const [generatingRequestDocLang, setGeneratingRequestDocLang] = useState<ApiSpecLanguage | null>(
+    null
+  );
   const createCollectionMutation = useCreateCollection(projectId);
   const deleteCollectionMutation = useDeleteCollection(projectId);
   const updateCollectionMutation = useUpdateCollection(projectId);
@@ -2547,7 +2562,10 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
         }
       : undefined
   );
-  const runs = currentRunSource ? runsQuery.data?.items ?? [] : [];
+  const runs = useMemo(
+    () => (currentRunSource ? (runsQuery.data?.items ?? []) : []),
+    [currentRunSource, runsQuery.data?.items]
+  );
   const selectedRunFromList = runs.find(run => String(run.id) === String(selectedRunId)) ?? null;
   const runDetailQuery = useRun(projectId, selectedRunId ?? undefined);
   const selectedRunDetail = selectedRunFromList?.steps?.length
@@ -3661,9 +3679,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       syncPersistedRequestInWorkbench(sourceTabId, generatedRequest);
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : t('collections.workbench.docs.generateFailed');
+        error instanceof Error ? error.message : t('collections.workbench.docs.generateFailed');
       setRequestDocGenerationError(message);
       toast.error(message);
     } finally {
@@ -3726,11 +3742,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
         throw new Error(t('collections.workbench.persistCookiesUnavailable'));
       }
 
-      ({
-        executableUrl,
-        executableHeaders,
-        executablePayload,
-      } = buildExecutableRequestState({
+      ({ executableUrl, executableHeaders, executablePayload } = buildExecutableRequestState({
         request: runnableRequest,
         environment: selectedEnvironment,
         projectSettings,
@@ -3818,11 +3830,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       if (persistedRequest) {
         setPreferredRunSourceType('request');
         if (!executableUrl) {
-          ({
-            executableUrl,
-            executableHeaders,
-            executablePayload,
-          } = buildExecutableRequestState({
+          ({ executableUrl, executableHeaders, executablePayload } = buildExecutableRequestState({
             request: persistedRequest,
             environment: selectedEnvironment,
             projectSettings,
@@ -3955,17 +3963,20 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
             throw new Error(t('collections.workbench.persistCookiesUnavailable'));
           }
 
-          const { executablePayload, executableHeaders: nextHeaders, executableUrl: nextUrl } =
-            buildExecutableRequestState({
-              request: item.request,
-              environment: selectedEnvironment,
-              projectSettings,
-              collectionSettings:
-                item.collection.settings ?? collectionSettingsById.get(String(item.collection.id)),
-              runtimeVariables,
-              tab: requestTab,
-              t,
-            });
+          const {
+            executablePayload,
+            executableHeaders: nextHeaders,
+            executableUrl: nextUrl,
+          } = buildExecutableRequestState({
+            request: item.request,
+            environment: selectedEnvironment,
+            projectSettings,
+            collectionSettings:
+              item.collection.settings ?? collectionSettingsById.get(String(item.collection.id)),
+            runtimeVariables,
+            tab: requestTab,
+            t,
+          });
 
           executableUrl = nextUrl;
           executableHeaders = nextHeaders;
@@ -4140,7 +4151,9 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : t('collections.workbench.collectionRun.persistFailed');
+        error instanceof Error
+          ? error.message
+          : t('collections.workbench.collectionRun.persistFailed');
       toast.error(message);
     } finally {
       setRunningCollectionId(null);
@@ -4726,9 +4739,8 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
                 getWorkspaceVariableSource(projectSettings) as Record<string, unknown> | undefined
               )
             : toVariableRows(
-                collections.find(
-                  collection => collection.id === variableDialogState?.collectionId
-                )?.settings?.variables as Record<string, unknown> | undefined
+                collections.find(collection => collection.id === variableDialogState?.collectionId)
+                  ?.settings?.variables as Record<string, unknown> | undefined
               )
         }
         isSubmitting={updateProjectMutation.isPending || updateCollectionMutation.isPending}
@@ -5309,46 +5321,70 @@ function VariableScopeDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (rows: KeyValueRow[]) => Promise<void>;
 }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open ? (
+        <VariableScopeDialogContent
+          key={JSON.stringify(initialRows)}
+          title={title}
+          description={description}
+          initialRows={initialRows}
+          isSubmitting={isSubmitting}
+          onOpenChange={onOpenChange}
+          onSubmit={onSubmit}
+        />
+      ) : null}
+    </Dialog>
+  );
+}
+
+function VariableScopeDialogContent({
+  title,
+  description,
+  initialRows,
+  isSubmitting,
+  onOpenChange,
+  onSubmit,
+}: {
+  title: string;
+  description: string;
+  initialRows: KeyValueRow[];
+  isSubmitting: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (rows: KeyValueRow[]) => Promise<void>;
+}) {
   const t = useT('project');
   const [rows, setRows] = useState<KeyValueRow[]>(initialRows);
 
-  useEffect(() => {
-    if (open) {
-      setRows(initialRows);
-    }
-  }, [initialRows, open]);
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="lg">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
+    <DialogContent size="lg">
+      <DialogHeader>
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
+      </DialogHeader>
 
-        <DialogBody>
-          <KeyValueEditor
-            title={t('common.variables')}
-            description={t('collections.workbench.variables.dialogEditorDescription')}
-            mode="table"
-            rows={rows}
-            bulkValue={rowsToBulkText(rows)}
-            onModeChange={() => {}}
-            onRowsChange={setRows}
-            onBulkChange={bulkValue => setRows(bulkTextToRows(bulkValue))}
-          />
-        </DialogBody>
+      <DialogBody>
+        <KeyValueEditor
+          title={t('common.variables')}
+          description={t('collections.workbench.variables.dialogEditorDescription')}
+          mode="table"
+          rows={rows}
+          bulkValue={rowsToBulkText(rows)}
+          onModeChange={() => {}}
+          onRowsChange={setRows}
+          onBulkChange={bulkValue => setRows(bulkTextToRows(bulkValue))}
+        />
+      </DialogBody>
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="button" loading={isSubmitting} onClick={() => void onSubmit(rows)}>
-            {t('collections.workbench.actions.save')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          {t('common.cancel')}
+        </Button>
+        <Button type="button" loading={isSubmitting} onClick={() => void onSubmit(rows)}>
+          {t('collections.workbench.actions.save')}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
   );
 }
 
@@ -6576,7 +6612,9 @@ function SortableRequestTab({
           {...listeners}
         >
           <GripVertical className="h-3.5 w-3.5 shrink-0 text-text-muted/70" />
-          <span className={cn('h-2 w-2 rounded-full', isActive ? 'bg-primary' : 'bg-text-muted/40')} />
+          <span
+            className={cn('h-2 w-2 rounded-full', isActive ? 'bg-primary' : 'bg-text-muted/40')}
+          />
           <span className="truncate font-medium">{tab.title}</span>
         </button>
         <DropdownMenuTrigger asChild>
@@ -6608,13 +6646,8 @@ function SortableRequestTab({
         </button>
       </div>
       <DropdownMenuContent align="end" className="rounded-lg">
-        <DropdownMenuItem onClick={() => onCloseTab(tab.id)}>
-          {t('common.close')}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => onCloseOtherTabs(tab.id)}
-          disabled={openTabCount <= 1}
-        >
+        <DropdownMenuItem onClick={() => onCloseTab(tab.id)}>{t('common.close')}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onCloseOtherTabs(tab.id)} disabled={openTabCount <= 1}>
           {t('collections.workbench.actions.closeOthers')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onCloseAllTabs} disabled={openTabCount === 0}>
@@ -7072,38 +7105,115 @@ function RequestDocsPanel({
   onDocMarkdownEnChange: (value: string) => void;
 }) {
   const t = useT('project');
+  const [selectedDocLanguage, setSelectedDocLanguage] = useState<RequestDocLanguage>(
+    tab.docMarkdown ? 'default' : tab.docMarkdownEn ? 'en' : tab.docMarkdownZh ? 'zh' : 'default'
+  );
+  const [docMode, setDocMode] = useState<RequestDocMode>('preview');
+
+  const selectedMarkdown =
+    selectedDocLanguage === 'en'
+      ? tab.docMarkdownEn
+      : selectedDocLanguage === 'zh'
+        ? tab.docMarkdownZh
+        : tab.docMarkdown;
+  const hasAnyMarkdown = Boolean(
+    tab.docMarkdown.trim() || tab.docMarkdownEn.trim() || tab.docMarkdownZh.trim()
+  );
+  const selectedLanguageLabel = t(
+    selectedDocLanguage === 'en'
+      ? 'collections.workbench.docs.englishMarkdownLabel'
+      : selectedDocLanguage === 'zh'
+        ? 'collections.workbench.docs.chineseMarkdownLabel'
+        : 'collections.workbench.docs.defaultMarkdownLabel'
+  );
+  const selectedMarkdownChangeHandler =
+    selectedDocLanguage === 'en'
+      ? onDocMarkdownEnChange
+      : selectedDocLanguage === 'zh'
+        ? onDocMarkdownZhChange
+        : onDocMarkdownChange;
+  const handleGenerateDoc = (lang: ApiSpecLanguage) => {
+    setSelectedDocLanguage(lang);
+    setDocMode('preview');
+    void onGenerateDoc(lang);
+  };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <CardTitle>{t('collections.workbench.sections.docs')}</CardTitle>
-          <CardDescription>{t('collections.workbench.docs.description')}</CardDescription>
+    <div className="min-h-[640px] rounded-xl border border-border-subtle bg-bg-canvas">
+      <div className="flex flex-col gap-4 border-b border-border-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setDocMode('preview')}
+            className={cn(
+              'rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+              docMode === 'preview'
+                ? 'bg-bg-soft text-text-main'
+                : 'text-text-muted hover:text-text-main'
+            )}
+          >
+            {t('collections.workbench.docs.previewMode')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDocMode('edit')}
+            className={cn(
+              'rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+              docMode === 'edit'
+                ? 'bg-bg-soft text-text-main'
+                : 'text-text-muted hover:text-text-main'
+            )}
+          >
+            {t('collections.workbench.docs.editMode')}
+          </button>
+          <Select
+            value={selectedDocLanguage}
+            onValueChange={value => setSelectedDocLanguage(value as RequestDocLanguage)}
+          >
+            <SelectTrigger className="h-9 w-[172px] rounded-full border-border-subtle bg-transparent">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">
+                {t('collections.workbench.docs.defaultMarkdownLabel')}
+              </SelectItem>
+              <SelectItem value="en">
+                {t('collections.workbench.docs.englishMarkdownLabel')}
+              </SelectItem>
+              <SelectItem value="zh">
+                {t('collections.workbench.docs.chineseMarkdownLabel')}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <div className="flex flex-wrap gap-2">
+
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="outline"
-            onClick={() => void onGenerateDoc('en')}
+            size="sm"
+            onClick={() => handleGenerateDoc('en')}
             disabled={isGenerating}
             loading={generatingLang === 'en'}
           >
-            <FileText className="h-4 w-4" />
+            <Sparkles className="h-4 w-4" />
             {t('collections.workbench.docs.generateEnglish')}
           </Button>
           <Button
             type="button"
             variant="outline"
-            onClick={() => void onGenerateDoc('zh')}
+            size="sm"
+            onClick={() => handleGenerateDoc('zh')}
             disabled={isGenerating}
             loading={generatingLang === 'zh'}
           >
-            <FileText className="h-4 w-4" />
+            <Sparkles className="h-4 w-4" />
             {t('collections.workbench.docs.generateChinese')}
           </Button>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+
+      <div className="space-y-4 px-5 py-5">
         {isGenerating ? (
           <div className="rounded-md border border-border-subtle bg-bg-soft px-3 py-2 text-sm text-text-muted">
             {t('collections.workbench.docs.generating')}
@@ -7118,70 +7228,215 @@ function RequestDocsPanel({
             </div>
           </div>
         ) : null}
-        <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
-          <div className="space-y-2">
-            <Label htmlFor="request-doc-source">{t('common.docSource')}</Label>
-            <Select
-              value={tab.docSource}
-              onValueChange={value => onDocSourceChange(value as 'manual' | 'ai')}
-            >
-              <SelectTrigger id="request-doc-source" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="manual">{t('apiSpecsPage.docSourceManual')}</SelectItem>
-                <SelectItem value="ai">{t('apiSpecsPage.docSourceAi')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="rounded-md border border-border-subtle bg-bg-soft px-3 py-2 text-sm text-text-muted">
-            {t('collections.workbench.docs.saveHint')}
-          </div>
-        </div>
 
-        <div className="grid gap-4 xl:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="request-doc-markdown">
-              {t('collections.workbench.docs.defaultMarkdownLabel')}
-            </Label>
+        {!hasAnyMarkdown && docMode === 'preview' ? (
+          <div className="mx-auto flex min-h-[520px] max-w-2xl flex-col items-center justify-start px-4 pt-16 text-center">
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-border-subtle bg-bg-soft text-text-main shadow-sm">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div className="flex flex-col items-center gap-3 text-xl font-medium text-text-muted sm:flex-row">
+              <span>{t('collections.workbench.docs.emptyTitle')}</span>
+              <button
+                type="button"
+                onClick={() => handleGenerateDoc('en')}
+                disabled={isGenerating}
+                className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-canvas px-4 py-2 text-sm font-semibold text-text-main shadow-sm transition-colors hover:bg-bg-soft disabled:pointer-events-none disabled:opacity-50"
+              >
+                <Sparkles className="h-5 w-5" />
+                {t('collections.workbench.docs.writeWithAi')}
+              </button>
+            </div>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-text-muted">
+              {t('collections.workbench.docs.emptyDescription')}
+            </p>
+          </div>
+        ) : docMode === 'preview' ? (
+          <div className="mx-auto max-w-4xl px-2 py-8 md:px-6">
+            <RequestMarkdownRenderer
+              value={selectedMarkdown}
+              emptyLabel={t('collections.workbench.docs.emptyLanguage', {
+                language: selectedLanguageLabel,
+              })}
+            />
+          </div>
+        ) : (
+          <div className="mx-auto max-w-5xl space-y-4">
+            <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
+              <div className="space-y-2">
+                <Label htmlFor="request-doc-source">{t('common.docSource')}</Label>
+                <Select
+                  value={tab.docSource}
+                  onValueChange={value => onDocSourceChange(value as 'manual' | 'ai')}
+                >
+                  <SelectTrigger id="request-doc-source" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">{t('apiSpecsPage.docSourceManual')}</SelectItem>
+                    <SelectItem value="ai">{t('apiSpecsPage.docSourceAi')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="rounded-md border border-border-subtle bg-bg-soft px-3 py-2 text-sm text-text-muted">
+                {t('collections.workbench.docs.saveHint')}
+              </div>
+            </div>
+
+            <Label htmlFor="request-doc-markdown-editor">{selectedLanguageLabel}</Label>
             <Textarea
-              id="request-doc-markdown"
-              value={tab.docMarkdown}
-              onChange={event => onDocMarkdownChange(event.target.value)}
+              id="request-doc-markdown-editor"
+              value={selectedMarkdown}
+              onChange={event => selectedMarkdownChangeHandler(event.target.value)}
               placeholder={t('collections.workbench.docs.markdownPlaceholder')}
-              rows={12}
+              rows={18}
               root
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="request-doc-markdown-zh">
-              {t('collections.workbench.docs.chineseMarkdownLabel')}
-            </Label>
-            <Textarea
-              id="request-doc-markdown-zh"
-              value={tab.docMarkdownZh}
-              onChange={event => onDocMarkdownZhChange(event.target.value)}
-              placeholder={t('collections.workbench.docs.markdownPlaceholder')}
-              rows={12}
-              root
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RequestMarkdownRenderer({ value, emptyLabel }: { value: string; emptyLabel: string }) {
+  if (!value.trim()) {
+    return (
+      <div className="rounded-xl border border-dashed border-border-subtle bg-bg-soft p-8 text-center text-sm text-text-muted">
+        {emptyLabel}
+      </div>
+    );
+  }
+
+  return (
+    <div className="text-[15px] leading-8 text-text-main">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          h1: ({ className, ...props }) => (
+            <h1
+              className={cn(
+                'mb-6 mt-0 border-b border-border-subtle pb-4 text-3xl font-semibold leading-tight tracking-[-0.03em] text-text-main',
+                className
+              )}
+              {...props}
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="request-doc-markdown-en">
-              {t('collections.workbench.docs.englishMarkdownLabel')}
-            </Label>
-            <Textarea
-              id="request-doc-markdown-en"
-              value={tab.docMarkdownEn}
-              onChange={event => onDocMarkdownEnChange(event.target.value)}
-              placeholder={t('collections.workbench.docs.markdownPlaceholder')}
-              rows={12}
-              root
+          ),
+          h2: ({ className, ...props }) => (
+            <h2
+              className={cn(
+                'mb-3 mt-10 text-2xl font-semibold leading-tight tracking-[-0.02em] text-text-main first:mt-0',
+                className
+              )}
+              {...props}
             />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          ),
+          h3: ({ className, ...props }) => (
+            <h3
+              className={cn(
+                'mb-2 mt-7 text-lg font-semibold leading-snug text-text-main',
+                className
+              )}
+              {...props}
+            />
+          ),
+          p: ({ className, ...props }) => (
+            <p className={cn('my-4 text-text-muted', className)} {...props} />
+          ),
+          a: ({ className, ...props }) => (
+            <a
+              className={cn(
+                'font-medium text-primary underline-offset-4 hover:text-primary-deep hover:underline',
+                className
+              )}
+              {...props}
+            />
+          ),
+          ul: ({ className, ...props }) => (
+            <ul
+              className={cn('my-4 list-disc space-y-2 pl-6 text-text-muted', className)}
+              {...props}
+            />
+          ),
+          ol: ({ className, ...props }) => (
+            <ol
+              className={cn('my-4 list-decimal space-y-2 pl-6 text-text-muted', className)}
+              {...props}
+            />
+          ),
+          li: ({ className, ...props }) => (
+            <li className={cn('pl-1 marker:text-text-muted', className)} {...props} />
+          ),
+          blockquote: ({ className, ...props }) => (
+            <blockquote
+              className={cn(
+                'my-6 rounded-r-xl border-l-4 border-primary bg-bg-soft px-5 py-3 text-text-muted',
+                className
+              )}
+              {...props}
+            />
+          ),
+          hr: ({ className, ...props }) => (
+            <hr className={cn('my-8 border-border-subtle', className)} {...props} />
+          ),
+          code: ({ className, children, ...props }) => {
+            const isInlineCode = !className;
+
+            if (isInlineCode) {
+              return (
+                <code
+                  className="rounded-md bg-bg-soft px-1.5 py-0.5 font-mono text-[0.925em] text-text-main"
+                  {...props}
+                >
+                  {children}
+                </code>
+              );
+            }
+
+            return (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children, ...props }) => (
+            <pre
+              className="my-5 overflow-x-auto rounded-xl border border-border-subtle bg-bg-soft p-5 text-sm leading-7 text-text-main shadow-sm"
+              {...props}
+            >
+              {children}
+            </pre>
+          ),
+          table: ({ className, ...props }) => (
+            <div className="my-6 overflow-x-auto rounded-xl border border-border-subtle shadow-sm">
+              <table
+                className={cn('min-w-full border-collapse text-sm text-text-main', className)}
+                {...props}
+              />
+            </div>
+          ),
+          th: ({ className, ...props }) => (
+            <th
+              className={cn(
+                'border-b border-border-subtle bg-bg-soft px-4 py-3 text-left font-semibold',
+                className
+              )}
+              {...props}
+            />
+          ),
+          td: ({ className, ...props }) => (
+            <td
+              className={cn(
+                'border-t border-border-subtle px-4 py-3 align-top text-text-muted',
+                className
+              )}
+              {...props}
+            />
+          ),
+        }}
+      >
+        {value}
+      </ReactMarkdown>
+    </div>
   );
 }
 
@@ -7612,10 +7867,7 @@ function BodyEditor({
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  updateStructuredRows([
-                    ...structuredRows,
-                    createKeyValueRow('', '', ''),
-                  ])
+                  updateStructuredRows([...structuredRows, createKeyValueRow('', '', '')])
                 }
               >
                 <Plus className="h-4 w-4" />
@@ -7624,12 +7876,7 @@ function BodyEditor({
             </div>
 
             <div className="overflow-x-auto">
-              <div
-                className={cn(
-                  'space-y-3',
-                  usesFileRows ? 'min-w-[920px]' : 'min-w-[760px]'
-                )}
-              >
+              <div className={cn('space-y-3', usesFileRows ? 'min-w-[920px]' : 'min-w-[760px]')}>
                 <div
                   className={cn(
                     'grid gap-3 px-3 text-xs font-medium uppercase tracking-[0.03125rem] text-text-muted',
@@ -7639,7 +7886,9 @@ function BodyEditor({
                   )}
                 >
                   <span>{t('collections.workbench.editors.key')}</span>
-                  {usesFileRows ? <span>{t('collections.workbench.body.valueTypeLabel')}</span> : null}
+                  {usesFileRows ? (
+                    <span>{t('collections.workbench.body.valueTypeLabel')}</span>
+                  ) : null}
                   <span>{t('collections.workbench.editors.value')}</span>
                   <span>{t('common.description')}</span>
                   <span />
@@ -7731,7 +7980,8 @@ function BodyEditor({
                           </div>
                           <div className="text-xs text-text-muted">
                             {selectedFile
-                              ? selectedFile.type || t('collections.workbench.body.binaryFallbackType')
+                              ? selectedFile.type ||
+                                t('collections.workbench.body.binaryFallbackType')
                               : row.value.trim()
                                 ? t('collections.workbench.body.reselectFile')
                                 : t('collections.workbench.body.fileFieldHelp')}
@@ -7789,9 +8039,7 @@ function BodyEditor({
                   <input
                     type="file"
                     className="hidden"
-                    onChange={event =>
-                      void handleBinaryFileSelect(event.target.files?.[0] ?? null)
-                    }
+                    onChange={event => void handleBinaryFileSelect(event.target.files?.[0] ?? null)}
                   />
                 </label>
                 {binaryFile ? (
@@ -7878,9 +8126,7 @@ function BodyEditor({
                 <Textarea
                   id="request-graphql-variables"
                   value={graphqlValue.variables_text ?? ''}
-                  onChange={event =>
-                    updateGraphqlValue({ variables_text: event.target.value })
-                  }
+                  onChange={event => updateGraphqlValue({ variables_text: event.target.value })}
                   rows={14}
                   className="min-h-[280px] rounded-xl font-mono text-sm"
                   placeholder={DEFAULT_GRAPHQL_VARIABLES}
@@ -8102,7 +8348,13 @@ function UnifiedRunsPanel({
                 ))}
               </div>
             ) : null}
-            <Button type="button" variant="outline" size="sm" onClick={onRefresh} loading={isRefreshing}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onRefresh}
+              loading={isRefreshing}
+            >
               <RefreshCw className="h-4 w-4" />
               {t('common.refresh')}
             </Button>
@@ -8153,10 +8405,18 @@ function UnifiedRunsPanel({
                   </Badge>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">
-                  <span>{t('collections.workbench.runs.stepsSummary', { total: run.total_steps })}</span>
-                  <span>{t('collections.workbench.runs.passedSummary', { passed: run.passed_steps })}</span>
-                  <span>{t('collections.workbench.runs.failedSummary', { failed: run.failed_steps })}</span>
-                  <span>{t('collections.workbench.runs.durationSummary', { duration: run.duration_ms })}</span>
+                  <span>
+                    {t('collections.workbench.runs.stepsSummary', { total: run.total_steps })}
+                  </span>
+                  <span>
+                    {t('collections.workbench.runs.passedSummary', { passed: run.passed_steps })}
+                  </span>
+                  <span>
+                    {t('collections.workbench.runs.failedSummary', { failed: run.failed_steps })}
+                  </span>
+                  <span>
+                    {t('collections.workbench.runs.durationSummary', { duration: run.duration_ms })}
+                  </span>
                 </div>
               </button>
             ))
@@ -8171,7 +8431,10 @@ function UnifiedRunsPanel({
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className={getUnifiedRunStatusClassName(selectedRun.status)}>
+                <Badge
+                  variant="outline"
+                  className={getUnifiedRunStatusClassName(selectedRun.status)}
+                >
                   {getUnifiedRunStatusLabel(t, selectedRun.status)}
                 </Badge>
                 <MetricBadge label={t('common.duration')} value={`${selectedRun.duration_ms} ms`} />
@@ -8186,7 +8449,10 @@ function UnifiedRunsPanel({
               </div>
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <MetricBadge label={t('common.created')} value={formatDate(selectedRun.created_at)} />
+                <MetricBadge
+                  label={t('common.created')}
+                  value={formatDate(selectedRun.created_at)}
+                />
                 <MetricBadge
                   label={t('collections.workbench.runs.startedAt')}
                   value={selectedRun.started_at ? formatDate(selectedRun.started_at) : '-'}
@@ -8195,7 +8461,10 @@ function UnifiedRunsPanel({
                   label={t('collections.workbench.runs.finishedAt')}
                   value={selectedRun.finished_at ? formatDate(selectedRun.finished_at) : '-'}
                 />
-                <MetricBadge label={t('common.environment')} value={selectedRun.environment_id ?? '-'} />
+                <MetricBadge
+                  label={t('common.environment')}
+                  value={selectedRun.environment_id ?? '-'}
+                />
               </div>
 
               {selectedRun.error_message ? (
@@ -8203,7 +8472,9 @@ function UnifiedRunsPanel({
                   <p className="text-sm font-medium text-text-main">
                     {t('collections.workbench.runs.errorTitle')}
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-text-main">{selectedRun.error_message}</p>
+                  <p className="mt-2 text-sm leading-6 text-text-main">
+                    {selectedRun.error_message}
+                  </p>
                 </div>
               ) : null}
 
@@ -8226,11 +8497,17 @@ function UnifiedRunsPanel({
                     .slice()
                     .sort((left, right) => left.step_index - right.step_index)
                     .map(step => (
-                      <div key={step.id} className="rounded-xl border border-border-subtle bg-bg-canvas p-4">
+                      <div
+                        key={step.id}
+                        className="rounded-xl border border-border-subtle bg-bg-canvas p-4"
+                      >
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
                             <p className="text-sm font-medium text-text-main">
-                              {step.source_name || t('collections.workbench.runs.stepFallback', { index: step.step_index + 1 })}
+                              {step.source_name ||
+                                t('collections.workbench.runs.stepFallback', {
+                                  index: step.step_index + 1,
+                                })}
                             </p>
                             <p className="mt-1 text-xs text-text-muted">
                               {t('collections.workbench.runs.stepLabel', {
@@ -8244,7 +8521,10 @@ function UnifiedRunsPanel({
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-xs text-text-muted">{step.duration_ms} ms</span>
-                            <Badge variant="outline" className={getUnifiedRunStatusClassName(step.status)}>
+                            <Badge
+                              variant="outline"
+                              className={getUnifiedRunStatusClassName(step.status)}
+                            >
                               {getUnifiedRunStatusLabel(t, step.status)}
                             </Badge>
                           </div>
@@ -8252,7 +8532,9 @@ function UnifiedRunsPanel({
 
                         {step.error_message ? (
                           <div className="mt-3 rounded-lg border border-border-subtle bg-bg-soft p-3 text-sm text-text-main">
-                            <span className="font-medium">{t('collections.workbench.runs.errorTitle')}: </span>
+                            <span className="font-medium">
+                              {t('collections.workbench.runs.errorTitle')}:{' '}
+                            </span>
                             {step.error_message}
                           </div>
                         ) : null}

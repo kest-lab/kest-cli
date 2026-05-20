@@ -683,6 +683,14 @@ const messages: ProjectMessages = {
         requestIdMissing: 'This request is missing a persisted ID. Save it and try again.',
         generating: 'Generating request docs with AI...',
         generateFailed: 'AI doc generation failed',
+        previewMode: 'Preview',
+        editMode: 'Edit Markdown',
+        emptyTitle: 'Document this request...',
+        emptyDescription:
+          'Add Markdown manually or let AI draft a readable request document from the current method, URL, auth, params, headers, and body.',
+        writeWithAi: 'Write with AI',
+        emptyLanguage:
+          'No {language} content yet. Switch to Edit Markdown or generate docs with AI.',
         generateEnglish: 'Write with AI (EN)',
         generateChinese: 'Write with AI (ZH)',
         defaultMarkdownLabel: 'Default Markdown',
@@ -763,7 +771,8 @@ const messages: ProjectMessages = {
         loadingList: 'Loading runs...',
         loadListFailed: 'Unable to load runs for this source right now.',
         empty: 'No runs recorded for this source yet.',
-        selectRun: 'Select a run to inspect step status, duration, request snapshots, response snapshots, and errors.',
+        selectRun:
+          'Select a run to inspect step status, duration, request snapshots, response snapshots, and errors.',
         loadingDetail: 'Loading run details...',
         loadDetailFailed: 'Unable to load the selected run detail right now.',
         noSteps: 'This run does not have any persisted step details yet.',
@@ -1792,7 +1801,8 @@ const messages: ProjectMessages = {
     apiSpecBadge: 'API Spec: {spec}',
     createDialogTitle: 'Create Test Case',
     editDialogTitle: 'Edit Test Case',
-    createDialogDescription: 'Create a workspace test case with POST /v1/workspaces/:id/test-cases.',
+    createDialogDescription:
+      'Create a workspace test case with POST /v1/workspaces/:id/test-cases.',
     editDialogDescription:
       'Update the current test case with PATCH /v1/workspaces/:id/test-cases/:tcid.',
     formLoadFailedTitle: 'Unable to load test case details',

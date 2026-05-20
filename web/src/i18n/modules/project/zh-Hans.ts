@@ -392,7 +392,8 @@ const messages = {
     headers: '{count} 个请求头',
     workspaceTitle: '环境工作区',
     currentDescriptionWithSelection: '已从所选 Workspace 加载环境详情。',
-    currentDescriptionEmpty: '在这里创建 Workspace 范围内的环境，或从侧边栏选择一个环境进行查看和编辑。',
+    currentDescriptionEmpty:
+      '在这里创建 Workspace 范围内的环境，或从侧边栏选择一个环境进行查看和编辑。',
     readOnlyDescription: '你当前的角色是 {role}。可以查看环境配置，但不能创建、编辑、复制或删除。',
     createDialogTitle: '创建环境',
     editDialogTitle: '编辑环境',
@@ -625,11 +626,19 @@ const messages = {
       headersDescription: '通过表格视图或批量输入管理请求 headers。',
       docs: {
         description: '在这里维护 request 级 Markdown 文档，或根据当前请求结构生成 AI 文档。',
-        saveHint: '文档现在跟着 request 走。手动修改后保存 tab 即可持久化；AI 生成前需要先保存 request。',
+        saveHint:
+          '文档现在跟着 request 走。手动修改后保存 tab 即可持久化；AI 生成前需要先保存 request。',
         saveBeforeGenerate: '请先把这个 request 保存到 collection，再生成文档。',
         requestIdMissing: '当前 request 缺少持久化 ID，请先保存后再试。',
         generating: '正在用 AI 生成 request 文档...',
         generateFailed: 'AI 文档生成失败',
+        previewMode: '预览',
+        editMode: '编辑 Markdown',
+        emptyTitle: 'Document this request...',
+        emptyDescription:
+          '可以手动补充 Markdown，也可以让 AI 根据当前 method、URL、认证、参数、Headers 和 Body 生成可读文档。',
+        writeWithAi: 'Write with AI',
+        emptyLanguage: '当前还没有 {language} 内容。可以切换到编辑模式手写，或使用 AI 生成。',
         generateEnglish: 'AI 生成英文',
         generateChinese: 'AI 生成中文',
         defaultMarkdownLabel: '默认 Markdown',
@@ -1297,7 +1306,8 @@ const messages = {
     quickRequestDescription:
       '如果你已经知道端点，直接打开请求工作台立即发起探测，再把结果回填成结构化资产。',
     demoCardTitle: '示例 Workspace：电商 API',
-    demoCardDescription: '一键 fork 一个可直接体验的电商 API Workspace，避免首次进入还是空白工作区。',
+    demoCardDescription:
+      '一键 fork 一个可直接体验的电商 API Workspace，避免首次进入还是空白工作区。',
     demoCardBadge: '开箱即用',
     demoCardApiSpecsTitle: '内置 3 个真实 API 规格',
     demoCardApiSpecsDescription:
@@ -1306,7 +1316,8 @@ const messages = {
     demoCardRequestsDescription:
       '自动生成 Demo Requests 集合，进入后即可直接发送请求查看返回结果。',
     demoCardRuntimeTitle: '已配置可运行环境',
-    demoCardRuntimeDescription: '默认接入公开 demo API，让第一次打开 Workspace 就能跑通请求和测试。',
+    demoCardRuntimeDescription:
+      '默认接入公开 demo API，让第一次打开 Workspace 就能跑通请求和测试。',
     demoCardAction: '一键 fork 示例 Workspace',
     demoCardSecondaryAction: '或者创建空白 Workspace',
     previewSummaryFailed: '部分项目信号加载失败。你可以重试当前预览，或直接进入工作区。',
@@ -1412,12 +1423,14 @@ const messages = {
     finish: '完成',
     steps: {
       sidebarTitle: '先从 Workspace 列表开始',
-      sidebarDescription: '左侧会持续显示你的 Workspace。选择任意 Workspace 后，右侧会即时展示下一步建议。',
+      sidebarDescription:
+        '左侧会持续显示你的 Workspace。选择任意 Workspace 后，右侧会即时展示下一步建议。',
       createProjectTitle: '创建 Workspace 是第一步',
       createProjectDescription:
         '新用户第一次进来时，最短路径不是读长文档，而是先创建一个 Workspace 容器。',
       demoTitle: '不想从零开始就 fork 示例 Workspace',
-      demoDescription: '示例 Workspace 会自动带上环境、规格、请求和一个测试用例，让用户立即体验核心价值。',
+      demoDescription:
+        '示例 Workspace 会自动带上环境、规格、请求和一个测试用例，让用户立即体验核心价值。',
       helpTitle: '帮助入口不要再藏深',
       helpDescription: '右上角帮助按钮把快捷键、文档和视频集中起来，减少“去哪里找资料”的摩擦。',
       commandTitle: '用 Cmd/Ctrl + K 统一跳转和操作',
