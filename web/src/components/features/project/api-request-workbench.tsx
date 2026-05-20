@@ -30,6 +30,7 @@ import {
 import { usePathname, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import {
+  AlertCircle,
   Binary,
   Braces,
   ChevronDown,
@@ -2303,6 +2304,9 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
     'request' | 'collection' | null
   >(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [requestDocGenerationError, setRequestDocGenerationError] = useState<string | null>(null);
+  const [generatingRequestDocLang, setGeneratingRequestDocLang] =
+    useState<ApiSpecLanguage | null>(null);
   const createCollectionMutation = useCreateCollection(projectId);
   const deleteCollectionMutation = useDeleteCollection(projectId);
   const updateCollectionMutation = useUpdateCollection(projectId);
@@ -3624,6 +3628,9 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       return;
     }
 
+    setRequestDocGenerationError(null);
+    setGeneratingRequestDocLang(lang);
+
     const nextName = getPersistedTabName(activeTab);
     const tabSnapshot = {
       ...activeTab,
@@ -3631,7 +3638,10 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
     };
 
     if (!tabSnapshot.collectionId || !isPersistedCollectionId(tabSnapshot.collectionId)) {
-      toast.error(t('collections.workbench.docs.saveBeforeGenerate'));
+      const message = t('collections.workbench.docs.saveBeforeGenerate');
+      setRequestDocGenerationError(message);
+      setGeneratingRequestDocLang(null);
+      toast.error(message);
       return;
     }
 
@@ -3650,9 +3660,14 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       });
       syncPersistedRequestInWorkbench(sourceTabId, generatedRequest);
     } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      }
+      const message =
+        error instanceof Error
+          ? error.message
+          : t('collections.workbench.docs.generateFailed');
+      setRequestDocGenerationError(message);
+      toast.error(message);
+    } finally {
+      setGeneratingRequestDocLang(null);
     }
   };
 
@@ -4544,7 +4559,9 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
                       tab={activeTab}
                       onTabChange={updateActiveTab}
                       onGenerateDoc={handleGenerateRequestDoc}
-                      isGeneratingDoc={genRequestDocMutation.isPending}
+                      isGeneratingDoc={generatingRequestDocLang !== null}
+                      generatingDocLang={generatingRequestDocLang}
+                      docGenerationError={requestDocGenerationError}
                     />
                   )}
                 </CardContent>
@@ -6816,11 +6833,15 @@ function RequestSectionPanel({
   onTabChange,
   onGenerateDoc,
   isGeneratingDoc,
+  generatingDocLang,
+  docGenerationError,
 }: {
   tab: RequestPageTab;
   onTabChange: (updater: (tab: RequestPageTab) => RequestPageTab) => void;
   onGenerateDoc: (lang: ApiSpecLanguage) => Promise<void>;
   isGeneratingDoc: boolean;
+  generatingDocLang: ApiSpecLanguage | null;
+  docGenerationError: string | null;
 }) {
   const t = useT('project');
 
@@ -6830,6 +6851,8 @@ function RequestSectionPanel({
         <RequestDocsPanel
           tab={tab}
           isGenerating={isGeneratingDoc}
+          generatingLang={generatingDocLang}
+          generationError={docGenerationError}
           onGenerateDoc={onGenerateDoc}
           onDocSourceChange={value =>
             onTabChange(current => ({
@@ -7028,6 +7051,8 @@ function RequestSectionPanel({
 function RequestDocsPanel({
   tab,
   isGenerating,
+  generatingLang,
+  generationError,
   onGenerateDoc,
   onDocSourceChange,
   onDocMarkdownChange,
@@ -7036,6 +7061,8 @@ function RequestDocsPanel({
 }: {
   tab: RequestPageTab;
   isGenerating: boolean;
+  generatingLang: ApiSpecLanguage | null;
+  generationError: string | null;
   onGenerateDoc: (lang: ApiSpecLanguage) => Promise<void>;
   onDocSourceChange: (value: 'manual' | 'ai') => void;
   onDocMarkdownChange: (value: string) => void;
@@ -7056,7 +7083,8 @@ function RequestDocsPanel({
             type="button"
             variant="outline"
             onClick={() => void onGenerateDoc('en')}
-            loading={isGenerating}
+            disabled={isGenerating}
+            loading={generatingLang === 'en'}
           >
             <FileText className="h-4 w-4" />
             {t('collections.workbench.docs.generateEnglish')}
@@ -7065,7 +7093,8 @@ function RequestDocsPanel({
             type="button"
             variant="outline"
             onClick={() => void onGenerateDoc('zh')}
-            loading={isGenerating}
+            disabled={isGenerating}
+            loading={generatingLang === 'zh'}
           >
             <FileText className="h-4 w-4" />
             {t('collections.workbench.docs.generateChinese')}
@@ -7073,6 +7102,20 @@ function RequestDocsPanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {isGenerating ? (
+          <div className="rounded-md border border-border-subtle bg-bg-soft px-3 py-2 text-sm text-text-muted">
+            {t('collections.workbench.docs.generating')}
+          </div>
+        ) : null}
+        {generationError ? (
+          <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-error-subtle px-3 py-2 text-sm text-destructive">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <div className="font-medium">{t('collections.workbench.docs.generateFailed')}</div>
+              <div className="mt-1 break-words text-xs leading-relaxed">{generationError}</div>
+            </div>
+          </div>
+        ) : null}
         <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
           <div className="space-y-2">
             <Label htmlFor="request-doc-source">{t('common.docSource')}</Label>

@@ -628,6 +628,8 @@ const messages = {
         saveHint: '文档现在跟着 request 走。手动修改后保存 tab 即可持久化；AI 生成前需要先保存 request。',
         saveBeforeGenerate: '请先把这个 request 保存到 collection，再生成文档。',
         requestIdMissing: '当前 request 缺少持久化 ID，请先保存后再试。',
+        generating: '正在用 AI 生成 request 文档...',
+        generateFailed: 'AI 文档生成失败',
         generateEnglish: 'AI 生成英文',
         generateChinese: 'AI 生成中文',
         defaultMarkdownLabel: '默认 Markdown',

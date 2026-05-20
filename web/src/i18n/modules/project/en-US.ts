@@ -681,6 +681,8 @@ const messages: ProjectMessages = {
           'Docs follow the request now. Save the tab to persist manual edits, or generate AI docs after the request has been saved.',
         saveBeforeGenerate: 'Save this request into a collection before generating docs.',
         requestIdMissing: 'This request is missing a persisted ID. Save it and try again.',
+        generating: 'Generating request docs with AI...',
+        generateFailed: 'AI doc generation failed',
         generateEnglish: 'Write with AI (EN)',
         generateChinese: 'Write with AI (ZH)',
         defaultMarkdownLabel: 'Default Markdown',
