@@ -7,6 +7,8 @@ import (
 )
 
 var ProviderSet = wire.NewSet(
+	NewRepository,
+	NewService,
 	NewHandler,
 	wire.Bind(new(contracts.Module), new(*Handler)),
 )
