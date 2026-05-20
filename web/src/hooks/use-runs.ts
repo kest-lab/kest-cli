@@ -13,10 +13,15 @@ export const runKeys = {
     [...runKeys.workspace(workspaceId), 'detail', runId] as const,
 };
 
-export function useRuns(params: UnifiedRunListParams) {
+export function useRuns(params?: UnifiedRunListParams) {
   return useQuery({
-    queryKey: runKeys.list(params),
-    queryFn: () => runService.list(params),
+    queryKey: runKeys.list(
+      params ?? {
+        workspaceId: 'unknown',
+      }
+    ),
+    queryFn: () => runService.list(params as UnifiedRunListParams),
+    enabled: Boolean(params?.workspaceId && params?.sourceType && params?.sourceId),
     placeholderData: previousData => previousData,
   });
 }
