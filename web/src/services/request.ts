@@ -1,6 +1,7 @@
 import request from '@/http';
 import type {
   CreateRequestRequest,
+  GenRequestDocRequest,
   ProjectRequest,
   RequestListParams,
   RequestListResponse,
@@ -21,7 +22,7 @@ export const requestService = {
     page,
     perPage,
   }: RequestListParams) =>
-    request.get<RequestListResponse>(`/projects/${projectId}/collections/${collectionId}/requests`, {
+    request.get<RequestListResponse>(`/workspaces/${projectId}/collections/${collectionId}/requests`, {
       params: normalizePayload({
         page,
         per_page: perPage,
@@ -34,7 +35,7 @@ export const requestService = {
     requestId: number | string
   ) =>
     request.get<ProjectRequest>(
-      `/projects/${projectId}/collections/${collectionId}/requests/${requestId}`
+      `/workspaces/${projectId}/collections/${collectionId}/requests/${requestId}`
     ),
 
   create: (
@@ -43,7 +44,7 @@ export const requestService = {
     data: CreateRequestRequest
   ) =>
     request.post<ProjectRequest>(
-      `/projects/${projectId}/collections/${collectionId}/requests`,
+      `/workspaces/${projectId}/collections/${collectionId}/requests`,
       normalizePayload(data)
     ),
 
@@ -54,8 +55,22 @@ export const requestService = {
     data: UpdateRequestRequest
   ) =>
     request.put<ProjectRequest>(
-      `/projects/${projectId}/collections/${collectionId}/requests/${requestId}`,
+      `/workspaces/${projectId}/collections/${collectionId}/requests/${requestId}`,
       normalizePayload(data)
+    ),
+
+  genDoc: (
+    projectId: number | string,
+    collectionId: number | string,
+    requestId: number | string,
+    data: GenRequestDocRequest
+  ) =>
+    request.post<ProjectRequest>(
+      `/workspaces/${projectId}/collections/${collectionId}/requests/${requestId}/gen-doc`,
+      undefined,
+      {
+        params: normalizePayload(data),
+      }
     ),
 
   delete: (
@@ -64,7 +79,7 @@ export const requestService = {
     requestId: number | string
   ) =>
     request.delete<void>(
-      `/projects/${projectId}/collections/${collectionId}/requests/${requestId}`
+      `/workspaces/${projectId}/collections/${collectionId}/requests/${requestId}`
     ),
 
   run: (
@@ -74,7 +89,7 @@ export const requestService = {
     data: RunRequestRequest
   ) =>
     request.post<RunRequestResponse>(
-      `/projects/${projectId}/collections/${collectionId}/requests/${requestId}/run`,
+      `/workspaces/${projectId}/collections/${collectionId}/requests/${requestId}/run`,
       normalizePayload(data)
     ),
 };
