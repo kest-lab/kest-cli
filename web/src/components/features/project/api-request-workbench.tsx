@@ -106,7 +106,12 @@ import { useCreateRun } from '@/hooks/use-runs';
 import { useT } from '@/i18n/client';
 import { collectionService } from '@/services/collection';
 import { localRunnerService } from '@/services/local-runner';
-import { useCreateRequest, useDeleteRequest, useUpdateRequest } from '@/hooks/use-requests';
+import {
+  useCreateRequest,
+  useDeleteRequest,
+  useGenRequestDoc,
+  useUpdateRequest,
+} from '@/hooks/use-requests';
 import { requestService } from '@/services/request';
 import type { ScopedTranslations } from '@/i18n/shared';
 import type { ProjectCollection, ProjectCollectionTreeNode } from '@/types/collection';
@@ -123,6 +128,7 @@ import type {
   ImportPostmanCollectionRequest,
 } from '@/types/importer';
 import type { CreateUnifiedRunRequest } from '@/types/run';
+import type { ApiSpecLanguage } from '@/types/api-spec';
 import type {
   CreateRequestRequest,
   ProjectRequest,
@@ -141,6 +147,7 @@ import {
 
 type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 type RequestSection =
+  | 'docs'
   | 'params'
   | 'authorization'
   | 'headers'
@@ -224,6 +231,10 @@ interface RequestPageTab {
   url: string;
   pathParams: Record<string, string>;
   activeSection: RequestSection;
+  docSource: 'manual' | 'ai';
+  docMarkdown: string;
+  docMarkdownZh: string;
+  docMarkdownEn: string;
   paramsMode: BulkMode;
   paramsRows: KeyValueRow[];
   paramsBulk: string;
@@ -289,6 +300,7 @@ type ProjectTranslationFn = ScopedTranslations<'project'>;
 type CollectionColorTone = 'lime' | 'mint' | 'cream' | 'lilac' | 'pink' | 'coral';
 const METHOD_OPTIONS: RequestMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
 const PRIMARY_SECTION_ITEMS: RequestSection[] = [
+  'docs',
   'params',
   'authorization',
   'headers',
@@ -574,6 +586,10 @@ const toRequestPageTab = (request: ProjectRequest): RequestPageTab => {
       request.url === PERSISTED_DRAFT_URL_PLACEHOLDER ? DEFAULT_NEW_REQUEST_URL : request.url || '',
     pathParams: request.path_params ?? {},
     activeSection: method === 'POST' || method === 'PUT' || method === 'PATCH' ? 'body' : 'params',
+    docSource: request.doc_source ?? 'manual',
+    docMarkdown: request.doc_markdown ?? '',
+    docMarkdownZh: request.doc_markdown_zh ?? '',
+    docMarkdownEn: request.doc_markdown_en ?? '',
     paramsRows,
     paramsBulk: rowsToBulkText(paramsRows),
     authorizationMode: toAuthorizationMode(request.auth),
@@ -610,6 +626,10 @@ const createRequestPageTab = (
   url: overrides.url ?? DEFAULT_NEW_REQUEST_URL,
   pathParams: overrides.pathParams ?? {},
   activeSection: overrides.activeSection ?? 'params',
+  docSource: overrides.docSource ?? 'manual',
+  docMarkdown: overrides.docMarkdown ?? '',
+  docMarkdownZh: overrides.docMarkdownZh ?? '',
+  docMarkdownEn: overrides.docMarkdownEn ?? '',
   paramsMode: overrides.paramsMode ?? 'table',
   paramsRows: overrides.paramsRows ?? [createKeyValueRow()],
   paramsBulk: overrides.paramsBulk ?? '',
@@ -1227,7 +1247,7 @@ const isSuccessfulExecution = (response?: RunRequestResponse, errorMessage?: str
 const getExecutionErrorMessage = (response?: RunRequestResponse, errorMessage?: string) =>
   errorMessage ||
   (response && !isSuccessfulExecution(response)
-    ? $HTTP ${response.status}${response.status_text ? ` ${response.status_text}` : ''}.trim()
+    ? `HTTP ${response.status}${response.status_text ? ` ${response.status_text}` : ''}`.trim()
     : undefined);
 
 const buildRunRequestSnapshot = ({
@@ -2286,6 +2306,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
   const environmentsQuery = useEnvironments(projectId);
   const createRequestMutation = useCreateRequest(projectId);
   const updateRequestMutation = useUpdateRequest(projectId);
+  const genRequestDocMutation = useGenRequestDoc(projectId);
   const deleteRequestMutation = useDeleteRequest(projectId);
   const createHistoryMutation = useCreateProjectHistory(projectId);
   const createRunMutation = useCreateRun(projectId);
@@ -2681,6 +2702,10 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       description: '',
       method: tab.method,
       url: tab.url.trim() || PERSISTED_DRAFT_URL_PLACEHOLDER,
+      doc_source: tab.docSource,
+      doc_markdown: tab.docMarkdown,
+      doc_markdown_zh: tab.docMarkdownZh,
+      doc_markdown_en: tab.docMarkdownEn,
       headers: toRequestKeyValues(tab.headersMode, tab.headersRows, tab.headersBulk),
       query_params: toRequestKeyValues(tab.paramsMode, tab.paramsRows, tab.paramsBulk),
       path_params: tab.pathParams,
@@ -2704,6 +2729,10 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       description: '',
       method: tab.method,
       url: tab.url.trim() || PERSISTED_DRAFT_URL_PLACEHOLDER,
+      doc_source: tab.docSource,
+      doc_markdown: tab.docMarkdown,
+      doc_markdown_zh: tab.docMarkdownZh,
+      doc_markdown_en: tab.docMarkdownEn,
       headers: toRequestKeyValues(tab.headersMode, tab.headersRows, tab.headersBulk),
       query_params: toRequestKeyValues(tab.paramsMode, tab.paramsRows, tab.paramsBulk),
       path_params: tab.pathParams,
@@ -2725,6 +2754,10 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       description: '',
       method: tab.method,
       url: tab.url.trim(),
+      doc_source: tab.docSource,
+      doc_markdown: tab.docMarkdown,
+      doc_markdown_zh: tab.docMarkdownZh,
+      doc_markdown_en: tab.docMarkdownEn,
       headers: toRequestKeyValues(tab.headersMode, tab.headersRows, tab.headersBulk),
       query_params: toRequestKeyValues(tab.paramsMode, tab.paramsRows, tab.paramsBulk),
       path_params: tab.pathParams,
@@ -3477,6 +3510,43 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
       const persistedRequest = await persistTabRequest(tabSnapshot, { name: nextName });
       syncPersistedRequestInWorkbench(activeTab.id, persistedRequest);
     } catch {}
+  };
+
+  const handleGenerateRequestDoc = async (lang: ApiSpecLanguage) => {
+    if (!activeTab) {
+      return;
+    }
+
+    const nextName = getPersistedTabName(activeTab);
+    const tabSnapshot = {
+      ...activeTab,
+      title: nextName,
+    };
+
+    if (!tabSnapshot.collectionId || !isPersistedCollectionId(tabSnapshot.collectionId)) {
+      toast.error(t('collections.workbench.docs.saveBeforeGenerate'));
+      return;
+    }
+
+    try {
+      const persistedRequest = await persistTabRequest(tabSnapshot, { name: nextName });
+      const sourceTabId = syncPersistedRequestInWorkbench(activeTab.id, persistedRequest);
+      const persistedRequestId = getPersistedRequestId(sourceTabId);
+      if (!persistedRequestId) {
+        throw new Error(t('collections.workbench.docs.requestIdMissing'));
+      }
+
+      const generatedRequest = await genRequestDocMutation.mutateAsync({
+        collectionId: tabSnapshot.collectionId,
+        requestId: persistedRequestId,
+        lang,
+      });
+      syncPersistedRequestInWorkbench(sourceTabId, generatedRequest);
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      }
+    }
   };
 
   const handleSend = async () => {
@@ -4363,6 +4433,8 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
                       key={`${activeTab.id}-${activeTab.activeSection}`}
                       tab={activeTab}
                       onTabChange={updateActiveTab}
+                      onGenerateDoc={handleGenerateRequestDoc}
+                      isGeneratingDoc={genRequestDocMutation.isPending}
                     />
                   )}
                 </CardContent>
@@ -6610,13 +6682,49 @@ function RequestSectionTabs({
 function RequestSectionPanel({
   tab,
   onTabChange,
+  onGenerateDoc,
+  isGeneratingDoc,
 }: {
   tab: RequestPageTab;
   onTabChange: (updater: (tab: RequestPageTab) => RequestPageTab) => void;
+  onGenerateDoc: (lang: ApiSpecLanguage) => Promise<void>;
+  isGeneratingDoc: boolean;
 }) {
   const t = useT('project');
 
   switch (tab.activeSection) {
+    case 'docs':
+      return (
+        <RequestDocsPanel
+          tab={tab}
+          isGenerating={isGeneratingDoc}
+          onGenerateDoc={onGenerateDoc}
+          onDocSourceChange={value =>
+            onTabChange(current => ({
+              ...current,
+              docSource: value,
+            }))
+          }
+          onDocMarkdownChange={value =>
+            onTabChange(current => ({
+              ...current,
+              docMarkdown: value,
+            }))
+          }
+          onDocMarkdownZhChange={value =>
+            onTabChange(current => ({
+              ...current,
+              docMarkdownZh: value,
+            }))
+          }
+          onDocMarkdownEnChange={value =>
+            onTabChange(current => ({
+              ...current,
+              docMarkdownEn: value,
+            }))
+          }
+        />
+      );
     case 'params':
       return (
         <KeyValueEditor
@@ -6783,6 +6891,121 @@ function RequestSectionPanel({
     default:
       return null;
   }
+}
+
+function RequestDocsPanel({
+  tab,
+  isGenerating,
+  onGenerateDoc,
+  onDocSourceChange,
+  onDocMarkdownChange,
+  onDocMarkdownZhChange,
+  onDocMarkdownEnChange,
+}: {
+  tab: RequestPageTab;
+  isGenerating: boolean;
+  onGenerateDoc: (lang: ApiSpecLanguage) => Promise<void>;
+  onDocSourceChange: (value: 'manual' | 'ai') => void;
+  onDocMarkdownChange: (value: string) => void;
+  onDocMarkdownZhChange: (value: string) => void;
+  onDocMarkdownEnChange: (value: string) => void;
+}) {
+  const t = useT('project');
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <CardTitle>{t('collections.workbench.sections.docs')}</CardTitle>
+          <CardDescription>{t('collections.workbench.docs.description')}</CardDescription>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void onGenerateDoc('en')}
+            loading={isGenerating}
+          >
+            <FileText className="h-4 w-4" />
+            {t('collections.workbench.docs.generateEnglish')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void onGenerateDoc('zh')}
+            loading={isGenerating}
+          >
+            <FileText className="h-4 w-4" />
+            {t('collections.workbench.docs.generateChinese')}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
+          <div className="space-y-2">
+            <Label htmlFor="request-doc-source">{t('common.docSource')}</Label>
+            <Select
+              value={tab.docSource}
+              onValueChange={value => onDocSourceChange(value as 'manual' | 'ai')}
+            >
+              <SelectTrigger id="request-doc-source" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manual">{t('apiSpecsPage.docSourceManual')}</SelectItem>
+                <SelectItem value="ai">{t('apiSpecsPage.docSourceAi')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="rounded-md border border-border-subtle bg-bg-soft px-3 py-2 text-sm text-text-muted">
+            {t('collections.workbench.docs.saveHint')}
+          </div>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-3">
+          <div className="space-y-2">
+            <Label htmlFor="request-doc-markdown">
+              {t('collections.workbench.docs.defaultMarkdownLabel')}
+            </Label>
+            <Textarea
+              id="request-doc-markdown"
+              value={tab.docMarkdown}
+              onChange={event => onDocMarkdownChange(event.target.value)}
+              placeholder={t('collections.workbench.docs.markdownPlaceholder')}
+              rows={12}
+              root
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="request-doc-markdown-zh">
+              {t('collections.workbench.docs.chineseMarkdownLabel')}
+            </Label>
+            <Textarea
+              id="request-doc-markdown-zh"
+              value={tab.docMarkdownZh}
+              onChange={event => onDocMarkdownZhChange(event.target.value)}
+              placeholder={t('collections.workbench.docs.markdownPlaceholder')}
+              rows={12}
+              root
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="request-doc-markdown-en">
+              {t('collections.workbench.docs.englishMarkdownLabel')}
+            </Label>
+            <Textarea
+              id="request-doc-markdown-en"
+              value={tab.docMarkdownEn}
+              onChange={event => onDocMarkdownEnChange(event.target.value)}
+              placeholder={t('collections.workbench.docs.markdownPlaceholder')}
+              rows={12}
+              root
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function KeyValueEditor({

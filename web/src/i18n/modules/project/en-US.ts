@@ -674,6 +674,20 @@ const messages: ProjectMessages = {
       queryParamsDescription:
         'Edit structured query parameters or switch to bulk mode for quick pasting.',
       headersDescription: 'Manage request headers with a table view or bulk input.',
+      docs: {
+        description:
+          'Write request-level Markdown docs here or generate them from the current request shape.',
+        saveHint:
+          'Docs follow the request now. Save the tab to persist manual edits, or generate AI docs after the request has been saved.',
+        saveBeforeGenerate: 'Save this request into a collection before generating docs.',
+        requestIdMissing: 'This request is missing a persisted ID. Save it and try again.',
+        generateEnglish: 'Write with AI (EN)',
+        generateChinese: 'Write with AI (ZH)',
+        defaultMarkdownLabel: 'Default Markdown',
+        chineseMarkdownLabel: 'Chinese Markdown',
+        englishMarkdownLabel: 'English Markdown',
+        markdownPlaceholder: '# Request documentation',
+      },
       badges: {
         apiRequest: 'API Request',
         collectionFallback: 'Collection',
@@ -681,6 +695,7 @@ const messages: ProjectMessages = {
         default: 'Default',
       },
       sections: {
+        docs: 'Docs',
         params: 'Params',
         authorization: 'Authorization',
         headers: 'Headers',

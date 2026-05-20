@@ -623,6 +623,18 @@ const messages = {
       queryParamsTitle: 'Query 参数',
       queryParamsDescription: '编辑结构化 query 参数，或切换到批量模式快速粘贴。',
       headersDescription: '通过表格视图或批量输入管理请求 headers。',
+      docs: {
+        description: '在这里维护 request 级 Markdown 文档，或根据当前请求结构生成 AI 文档。',
+        saveHint: '文档现在跟着 request 走。手动修改后保存 tab 即可持久化；AI 生成前需要先保存 request。',
+        saveBeforeGenerate: '请先把这个 request 保存到 collection，再生成文档。',
+        requestIdMissing: '当前 request 缺少持久化 ID，请先保存后再试。',
+        generateEnglish: 'AI 生成英文',
+        generateChinese: 'AI 生成中文',
+        defaultMarkdownLabel: '默认 Markdown',
+        chineseMarkdownLabel: '中文 Markdown',
+        englishMarkdownLabel: '英文 Markdown',
+        markdownPlaceholder: '# 请求文档',
+      },
       badges: {
         apiRequest: 'API 请求',
         collectionFallback: '集合',
@@ -630,6 +642,7 @@ const messages = {
         default: '默认',
       },
       sections: {
+        docs: 'Docs',
         params: '参数',
         authorization: '认证',
         headers: 'Headers',
