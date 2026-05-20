@@ -4567,15 +4567,17 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
                 </CardContent>
               </Card>
 
-              <ResponsePanel
-                response={activeTab.response}
-                isSending={activeTab.isSending}
-                onSaveAsExample={openCreateExampleDialog}
-                canSaveAsExample={canCreateExamples && activeResponseCanBeCaptured}
-                isSavingExample={
-                  createExampleMutation.isPending || saveExampleResponseMutation.isPending
-                }
-              />
+              {activeTab.activeSection !== 'docs' ? (
+                <ResponsePanel
+                  response={activeTab.response}
+                  isSending={activeTab.isSending}
+                  onSaveAsExample={openCreateExampleDialog}
+                  canSaveAsExample={canCreateExamples && activeResponseCanBeCaptured}
+                  isSavingExample={
+                    createExampleMutation.isPending || saveExampleResponseMutation.isPending
+                  }
+                />
+              ) : null}
 
               <UnifiedRunsPanel
                 source={currentRunSource}
