@@ -367,6 +367,14 @@ const getDefaultCollectionName = (t: ProjectTranslationFn, index: number) =>
 const getSectionLabel = (t: ProjectTranslationFn, section: RequestSection) =>
   t(`collections.workbench.sections.${section}`);
 
+const getSectionIcon = (section: RequestSection) => {
+  if (section === 'docs') {
+    return <FileText className="h-4 w-4" />;
+  }
+
+  return null;
+};
+
 const getBodyModeLabel = (
   t: ProjectTranslationFn,
   mode: BodyMode | 'text' | 'none' | string | null | undefined
@@ -6821,12 +6829,13 @@ function RequestSectionTabs({
           type="button"
           onClick={() => onSelectSection(item)}
           className={cn(
-            'rounded-full border px-3 py-2 text-sm font-medium transition-colors',
+            'inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-colors',
             item === activeSection
               ? 'border-border-subtle bg-bg-surface text-text-main'
               : 'border-border-subtle bg-bg-canvas text-text-muted hover:bg-bg-subtle hover:text-text-main'
           )}
         >
+          {getSectionIcon(item)}
           {getSectionLabel(t, item)}
         </button>
       ))}
