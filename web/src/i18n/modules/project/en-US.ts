@@ -693,6 +693,7 @@ const messages: ProjectMessages = {
         newCollection: 'New Collection',
         quickRequest: 'Quick Request',
         newQuickRequest: 'New Quick Request',
+        runCollection: 'Run Collection',
         openRequestActions: 'Open request actions',
         openCollectionActions: 'Open collection actions',
         renaming: 'Renaming...',
@@ -723,6 +724,18 @@ const messages: ProjectMessages = {
         moreSections: 'More',
         edit: 'Edit',
         applyToRequest: 'Apply to Request',
+      },
+      collectionRun: {
+        selectionRequired: 'Select a saved collection before starting a collection run.',
+        loadingRequired: 'Load the latest collection tree before starting a collection run.',
+        notFound: 'The selected collection could not be found.',
+        noRequests: '"{name}" does not contain any runnable requests yet.',
+        running: 'Running...',
+        completed: 'Collection run finished for "{name}" ({count} passed).',
+        completedWithFailures:
+          'Collection run finished for "{name}" ({passed} passed, {failed} failed).',
+        persistFailed: 'The collection run finished, but saving the unified run record failed.',
+        stepFailedFallback: 'Collection step failed.',
       },
       empty: {
         sidebarTitle: 'Start with a collection or quick request',

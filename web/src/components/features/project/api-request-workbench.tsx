@@ -1221,6 +1221,54 @@ const sanitizeHistoryAuth = (auth?: RequestAuthConfig | null) => {
   }
 };
 
+const isSuccessfulExecution = (response?: RunRequestResponse, errorMessage?: string) =>
+  !errorMessage && (response?.status ?? 0) >= 200 && (response?.status ?? 0) < 300;
+
+const getExecutionErrorMessage = (response?: RunRequestResponse, errorMessage?: string) =>
+  errorMessage ||
+  (response && !isSuccessfulExecution(response)
+    ? $HTTP ${response.status}${response.status_text ? ` ${response.status_text}` : ''}.trim()
+    : undefined);
+
+const buildRunRequestSnapshot = ({
+  request,
+  executedUrl,
+  requestHeaders,
+  requestBody,
+}: {
+  request: ProjectRequest;
+  executedUrl: string;
+  requestHeaders: Record<string, string>;
+  requestBody?: string;
+}) => ({
+  id: request.id,
+  collection_id: request.collection_id,
+  name: request.name,
+  method: request.method,
+  url: request.url,
+  executed_url: executedUrl,
+  headers: sanitizeHistoryHeaders(request.headers),
+  executed_headers: sanitizeHistoryHeaderMap(requestHeaders),
+  query_params: request.query_params,
+  path_params: request.path_params,
+  body: requestBody ?? '',
+  body_type: request.body_type,
+  auth: sanitizeHistoryAuth(request.auth),
+});
+
+const buildRunResponseSnapshot = (response?: RunRequestResponse) =>
+  response
+    ? {
+        status: response.status,
+        status_text: response.status_text,
+        headers: sanitizeHistoryHeaderMap(response.headers ?? {}),
+        body: response.body,
+        time: response.time,
+        duration_ms: response.time,
+        size: response.size,
+      }
+    : undefined;
+
 const buildRequestRunHistoryPayload = ({
   request,
   executedUrl,
@@ -1247,12 +1295,8 @@ const buildRequestRunHistoryPayload = ({
     request.url === PERSISTED_DRAFT_URL_PLACEHOLDER
       ? request.name
       : `${request.method} ${request.url}`;
-  const succeeded = !errorMessage && (response?.status ?? 0) >= 200 && (response?.status ?? 0) < 300;
-  const effectiveErrorMessage =
-    errorMessage ||
-    (response && !succeeded
-      ? `HTTP ${response.status}${response.status_text ? ` ${response.status_text}` : ''}`.trim()
-      : undefined);
+  const succeeded = isSuccessfulExecution(response, errorMessage);
+  const effectiveErrorMessage = getExecutionErrorMessage(response, errorMessage);
 
   return {
     entity_type: 'request',
@@ -1317,40 +1361,15 @@ const buildRequestUnifiedRunPayload = ({
   response?: RunRequestResponse;
   errorMessage?: string;
 }): CreateUnifiedRunRequest => {
-  const succeeded = !errorMessage && (response?.status ?? 0) >= 200 && (response?.status ?? 0) < 300;
-  const effectiveErrorMessage =
-    errorMessage ||
-    (response && !succeeded
-      ? `HTTP ${response.status}${response.status_text ? ` ${response.status_text}` : ''}`.trim()
-      : undefined);
-
-  const requestSnapshot: Record<string, unknown> = {
-    id: request.id,
-    collection_id: request.collection_id,
-    name: request.name,
-    method: request.method,
-    url: request.url,
-    executed_url: executedUrl,
-    headers: sanitizeHistoryHeaders(request.headers),
-    executed_headers: sanitizeHistoryHeaderMap(requestHeaders),
-    query_params: request.query_params,
-    path_params: request.path_params,
-    body: requestBody ?? '',
-    body_type: request.body_type,
-    auth: sanitizeHistoryAuth(request.auth),
-  };
-
-  const responseSnapshot = response
-    ? {
-        status: response.status,
-        status_text: response.status_text,
-        headers: sanitizeHistoryHeaderMap(response.headers ?? {}),
-        body: response.body,
-        time: response.time,
-        duration_ms: response.time,
-        size: response.size,
-      }
-    : undefined;
+  const succeeded = isSuccessfulExecution(response, errorMessage);
+  const effectiveErrorMessage = getExecutionErrorMessage(response, errorMessage);
+  const requestSnapshot = buildRunRequestSnapshot({
+    request,
+    executedUrl,
+    requestHeaders,
+    requestBody,
+  });
+  const responseSnapshot = buildRunResponseSnapshot(response);
 
   return {
     source_type: 'request',
@@ -1934,6 +1953,7 @@ const buildCollectionTreeFromList = (
       name: collection.name,
       description: collection.description,
       project_id: collection.project_id,
+      settings: collection.settings,
       parent_id: collection.parent_id,
       is_folder: collection.is_folder,
       sort_order: collection.sort_order,
@@ -2015,6 +2035,40 @@ const fetchAllCollectionRequests = async (
 
   return items;
 };
+
+const sortRequestsForExecution = (items: ProjectRequest[]) =>
+  [...items].sort((left, right) => {
+    if (left.sort_order !== right.sort_order) {
+      return left.sort_order - right.sort_order;
+    }
+
+    return String(left.id).localeCompare(String(right.id));
+  });
+
+const findCollectionNodeById = (
+  nodes: ProjectCollectionTreeNode[],
+  collectionId: string
+): ProjectCollectionTreeNode | null => {
+  for (const node of nodes) {
+    if (String(node.id) === collectionId) {
+      return node;
+    }
+
+    const nestedMatch = findCollectionNodeById(node.children ?? [], collectionId);
+    if (nestedMatch) {
+      return nestedMatch;
+    }
+  }
+
+  return null;
+};
+
+const flattenRunnableCollectionSubtree = (
+  node: ProjectCollectionTreeNode
+): ProjectCollectionTreeNode[] => [
+  ...(node.is_folder ? [] : [node]),
+  ...(node.children ?? []).flatMap(child => flattenRunnableCollectionSubtree(child)),
+];
 
 const buildWorkbenchStateFromServer = (
   treeNodes: ProjectCollectionTreeNode[],
@@ -2222,6 +2276,7 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
   );
   const [defaultingExampleId, setDefaultingExampleId] = useState<number | string | null>(null);
   const [deletingExampleId, setDeletingExampleId] = useState<number | string | null>(null);
+  const [runningCollectionId, setRunningCollectionId] = useState<string | null>(null);
   const createCollectionMutation = useCreateCollection(projectId);
   const deleteCollectionMutation = useDeleteCollection(projectId);
   const updateCollectionMutation = useUpdateCollection(projectId);
@@ -3632,6 +3687,271 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
     }
   };
 
+  const handleRunCollection = async (collectionId?: string) => {
+    const targetCollectionId = collectionId ?? activeCollectionId;
+
+    if (!targetCollectionId || !isPersistedCollectionId(targetCollectionId)) {
+      toast.error(t('collections.workbench.collectionRun.selectionRequired'));
+      return;
+    }
+
+    if (!collectionTreeQuery.data || !collectionRequestsQuery.data) {
+      toast.error(t('collections.workbench.collectionRun.loadingRequired'));
+      return;
+    }
+
+    const rootCollection = findCollectionNodeById(collectionTreeQuery.data, targetCollectionId);
+    if (!rootCollection) {
+      toast.error(t('collections.workbench.collectionRun.notFound'));
+      return;
+    }
+
+    const runnableCollections = flattenRunnableCollectionSubtree(rootCollection);
+    const executionQueue = runnableCollections.flatMap(collectionNode =>
+      sortRequestsForExecution(collectionRequestsQuery.data[String(collectionNode.id)] ?? []).map(
+        request => ({
+          collection: collectionNode,
+          request,
+          tab: tabMap.get(`request-${request.id}`) ?? toRequestPageTab(request),
+        })
+      )
+    );
+
+    if (executionQueue.length === 0) {
+      toast.error(
+        t('collections.workbench.collectionRun.noRequests', {
+          name: rootCollection.name,
+        })
+      );
+      return;
+    }
+
+    setRunningCollectionId(targetCollectionId);
+
+    const startedAt = new Date().toISOString();
+    const completedSteps: NonNullable<CreateUnifiedRunRequest['steps']> = [];
+    let passedSteps = 0;
+    let failedSteps = 0;
+    let totalDurationMs = 0;
+    let primaryErrorMessage: string | undefined;
+    let lastResponseSnapshot: Record<string, unknown> | undefined;
+
+    try {
+      for (const item of executionQueue) {
+        const requestTabId = `request-${item.request.id}`;
+        const requestTab = tabMap.get(requestTabId) ?? item.tab;
+        const runtimeVariables = toRuntimeVariableRecord(requestTab.runtimeVariables);
+        const stepStartedAt = new Date();
+        let executableUrl = item.request.url;
+        let executableHeaders: Record<string, string> = {};
+        let historyRequestBody: string | undefined;
+
+        updateTab(requestTabId, tab => ({
+          ...tab,
+          isSending: true,
+          response: {
+            ...tab.response,
+            error: null,
+          },
+        }));
+
+        try {
+          if (requestTab.settings.persistCookies) {
+            throw new Error(t('collections.workbench.persistCookiesUnavailable'));
+          }
+
+          const { executablePayload, executableHeaders: nextHeaders, executableUrl: nextUrl } =
+            buildExecutableRequestState({
+              request: item.request,
+              environment: selectedEnvironment,
+              projectSettings,
+              collectionSettings:
+                item.collection.settings ?? collectionSettingsById.get(String(item.collection.id)),
+              runtimeVariables,
+              tab: requestTab,
+              t,
+            });
+
+          executableUrl = nextUrl;
+          executableHeaders = nextHeaders;
+
+          const { historyBody: nextHistoryBody, ...runnerPayload } = executablePayload;
+          historyRequestBody = nextHistoryBody;
+
+          const response = await localRunnerService.execute({
+            method: item.request.method,
+            url: executableUrl,
+            headers: executableHeaders,
+            ...runnerPayload,
+            follow_redirects: requestTab.settings.followRedirects,
+            strict_tls: requestTab.settings.strictTls,
+          });
+
+          const stepFinishedAt = new Date();
+          const durationMs = response.time ?? stepFinishedAt.getTime() - stepStartedAt.getTime();
+          const succeeded = isSuccessfulExecution(response);
+          const effectiveErrorMessage = getExecutionErrorMessage(response);
+          const requestSnapshot = buildRunRequestSnapshot({
+            request: item.request,
+            executedUrl: executableUrl,
+            requestHeaders: executableHeaders,
+            requestBody: historyRequestBody,
+          });
+          const responseSnapshot = buildRunResponseSnapshot(response);
+
+          totalDurationMs += durationMs;
+          if (succeeded) {
+            passedSteps += 1;
+          } else {
+            failedSteps += 1;
+            primaryErrorMessage ||= effectiveErrorMessage;
+          }
+          lastResponseSnapshot = responseSnapshot;
+
+          updateTab(requestTabId, tab => ({
+            ...tab,
+            isSending: false,
+            response: toResponseDraft(response),
+          }));
+
+          completedSteps.push({
+            step_index: completedSteps.length,
+            source_type: 'request',
+            source_id: String(item.request.id),
+            source_name:
+              item.request.url === PERSISTED_DRAFT_URL_PLACEHOLDER
+                ? item.request.name
+                : `${item.request.method} ${item.request.url}`,
+            status: succeeded ? 'passed' : 'failed',
+            duration_ms: durationMs,
+            request_snapshot: requestSnapshot,
+            response_snapshot: responseSnapshot,
+            error_message: effectiveErrorMessage,
+            metadata: {
+              collection_id: String(item.collection.id),
+              collection_name: item.collection.name,
+              runner: {
+                mode: 'local',
+                follow_redirects: requestTab.settings.followRedirects,
+                strict_tls: requestTab.settings.strictTls,
+              },
+            },
+            started_at: stepStartedAt.toISOString(),
+            finished_at: stepFinishedAt.toISOString(),
+          });
+        } catch (error) {
+          const stepFinishedAt = new Date();
+          const durationMs = stepFinishedAt.getTime() - stepStartedAt.getTime();
+          const message =
+            error instanceof Error
+              ? error.message
+              : t('collections.workbench.collectionRun.stepFailedFallback');
+          const requestSnapshot = buildRunRequestSnapshot({
+            request: item.request,
+            executedUrl: executableUrl,
+            requestHeaders: executableHeaders,
+            requestBody: historyRequestBody ?? item.request.body,
+          });
+
+          totalDurationMs += durationMs;
+          failedSteps += 1;
+          primaryErrorMessage ||= message;
+
+          updateTab(requestTabId, tab => ({
+            ...tab,
+            isSending: false,
+            response: {
+              ...createEmptyResponse(),
+              error: message,
+            },
+          }));
+
+          completedSteps.push({
+            step_index: completedSteps.length,
+            source_type: 'request',
+            source_id: String(item.request.id),
+            source_name:
+              item.request.url === PERSISTED_DRAFT_URL_PLACEHOLDER
+                ? item.request.name
+                : `${item.request.method} ${item.request.url}`,
+            status: 'failed',
+            duration_ms: durationMs,
+            request_snapshot: requestSnapshot,
+            error_message: message,
+            metadata: {
+              collection_id: String(item.collection.id),
+              collection_name: item.collection.name,
+            },
+            started_at: stepStartedAt.toISOString(),
+            finished_at: stepFinishedAt.toISOString(),
+          });
+        }
+      }
+
+      await createRunMutation.mutateAsync({
+        source_type: 'collection',
+        source_id: String(rootCollection.id),
+        source_name: rootCollection.name,
+        status: failedSteps > 0 ? 'failed' : 'passed',
+        environment_id:
+          selectedEnvironment && selectedEnvironment.id !== undefined
+            ? String(selectedEnvironment.id)
+            : undefined,
+        execution_mode: 'local',
+        duration_ms: totalDurationMs,
+        request_snapshot: {
+          id: rootCollection.id,
+          name: rootCollection.name,
+          is_folder: rootCollection.is_folder,
+          collection_ids: runnableCollections.map(collection => String(collection.id)),
+          request_ids: executionQueue.map(item => String(item.request.id)),
+        },
+        response_snapshot: {
+          total_steps: completedSteps.length,
+          passed_steps: passedSteps,
+          failed_steps: failedSteps,
+          last_response: lastResponseSnapshot,
+        },
+        error_message: primaryErrorMessage,
+        metadata: {
+          runner: {
+            mode: 'local',
+          },
+          record_strategy: {
+            runs: 'execution',
+            history: 'audit',
+          },
+        },
+        started_at: startedAt,
+        finished_at: new Date().toISOString(),
+        steps: completedSteps,
+      });
+
+      if (failedSteps > 0) {
+        toast.error(
+          t('collections.workbench.collectionRun.completedWithFailures', {
+            name: rootCollection.name,
+            passed: passedSteps,
+            failed: failedSteps,
+          })
+        );
+      } else {
+        toast.success(
+          t('collections.workbench.collectionRun.completed', {
+            name: rootCollection.name,
+            count: passedSteps,
+          })
+        );
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('collections.workbench.collectionRun.persistFailed');
+      toast.error(message);
+    } finally {
+      setRunningCollectionId(null);
+    }
+  };
+
   const attachRequestTabToCollection = (collectionId: string, tab: RequestPageTab) => {
     startTransition(() => {
       setTabs(current => [...current, tab]);
@@ -3920,6 +4240,8 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
             onDeleteRequest={setDeleteRequestTarget}
             onRenameCollection={openRenameCollectionDialog}
             onRenameRequest={openRenameRequestDialog}
+            onRunCollection={collection => void handleRunCollection(collection.id)}
+            runningCollectionId={runningCollectionId}
             onToggleCollection={toggleCollection}
             onSelectRequest={selectRequest}
           />
@@ -3960,6 +4282,17 @@ export function ApiRequestWorkbench({ projectId }: { projectId: number | string 
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      {activeCollectionId && isPersistedCollectionId(activeCollectionId) ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          loading={runningCollectionId === activeCollectionId}
+                          onClick={() => void handleRunCollection(activeCollectionId)}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          {t('collections.workbench.actions.runCollection')}
+                        </Button>
+                      ) : null}
                       <Button
                         type="button"
                         variant="outline"
@@ -4218,6 +4551,8 @@ function CollectionsSidebar({
   onDeleteRequest,
   onRenameCollection,
   onRenameRequest,
+  onRunCollection,
+  runningCollectionId,
   onToggleCollection,
   onSelectRequest,
 }: {
@@ -4251,6 +4586,8 @@ function CollectionsSidebar({
   onDeleteRequest: (request: RequestPageTab) => void;
   onRenameCollection: (collection: CollectionNode) => void;
   onRenameRequest: (request: RequestPageTab) => void;
+  onRunCollection: (collection: CollectionNode) => void;
+  runningCollectionId: string | null;
   onToggleCollection: (collectionId: string) => void;
   onSelectRequest: (tabId: string, collectionId: string | null) => void;
 }) {
@@ -4462,11 +4799,13 @@ function CollectionsSidebar({
                       importingCollectionId === collection.id && importingKind === 'markdown'
                     }
                     isRenaming={renamingCollectionId === collection.id}
+                    isRunning={runningCollectionId === collection.id}
                     onCreateRequest={() => void onCreateRequest(collection)}
                     onImportPostman={() => onImportCollectionPostman(collection)}
                     onImportMarkdown={() => onImportCollectionMarkdown(collection)}
                     onEditVariables={() => onEditCollectionVariables(collection)}
                     onRename={() => onRenameCollection(collection)}
+                    onRunCollection={() => onRunCollection(collection)}
                     onDelete={() => void onDeleteCollection(collection)}
                   />
                 </div>
@@ -4652,11 +4991,13 @@ function CollectionActionsMenu({
   isImportingPostman,
   isImportingMarkdown,
   isRenaming,
+  isRunning,
   onCreateRequest,
   onImportPostman,
   onImportMarkdown,
   onEditVariables,
   onRename,
+  onRunCollection,
   onDelete,
 }: {
   isFolder: boolean;
@@ -4665,11 +5006,13 @@ function CollectionActionsMenu({
   isImportingPostman: boolean;
   isImportingMarkdown: boolean;
   isRenaming: boolean;
+  isRunning: boolean;
   onCreateRequest: () => void;
   onImportPostman: () => void;
   onImportMarkdown: () => void;
   onEditVariables: () => void;
   onRename: () => void;
+  onRunCollection: () => void;
   onDelete: () => void;
 }) {
   const t = useT('project');
@@ -4707,6 +5050,11 @@ function CollectionActionsMenu({
         </DropdownMenuItem>
         <DropdownMenuItem>{t('collections.workbench.actions.export')}</DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem disabled={isRunning} onSelect={onRunCollection}>
+          {isRunning
+            ? t('collections.workbench.collectionRun.running')
+            : t('collections.workbench.actions.runCollection')}
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={onEditVariables}>
           {t('collections.workbench.variables.collectionAction')}
         </DropdownMenuItem>
