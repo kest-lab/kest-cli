@@ -7146,6 +7146,18 @@ function RequestDocsPanel({
     setDocMode('preview');
     void onGenerateDoc(lang);
   };
+  const handleCopyMarkdown = async () => {
+    if (!selectedMarkdown.trim()) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(selectedMarkdown);
+      toast.success(t('collections.workbench.docs.copySuccess'));
+    } catch {
+      toast.error(t('toasts.copyFailed'));
+    }
+  };
 
   return (
     <div className="min-h-[640px] rounded-xl border border-border-subtle bg-bg-canvas">
@@ -7197,6 +7209,16 @@ function RequestDocsPanel({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void handleCopyMarkdown()}
+            disabled={!selectedMarkdown.trim()}
+          >
+            <Copy className="h-4 w-4" />
+            {t('collections.workbench.docs.copyMarkdown')}
+          </Button>
           <Button
             type="button"
             variant="outline"

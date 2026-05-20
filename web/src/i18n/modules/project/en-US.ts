@@ -691,6 +691,8 @@ const messages: ProjectMessages = {
         writeWithAi: 'Write with AI',
         emptyLanguage:
           'No {language} content yet. Switch to Edit Markdown or generate docs with AI.',
+        copyMarkdown: 'Copy Markdown',
+        copySuccess: 'Request docs copied to clipboard',
         generateEnglish: 'Write with AI (EN)',
         generateChinese: 'Write with AI (ZH)',
         defaultMarkdownLabel: 'Default Markdown',

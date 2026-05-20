@@ -639,6 +639,8 @@ const messages = {
           '可以手动补充 Markdown，也可以让 AI 根据当前 method、URL、认证、参数、Headers 和 Body 生成可读文档。',
         writeWithAi: 'Write with AI',
         emptyLanguage: '当前还没有 {language} 内容。可以切换到编辑模式手写，或使用 AI 生成。',
+        copyMarkdown: '复制 Markdown',
+        copySuccess: 'Request 文档已复制到剪贴板',
         generateEnglish: 'AI 生成英文',
         generateChinese: 'AI 生成中文',
         defaultMarkdownLabel: '默认 Markdown',
