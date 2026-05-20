@@ -41,3 +41,35 @@ func TestKeyValueJSONDefaultsEnabledToTrueWhenOmitted(t *testing.T) {
 		t.Fatal("expected missing enabled field to default to true")
 	}
 }
+
+func TestNewRequestPODocFieldsRoundTrip(t *testing.T) {
+	now := "2026-05-20T12:00:00Z"
+	request := &Request{
+		ID:            "req-1",
+		CollectionID:  "col-1",
+		Name:          "Create user",
+		Method:        "POST",
+		URL:           "https://example.com/users",
+		DocMarkdown:   "# Create user",
+		DocMarkdownZh: "# Create user zh",
+		DocMarkdownEn: "# Create user",
+		DocSource:     string(DocSourceAI),
+	}
+
+	po := newRequestPO(request)
+	if po.DocMarkdown != request.DocMarkdown {
+		t.Fatalf("expected doc_markdown to persist, got %q", po.DocMarkdown)
+	}
+	if po.DocMarkdownZh != request.DocMarkdownZh {
+		t.Fatalf("expected doc_markdown_zh to persist, got %q", po.DocMarkdownZh)
+	}
+	if po.DocMarkdownEn != request.DocMarkdownEn {
+		t.Fatalf("expected doc_markdown_en to persist, got %q", po.DocMarkdownEn)
+	}
+	if po.DocSource != request.DocSource {
+		t.Fatalf("expected doc_source to persist, got %q", po.DocSource)
+	}
+	if now == "" {
+		t.Fatal("unexpected empty timestamp guard")
+	}
+}
